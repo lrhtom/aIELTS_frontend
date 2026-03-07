@@ -13,8 +13,11 @@
     align-items: center;
     justify-content: space-between;
     padding: 16px 40px;
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(231, 229, 228, 0.5);
+    /* semi-transparent border matching --color-border (#e7e5e4) */
     position: sticky;
     top: 0;
     z-index: 100;
@@ -23,13 +26,11 @@
 .navbar-logo {
     font-size: 24px;
     font-weight: 700;
-    color: var(--color-primary);
     text-decoration: none;
-    letter-spacing: -0.5px;
 }
 
 .navbar-logo span {
-    background: linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-purple));
+    background: linear-gradient(135deg, var(--color-accent-teal), #14b8a6);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -53,27 +54,27 @@
 .navbar-links a:hover,
 .navbar-links a.active {
     color: var(--color-primary);
-    background: rgba(59, 130, 246, 0.08);
+    background: rgba(13, 148, 136, 0.08);
 }
 
 /* ─── Hero ─────────────────────────────────────────────────────────────── */
 
 .hero {
     text-align: center;
-    padding: 60px 40px 40px;
+    padding: 80px 40px 60px;
     animation: fadeInUp 0.6s ease;
 }
 
 .hero h1 {
-    font-size: 42px;
+    font-size: 48px;
     font-weight: 700;
     color: var(--color-text);
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     letter-spacing: -1px;
 }
 
 .hero h1 .gradient-text {
-    background: linear-gradient(135deg, var(--color-accent-cyan), var(--color-accent-purple));
+    background: linear-gradient(135deg, var(--color-accent-teal), #14b8a6);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -83,96 +84,54 @@
     font-size: 18px;
     color: var(--color-text-secondary);
     max-width: 500px;
-    margin: 0 auto;
+    margin: 0 auto 36px;
 }
 
-/* ─── 技能卡片 ─────────────────────────────────────────────────────────── */
-
-.skill-cards {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 20px;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 40px 40px;
-    animation: fadeInUp 0.6s ease 0.1s both;
-}
-
-.skill-card {
-    background: var(--color-surface);
-    border: 1.5px solid var(--color-border);
-    border-radius: 16px;
-    padding: 30px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    color: inherit;
-}
-
-.skill-card:hover {
-    transform: translateY(-4px);
-    border-color: transparent;
-}
-
-.skill-card.listening {
-    --card-color: var(--color-accent-purple);
-}
-
-.skill-card.speaking {
-    --card-color: var(--color-accent-green);
-}
-
-.skill-card.reading {
-    --card-color: var(--color-accent-cyan);
-}
-
-.skill-card.writing {
-    --card-color: var(--color-accent-amber);
-}
-
-.skill-card.vocab {
-    --card-color: #ef4444;
-}
-
-.skill-card:hover {
-    box-shadow: 0 8px 30px color-mix(in srgb, var(--card-color) 25%, transparent);
-    border-color: var(--card-color);
-}
-
-.skill-card .icon {
-    font-size: 36px;
-    margin-bottom: 12px;
-    display: block;
-}
-
-.skill-card .title {
+.hero-btn {
+    display: inline-block;
+    padding: 14px 40px;
     font-size: 18px;
     font-weight: 600;
-    margin-bottom: 6px;
-    color: var(--color-text);
+    color: white;
+    background: linear-gradient(135deg, var(--color-accent-teal), #14b8a6);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(13, 148, 136, 0.3);
+    margin: 0 8px;
 }
 
-.skill-card .desc {
-    font-size: 13px;
-    color: var(--color-text-secondary);
-    line-height: 1.4;
+.hero-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(13, 148, 136, 0.4);
+}
+
+.hero-btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1.5px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.hero-btn-secondary:hover {
+    border-color: var(--color-accent-coral);
+    color: var(--color-accent-coral);
+    box-shadow: 0 8px 25px rgba(249, 115, 22, 0.2);
 }
 
 /* ─── 公告区 ──────────────────────────────────────────────────────────── */
 
 .announcements {
-    max-width: 900px;
+    max-width: 700px;
     margin: 0 auto;
     padding: 0 40px 60px;
-    animation: fadeInUp 0.6s ease 0.2s both;
+    animation: fadeInUp 0.6s ease 0.15s both;
 }
 
 .announcements h2 {
     font-size: 22px;
     font-weight: 600;
     margin-bottom: 16px;
-    color: var(--color-text);
 }
 
 .announcement-list {
@@ -206,7 +165,6 @@
 
 .announcement-content {
     font-size: 15px;
-    color: var(--color-text);
     line-height: 1.5;
 }
 
@@ -244,18 +202,12 @@
 /* ─── 响应式 ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-    .skill-cards {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 14px;
-        padding: 0 20px 30px;
-    }
-
     .hero {
-        padding: 40px 20px 30px;
+        padding: 50px 20px 40px;
     }
 
     .hero h1 {
-        font-size: 30px;
+        font-size: 32px;
     }
 
     .navbar {

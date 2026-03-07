@@ -1,60 +1,112 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useReactive } from '../utils/reactive';
-import { wordSelectionStore } from '../store/word_selection_store';
-import '../styles/reading_page.css';
+import AppNavbar from '../components/AppNavbar';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { getInitialVocabInput } from '../store/word_selection_store';
+import { showToast } from '../components/Toast';
+import { useLang } from '../i18n/LanguageContext';
+import { translations } from '../i18n/translations';
+import VocabInput from '../components/VocabInput';
+import AiModelSelector from '../components/AiModelSelector';
+import '../styles/practice_page.css';
 
-type Skill = 'listening' | 'speaking' | 'reading' | 'writing';
+const DIFFICULTIES = ['6.0', '6.5', '7.0', '7.5', '8.0', '8.5'];
 
 export default function WordSelection_page() {
     const navigate = useNavigate();
-    const store = useReactive(wordSelectionStore);
+    const [vocabInput, setVocabInput] = useState(() => getInitialVocabInput());
+    const [useCustomVocab, setUseCustomVocab] = useState(true);
+    const [difficulty, setDifficulty] = useState('7.0');
 
-    // 挂载时同步 localStorage → store（多 Tab 情况下确保最新值）
+    const { lang } = useLang();
+    const t = translations[lang].readingConfig;
+    const nav = translations[lang].nav;
+
     useEffect(() => {
         const saved = localStorage.getItem('ielts_target_vocab');
-        if (saved) store.vocabInput = saved;
+        if (saved) setVocabInput(saved);
     }, []);
 
-    const handleVocabChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        store.vocabInput = e.target.value;
-        localStorage.setItem('ielts_target_vocab', e.target.value);
+    const handleVocabChange = (val: string) => {
+        setVocabInput(val);
+        localStorage.setItem('ielts_target_vocab', val);
     };
 
-    const handleSkillSelect = (skill: Skill) => {
-        if (!store.vocabInput.trim()) {
-            alert('Please enter some vocabulary.');
+    const handleStart = () => {
+        if (useCustomVocab && !vocabInput.trim()) {
+            showToast(t.toast.noVocab, 'error');
             return;
         }
-        navigate(`/${skill}`, { state: { vocabInput: store.vocabInput } });
+        navigate('/reading', {
+            state: {
+                vocabInput: useCustomVocab ? vocabInput : '',
+                difficulty,
+                useCustomVocab,
+            },
+        });
     };
 
     return (
-        <div className="container">
-            <div className="page">
-                <h1>IELTS Practice Generator</h1>
-                <p>Enter your target English words and Chinese meanings (e.g., "ubiquitous - 普遍存在的"). Format: One word per line.</p>
-                <div className="input-group">
-                    <textarea
-                        value={store.vocabInput}
-                        onChange={handleVocabChange}
-                        placeholder={"ubiquitous - 普遍存在的\nmitigate - 减轻\nephemeral - 短暂的"}
-                    />
+        <div className="practice-page">
+            <AppNavbar />
 
-                    <div className="skill-options" style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
-                        <button className="skill-btn" style={{ flex: 1, backgroundColor: '#8b5cf6' }} onClick={() => handleSkillSelect('listening')}>
-                            🎧 听 (Listening)
-                        </button>
-                        <button className="skill-btn" style={{ flex: 1, backgroundColor: '#10b981' }} onClick={() => handleSkillSelect('speaking')}>
-                            🗣️ 说 (Speaking)
-                        </button>
-                        <button className="skill-btn" style={{ flex: 1, backgroundColor: '#3b82f6' }} onClick={() => handleSkillSelect('reading')}>
-                            📖 读 (Reading)
-                        </button>
-                        <button className="skill-btn" style={{ flex: 1, backgroundColor: '#f59e0b' }} onClick={() => handleSkillSelect('writing')}>
-                            ✍️ 写 (Writing)
-                        </button>
+            <div className="practice-container">
+                <div className="practice-header">
+                    <Link to="/practice/ai" className="back-link">{t.backToAI}</Link>
+                    <h1>{t.heading}</h1>
+                    <p>{t.subheading}</p>
+                </div>
+
+                {/* AI Model Selector */}
+                <div className="config-card">
+                    <AiModelSelector />
+                </div>
+
+                {/* Difficulty */}
+                <div className="config-card">
+                    <h3>{t.targetScore}</h3>
+                    <div className="difficulty-options">
+                        {DIFFICULTIES.map(d => (
+                            <button
+                                key={d}
+                                className={`difficulty-btn ${difficulty === d ? 'selected' : ''}`}
+                                onClick={() => setDifficulty(d)}
+                            >
+                                Band {d}
+                            </button>
+                        ))}
                     </div>
+                </div>
+
+                {/* Custom Vocab Toggle */}
+                <div className="config-card">
+                    <div className="toggle-row">
+                        <div>
+                            <div className="label-text">{t.customVocab.label}</div>
+                            <div className="label-desc">{t.customVocab.desc}</div>
+                        </div>
+                        <label className="toggle-switch">
+                            <input
+                                type="checkbox"
+                                checked={useCustomVocab}
+                                onChange={(e) => setUseCustomVocab(e.target.checked)}
+                            />
+                            <span className="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    {useCustomVocab && (
+                        <VocabInput
+                            value={vocabInput}
+                            onChange={handleVocabChange}
+                        />
+                    )}
+                </div>
+
+                {/* Start Button */}
+                <div className="config-card">
+                    <button className="skill-btn reading" style={{ width: '100%' }} onClick={handleStart}>
+                        <span className="btn-icon">📖</span> {t.startBtn}
+                    </button>
                 </div>
             </div>
         </div>

@@ -1,23 +1,27 @@
 // ReadingPractice.tsx
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useReactive } from '../utils/reactive';
-import { readingStore, resetReadingStore } from '../store/reading_page_store';
+import { createReadingState } from '../store/reading_page_store';
 import type { VocabItem, QuizData } from '../store/reading_page_store';
 import { api } from '../api/client';
+import { showToast } from '../components/Toast';
 import '../styles/reading_page.css';
 
 export default function Reading_page() {
     const { state } = useLocation();
     const vocabInput: string = state?.vocabInput ?? '';
+    const difficulty: string = state?.difficulty ?? '7.0';
     const navigate = useNavigate();
     const onReturnHome = () => navigate('/');
 
-    // 订阅响应式 store
-    const store = useReactive(readingStore);
+    // 用单一 useState 替代 reactive store
+    const [st, setSt] = useState(createReadingState);
+    const set = <K extends keyof typeof st>(k: K, v: typeof st[K]) =>
+        setSt(s => ({ ...s, [k]: v }));
 
     // DOM refs
     const userAnswersRef = useRef<Record<number, string>>({});
+    const hasRequested = useRef(false);
     const leftSidebarRef = useRef<HTMLDivElement | null>(null);
     const rightSidebarRef = useRef<HTMLDivElement | null>(null);
     const layoutRef = useRef<HTMLDivElement | null>(null);
@@ -25,7 +29,9 @@ export default function Reading_page() {
     const activeEditorRef = useRef<HTMLElement | null>(null);
 
     useEffect(() => {
-        resetReadingStore();
+        if (hasRequested.current) return;
+        hasRequested.current = true;
+        setSt(createReadingState());
         generateReading();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -45,21 +51,23 @@ export default function Reading_page() {
             };
         }).filter(item => item.word).sort((a, b) => a.word.localeCompare(b.word));
 
-        store.vocabList = parsedList;
+        set('vocabList', parsedList);
         const words = parsedList.map(v => v.word);
 
         try {
             // 调用后端 API，不再直接调 AI
             const parsedData = await api<QuizData>('/reading/generate', {
                 method: 'POST',
-                body: { words },
+                body: { words, difficulty },
             });
 
-            store.quizData = parsedData;
+            set('quizData', parsedData);
             userAnswersRef.current = {};
-            store.searchQuery = '';
-            store.isLeftOpen = true;
-            store.isRightOpen = true;
+            set('searchQuery', '');
+            set('isLeftOpen', true);
+            set('isRightOpen', true);
+            set('startTime', Date.now());
+            set('elapsedSeconds', 0);
 
             const pageEl = document.getElementById('reading-page-container');
             const btnEl = document.getElementById('highlight-toggle-btn');
@@ -69,12 +77,13 @@ export default function Reading_page() {
                 btnEl.classList.remove('active');
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("API Error:", error);
-            alert('Failed to generate reading material. Please check network.');
+            const code = error.status ?? (error instanceof TypeError ? 'NET' : undefined);
+            showToast(error.message || '请求失败', 'error', code);
             onReturnHome();
         } finally {
-            store.isLoading = false;
+            set('isLoading', false);
         }
     };
 
@@ -96,18 +105,39 @@ export default function Reading_page() {
     };
 
     const submitQuiz = () => {
-        if (!store.quizData) return;
-        const totalQuestions = store.quizData.questions.length;
+        if (!st.quizData) return;
+        const totalQuestions = st.quizData.questions.length;
         const answeredQuestions = Object.keys(userAnswersRef.current).length;
         if (answeredQuestions < totalQuestions) {
             if (!window.confirm('You have unanswered questions. Submit anyway?')) return;
         }
-        store.step = 3;
+        set('step', 3);
     };
+
+    // Timer helper
+    const formatTime = useCallback((totalSeconds: number) => {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        return {
+            h: String(h).padStart(2, '0'),
+            m: String(m).padStart(2, '0'),
+            s: String(s).padStart(2, '0'),
+        };
+    }, []);
+
+    // Timer tick effect
+    useEffect(() => {
+        if (st.step !== 2 || st.isLoading || !st.startTime) return;
+        const interval = setInterval(() => {
+            set('elapsedSeconds', Math.floor((Date.now() - st.startTime) / 1000));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [st.step, st.isLoading, st.startTime]);
 
     // Resizer Logic
     useEffect(() => {
-        if (store.step !== 2 || store.isLoading) return;
+        if (st.step !== 2 || st.isLoading) return;
         const resizerL = document.getElementById('resizerLeft');
         const resizerR = document.getElementById('resizerRight');
         let isResizingLeft = false, isResizingRight = false, startX = 0, startWidth = 0;
@@ -139,10 +169,15 @@ export default function Reading_page() {
 
         const handleMouseUp = () => {
             if (isResizingLeft || isResizingRight) {
+                (window as any).__didDragSidebar = true;
+                // 拖动结束后禁用 transition 防止跳动
+                if (isResizingLeft && leftSidebarRef.current) leftSidebarRef.current.classList.add('no-transition');
+                if (isResizingRight && rightSidebarRef.current) rightSidebarRef.current.classList.add('no-transition');
                 isResizingLeft = false; isResizingRight = false;
                 if (layoutRef.current) layoutRef.current.classList.remove('is-resizing');
                 if (resizerL) resizerL.classList.remove('resizing');
                 if (resizerR) resizerR.classList.remove('resizing');
+                setTimeout(() => { (window as any).__didDragSidebar = false; }, 200);
             }
         };
 
@@ -157,11 +192,11 @@ export default function Reading_page() {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [store.step, store.isLoading]);
+    }, [st.step, st.isLoading]);
 
     // Floating Underline Logic
     useEffect(() => {
-        if (store.step !== 2 || store.isLoading) return;
+        if (st.step !== 2 || st.isLoading) return;
         const handleGlobalMouseUp = (e: MouseEvent) => {
             if (layoutRef.current?.classList.contains('is-resizing')) return;
             const target = e.target as HTMLElement;
@@ -201,7 +236,7 @@ export default function Reading_page() {
             document.body.removeEventListener('mouseup', handleGlobalMouseUp);
             document.removeEventListener('mousedown', handleGlobalMouseDown);
         };
-    }, [store.step, store.isLoading]);
+    }, [st.step, st.isLoading]);
 
     const executeUnderline = () => {
         if (!activeEditorRef.current) return;
@@ -212,13 +247,59 @@ export default function Reading_page() {
         window.getSelection()?.removeAllRanges();
     };
 
+    // Resizer for results passage sidebar
+    useEffect(() => {
+        const sidebar = document.getElementById('passageSidebar');
+        if (!st.isPassageOpen) {
+            if (sidebar) sidebar.style.width = '';
+            return;
+        }
+        if (st.step !== 3) return;
+        const resizer = document.getElementById('resizerPassage');
+        const layout = document.getElementById('resultsLayout');
+        if (!resizer || !sidebar || !layout) return;
+
+        let isResizing = false, startX = 0, startWidth = 0;
+
+        const onMouseDown = (e: MouseEvent) => {
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = sidebar.getBoundingClientRect().width;
+            layout.classList.add('is-resizing');
+            resizer.classList.add('resizing');
+        };
+        const onMouseMove = (e: MouseEvent) => {
+            if (!isResizing) return;
+            const newWidth = startWidth + (e.clientX - startX);
+            if (newWidth > 200 && newWidth < window.innerWidth * 0.55) {
+                sidebar.style.width = newWidth + 'px';
+            }
+        };
+        const onMouseUp = () => {
+            if (isResizing) {
+                isResizing = false;
+                layout.classList.remove('is-resizing');
+                resizer.classList.remove('resizing');
+            }
+        };
+
+        resizer.addEventListener('mousedown', onMouseDown);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+        return () => {
+            resizer.removeEventListener('mousedown', onMouseDown);
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+    }, [st.step, st.isPassageOpen]);
+
     // Memoized Blocks
     const articleMemoBlock = useMemo(() => {
-        if (!store.quizData) return null;
-        const passageParagraphs = store.quizData.passage.split('\n\n');
+        if (!st.quizData) return null;
+        const passageParagraphs = st.quizData.passage.split('\n\n');
         return (
             <div className="main-content">
-                <h2 style={{ marginTop: 0 }} dangerouslySetInnerHTML={{ __html: formatHighlight(store.quizData.title) }}></h2>
+                <h2 style={{ marginTop: 0 }} dangerouslySetInnerHTML={{ __html: formatHighlight(st.quizData.title) }}></h2>
                 <div
                     id="articleContent"
                     style={{ outline: 'none', WebkitTouchCallout: 'none' }}
@@ -230,13 +311,13 @@ export default function Reading_page() {
                 </div>
             </div>
         );
-    }, [store.quizData]);
+    }, [st.quizData]);
 
     const questionsMemoBlock = useMemo(() => {
-        if (!store.quizData) return null;
+        if (!st.quizData) return null;
         return (
             <div id="questionsForm" style={{ outline: 'none', WebkitTouchCallout: 'none' }} onContextMenu={(e) => e.preventDefault()}>
-                {store.quizData.questions.map((q) => (
+                {st.quizData.questions.map((q) => (
                     <div key={q.id} className="question-block">
                         <div className="question-text" dangerouslySetInnerHTML={{ __html: `${q.id}. ${formatHighlight(q.question)}` }}></div>
                         {Object.entries(q.options).map(([key, value]) => (
@@ -253,28 +334,28 @@ export default function Reading_page() {
                 ))}
             </div>
         );
-    }, [store.quizData]);
+    }, [st.quizData]);
 
     // Loading State
-    if (store.isLoading) {
+    if (st.isLoading) {
         return (
             <div className="container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <div className="loader">AI is writing your IELTS 7.5 level passage... Please wait.</div>
+                    <div className="loader">AI is writing your IELTS {difficulty} level passage... Please wait.</div>
                 </div>
             </div>
         );
     }
 
     // Page 2: Reading Interface
-    if (store.step === 2 && store.quizData) {
-        const filteredVocab = store.vocabList.filter(v =>
-            v.word.toLowerCase().includes(store.searchQuery.toLowerCase()) ||
-            v.meaning.toLowerCase().includes(store.searchQuery.toLowerCase())
+    if (st.step === 2 && st.quizData) {
+        const filteredVocab = st.vocabList.filter(v =>
+            v.word.toLowerCase().includes(st.searchQuery.toLowerCase()) ||
+            v.meaning.toLowerCase().includes(st.searchQuery.toLowerCase())
         );
 
         return (
-            <div className="container">
+            <div className="container reading-container">
                 <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
                     <u>U</u> Underline
                 </div>
@@ -282,9 +363,18 @@ export default function Reading_page() {
                 <div id="reading-page-container" className="page">
                     <div className="toolbar-area">
                         <div>
-                            <button onClick={() => { store.isLeftOpen = !store.isLeftOpen; if (leftSidebarRef.current) leftSidebarRef.current.style.width = ''; }}>☰ Dictionary</button>
+                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (leftSidebarRef.current) { leftSidebarRef.current.classList.remove('no-transition'); leftSidebarRef.current.style.width = ''; } set('isLeftOpen', !st.isLeftOpen); }}>☰ Dictionary</button>
                             <span style={{ margin: '0 5px' }}></span>
-                            <button onClick={() => { store.isRightOpen = !store.isRightOpen; if (rightSidebarRef.current) rightSidebarRef.current.style.width = ''; }}>✎ Questions</button>
+                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (rightSidebarRef.current) { rightSidebarRef.current.classList.remove('no-transition'); rightSidebarRef.current.style.width = ''; } set('isRightOpen', !st.isRightOpen); }}>✎ Questions</button>
+                        </div>
+                        <div className="reading-timer">
+                            <span className="timer-icon">🕐</span>
+                            <span className="timer-label">time</span>
+                            <span className="timer-digit">{formatTime(st.elapsedSeconds).h}</span>
+                            <span className="timer-sep">:</span>
+                            <span className="timer-digit">{formatTime(st.elapsedSeconds).m}</span>
+                            <span className="timer-sep">:</span>
+                            <span className="timer-digit">{formatTime(st.elapsedSeconds).s}</span>
                         </div>
                         <div>
                             <button
@@ -299,11 +389,11 @@ export default function Reading_page() {
 
                     <div className="reading-layout" ref={layoutRef}>
                         {/* Left Sidebar */}
-                        <div id="leftSidebar" ref={leftSidebarRef} className={`sidebar ${store.isLeftOpen ? 'open' : ''}`}>
+                        <div id="leftSidebar" ref={leftSidebarRef} className={`sidebar ${st.isLeftOpen ? 'open' : ''}`}>
                             <h2 style={{ marginTop: 0 }}>Vocabulary</h2>
                             <input
                                 type="text" id="vocabSearch" placeholder="🔍 Search word or meaning..."
-                                value={store.searchQuery} onChange={(e) => store.searchQuery = e.target.value}
+                                value={st.searchQuery} onChange={(e) => set('searchQuery', e.target.value)}
                             />
                             <div>
                                 {filteredVocab.map((v, idx) => (
@@ -315,12 +405,12 @@ export default function Reading_page() {
                             </div>
                         </div>
 
-                        <div className={`resizer ${store.isLeftOpen ? 'active' : ''}`} id="resizerLeft"></div>
+                        <div className={`resizer ${st.isLeftOpen ? 'active' : ''}`} id="resizerLeft"></div>
                         {articleMemoBlock}
-                        <div className={`resizer ${store.isRightOpen ? 'active' : ''}`} id="resizerRight"></div>
+                        <div className={`resizer ${st.isRightOpen ? 'active' : ''}`} id="resizerRight"></div>
 
                         {/* Right Sidebar */}
-                        <div id="rightSidebar" ref={rightSidebarRef} className={`sidebar ${store.isRightOpen ? 'open' : ''}`}>
+                        <div id="rightSidebar" ref={rightSidebarRef} className={`sidebar ${st.isRightOpen ? 'open' : ''}`}>
                             <h2 style={{ marginTop: 0 }}>Questions</h2>
                             {questionsMemoBlock}
                             <div className="submit-quiz-container">
@@ -334,36 +424,73 @@ export default function Reading_page() {
     }
 
     // Page 3: Results
-    if (store.step === 3 && store.quizData) {
+    if (st.step === 3 && st.quizData) {
         let score = 0;
-        store.quizData.questions.forEach(q => {
+        st.quizData.questions.forEach(q => {
             if (userAnswersRef.current[q.id] === q.answer) score++;
         });
+        const total = st.quizData.questions.length;
+        const pct = Math.round((score / total) * 100);
+        const passageParagraphs = st.quizData.passage.split('\n\n');
 
         return (
-            <div className="container">
-                <div className="page page3-scroll">
-                    <h1>Analysis & Explanations</h1>
-                    <h2>Your Score: {score} / 5</h2>
+            <div className="container results-container">
+                {/* Results Header */}
+                <div className="results-header">
+                    <div className="results-header-left">
+                        <h1>Analysis & Explanations</h1>
+                        <p className="elapsed-time">
+                            🕐 {formatTime(st.elapsedSeconds).h}h {formatTime(st.elapsedSeconds).m}m {formatTime(st.elapsedSeconds).s}s
+                        </p>
+                    </div>
+                    <div className="results-header-right">
+                        <div className="score-card">
+                            <div className="score-number">{score}<span className="score-total">/{total}</span></div>
+                            <div className="score-pct">{pct}%</div>
+                        </div>
+                        <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className="toggle-passage-btn">
+                            {st.isPassageOpen ? '✕ Hide Passage' : '📖 Show Passage'}
+                        </button>
+                        <button onClick={onReturnHome} className="tool-btn">🏠 Home</button>
+                    </div>
+                </div>
 
-                    {store.quizData.questions.map(q => {
-                        const userAns = userAnswersRef.current[q.id] || 'None';
-                        const isCorrect = userAns === q.answer;
+                {/* Results Body */}
+                <div className="results-layout" id="resultsLayout">
+                    {/* Passage Sidebar */}
+                    <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="passageSidebar">
+                        <h3>Original Passage</h3>
+                        <h4 dangerouslySetInnerHTML={{ __html: formatHighlight(st.quizData.title) }}></h4>
+                        <div className="passage-text">
+                            {passageParagraphs.map((p, idx) => (
+                                <p key={idx} dangerouslySetInnerHTML={{ __html: formatHighlight(p) }}></p>
+                            ))}
+                        </div>
+                    </div>
 
-                        return (
-                            <div key={q.id} className="result-block">
-                                <div className="question-text">{q.id}. {q.question.replace(/\*\*/g, '')}</div>
-                                <p>Your Answer: <strong>{userAns}</strong> | Correct Answer: <strong>{q.answer}</strong></p>
-                                <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                    {isCorrect ? 'Correct' : 'Incorrect'}
-                                </p>
-                                <div className="explanation">
-                                    <strong>解析:</strong> {q.explanation}
+                    {/* Resizer */}
+                    <div className={`resizer ${st.isPassageOpen ? 'active' : ''}`} id="resizerPassage"></div>
+
+                    {/* Analysis Content */}
+                    <div className="results-content">
+                        {st.quizData.questions.map(q => {
+                            const userAns = userAnswersRef.current[q.id] || 'None';
+                            const isCorrect = userAns === q.answer;
+
+                            return (
+                                <div key={q.id} className="result-block">
+                                    <div className="question-text">{q.id}. {q.question.replace(/\*\*/g, '')}</div>
+                                    <p>Your Answer: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | Correct Answer: <strong>{q.answer}</strong></p>
+                                    <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
+                                        {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                                    </p>
+                                    <div className="explanation">
+                                        <strong>解析:</strong> {q.explanation}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                    <button onClick={onReturnHome} style={{ marginTop: '20px', width: '200px' }}>Return to Home</button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         );

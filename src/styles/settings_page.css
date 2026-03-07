@@ -1,0 +1,158 @@
+/* Settings Page */
+.settings-page {
+    min-height: 100vh;
+    background: var(--color-bg, #f9fafb);
+    font-family: 'Inter', 'Outfit', sans-serif;
+}
+
+.settings-container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+}
+
+.settings-header {
+    margin-bottom: 32px;
+}
+
+.settings-header .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 12px 5px 8px;
+    border-radius: 999px;
+    background: rgba(13, 148, 136, 0.07);
+    transition: background 0.2s, color 0.2s;
+    margin-bottom: 18px;
+}
+
+.settings-header .back-link:hover {
+    background: rgba(13, 148, 136, 0.14);
+    color: #0d9488;
+}
+
+.settings-header .back-link span.arrow {
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+.settings-header .back-link:hover span.arrow {
+    transform: translateX(-3px);
+}
+
+
+.settings-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 8px 0 6px;
+}
+
+.settings-header p {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* Card */
+.settings-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+}
+
+/* Row inside a card */
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.settings-label-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.settings-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.settings-desc {
+    font-size: 0.82rem;
+    color: #9ca3af;
+}
+
+/* Language Pills */
+.lang-pills {
+    display: flex;
+    gap: 10px;
+}
+
+.lang-pill {
+    padding: 8px 22px;
+    border-radius: 999px;
+    border: 2px solid #d1d5db;
+    background: transparent;
+    color: #4b5563;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s, color 0.18s;
+}
+
+.lang-pill:hover {
+    border-color: #0d9488;
+    color: #0d9488;
+}
+
+.lang-pill.active {
+    border-color: #0d9488;
+    background: #0d9488;
+    color: #fff;
+}
+
+/* Select Dropdown */
+.settings-control {
+    display: flex;
+    align-items: center;
+}
+
+.settings-select {
+    appearance: none;
+    background-color: #fff;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 36px 8px 16px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    min-width: 200px;
+}
+
+.settings-select:hover {
+    border-color: #9ca3af;
+}
+
+.settings-select:focus {
+    border-color: #0d9488;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+}

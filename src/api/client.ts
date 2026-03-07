@@ -11,18 +11,28 @@ interface RequestOptions {
     body?: unknown;
 }
 
+export interface ApiError extends Error {
+    status: number;
+}
+
 export async function api<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
     const { method = 'GET', body } = options;
+    const provider = localStorage.getItem('ai_provider') || 'deepseek';
 
     const res = await fetch(`${API_BASE}/api${path}`, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-AI-Provider': provider
+        },
         body: body ? JSON.stringify(body) : undefined,
     });
 
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `API Error: ${res.status}`);
+        const data = await res.json().catch(() => ({ error: res.statusText }));
+        const err = new Error(data.error || `API Error: ${res.status}`) as ApiError;
+        err.status = res.status;
+        throw err;
     }
 
     return res.json();

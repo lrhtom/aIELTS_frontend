@@ -1,0 +1,341 @@
+/* ─── 听力练习页样式 ──────────────────────────────────────────────────── */
+
+.listening-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.listening-content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.submit-quiz-container {
+    text-align: center;
+    margin-top: 40px;
+}
+
+/* ─── 工具栏信息徽章 ──────────────────────────────────────────────────── */
+
+.toolbar-info-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.toolbar-badge.mode-badge {
+    background: rgba(13, 148, 136, 0.1);
+    color: #0d9488;
+    border: 1px solid rgba(13, 148, 136, 0.2);
+}
+
+.toolbar-badge.limit-badge {
+    background: rgba(99, 102, 241, 0.08);
+    color: #6366f1;
+    border: 1px solid rgba(99, 102, 241, 0.18);
+}
+
+/* 句子模式 */
+.inline-q-block {
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    font-size: 16px;
+    line-height: 2.2;
+}
+
+.q-number {
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-right: 8px;
+}
+
+/* 文章模式 */
+.listening-article-inline {
+    background: white;
+    padding: 30px 40px;
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    font-size: 15.5px;
+    color: #334155;
+}
+
+.listening-article-inline h2 {
+    margin-bottom: 24px;
+    color: #0f172a;
+    font-size: 22px;
+}
+
+.listening-article-inline p {
+    margin-bottom: 20px;
+}
+
+/* 内联输入框样式 */
+.inline-answer-input {
+    display: inline-block;
+    width: 120px;
+    margin: 0 6px;
+    padding: 2px 8px;
+    font-size: 15px;
+    font-family: var(--font);
+    font-weight: 600;
+    text-align: center;
+    color: var(--color-text);
+    background: rgba(13, 148, 136, 0.05);
+    border: none;
+    border-bottom: 2px solid var(--color-primary);
+    border-radius: 4px 4px 0 0;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.inline-answer-input:focus {
+    background: rgba(13, 148, 136, 0.1);
+    box-shadow: 0 2px 0 0 var(--color-primary);
+}
+
+/* ─── 结果页 ──────────────────────────────────────────────────────────── */
+
+.result-passage {
+    background: #f9fafb;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    line-height: 1.8;
+}
+
+.result-passage h3 {
+    margin-bottom: 12px;
+}
+
+.result-vocab-list {
+    margin: 20px 0;
+}
+
+.vocab-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.vocab-chip {
+    display: inline-block;
+    padding: 6px 14px;
+    background: rgba(13, 148, 136, 0.08);
+    border-radius: 20px;
+    font-size: 14px;
+    color: var(--color-text);
+}
+
+.vocab-chip strong {
+    color: var(--color-primary);
+}
+
+/* ─── 词数区间选择器 ──────────────────────────────────────────────────── */
+
+/* ─── 词数双滑块 (两行) ───────────────────────────────────────────────── */
+
+.wc-dual-sliders {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.wc-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.wc-slider-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    width: 28px;
+    flex-shrink: 0;
+    text-align: right;
+}
+
+.wc-slider-track-wrap {
+    flex: 1;
+    position: relative;
+    padding-bottom: 18px;
+}
+
+/* Styled range = green fill from 0 to thumb via linear-gradient */
+.wc-single-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    outline: none;
+    cursor: pointer;
+    background: linear-gradient(to right,
+            #0d9488 0%,
+            #0d9488 var(--pct),
+            #e5e7eb var(--pct),
+            #e5e7eb 100%);
+    transition: background 0.15s;
+}
+
+.wc-single-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #0d9488;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.wc-single-range::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 6px rgba(13, 148, 136, 0.12);
+}
+
+.wc-single-range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #0d9488;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+    cursor: pointer;
+}
+
+.wc-ticks {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 2px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.wc-tick {
+    font-size: 11px;
+    color: #c4c9d4;
+    font-weight: 500;
+    text-align: center;
+    flex: 1;
+    transition: color 0.15s;
+}
+
+.wc-tick.active {
+    color: #0d9488;
+    font-weight: 700;
+}
+
+.wc-val-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #0d9488;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.wc-hint {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+}
+
+
+.disabled-btn {
+    opacity: 0.35;
+    cursor: not-allowed !important;
+}
+
+
+/* ─── 练习类型选择卡片 ────────────────────────────────────────────────── */
+
+.practice-type-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.practice-type-card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.practice-type-card:hover {
+    border-color: rgba(13, 148, 136, 0.4);
+    background: rgba(13, 148, 136, 0.02);
+    transform: translateY(-2px);
+}
+
+.practice-type-card.selected {
+    border-color: var(--color-primary);
+    background: rgba(13, 148, 136, 0.04);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.1);
+}
+
+.pt-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+.pt-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 6px;
+}
+
+.pt-desc {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+    .practice-type-cards {
+        grid-template-columns: 1fr;
+    }
+}
