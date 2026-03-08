@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 type AIProvider = 'deepseek' | 'gemini' | 'doubao' | 'qwen';
 
@@ -9,12 +9,10 @@ interface AiModelSelectorProps {
 }
 
 export default function AiModelSelector({ onModelChange, label = "AI 模型", description = "选择后台出题和批改所使用的引擎" }: AiModelSelectorProps) {
-    const [provider, setProvider] = useState<AIProvider>('deepseek');
-
-    useEffect(() => {
-        const saved = localStorage.getItem('ai_provider') as AIProvider;
-        if (saved) setProvider(saved);
-    }, []);
+    const [provider, setProvider] = useState<AIProvider>(() => {
+        const saved = localStorage.getItem('ai_provider');
+        return (saved as AIProvider) || 'openai';
+    });
 
     const handleProviderChange = (p: AIProvider) => {
         setProvider(p);

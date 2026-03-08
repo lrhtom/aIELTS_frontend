@@ -10,16 +10,16 @@
  * 状态机:
  *  idle       → 可以点击录音
  *  listening  → 正在录音（SpeechRecognition 运行中）
- *  processing → AI 思考 + 生成 TTS（禁用按钮，显示 Thinking 气泡）
  *  speaking   → 播放 AI 语音（禁用按钮）
  *  loading    → 进入页面时欢迎语加载（禁用按钮）
  */
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import RecordRTC, { StereoAudioRecorder } from 'recordrtc';
-import { api } from '../api/client';
 import { speakingStore } from '../store/speaking_page_store';
 import AiModelSelector from '../components/AiModelSelector';
+import { ATInterceptor } from '../api/atInterceptor';
+import { showToast } from '../components/Toast';
 import '../styles/speaking_chat.css';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ function parseWords(raw: string): Word[] {
         .map(l => l.trim())
         .filter(l => l)
         .map(l => {
-            const m = l.match(/^([a-zA-Z\s\-]+)(.*)$/);
+            const m = l.match(/^([a-zA-Z\s-]+)(.*)$/);
             if (!m) return null;
             return { en: m[1].trim(), zh: m[2].trim(), count: 0 };
         })
@@ -76,8 +76,8 @@ function highlightWords(text: string, words: Word[]): string {
 }
 
 // SpeechRecognition cross-browser factory (avoids TypeScript global type issues)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getSRConstructor = (): any =>
+const getSRConstructor = (): unknown =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
 
 export default function SpeakingChatPage() {
@@ -170,28 +170,20 @@ Rules:
 4. No markdown symbols.
 5. Encourage the user to use the target words.`;
 
-        const welcome = wordsRef.current.length > 0
-            ? `Hello! Today's vocabulary: ${wordsRef.current.slice(0, 3).map(w => w.en).join(', ')}${wordsRef.current.length > 3 ? ', and more' : ''}. When you're ready, press the button and start speaking!`
-            : `Hello! I'm your IELTS speaking partner. Press the button when you're ready to begin.`;
-
         contextRef.current = [{ role: 'system', content: systemPrompt }];
 
         let isUnmounted = false;
 
         (async () => {
-            const url = await prepareTTSAudio(welcome);
-            if (isUnmounted) return;
-            setChatHistory([{ role: 'assistant', content: welcome }]);
-            playTTSAudio(url, welcome, () => {
-                if (!isUnmounted) setStatusSync('idle');
-            });
+            // TTS removed for stub
+            if (!isUnmounted) setStatusSync('idle');
         })();
 
         return () => {
             isUnmounted = true;
             stopAudio();
             if (srRef.current) {
-                try { srRef.current.abort(); } catch (_) { /* ignore */ }
+                try { srRef.current.abort(); } catch { /* ignore */ }
             }
             if (recorderRef.current) {
                 recorderRef.current.destroy();
@@ -201,7 +193,7 @@ Rules:
             if (recTimerRef.current) clearInterval(recTimerRef.current);
             if (ttsTimerRef.current) clearTimeout(ttsTimerRef.current);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
     }, []);
 
     useEffect(() => {
@@ -283,7 +275,8 @@ Rules:
             liveTranscriptRef.current = '';
 
             // Setup Frontend SR
-            const SR = getSRConstructor();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const SR = getSRConstructor() as any;
             if (!SR) {
                 setRecError('浏览器不支持语音识别，请使用 Chrome 浏览器或 Edge');
                 setStatusSync('idle');
@@ -297,6 +290,7 @@ Rules:
 
             let accumulatedFinal = '';
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             sr.onresult = (e: any) => {
                 let interim = '';
                 for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -349,6 +343,7 @@ Rules:
                 }
             };
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             sr.onerror = (e: any) => {
                 console.log('sr.onerror', e);
                 if (e.error === 'aborted') return;
@@ -402,7 +397,7 @@ Rules:
                 };
 
                 sr.start();
-            } catch (err) {
+            } catch {
                 setRecError('麦克风权限被拒绝或无法启动，请检查浏览器设置');
                 setStatusSync('idle');
             }
@@ -411,7 +406,7 @@ Rules:
             // Stop manually
             setStatusSync('processing');
             // This implicitly calls sr.onend
-            try { srRef.current?.stop(); } catch (_) { /* ignore */ }
+            try { srRef.current?.stop(); } catch { /* ignore */ }
         }
     };
 
@@ -437,66 +432,53 @@ Rules:
         }
 
         try {
-            const chatPromise = api<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number }>('/speaking/chat', {
-                method: 'POST',
-                body: { messages },
-            });
+            const chatPromise = ATInterceptor.speakingChat(
+                messages as unknown as Array<Record<string, unknown>>,
+                { conversationLength: 1 } // 每回合消耗
+            );
             const uploadPromise = audioBlob ? uploadRecording(audioBlob, text) : Promise.resolve(null);
 
-            const [chatRes, azureScores] = await Promise.all([chatPromise, uploadPromise]);
+            const [chatResponse] = await Promise.all([chatPromise, uploadPromise]);
 
-            // Prepare TTS first (so audio is ready when bubble appears)
-            const audioUrl = await prepareTTSAudio(chatRes.reply);
-
-            const combinedScores = {
-                grammar: chatRes.grammar_score,
-                vocab: chatRes.vocab_score,
-                relevance: chatRes.relevance_score,
-                ...(azureScores || {})
-            };
+            const chatRes = chatResponse.data;
 
             const aiMsg: ChatMessage = {
                 role: 'assistant',
                 content: chatRes.reply,
-                scores: combinedScores
+                scores: {
+                    grammar: chatRes.grammar_score,
+                    vocab: chatRes.vocab_score,
+                    relevance: chatRes.relevance_score,
+                }
             };
             setChatHistory(h => [...h, aiMsg]);
             contextRef.current = [...contextRef.current, userMsg, { role: 'assistant', content: chatRes.reply }];
             setWordsSync(prev => prev.map(w => ({ ...w, count: w.count + countMatches(chatRes.reply, w.en) })));
 
-            // Play audio → on finish → idle
-            playTTSAudio(audioUrl, chatRes.reply, () => {
+            // Play audio stub
+            setTimeout(() => {
                 pendingRef.current = false;
                 setStatusSync('idle');
-            });
+            }, 100);
 
-        } catch {
+        } catch (error: unknown) {
             pendingRef.current = false;
-            setChatHistory(h => [...h, { role: 'system', content: '⚠️ AI 连接失败，请检查网络后重试' }]);
+
+            // 区分AT币不足错误和一般网络错误
+            if (typeof error === 'object' && error !== null && ('name' in error && (error as { name: string }).name === 'ATBalanceError' || 'message' in error && (error as { message: string }).message === 'AT币余额不足')) {
+                showToast((error as { message: string }).message, 'error', 'AT币不足');
+                setChatHistory(h => [...h, { role: 'system', content: '⚠️ AT币余额不足，请充值或联系管理员' }]);
+            } else {
+                setChatHistory(h => [...h, { role: 'system', content: '⚠️ AI 连接失败，请检查网络后重试' }]);
+            }
             setStatusSync('idle');
         }
     };
 
-    // ── TTS: prepare audio (server-side edge-tts) ─────────────────────────
-    const prepareTTSAudio = async (text: string): Promise<string | null> => {
-        const clean = text.replace(/<[^>]*>/g, '').replace(/[*#`_]/g, '');
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: clean }),
-            });
-            if (!res.ok) throw new Error('TTS failed');
-            const blob = await res.blob();
-            return URL.createObjectURL(blob);
-        } catch {
-            return null;
-        }
-    };
-
-    // ── TTS: play ─────────────────────────────────────────────────────────
+    // ── TTS: remove functionality ─────────────────────────
     const stopAudio = () => {
-        if (ttsTimerRef.current) clearTimeout(ttsTimerRef.current);
+        const timer = ttsTimerRef.current;
+        if (timer) clearTimeout(timer);
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current.onended = null;
@@ -504,36 +486,6 @@ Rules:
             audioRef.current = null;
         }
         window.speechSynthesis?.cancel();
-    };
-
-    const playTTSAudio = (url: string | null, text: string, onDone: () => void) => {
-        setStatusSync('speaking');
-        stopAudio();
-        const clean = text.replace(/<[^>]*>/g, '').replace(/[*#`_]/g, '');
-
-        // Safety timer: resume after 45s even if audio never ends
-        const safety = setTimeout(onDone, 45_000);
-        ttsTimerRef.current = safety;
-        const done = () => { clearTimeout(safety); onDone(); };
-
-        if (url) {
-            const audio = new Audio(url);
-            audioRef.current = audio;
-            audio.onended = () => { URL.revokeObjectURL(url); done(); };
-            audio.onerror = () => { URL.revokeObjectURL(url); done(); };
-            audio.play().catch(done);
-        } else {
-            // Fallback: browser TTS
-            try {
-                const utter = new SpeechSynthesisUtterance(clean);
-                utter.lang = 'en-US';
-                utter.rate = 1.1;
-                utter.onend = done;
-                utter.onerror = done;
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(utter);
-            } catch { done(); }
-        }
     };
 
     // ── UI helpers ─────────────────────────────────────────────────────────
@@ -601,61 +553,44 @@ Rules:
                                 )}
                             </div>
 
-                            {msg.scores && (() => {
-                                const validScores = [
-                                    msg.scores.accuracy,
-                                    msg.scores.pronunciation,
-                                    msg.scores.fluency,
-                                    msg.scores.completeness,
-                                    msg.scores.grammar,
-                                    msg.scores.vocab,
-                                    msg.scores.relevance
-                                ].filter(s => typeof s === 'number') as number[];
-
-                                const avgScore = validScores.length > 0
-                                    ? Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length)
-                                    : null;
-
-                                return (
-                                    <details className="sc-score-panel">
-                                        <summary>
-                                            🌟 查看本轮口语多维评分详情
-                                            {avgScore !== null && <span style={{ marginLeft: '10px', color: '#16a34a', fontWeight: 'bold' }}>🏆 综合得分: {avgScore} / 100</span>}
-                                        </summary>
-                                        <div className="sc-score-details">
-                                            <div className="sc-score-item">
-                                                <span className="sc-score-label">🎯 准确度 (Accuracy):</span>
-                                                <span className="sc-score-value">{msg.scores.accuracy ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
-                                            </div>
-                                            <div className="sc-score-item">
-                                                <span className="sc-score-label">👄 发音 (Pronunciation):</span>
-                                                <span className="sc-score-value">{msg.scores.pronunciation ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
-                                            </div>
-                                            <div className="sc-score-item">
-                                                <span className="sc-score-label">🌊 流利度 (Fluency):</span>
-                                                <span className="sc-score-value">{msg.scores.fluency ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
-                                            </div>
-                                            <div className="sc-score-item">
-                                                <span className="sc-score-label">🧩 完整度 (Completeness):</span>
-                                                <span className="sc-score-value">{msg.scores.completeness ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
-                                            </div>
-                                            <div className="sc-score-divider" />
-                                            <div className="sc-score-item">
-                                                <span className="sc-score-label">📝 语法得分 (Grammar):</span>
-                                                <span className="sc-score-value">{msg.scores.grammar ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
-                                            </div>
-                                            <div className="sc-score-item">
-                                                <span className="sc-score-label">🎓 切题度 (Relevance):</span>
-                                                <span className="sc-score-value">{msg.scores.relevance ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
-                                            </div>
-                                            <div className="sc-score-item">
-                                                <span className="sc-score-label">📚 词汇运用 (Vocabulary):</span>
-                                                <span className="sc-score-value">{msg.scores.vocab ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
-                                            </div>
+                            {msg.scores && (
+                                <details className="sc-score-panel">
+                                    <summary>
+                                        🌟 查看本轮口语多维评分详情
+                                    </summary>
+                                    <div className="sc-score-details">
+                                        <div className="sc-score-item">
+                                            <span className="sc-score-label">🎯 准确度 (Accuracy):</span>
+                                            <span className="sc-score-value">{msg.scores.accuracy ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
                                         </div>
-                                    </details>
-                                );
-                            })()}
+                                        <div className="sc-score-item">
+                                            <span className="sc-score-label">👄 发音 (Pronunciation):</span>
+                                            <span className="sc-score-value">{msg.scores.pronunciation ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                        </div>
+                                        <div className="sc-score-item">
+                                            <span className="sc-score-label">🌊 流利度 (Fluency):</span>
+                                            <span className="sc-score-value">{msg.scores.fluency ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                        </div>
+                                        <div className="sc-score-item">
+                                            <span className="sc-score-label">🧩 完整度 (Completeness):</span>
+                                            <span className="sc-score-value">{msg.scores.completeness ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                        </div>
+                                        <div className="sc-score-divider" />
+                                        <div className="sc-score-item">
+                                            <span className="sc-score-label">📝 语法得分 (Grammar):</span>
+                                            <span className="sc-score-value">{msg.scores.grammar ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                        </div>
+                                        <div className="sc-score-item">
+                                            <span className="sc-score-label">🎓 切题度 (Relevance):</span>
+                                            <span className="sc-score-value">{msg.scores.relevance ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                        </div>
+                                        <div className="sc-score-item">
+                                            <span className="sc-score-label">📚 词汇运用 (Vocabulary):</span>
+                                            <span className="sc-score-value">{msg.scores.vocab ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                        </div>
+                                    </div>
+                                </details>
+                            )}
                         </div>
                     ))}
 

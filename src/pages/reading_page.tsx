@@ -34,7 +34,7 @@ export default function Reading_page() {
         setSt(createReadingState());
         generateReading();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [set]); // Added 'set' to dependencies
 
     const formatHighlight = (text: string): string => {
         if (!text) return '';
@@ -77,9 +77,10 @@ export default function Reading_page() {
                 btnEl.classList.remove('active');
             }
 
-        } catch (error: any) {
-            console.error("API Error:", error);
-            const code = error.status ?? (error instanceof TypeError ? 'NET' : undefined);
+        } catch (err: unknown) { // Changed 'any' to 'unknown'
+            console.error("API Error:", err);
+            const error = err as { message?: string, status?: number }; // Cast to a type that might have message and status
+            const code = error.status ?? (err instanceof TypeError ? 'NET' : undefined);
             showToast(error.message || '请求失败', 'error', code);
             onReturnHome();
         } finally {
@@ -169,7 +170,8 @@ export default function Reading_page() {
 
         const handleMouseUp = () => {
             if (isResizingLeft || isResizingRight) {
-                (window as any).__didDragSidebar = true;
+                // @ts-expect-error window globals
+                window.__didDragSidebar = true;
                 // 拖动结束后禁用 transition 防止跳动
                 if (isResizingLeft && leftSidebarRef.current) leftSidebarRef.current.classList.add('no-transition');
                 if (isResizingRight && rightSidebarRef.current) rightSidebarRef.current.classList.add('no-transition');
@@ -177,7 +179,8 @@ export default function Reading_page() {
                 if (layoutRef.current) layoutRef.current.classList.remove('is-resizing');
                 if (resizerL) resizerL.classList.remove('resizing');
                 if (resizerR) resizerR.classList.remove('resizing');
-                setTimeout(() => { (window as any).__didDragSidebar = false; }, 200);
+                // @ts-expect-error window globals
+                setTimeout(() => { window.__didDragSidebar = false; }, 200);
             }
         };
 

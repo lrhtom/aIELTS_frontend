@@ -1,20 +1,22 @@
 import { apiClient } from './client';
 
 export interface User {
-    id: number;
-    username: string;
+    id: string;
     email: string;
-    nickname: string;
-    avatar_url: string;
-    target_score: string | null;
-    current_score: string | null;
-    exam_date: string | null;
-    membership_tier: string;
-    vip_expires_at: string | null;
-    daily_ai_quota: number;
-    is_email_verified: boolean;
-    last_login: string | null;
-    date_joined: string;
+    username: string;
+    nickname?: string;
+    avatar_url?: string;
+    target_score?: string | null;
+    current_score?: string | null;
+    exam_date?: string | null;
+    membership_tier?: string;
+    vip_expires_at?: string | null;
+    daily_ai_quota?: number;
+    is_email_verified?: boolean;
+    last_login?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    atBalance: number;
 }
 
 export interface AuthResponse {
@@ -52,5 +54,9 @@ export const authApi = {
     getProfile: async (): Promise<User> => {
         const response = await apiClient.get('/auth/profile');
         return response.data.user;
+    },
+
+    deleteAccount: async (): Promise<void> => {
+        await apiClient.delete('/auth/delete-account');
     },
 };

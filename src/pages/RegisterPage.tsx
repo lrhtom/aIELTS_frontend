@@ -66,6 +66,14 @@ export default function RegisterPage() {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
+                    <div className="auth-header-top">
+                        <button
+                            className="auth-back-btn"
+                            onClick={() => navigate('/')}
+                        >
+                            ← 返回主页
+                        </button>
+                    </div>
                     <h2>创建新账号</h2>
                     <p>加入 aIELTS，全方位提升您的雅思能力</p>
                 </div>

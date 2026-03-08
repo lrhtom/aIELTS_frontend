@@ -39,8 +39,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             localStorage.removeItem('refresh_token');
         };
 
+        const handleATConsumed = (event: Event) => {
+            const customEvent = event as CustomEvent<{ consumed: number; description?: string }>;
+            // 更新用户AT币余额
+            const detail = customEvent.detail;
+            if (user && detail.consumed) {
+                const updatedUser = {
+                    ...user,
+                    atBalance: (user.atBalance || 0) - detail.consumed
+                };
+                setUser(updatedUser);
+                console.log(`AT币消耗更新: ${detail.consumed} AT, 新余额: ${updatedUser.atBalance} AT`);
+            }
+        };
+
         window.addEventListener('auth:logout', handleLogout);
-        return () => window.removeEventListener('auth:logout', handleLogout);
+        window.addEventListener('at-consumed', handleATConsumed);
+        return () => {
+            window.removeEventListener('auth:logout', handleLogout);
+            window.removeEventListener('at-consumed', handleATConsumed);
+        };
     }, []);
 
     const login = (tokens: { access: string; refresh: string }, userData: User) => {
@@ -66,6 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {

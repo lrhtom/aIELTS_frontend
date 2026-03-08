@@ -74,8 +74,9 @@ export default function PromptPage() {
             } else {
                 setCurrentPage(1);
             }
-        } catch (error: any) {
-            showToast(error.message || '发布失败', 'error');
+        } catch (err: unknown) {
+            console.error('Save prompt error:', err);
+            showToast((err as Error).message || '保存失败', 'error', '错误');
         } finally {
             setIsSubmitting(false);
         }

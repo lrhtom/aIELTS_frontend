@@ -15,13 +15,16 @@ import SettingsPage from './settings_page';
 import PromptPage from './prompt_page';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
+import ProfilePage from './profile_page';
 import ToastContainer from '../components/Toast';
 import ChromeOnlyGuard from '../components/ChromeOnlyGuard';
+import ATBalanceMonitor from '../components/ATBalanceMonitor';
 
 export default function App() {
   return (
     <ChromeOnlyGuard>
       <ToastContainer />
+      <ATBalanceMonitor />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -38,6 +41,7 @@ export default function App() {
         <Route path="/speaking/chat" element={<ProtectedRoute><SpeakingChatPage /></ProtectedRoute>} />
         <Route path="/writing" element={<ProtectedRoute><Writing_page /></ProtectedRoute>} />
         <Route path="/writing/correction" element={<ProtectedRoute><WritingCorrectionPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/prompts" element={<ProtectedRoute><PromptPage /></ProtectedRoute>} />
 

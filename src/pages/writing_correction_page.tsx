@@ -1,8 +1,6 @@
 import AppNavbar from '../components/AppNavbar';
 import { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useLang } from '../i18n/LanguageContext';
-import { translations } from '../i18n/translations';
+import { useNavigate } from 'react-router-dom';
 import AiModelSelector from '../components/AiModelSelector';
 import { showToast } from '../components/Toast';
 import { api } from '../api/client';
@@ -20,8 +18,6 @@ interface CorrectionResponse {
 
 export default function WritingCorrectionPage() {
     const navigate = useNavigate();
-    const { lang } = useLang();
-    const t = translations[lang];
 
     const [text, setText] = useState('');
     const [isEvaluating, setIsEvaluating] = useState(false);
@@ -50,9 +46,10 @@ export default function WritingCorrectionPage() {
             });
             setResult(res);
             showToast('Evaluation complete!', 'success');
-        } catch (err: any) {
-            console.error(err);
-            showToast('Evaluation failed. Please check network or try again.', 'error');
+        } catch (err: unknown) {
+            console.error('Submit writing correction error:', err);
+            const error = err as { message?: string, title?: string };
+            showToast(error.message || '提交失败', 'error', error.title || '错误');
         } finally {
             setIsEvaluating(false);
         }
@@ -93,7 +90,7 @@ export default function WritingCorrectionPage() {
                         ></textarea>
                         <div className="wc-editor-footer">
                             <button
-                                className={`skill-btn reading wc-eval-btn ${isEvaluating ? 'loading' : ''}`}
+                                className={`skill - btn reading wc - eval - btn ${isEvaluating ? 'loading' : ''} `}
                                 onClick={handleEvaluate}
                                 disabled={isEvaluating}
                             >

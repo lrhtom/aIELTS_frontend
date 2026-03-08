@@ -1,0 +1,80 @@
+/* AT币余额检查组件样式 */
+.at-balance-warning {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 20px auto;
+    max-width: 400px;
+    box-shadow: var(--shadow-md);
+}
+
+.warning-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    color: var(--color-text);
+    font-size: 18px;
+}
+
+.warning-icon {
+    margin-right: 12px;
+    font-size: 24px;
+}
+
+.warning-title {
+    font-weight: 600;
+}
+
+.warning-content {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.warning-content p {
+    margin-bottom: 8px;
+}
+
+.warning-content strong {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.warning-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.warning-actions button {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.warning-actions .primary-button {
+    background: var(--color-primary);
+    color: white;
+    border: none;
+}
+
+.warning-actions .primary-button:hover {
+    background: var(--color-primary-hover);
+}
+
+.warning-actions .secondary-button {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.warning-actions .secondary-button:hover {
+    background: var(--color-surface);
+    border-color: var(--color-accent-teal);
+    color: var(--color-accent-teal);
+}

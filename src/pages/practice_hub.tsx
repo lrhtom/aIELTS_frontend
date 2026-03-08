@@ -7,7 +7,6 @@ import '../styles/practice_hub.css';
 export default function PracticeHub() {
     const { lang } = useLang();
     const t = translations[lang].practiceHub;
-    const nav = translations[lang].nav;
 
     return (
         <div className="practice-hub">

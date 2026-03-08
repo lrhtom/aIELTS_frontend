@@ -1,13 +1,11 @@
 import AppNavbar from '../components/AppNavbar';
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang } from '../i18n/LanguageContext';
 import { translations } from '../i18n/translations';
-import AiModelSelector from '../components/AiModelSelector';
 import '../styles/settings_page.css';
 
 export default function SettingsPage() {
-    const { lang, setLang } = useLang();
+    const { lang } = useLang();
     const t = translations[lang];
 
     return (
@@ -17,40 +15,16 @@ export default function SettingsPage() {
             <div className="settings-container">
                 <div className="settings-header">
                     <Link to="/" className="back-link"><span className="arrow">←</span> {t.nav.home}</Link>
-                    <h1>{t.settings.heading}</h1>
-                    <p>{t.settings.subheading}</p>
+                    <h1>{t.profile.heading}</h1>
+                    <p>{t.profile.subheading}</p>
                 </div>
 
                 <div className="settings-card">
-                    <div className="settings-row">
-                        <div className="settings-label-group">
-                            <div className="settings-label">{t.settings.language.label}</div>
-                            <div className="settings-desc">{t.settings.language.desc}</div>
-                        </div>
-                        <div className="lang-pills">
-                            <button
-                                className={`lang-pill${lang === 'zh' ? ' active' : ''}`}
-                                onClick={() => setLang('zh')}
-                            >
-                                中文
-                            </button>
-                            <button
-                                className={`lang-pill${lang === 'en' ? ' active' : ''}`}
-                                onClick={() => setLang('en')}
-                            >
-                                English
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="settings-row">
-                        <div className="settings-label-group">
-                            <div className="settings-label">{t.settings.model.label}</div>
-                            <div className="settings-desc">{t.settings.model.desc}</div>
-                        </div>
-                        <div className="settings-control">
-                            <AiModelSelector label="" description="" />
-                        </div>
+                    <div className="profile-message">
+                        <p>{lang === 'zh' ? '设置功能已迁移到个人主页。请点击下方按钮访问个人主页。' : 'Settings have been moved to Profile page. Please click the button below to access your Profile.'}</p>
+                        <Link to="/profile" className="profile-button">
+                            {lang === 'zh' ? '前往个人主页' : 'Go to Profile'}
+                        </Link>
                     </div>
                 </div>
             </div>

@@ -20,6 +20,7 @@ let addToastFn: ((message: string, type: ToastType, code?: string | number) => v
  *   showToast('请求异常', 'error', 400);              // 红色卡片，显示 "400：请求异常"
  *   showToast('网络异常，请重试', 'error');             // 红色卡片，显示 "异常：网络异常，请重试"
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function showToast(message: string, type: ToastType = 'error', code?: string | number) {
     if (addToastFn) {
         addToastFn(message, type, code);

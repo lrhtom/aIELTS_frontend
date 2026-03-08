@@ -42,6 +42,48 @@ apiClient.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
+// AT币消耗拦截器
+apiClient.interceptors.response.use(
+    (response) => {
+        // 检查响应是否包含AT币消耗信息
+        if (response.data && response.data.atConsumed) {
+            console.log(`AT币消耗: ${response.data.atConsumed} AT`, response.data.description || 'AI服务调用');
+
+            // 更新本地AT币余额
+            window.dispatchEvent(new CustomEvent('at-consumed', {
+                detail: {
+                    consumed: response.data.atConsumed,
+                    description: response.data.description || 'AI服务调用'
+                }
+            }));
+        }
+        return response;
+    },
+    async (error) => {
+        // 处理AT币不足的错误
+        if (error.response?.status === 402) { // Payment Required
+            const errorMessage = error.response?.data?.message || 'AT币余额不足';
+            console.error('AT币余额不足:', errorMessage);
+
+            // 显示Toast通知给用户
+            window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
+                detail: {
+                    message: errorMessage,
+                    requiredBalance: error.response?.data?.requiredBalance,
+                    currentBalance: error.response?.data?.currentBalance
+                }
+            }));
+
+            // 阻止错误传播，返回一个特殊的错误
+            const atError = new Error(errorMessage);
+            atError.name = 'ATBalanceError';
+            return Promise.reject(atError);
+        }
+
+        return Promise.reject(error);
+    }
+);
+
 apiClient.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {

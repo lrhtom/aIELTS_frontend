@@ -1,0 +1,231 @@
+/* 头像上传组件样式 */
+.avatar-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar-container {
+    position: relative;
+    cursor: pointer;
+    border-radius: 50%;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.avatar-container:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-container.uploading {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.avatar-container.disabled {
+    cursor: default;
+}
+
+.avatar-container.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* 尺寸控制 */
+.avatar-upload-small .avatar-container {
+    width: 80px;
+    height: 80px;
+}
+
+.avatar-upload-medium .avatar-container {
+    width: 120px;
+    height: 120px;
+}
+
+.avatar-upload-large .avatar-container {
+    width: 160px;
+    height: 160px;
+}
+
+.avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-accent-teal), #14b8a6);
+    color: white;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-placeholder::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: inherit;
+    filter: blur(4px);
+    opacity: 0.7;
+}
+
+.avatar-placeholder span {
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.avatar-upload-small .avatar-placeholder span {
+    font-size: 24px;
+}
+
+.avatar-upload-medium .avatar-placeholder span {
+    font-size: 36px;
+}
+
+.avatar-upload-large .avatar-placeholder span {
+    font-size: 48px;
+}
+
+.avatar-upload-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    gap: 8px;
+    transition: opacity 0.3s ease;
+}
+
+.avatar-upload-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: avatar-spin 1s linear infinite;
+}
+
+@keyframes avatar-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.avatar-file-input {
+    display: none;
+}
+
+.avatar-delete-btn {
+    padding: 6px 16px;
+    background: transparent;
+    color: var(--color-accent-rose);
+    border: 1px solid var(--color-accent-rose);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.avatar-delete-btn:hover:not(:disabled) {
+    background: rgba(225, 29, 72, 0.1);
+}
+
+.avatar-delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.avatar-upload-hint {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    max-width: 200px;
+    line-height: 1.4;
+}
+
+/* 导航栏中的头像上传样式 */
+.navbar-avatar-container {
+    position: relative;
+    display: inline-block;
+}
+
+.navbar-avatar-upload {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    min-width: 200px;
+}
+
+.navbar-avatar-container:hover .navbar-avatar-upload {
+    display: block;
+    animation: avatar-slide-down 0.2s ease;
+}
+
+@keyframes avatar-slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.navbar-avatar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.navbar-avatar-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.navbar-avatar-menu-item:hover {
+    background: rgba(13, 148, 136, 0.1);
+    color: var(--color-accent-teal);
+}
+
+.navbar-avatar-menu-item.delete:hover {
+    background: rgba(225, 29, 72, 0.1);
+    color: var(--color-accent-rose);
+}

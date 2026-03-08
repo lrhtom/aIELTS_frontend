@@ -1,7 +1,6 @@
 import AppNavbar from '../components/AppNavbar';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getInitialVocabInput } from '../store/word_selection_store';
 import { showToast } from '../components/Toast';
 import { useLang } from '../i18n/LanguageContext';
 import { translations } from '../i18n/translations';
@@ -13,18 +12,12 @@ const DIFFICULTIES = ['6.0', '6.5', '7.0', '7.5', '8.0', '8.5'];
 
 export default function WordSelection_page() {
     const navigate = useNavigate();
-    const [vocabInput, setVocabInput] = useState(() => getInitialVocabInput());
+    const [vocabInput, setVocabInput] = useState(() => localStorage.getItem('ielts_target_vocab') || '');
     const [useCustomVocab, setUseCustomVocab] = useState(true);
     const [difficulty, setDifficulty] = useState('7.0');
 
     const { lang } = useLang();
     const t = translations[lang].readingConfig;
-    const nav = translations[lang].nav;
-
-    useEffect(() => {
-        const saved = localStorage.getItem('ielts_target_vocab');
-        if (saved) setVocabInput(saved);
-    }, []);
 
     const handleVocabChange = (val: string) => {
         setVocabInput(val);

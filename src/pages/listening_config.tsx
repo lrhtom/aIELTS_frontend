@@ -23,7 +23,6 @@ export default function ListeningConfig() {
 
     const { lang } = useLang();
     const t = translations[lang].listeningConfig;
-    const nav = translations[lang].nav;
 
     const handleVocabChange = (val: string) => {
         setVocabInput(val);

@@ -1,3 +1,4 @@
+// @ts-expect-error no types available
 import { pipeline, env } from '@xenova/transformers';
 
 // 允许跨域加载本地或HF模型
@@ -5,7 +6,8 @@ env.allowLocalModels = false;
 env.useBrowserCache = true;
 
 // Define a variable to hold the audio transcription pipeline
-let transcriber = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let transcriber: any = null;
 
 // Listen for messages from the main thread
 self.addEventListener('message', async (event) => {
@@ -19,8 +21,8 @@ self.addEventListener('message', async (event) => {
 
             // Send ready signal
             self.postMessage({ status: 'ready' });
-        } catch (err) {
-            self.postMessage({ status: 'error', error: err.message });
+        } catch (err: unknown) {
+            self.postMessage({ status: 'error', error: (err as Error).message });
         }
     }
     else if (type === 'transcribe') {
@@ -41,8 +43,8 @@ self.addEventListener('message', async (event) => {
                 text: output.text.trim()
             });
 
-        } catch (err) {
-            self.postMessage({ status: 'error', error: err.message });
+        } catch (err: unknown) {
+            self.postMessage({ status: 'error', error: (err as Error).message });
         }
     }
 });

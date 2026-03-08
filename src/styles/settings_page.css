@@ -129,6 +129,33 @@
     align-items: center;
 }
 
+.profile-message {
+    text-align: center;
+    padding: 40px;
+}
+
+.profile-message p {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 30px;
+}
+
+.profile-button {
+    display: inline-block;
+    padding: 16px 32px;
+    background: #667eea;
+    color: white;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background 0.3s;
+    text-decoration: none;
+}
+
+.profile-button:hover {
+    background: #764ba2;
+}
+
 .settings-select {
     appearance: none;
     background-color: #fff;

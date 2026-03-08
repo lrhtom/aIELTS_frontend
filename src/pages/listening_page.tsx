@@ -154,10 +154,10 @@ export default function ListeningPage() {
             if (practiceType === 'article') {
                 set('isRightOpen', true);
             }
-        } catch (error: any) {
-            console.error("API Error:", error);
-            const code = error.status ?? (error instanceof TypeError ? 'NET' : undefined);
-            showToast(error.message || '请求失败', 'error', code);
+        } catch (err: unknown) {
+            console.error("API Error:", err);
+            const error = err as { message?: string, status?: number };
+            showToast(error.message || '请求失败', 'error', error.status);
             onReturnHome();
         } finally {
             set('isLoading', false);
@@ -189,8 +189,8 @@ export default function ListeningPage() {
             // 从头开始播放
             audioRef.current.currentTime = 0;
             await audioRef.current.play();
-        } catch (error) {
-            console.error("Audio playback error:", error);
+        } catch (err: unknown) {
+            console.error("Audio playback error:", err);
             setTtsSpeaking(false);
             setTtsStarted(false);
             showToast('播放音频时出错，系统可能限制了自动播放', 'error');

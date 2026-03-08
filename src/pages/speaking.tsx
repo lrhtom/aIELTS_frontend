@@ -1,8 +1,6 @@
 import AppNavbar from '../components/AppNavbar';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useLang } from '../i18n/LanguageContext';
-import { translations } from '../i18n/translations';
 import VocabInput from '../components/VocabInput';
 import { getInitialVocabInput } from '../store/word_selection_store';
 import { speakingStore } from '../store/speaking_page_store';
@@ -59,9 +57,6 @@ const MODES: ModeInfo[] = [
 
 export default function Speaking() {
     const [vocabInput, setVocabInput] = useState(() => getInitialVocabInput());
-    const { lang } = useLang();
-    const nav = translations[lang].nav;
-
     const [useCustomVocab, setUseCustomVocab] = useState(false);
     const [selectedPart, setSelectedPart] = useState<IeltsPart>('part1');
     const [showSubtitles, setShowSubtitles] = useState(true);

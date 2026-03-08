@@ -103,12 +103,54 @@ export interface Translations {
         heading: string;
         subheading: string;
         language: {
+            title: string;
             label: string;
             desc: string;
         };
         model: {
+            title: string;
             label: string;
             desc: string;
+        };
+        system: {
+            title: string;
+        };
+    };
+    profile: {
+        heading: string;
+        subheading: string;
+        menu: {
+            home: string;
+            settings: string;
+        };
+        welcome: string;
+        welcomeDesc: string;
+        info: {
+            title: string;
+            username: string;
+            email: string;
+            created: string;
+        };
+        balance: {
+            title: string;
+            description: string;
+            recharge: string;
+            history: string;
+        };
+        quickAccess: {
+            title: string;
+            practice: string;
+            stats: string;
+            targets: string;
+            history: string;
+        };
+        account: {
+            title: string;
+            description: string;
+            logout: string;
+            delete: string;
+            deleting: string;
+            warning: string;
         };
     };
 }
@@ -201,13 +243,60 @@ const zh: Translations = {
         heading: '⚙️ 设置',
         subheading: '自定义你的 aIELTS 体验',
         language: {
+            title: '语言设置',
             label: '🌐 语言 / Language',
             desc: '选择界面显示语言',
         },
         model: {
+            title: 'AI模型设置',
             label: '🧠 AI 模型 / AI Model',
             desc: '选择底层驱动的 AI 大模型',
         },
+        system: {
+            title: '系统信息',
+        },
+        avatar: {
+            title: '头像设置',
+            description: '上传您的个人头像照片，支持JPG、PNG、GIF、WebP格式，最大5MB',
+        },
+    },
+    profile: {
+        heading: '👤 个人主页',
+        subheading: '查看和管理您的账户信息',
+        menu: {
+            home: '主页',
+            settings: '设置',
+        },
+        welcome: '欢迎回来',
+        welcomeDesc: '这里是您的个人中心，管理您的学习进度和账户设置',
+        info: {
+            title: '个人信息',
+            username: '用户名',
+            email: '邮箱',
+            created: '创建时间',
+        },
+        balance: {
+            title: 'AT币余额',
+            description: 'AT币用于AI练习消耗，可用于所有AI功能',
+            recharge: '充值',
+            history: '历史记录',
+        },
+        quickAccess: {
+            title: '快捷访问',
+            practice: '练习',
+            stats: '统计',
+            targets: '目标',
+            history: '历史',
+        },
+        account: {
+            title: '账户管理',
+            description: '管理您的账户安全和隐私设置',
+            logout: '退出登录',
+            delete: '注销账户',
+            deleting: '正在注销...',
+            warning: '警告：注销账户后所有数据将被永久删除',
+        },
+        avatarHint: '点击头像切换/设置头像（请在设置页面操作）',
     },
 };
 
@@ -299,13 +388,60 @@ const en: Translations = {
         heading: '⚙️ Settings',
         subheading: 'Customize your aIELTS experience',
         language: {
+            title: 'Language Settings',
             label: '🌐 Language / 语言',
             desc: 'Choose the interface display language',
         },
         model: {
+            title: 'AI Model Settings',
             label: '🧠 AI Model / AI 模型',
             desc: 'Choose the underlying AI model',
         },
+        system: {
+            title: 'System Information',
+        },
+        avatar: {
+            title: 'Avatar Settings',
+            description: 'Upload your personal avatar photo, supports JPG, PNG, GIF, WebP formats, maximum 5MB',
+        },
+    },
+    profile: {
+        heading: '👤 Profile',
+        subheading: 'View and manage your account information',
+        menu: {
+            home: 'Home',
+            settings: 'Settings',
+        },
+        welcome: 'Welcome back',
+        welcomeDesc: 'This is your personal center, manage your learning progress and account settings',
+        info: {
+            title: 'Personal Information',
+            username: 'Username',
+            email: 'Email',
+            created: 'Created Date',
+        },
+        balance: {
+            title: 'AT Balance',
+            description: 'AT coins are used for AI practice consumption and can be used for all AI features',
+            recharge: 'Recharge',
+            history: 'History',
+        },
+        quickAccess: {
+            title: 'Quick Access',
+            practice: 'Practice',
+            stats: 'Stats',
+            targets: 'Targets',
+            history: 'History',
+        },
+        account: {
+            title: 'Account Management',
+            description: 'Manage your account security and privacy settings',
+            logout: 'Logout',
+            delete: 'Delete Account',
+            deleting: 'Deleting...',
+            warning: 'Warning: All data will be permanently deleted after account deletion',
+        },
+        avatarHint: 'Click avatar to change/set avatar (Please use settings page)',
     },
 };
 

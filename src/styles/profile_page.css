@@ -1,0 +1,605 @@
+/* Profile Page Styles - New Design */
+.profile-page {
+    min-height: 100vh;
+    background: var(--color-bg);
+}
+
+.profile-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.profile-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.profile-header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 12px;
+}
+
+.profile-header p {
+    font-size: 16px;
+    color: var(--color-text-secondary);
+    opacity: 0.8;
+}
+
+.profile-content {
+    display: flex;
+    gap: 32px;
+}
+
+/* 左侧边栏 */
+.profile-sidebar {
+    flex: 0 0 280px;
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+}
+
+.profile-user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.profile-user-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.profile-avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-accent-teal), #14b8a6);
+    color: white;
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.profile-user-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 4px;
+}
+
+.profile-user-email {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-bottom: 12px;
+}
+
+.profile-user-at-balance {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(13, 148, 136, 0.1);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--color-accent-teal);
+}
+
+.at-balance-icon {
+    font-size: 16px;
+}
+
+.at-balance-amount {
+    font-weight: 600;
+}
+
+/* 导航菜单 */
+.profile-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.profile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    color: var(--color-text-secondary);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.profile-menu-item:hover {
+    background: rgba(13, 148, 136, 0.08);
+    color: var(--color-accent-teal);
+}
+
+.profile-menu-item.active {
+    background: var(--color-accent-teal);
+    color: white;
+}
+
+.menu-item-icon {
+    font-size: 20px;
+}
+
+.menu-item-text {
+    flex: 1;
+}
+
+/* 右侧内容区域 */
+.profile-main {
+    flex: 1;
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    padding: 32px;
+    box-shadow: var(--shadow-md);
+}
+
+/* UserHome 组件样式 */
+.user-home {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.user-welcome {
+    background: linear-gradient(135deg, var(--color-accent-teal), #14b8a6);
+    border-radius: var(--radius);
+    padding: 32px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.user-avatar-large {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar-large .avatar-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+}
+
+.avatar-placeholder-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 48px;
+    font-weight: 700;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-placeholder-large::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: inherit;
+    filter: blur(6px);
+    opacity: 0.7;
+}
+
+.avatar-placeholder-large span {
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.avatar-static-container {
+    cursor: default;
+}
+
+.avatar-static-container .avatar-image,
+.avatar-static-container .avatar-placeholder-large {
+    cursor: default;
+}
+
+.avatar-static-container:hover .avatar-image,
+.avatar-static-container:hover .avatar-placeholder-large {
+    transform: none;
+    box-shadow: none;
+}
+
+.avatar-hint {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    max-width: 140px;
+    line-height: 1.4;
+}
+
+.user-welcome-text {
+    flex: 1;
+}
+
+.user-welcome h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.user-welcome p {
+    font-size: 15px;
+    opacity: 0.9;
+}
+
+.user-at-balance-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.user-balance-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.user-balance-icon {
+    font-size: 24px;
+}
+
+.user-balance-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.user-balance-amount {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.user-balance-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.user-balance-unit {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.user-balance-description {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-bottom: 20px;
+}
+
+.user-balance-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.primary-button {
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.primary-button:hover {
+    background: var(--color-primary-hover);
+}
+
+.secondary-button {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.secondary-button:hover {
+    border-color: var(--color-accent-teal);
+    color: var(--color-accent-teal);
+}
+
+.user-info-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.user-info-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.user-info-icon {
+    font-size: 24px;
+}
+
+.user-info-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.user-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.user-info-item {
+    padding: 16px;
+    background: rgba(13, 148, 136, 0.05);
+    border-radius: 8px;
+}
+
+.user-info-label {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.user-info-value {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+/* UserSettings 组件样式 */
+.user-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.user-settings-header {
+    margin-bottom: 24px;
+}
+
+.user-settings-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 8px;
+}
+
+.user-settings-header p {
+    font-size: 15px;
+    color: var(--color-text-secondary);
+}
+
+.user-settings-section {
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.user-settings-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.user-settings-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.user-settings-section-icon {
+    font-size: 24px;
+}
+
+.user-settings-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.user-settings-section-description {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-bottom: 16px;
+}
+
+.lang-selection {
+    display: flex;
+    gap: 12px;
+}
+
+.lang-button {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    border-radius: 8px;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.lang-button:hover {
+    border-color: var(--color-accent-teal);
+    color: var(--color-accent-teal);
+}
+
+.lang-button.active {
+    background: var(--color-accent-teal);
+    color: white;
+    border-color: var(--color-accent-teal);
+}
+
+.ai-model-selector-wrapper {
+    max-width: 400px;
+}
+
+.avatar-upload-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.account-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.logout-button {
+    background: var(--color-accent-teal);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+    background: var(--color-primary-hover);
+}
+
+.delete-button {
+    background: var(--color-accent-rose);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.delete-button:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.delete-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.account-warning {
+    font-size: 14px;
+    color: var(--color-accent-rose);
+    opacity: 0.8;
+}
+
+.system-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.system-info-item {
+    padding: 16px;
+    background: rgba(13, 148, 136, 0.05);
+    border-radius: 8px;
+}
+
+.system-info-label {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.system-info-value {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .profile-content {
+        flex-direction: column;
+    }
+
+    .profile-sidebar {
+        flex: none;
+        width: 100%;
+    }
+
+    .profile-container {
+        padding: 20px;
+    }
+
+    .profile-header h1 {
+        font-size: 28px;
+    }
+
+    .user-info-grid,
+    .system-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .user-balance-actions,
+    .account-actions {
+        flex-direction: column;
+    }
+
+    .lang-selection {
+        flex-direction: column;
+    }
+}

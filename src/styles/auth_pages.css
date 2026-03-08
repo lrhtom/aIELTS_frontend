@@ -38,6 +38,28 @@
     margin-bottom: 36px;
 }
 
+.auth-header-top {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+}
+
+.auth-back-btn {
+    background: transparent;
+    color: #64748b;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.auth-back-btn:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
 .auth-header h2 {
     margin: 0 0 10px 0;
     color: #1a1a2e;

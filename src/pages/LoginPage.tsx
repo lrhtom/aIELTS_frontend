@@ -41,6 +41,14 @@ export default function LoginPage() {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
+                    <div className="auth-header-top">
+                        <button
+                            className="auth-back-btn"
+                            onClick={() => navigate('/')}
+                        >
+                            ← 返回主页
+                        </button>
+                    </div>
                     <h2>欢迎回来</h2>
                     <p>登录以继续您的 aIELTS 学习之旅</p>
                 </div>
