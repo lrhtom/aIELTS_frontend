@@ -1,12 +1,14 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import '../../styles/atBalanceCheck.css';
 
-export default function UserHome() {
+interface UserHomeProps {
+    onNavigateToBackpack: () => void;
+}
+
+export default function UserHome({ onNavigateToBackpack }: UserHomeProps) {
     const { user } = useAuth();
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { translations: t } = useLang();
 
     return (
         <div className="user-home">
@@ -75,31 +77,6 @@ export default function UserHome() {
                         <div className="user-info-label">{t.profile.info.created}</div>
                         <div className="user-info-value">{new Date(user?.createdAt || '').toLocaleDateString()}</div>
                     </div>
-                </div>
-            </div>
-
-            {/* 快速访问卡片 */}
-            <div className="user-quick-access-card">
-                <div className="quick-access-header">
-                    <h3>{t.profile.quickAccess.title}</h3>
-                </div>
-                <div className="quick-access-grid">
-                    <button className="quick-access-item">
-                        <div className="quick-access-icon">📝</div>
-                        <div className="quick-access-text">{t.profile.quickAccess.practice}</div>
-                    </button>
-                    <button className="quick-access-item">
-                        <div className="quick-access-icon">📊</div>
-                        <div className="quick-access-text">{t.profile.quickAccess.stats}</div>
-                    </button>
-                    <button className="quick-access-item">
-                        <div className="quick-access-icon">🎯</div>
-                        <div className="quick-access-text">{t.profile.quickAccess.targets}</div>
-                    </button>
-                    <button className="quick-access-item">
-                        <div className="quick-access-icon">📚</div>
-                        <div className="quick-access-text">{t.profile.quickAccess.history}</div>
-                    </button>
                 </div>
             </div>
         </div>

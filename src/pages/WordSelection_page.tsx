@@ -1,4 +1,4 @@
-import AppNavbar from '../components/AppNavbar';
+import Layout from '../components/Layout';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { showToast } from '../components/Toast';
@@ -29,6 +29,7 @@ export default function WordSelection_page() {
             showToast(t.toast.noVocab, 'error');
             return;
         }
+        sessionStorage.removeItem('reading_session_cache');
         navigate('/reading', {
             state: {
                 vocabInput: useCustomVocab ? vocabInput : '',
@@ -39,10 +40,8 @@ export default function WordSelection_page() {
     };
 
     return (
-        <div className="practice-page">
-            <AppNavbar />
-
-            <div className="practice-container">
+        <Layout>
+            <div className=".*">
                 <div className="practice-header">
                     <Link to="/practice/ai" className="back-link">{t.backToAI}</Link>
                     <h1>{t.heading}</h1>
@@ -102,6 +101,6 @@ export default function WordSelection_page() {
                     </button>
                 </div>
             </div>
-        </div>
+        </Layout>
     );
 }

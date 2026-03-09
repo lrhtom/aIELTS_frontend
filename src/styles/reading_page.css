@@ -196,7 +196,7 @@ textarea:focus {
 }
 
 /* Columns Setup */
-.sidebar {
+.reading-sidebar {
     width: 0;
     padding: 0;
     background: #f8f9fa;
@@ -205,11 +205,11 @@ textarea:focus {
     white-space: nowrap;
 }
 
-.sidebar.no-transition {
+.reading-sidebar.no-transition {
     transition: none !important;
 }
 
-.sidebar.open {
+.reading-sidebar.open {
     width: 300px;
     padding: 25px 20px;
     white-space: normal;
@@ -285,7 +285,7 @@ textarea:focus {
     width: 16px;
 }
 
-.reading-layout.is-resizing .sidebar,
+.reading-layout.is-resizing .reading-sidebar,
 .results-layout.is-resizing .passage-sidebar {
     transition: none !important;
 }
@@ -336,29 +336,31 @@ textarea:focus {
 }
 
 #articleContent u,
-#questionsForm u {
+#questionsForm u,
+#listeningContent u {
     text-decoration: none;
-    border-bottom: 2px dashed #e74c3c;
-    background-color: rgba(231, 76, 60, 0.08);
-    padding-bottom: 2px;
+    border-bottom: 2.5px solid #FFD600;
+    background-color: rgba(255, 214, 0, 0.18);
+    padding-bottom: 1px;
     transition: background-color 0.2s;
 }
 
 #articleContent u:hover,
-#questionsForm u:hover {
-    background-color: rgba(231, 76, 60, 0.15);
+#questionsForm u:hover,
+#listeningContent u:hover {
+    background-color: rgba(255, 214, 0, 0.35);
 }
 
 /* Floating Underline Button */
 #floatUnderlineBtn {
     display: none;
     position: absolute;
-    background-color: #e74c3c;
-    color: white;
+    background-color: #FFD600;
+    color: #1a1a1a;
     padding: 8px 16px;
     border-radius: 8px;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 214, 0, 0.45);
     font-size: 14px;
     font-weight: bold;
     z-index: 9999;
@@ -367,7 +369,7 @@ textarea:focus {
 }
 
 #floatUnderlineBtn:hover {
-    background-color: #c0392b;
+    background-color: #f5c800;
     transform: translateY(-2px);
 }
 

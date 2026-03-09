@@ -1,4 +1,4 @@
-import AppNavbar from '../components/AppNavbar';
+import Layout from '../components/Layout';
 import { Link } from 'react-router-dom';
 import { useLang } from '../i18n/LanguageContext';
 import { translations } from '../i18n/translations';
@@ -9,10 +9,8 @@ export default function SettingsPage() {
     const t = translations[lang];
 
     return (
-        <div className="settings-page">
-            <AppNavbar />
-
-            <div className="settings-container">
+        <Layout>
+<div className=".*">
                 <div className="settings-header">
                     <Link to="/" className="back-link"><span className="arrow">←</span> {t.nav.home}</Link>
                     <h1>{t.profile.heading}</h1>
@@ -28,6 +26,6 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </Layout>
     );
 }

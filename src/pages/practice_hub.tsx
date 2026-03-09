@@ -1,4 +1,4 @@
-import AppNavbar from '../components/AppNavbar';
+import Layout from '../components/Layout';
 import { Link } from 'react-router-dom';
 import { useLang } from '../i18n/LanguageContext';
 import { translations } from '../i18n/translations';
@@ -9,9 +9,7 @@ export default function PracticeHub() {
     const t = translations[lang].practiceHub;
 
     return (
-        <div className="practice-hub">
-            <AppNavbar />
-
+        <Layout>
             <div className="practice-hub-container">
                 <div className="practice-hub-header">
                     <Link to="/" className="back-link">{t.backToHome}</Link>
@@ -36,6 +34,6 @@ export default function PracticeHub() {
                     </Link>
                 </div>
             </div>
-        </div>
+        </Layout>
     );
 }

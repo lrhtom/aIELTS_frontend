@@ -1,10 +1,10 @@
-// ReadingPractice.tsx
 import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createReadingState } from '../store/reading_page_store';
 import type { VocabItem, QuizData } from '../store/reading_page_store';
 import { api } from '../api/client';
 import { showToast } from '../components/Toast';
+import { useLang } from '../i18n/LanguageContext';
 import '../styles/reading_page.css';
 
 export default function Reading_page() {
@@ -13,6 +13,7 @@ export default function Reading_page() {
     const difficulty: string = state?.difficulty ?? '7.0';
     const navigate = useNavigate();
     const onReturnHome = () => navigate('/');
+    const { translations: t } = useLang();
 
     // 用单一 useState 替代 reactive store
     const [st, setSt] = useState(createReadingState);
@@ -28,13 +29,28 @@ export default function Reading_page() {
     const floatBtnRef = useRef<HTMLDivElement | null>(null);
     const activeEditorRef = useRef<HTMLElement | null>(null);
 
+    const CACHE_KEY = 'reading_session_cache';
+
     useEffect(() => {
         if (hasRequested.current) return;
         hasRequested.current = true;
+
+        // 刷新恢复：优先从 sessionStorage 读取缓存数据
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+            try {
+                const { quizData: cachedQuiz, vocabList: cachedVocab } = JSON.parse(cached);
+                setSt(s => ({ ...s, quizData: cachedQuiz, vocabList: cachedVocab, isLoading: false }));
+                return; // 跳过 AI 生成
+            } catch {
+                sessionStorage.removeItem(CACHE_KEY);
+            }
+        }
+
         setSt(createReadingState());
         generateReading();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [set]); // Added 'set' to dependencies
+    }, []);
 
     const formatHighlight = (text: string): string => {
         if (!text) return '';
@@ -62,6 +78,11 @@ export default function Reading_page() {
             });
 
             set('quizData', parsedData);
+            // 缓存到 sessionStorage 以便刷新恢复
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                quizData: parsedData,
+                vocabList: parsedList,
+            }));
             userAnswersRef.current = {};
             set('searchQuery', '');
             set('isLeftOpen', true);
@@ -73,7 +94,7 @@ export default function Reading_page() {
             const btnEl = document.getElementById('highlight-toggle-btn');
             if (pageEl) pageEl.classList.remove('hide-highlights');
             if (btnEl) {
-                btnEl.innerText = '💡 Hide Target Words';
+                btnEl.innerText = t.readingDetails.hideTargets;
                 btnEl.classList.remove('active');
             }
 
@@ -95,11 +116,11 @@ export default function Reading_page() {
             const isHidden = pageEl.classList.contains('hide-highlights');
             if (isHidden) {
                 pageEl.classList.remove('hide-highlights');
-                btnEl.innerText = '💡 Hide Target Words';
+                btnEl.innerText = t.readingDetails.hideTargets;
                 btnEl.classList.remove('active');
             } else {
                 pageEl.classList.add('hide-highlights');
-                btnEl.innerText = '💡 Show Target Words';
+                btnEl.innerText = t.readingDetails.showTargets;
                 btnEl.classList.add('active');
             }
         }
@@ -110,7 +131,7 @@ export default function Reading_page() {
         const totalQuestions = st.quizData.questions.length;
         const answeredQuestions = Object.keys(userAnswersRef.current).length;
         if (answeredQuestions < totalQuestions) {
-            if (!window.confirm('You have unanswered questions. Submit anyway?')) return;
+            if (!window.confirm(t.readingDetails.submitConfirm)) return;
         }
         set('step', 3);
     };
@@ -344,7 +365,7 @@ export default function Reading_page() {
         return (
             <div className="container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <div className="loader">AI is writing your IELTS {difficulty} level passage... Please wait.</div>
+                    <div className="loader">{t.readingDetails.writingPassage}</div>
                 </div>
             </div>
         );
@@ -360,19 +381,19 @@ export default function Reading_page() {
         return (
             <div className="container reading-container">
                 <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
-                    <u>U</u> Underline
+                    <u>U</u> {t.readingDetails.underline}
                 </div>
 
                 <div id="reading-page-container" className="page">
                     <div className="toolbar-area">
                         <div>
-                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (leftSidebarRef.current) { leftSidebarRef.current.classList.remove('no-transition'); leftSidebarRef.current.style.width = ''; } set('isLeftOpen', !st.isLeftOpen); }}>☰ Dictionary</button>
+                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (leftSidebarRef.current) { leftSidebarRef.current.classList.remove('no-transition'); leftSidebarRef.current.style.width = ''; } set('isLeftOpen', !st.isLeftOpen); }}>☰ {t.readingDetails.dictionary}</button>
                             <span style={{ margin: '0 5px' }}></span>
-                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (rightSidebarRef.current) { rightSidebarRef.current.classList.remove('no-transition'); rightSidebarRef.current.style.width = ''; } set('isRightOpen', !st.isRightOpen); }}>✎ Questions</button>
+                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (rightSidebarRef.current) { rightSidebarRef.current.classList.remove('no-transition'); rightSidebarRef.current.style.width = ''; } set('isRightOpen', !st.isRightOpen); }}>✎ {t.readingDetails.questions}</button>
                         </div>
                         <div className="reading-timer">
                             <span className="timer-icon">🕐</span>
-                            <span className="timer-label">time</span>
+                            <span className="timer-label">{t.readingDetails.time}</span>
                             <span className="timer-digit">{formatTime(st.elapsedSeconds).h}</span>
                             <span className="timer-sep">:</span>
                             <span className="timer-digit">{formatTime(st.elapsedSeconds).m}</span>
@@ -385,17 +406,17 @@ export default function Reading_page() {
                                 className="tool-btn"
                                 onClick={toggleHighlightsPureDOM}
                             >
-                                💡 Hide Target Words
+                                {t.readingDetails.hideTargets}
                             </button>
                         </div>
                     </div>
 
                     <div className="reading-layout" ref={layoutRef}>
                         {/* Left Sidebar */}
-                        <div id="leftSidebar" ref={leftSidebarRef} className={`sidebar ${st.isLeftOpen ? 'open' : ''}`}>
-                            <h2 style={{ marginTop: 0 }}>Vocabulary</h2>
+                        <div id="leftSidebar" ref={leftSidebarRef} className={`reading-sidebar ${st.isLeftOpen ? 'open' : ''}`}>
+                            <h2 style={{ marginTop: 0 }}>{t.readingDetails.dictionary}</h2>
                             <input
-                                type="text" id="vocabSearch" placeholder="🔍 Search word or meaning..."
+                                type="text" id="vocabSearch" placeholder={t.readingDetails.searchPlaceholder}
                                 value={st.searchQuery} onChange={(e) => set('searchQuery', e.target.value)}
                             />
                             <div>
@@ -413,11 +434,11 @@ export default function Reading_page() {
                         <div className={`resizer ${st.isRightOpen ? 'active' : ''}`} id="resizerRight"></div>
 
                         {/* Right Sidebar */}
-                        <div id="rightSidebar" ref={rightSidebarRef} className={`sidebar ${st.isRightOpen ? 'open' : ''}`}>
-                            <h2 style={{ marginTop: 0 }}>Questions</h2>
+                        <div id="rightSidebar" ref={rightSidebarRef} className={`reading-sidebar ${st.isRightOpen ? 'open' : ''}`}>
+                            <h2 style={{ marginTop: 0 }}>{t.readingDetails.questions}</h2>
                             {questionsMemoBlock}
                             <div className="submit-quiz-container">
-                                <button onClick={submitQuiz}>Submit Answers</button>
+                                <button onClick={submitQuiz}>{t.readingDetails.submitBtn}</button>
                             </div>
                         </div>
                     </div>
@@ -441,7 +462,7 @@ export default function Reading_page() {
                 {/* Results Header */}
                 <div className="results-header">
                     <div className="results-header-left">
-                        <h1>Analysis & Explanations</h1>
+                        <h1>{t.results.analysis}</h1>
                         <p className="elapsed-time">
                             🕐 {formatTime(st.elapsedSeconds).h}h {formatTime(st.elapsedSeconds).m}m {formatTime(st.elapsedSeconds).s}s
                         </p>
@@ -452,9 +473,9 @@ export default function Reading_page() {
                             <div className="score-pct">{pct}%</div>
                         </div>
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className="toggle-passage-btn">
-                            {st.isPassageOpen ? '✕ Hide Passage' : '📖 Show Passage'}
+                            {st.isPassageOpen ? `✕ ${t.results.hidePassage}` : `📖 ${t.results.showPassage}`}
                         </button>
-                        <button onClick={onReturnHome} className="tool-btn">🏠 Home</button>
+                        <button onClick={onReturnHome} className="tool-btn">🏠 {t.common.home}</button>
                     </div>
                 </div>
 
@@ -462,7 +483,7 @@ export default function Reading_page() {
                 <div className="results-layout" id="resultsLayout">
                     {/* Passage Sidebar */}
                     <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="passageSidebar">
-                        <h3>Original Passage</h3>
+                        <h3>{t.results.originalPassage}</h3>
                         <h4 dangerouslySetInnerHTML={{ __html: formatHighlight(st.quizData.title) }}></h4>
                         <div className="passage-text">
                             {passageParagraphs.map((p, idx) => (
@@ -483,12 +504,12 @@ export default function Reading_page() {
                             return (
                                 <div key={q.id} className="result-block">
                                     <div className="question-text">{q.id}. {q.question.replace(/\*\*/g, '')}</div>
-                                    <p>Your Answer: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | Correct Answer: <strong>{q.answer}</strong></p>
+                                    <p>{t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.correctAnswer}: <strong>{q.answer}</strong></p>
                                     <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                        {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                                        {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
                                     </p>
                                     <div className="explanation">
-                                        <strong>解析:</strong> {q.explanation}
+                                        <strong>{t.results.explanation}:</strong> {q.explanation}
                                     </div>
                                 </div>
                             );

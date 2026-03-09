@@ -1,4 +1,4 @@
-import AppNavbar from '../components/AppNavbar';
+import Layout from '../components/Layout';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../i18n/LanguageContext';
 import { translations } from '../i18n/translations';
@@ -10,10 +10,8 @@ export default function Writing_page() {
     const t = translations[lang];
 
     return (
-        <div className="practice-page">
-            <AppNavbar />
-
-            <div className="practice-container">
+        <Layout>
+<div className=".*">
                 <div className="practice-header">
                     <Link to="/practice/ai" className="back-link">← {t.nav.practice}</Link>
                     <h1>写作大厅 (Writing)</h1>
@@ -47,6 +45,6 @@ export default function Writing_page() {
                     </div>
                 </div>
             </div>
-        </div>
+        </Layout>
     );
 }

@@ -1,4 +1,4 @@
-import AppNavbar from '../components/AppNavbar';
+import Layout from '../components/Layout';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AiModelSelector from '../components/AiModelSelector';
@@ -56,10 +56,8 @@ export default function WritingCorrectionPage() {
     };
 
     return (
-        <div className="practice-page writing-correction-page">
-            <AppNavbar />
-
-            <div className="practice-container wc-container">
+        <Layout>
+<div className=".*">
                 <div className="wc-header-row">
                     <div className="practice-header" style={{ marginBottom: 0 }}>
                         <button className="back-link" onClick={() => navigate('/writing')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
@@ -139,6 +137,6 @@ export default function WritingCorrectionPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </Layout>
     );
 }

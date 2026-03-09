@@ -1,4 +1,4 @@
-import AppNavbar from '../components/AppNavbar';
+import Layout from '../components/Layout';
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
@@ -114,10 +114,8 @@ export default function PromptPage() {
     }, [currentPage, totalPages]);
 
     return (
-        <div className="practice-hub">
-            <AppNavbar />
-
-            <div className="prompt-hub-container">
+        <Layout>
+            <div className="practice-hub">
                 <div className="practice-hub-header">
                     <Link to="/practice" className="back-link">← AI Practice</Link>
                     <h1>💡 AI Prompt Hub</h1>
@@ -234,6 +232,6 @@ export default function PromptPage() {
                     </div>
                 )}
             </div>
-        </div>
+        </Layout>
     );
 }

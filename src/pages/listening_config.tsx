@@ -1,4 +1,4 @@
-import AppNavbar from '../components/AppNavbar';
+import Layout from '../components/Layout';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getInitialVocabInput } from '../store/word_selection_store';
@@ -44,6 +44,7 @@ export default function ListeningConfig() {
             showToast(t.toast.noVocab, 'error');
             return;
         }
+        sessionStorage.removeItem('listening_session_cache');
         navigate('/listening', {
             state: {
                 vocabInput: useCustomVocab ? vocabInput : '',
@@ -57,10 +58,8 @@ export default function ListeningConfig() {
     };
 
     return (
-        <div className="practice-page">
-            <AppNavbar />
-
-            <div className="practice-container">
+        <Layout>
+            <div className=".*">
                 <div className="practice-header">
                     <Link to="/practice/ai" className="back-link">{t.backToAI}</Link>
                     <h1>{t.heading}</h1>
@@ -167,8 +166,8 @@ export default function ListeningConfig() {
                         </div>
                         <p className="wc-hint">
                             {wordCountMin === wordCountMax
-                                ? `每空恰好 ${wordCountMin} 个词`
-                                : `每空 ${wordCountMin} ~ ${wordCountMax} 个词`}
+                                ? t.wordCount.hintExact.replace('{n}', String(wordCountMin))
+                                : t.wordCount.hintRange.replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
                         </p>
                     </div>
                 )}
@@ -205,6 +204,6 @@ export default function ListeningConfig() {
                     </button>
                 </div>
             </div>
-        </div>
+        </Layout>
     );
 }

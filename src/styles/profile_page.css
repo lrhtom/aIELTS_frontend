@@ -36,7 +36,7 @@
 /* 左侧边栏 */
 .profile-sidebar {
     flex: 0 0 280px;
-    background: var(--color-surface);
+    background: rgba(255, 255, 255, 0.3);
     border-radius: var(--radius);
     padding: 24px;
     box-shadow: var(--shadow-md);
@@ -152,10 +152,15 @@
     flex: 1;
 }
 
+.profile-sub-item {
+    padding-left: 36px;
+    font-size: 14px;
+}
+
 /* 右侧内容区域 */
 .profile-main {
     flex: 1;
-    background: var(--color-surface);
+    background: rgba(255, 255, 255, 0.3);
     border-radius: var(--radius);
     padding: 32px;
     box-shadow: var(--shadow-md);
@@ -258,6 +263,8 @@
     font-size: 24px;
     font-weight: 700;
     margin-bottom: 8px;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .user-welcome p {
@@ -388,6 +395,8 @@
     padding: 16px;
     background: rgba(13, 148, 136, 0.05);
     border-radius: 8px;
+    min-width: 0;
+    /* 允许在 grid/flex 容器中收缩 */
 }
 
 .user-info-label {
@@ -400,6 +409,9 @@
     font-size: 16px;
     font-weight: 500;
     color: var(--color-text);
+    overflow-wrap: break-word;
+    word-break: break-all;
+    /* 对邮箱特别有效 */
 }
 
 /* UserSettings 组件样式 */
@@ -602,4 +614,114 @@
     .lang-selection {
         flex-direction: column;
     }
+}
+
+/* ── 样式自定义手风琴 ── */
+.profile-accordion-trigger {
+    position: relative;
+}
+
+.profile-accordion-trigger .accordion-chevron {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+    color: var(--color-text-secondary);
+}
+
+.profile-accordion-trigger.open .accordion-chevron {
+    transform: rotate(180deg);
+}
+
+.profile-accordion-body {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease, opacity 0.25s ease;
+    opacity: 0;
+}
+
+.profile-accordion-body.open {
+    max-height: 300px;
+    opacity: 1;
+}
+
+/* 子项 */
+.style-sub-item {
+    padding: 10px 14px 14px 44px;
+    border-left: 2px solid rgba(13, 148, 136, 0.15);
+    margin: 0 8px 4px;
+}
+
+.style-sub-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+}
+
+/* 背景色块网格 */
+.bg-preset-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.bg-swatch {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    padding: 0;
+}
+
+.bg-swatch:hover {
+    transform: scale(1.12);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+}
+
+.bg-swatch.selected {
+    border-color: var(--color-accent-teal);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
+}
+
+.swatch-check {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #0d9488;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* 自定义颜色按钮 */
+.custom-swatch {
+    cursor: pointer;
+    background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #666;
+    font-weight: 300;
+}
+
+.custom-swatch input[type="color"] {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.custom-swatch:hover {
+    transform: scale(1.12);
+    color: var(--color-accent-teal);
 }

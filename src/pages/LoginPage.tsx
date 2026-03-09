@@ -1,39 +1,40 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLang } from '../i18n/LanguageContext';
 import { authApi } from '../api/auth';
-import type { ApiError } from '../api/client';
 import '../styles/auth_pages.css';
 
-export default function LoginPage() {
+const LoginPage: React.FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const navigate = useNavigate();
     const { login } = useAuth();
+    const navigate = useNavigate();
+    const { translations: t } = useLang();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setIsLoading(true);
+        setLoading(true);
 
         try {
             const response = await authApi.login(username, password);
             if (response.tokens) {
                 login(response.tokens, response.user);
-                navigate('/');
+                navigate('/profile');
             }
-        } catch (err) {
-            const apiError = err as ApiError;
-            if (apiError.status === 401) {
-                setError('用户名或密码错误。');
+        } catch (err: any) {
+            console.error('Login error:', err);
+            if (err.response?.status === 401) {
+                setError(t.auth.errorUnauthorized);
             } else {
-                setError(apiError.message || '登录失败，请稍后重试。');
+                setError(t.auth.errorGeneral);
             }
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
@@ -41,60 +42,56 @@ export default function LoginPage() {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
-                    <div className="auth-header-top">
-                        <button
-                            className="auth-back-btn"
-                            onClick={() => navigate('/')}
-                        >
-                            ← 返回主页
-                        </button>
-                    </div>
-                    <h2>欢迎回来</h2>
-                    <p>登录以继续您的 aIELTS 学习之旅</p>
+                    <h1>{t.auth.loginTitle}</h1>
+                    <p>{t.auth.loginSubtitle}</p>
                 </div>
 
-                {error && <div className="auth-error">{error}</div>}
+                <form className="auth-form" onSubmit={handleSubmit}>
+                    {error && <div className="auth-error">{error}</div>}
 
-                <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
-                        <label htmlFor="username">用户名</label>
+                        <label htmlFor="username">{t.auth.username}</label>
                         <input
-                            id="username"
                             type="text"
+                            id="username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            placeholder="输入您的用户名"
                             required
-                            disabled={isLoading}
+                            placeholder={t.auth.username}
                         />
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">密码</label>
+                        <label htmlFor="password">{t.auth.password}</label>
                         <input
-                            id="password"
                             type="password"
+                            id="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="输入您的密码"
                             required
-                            disabled={isLoading}
+                            placeholder={t.auth.password}
                         />
                     </div>
 
                     <button
                         type="submit"
-                        className={`auth-submit-btn ${isLoading ? 'loading' : ''}`}
-                        disabled={isLoading}
+                        className={`auth-submit ${loading ? 'loading' : ''}`}
+                        disabled={loading}
                     >
-                        {isLoading ? '登录中...' : '登录'}
+                        {loading ? t.auth.loggingIn : t.auth.loginBtn}
                     </button>
-                </form>
 
-                <div className="auth-footer">
-                    还没有账号？ <Link to="/register">立即注册</Link>
-                </div>
+                    <div className="auth-footer">
+                        <p>
+                            {t.auth.noAccount}{' '}
+                            <Link to="/register">{t.auth.toRegister}</Link>
+                        </p>
+                        <Link to="/" className="back-home">{t.auth.backToHome}</Link>
+                    </div>
+                </form>
             </div>
         </div>
     );
-}
+};
+
+export default LoginPage;

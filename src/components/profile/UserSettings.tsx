@@ -1,19 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import AiModelSelector from '../AiModelSelector';
 import AvatarUpload from '../AvatarUpload';
 import { authApi } from '../../api/auth';
 
 export default function UserSettings() {
     const { user, logout } = useAuth();
-    const { lang, setLang } = useLang();
-    const t = translations[lang];
+    const { lang, setLang, translations: t } = useLang();
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDeleteAccount = async () => {
-        if (!window.confirm(t.profile.account.warning + (lang === 'zh' ? '\n\n确定要注销账户吗？' : '\n\nAre you sure you want to delete your account?'))) {
+        if (!window.confirm(t.profile.account.confirmDelete)) {
             return;
         }
 
@@ -128,17 +126,17 @@ export default function UserSettings() {
                 </div>
                 <div className="system-info-grid">
                     <div className="system-info-item">
-                        <div className="system-info-label">用户ID</div>
+                        <div className="system-info-label">{t.settings.system.userId}</div>
                         <div className="system-info-value">{user?.id}</div>
                     </div>
                     <div className="system-info-item">
-                        <div className="system-info-label">注册时间</div>
+                        <div className="system-info-label">{t.settings.system.registeredTime}</div>
                         <div className="system-info-value">{new Date(user?.createdAt || '').toLocaleDateString()}</div>
                     </div>
                     <div className="system-info-item">
-                        <div className="system-info-label">邮箱验证</div>
+                        <div className="system-info-label">{t.settings.system.emailVerify}</div>
                         <div className="system-info-value">
-                            {user?.is_email_verified ? '已验证' : '未验证'}
+                            {user?.is_email_verified ? t.settings.system.verified : t.settings.system.notVerified}
                         </div>
                     </div>
                 </div>

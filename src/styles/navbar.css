@@ -11,6 +11,45 @@
     z-index: 1000;
 }
 
+/* 打开侧边栏按钮 */
+.sidebar-open-btn {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.sidebar-open-btn:hover {
+    background-color: rgba(255, 255, 255, 1);
+    transform: scale(1.05);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+/* 汉堡菜单图标 */
+.hamburger-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.hamburger-line {
+    width: 18px;
+    height: 2px;
+    background-color: var(--color-text-secondary, #64748b);
+    border-radius: 2px;
+    margin: 2px 0;
+}
+
 .navbar-logo {
     font-size: 24px;
     font-weight: 700;
@@ -167,7 +206,7 @@
 /* 响应式调整 */
 @media (max-width: 768px) {
     .navbar {
-        padding: 12px 20px;
+        padding: 12px px;
     }
 
     .navbar-links {

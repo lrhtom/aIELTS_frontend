@@ -1,0 +1,17 @@
+/* 布局基础样式 */
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* 移除 padding-left，侧边栏不再影响页面伸缩 */
+}
+
+.layout-content {
+  flex: 1;
+  padding: 20px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  /* 移除响应式padding-left，保持布局不变 */
+}

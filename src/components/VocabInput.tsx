@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { showToast } from './Toast';
+import { useLang } from '../i18n/LanguageContext';
 
 interface VocabInputProps {
     value: string;
@@ -21,6 +22,8 @@ function validateLine(line: string): 'valid' | 'no-chinese' | 'no-english' | 'em
 
 export default function VocabInput({ value, onChange, placeholder }: VocabInputProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const { translations: t } = useLang();
+    const vi = t.components.vocabInput;
 
     const lines = value.split('\n');
     const validCount = lines.filter(l => validateLine(l) === 'valid').length;
@@ -41,7 +44,7 @@ export default function VocabInput({ value, onChange, placeholder }: VocabInputP
         if (invalidLines.length > 0) {
             const examples = invalidLines.slice(0, 2).map(l => `"${l.trim()}"`).join('、');
             showToast(
-                `${invalidLines.length} 行格式有误，需同时包含英文单词和中文释义：${examples}`,
+                `${vi.toastHint}：${examples}`,
                 'error'
             );
         }
@@ -51,7 +54,7 @@ export default function VocabInput({ value, onChange, placeholder }: VocabInputP
         <div>
             {/* 词汇计数行 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '13px', color: '#78716c' }}>已添加词汇：</span>
+                <span style={{ fontSize: '13px', color: '#78716c' }}>{vi.label}：</span>
                 <span style={{
                     background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                     color: '#fff',
@@ -73,7 +76,7 @@ export default function VocabInput({ value, onChange, placeholder }: VocabInputP
                         fontSize: '12px',
                         fontWeight: 600,
                     }}>
-                        ⚠ {invalidLines.length} 行格式有误
+                        ⚠ {invalidLines.length} {vi.invalidLines}
                     </span>
                 )}
             </div>
@@ -84,12 +87,12 @@ export default function VocabInput({ value, onChange, placeholder }: VocabInputP
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 onBlur={handleBlur}
-                placeholder={placeholder ?? 'ubiquitous - 普遍存在的\nmitigate - 减轻\nephemeral - 短暂的\n\n每行一个词，格式：单词 - 释义'}
+                placeholder={placeholder ?? vi.placeholder}
             />
 
             {/* 格式说明 */}
             <p style={{ fontSize: '12px', color: '#a8a29e', marginTop: '6px', marginBottom: 0 }}>
-                每行一个词，格式：<code>单词 - 中文释义</code>，每行必须同时包含英文和中文
+                {vi.formatDesc}
             </p>
         </div>
     );

@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLang } from '../i18n/LanguageContext';
 import { authApi } from '../api/auth';
 import type { ApiError } from '../api/client';
 import '../styles/auth_pages.css';
 
-export default function RegisterPage() {
+const RegisterPage: React.FC = () => {
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -13,10 +14,11 @@ export default function RegisterPage() {
         confirmPassword: ''
     });
     const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
     const { login } = useAuth();
+    const { translations: t } = useLang();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -27,11 +29,11 @@ export default function RegisterPage() {
         setError('');
 
         if (formData.password !== formData.confirmPassword) {
-            setError('两次输入的密码不一致。');
+            setError(t.auth.errorPasswordMismatch);
             return;
         }
 
-        setIsLoading(true);
+        setLoading(true);
 
         try {
             const registerData = {
@@ -42,23 +44,21 @@ export default function RegisterPage() {
 
             const response = await authApi.register(registerData);
 
-            // The API is configured to return tokens upon successful registration
             if (response.tokens) {
                 login(response.tokens, response.user);
-                navigate('/');
+                navigate('/profile');
             } else {
-                // Fallback: If no tokens returned, navigate to login
                 navigate('/login?registered=true');
             }
         } catch (err) {
             const apiError = err as ApiError;
-            // The validation errors might come in as deeply nested objects from DRF, showing the main message
-            const errorMsg = apiError.message.includes('object')
-                ? '注册失败：用户名或邮箱可能已被使用。'
+            // 处理后端抛出的 REGISTER_TAKEN 错误
+            const errorMsg = apiError.message.includes('REGISTER_TAKEN')
+                ? t.auth.errorRegisterTaken
                 : apiError.message;
-            setError(errorMsg || '注册发生错误，请稍后重试。');
+            setError(errorMsg || t.auth.errorGeneral);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
@@ -66,92 +66,86 @@ export default function RegisterPage() {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
-                    <div className="auth-header-top">
-                        <button
-                            className="auth-back-btn"
-                            onClick={() => navigate('/')}
-                        >
-                            ← 返回主页
-                        </button>
-                    </div>
-                    <h2>创建新账号</h2>
-                    <p>加入 aIELTS，全方位提升您的雅思能力</p>
+                    <h1>{t.auth.registerTitle}</h1>
+                    <p>{t.auth.registerSubtitle}</p>
                 </div>
 
-                {error && <div className="auth-error">{error}</div>}
+                <form className="auth-form" onSubmit={handleSubmit}>
+                    {error && <div className="auth-error">{error}</div>}
 
-                <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">
-                        <label htmlFor="username">用户名</label>
+                        <label htmlFor="username">{t.auth.username}</label>
                         <input
-                            id="username"
                             type="text"
+                            id="username"
                             name="username"
                             value={formData.username}
                             onChange={handleChange}
-                            placeholder="选择一个用于登录的用户名"
                             required
-                            disabled={isLoading}
+                            placeholder={t.auth.username}
                         />
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="email">邮箱地址</label>
+                        <label htmlFor="email">{t.auth.email}</label>
                         <input
-                            id="email"
                             type="email"
+                            id="email"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            placeholder="example@email.com"
                             required
-                            disabled={isLoading}
+                            placeholder={t.auth.email}
                         />
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">密码</label>
+                        <label htmlFor="password">{t.auth.password}</label>
                         <input
-                            id="password"
                             type="password"
+                            id="password"
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
-                            placeholder="至少6位密码"
                             required
-                            disabled={isLoading}
+                            placeholder={t.auth.password}
                             minLength={6}
                         />
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="confirmPassword">确认密码</label>
+                        <label htmlFor="confirmPassword">{t.auth.confirmPassword}</label>
                         <input
-                            id="confirmPassword"
                             type="password"
+                            id="confirmPassword"
                             name="confirmPassword"
                             value={formData.confirmPassword}
                             onChange={handleChange}
-                            placeholder="再次输入密码"
                             required
-                            disabled={isLoading}
+                            placeholder={t.auth.confirmPassword}
                             minLength={6}
                         />
                     </div>
 
                     <button
                         type="submit"
-                        className={`auth-submit-btn ${isLoading ? 'loading' : ''}`}
-                        disabled={isLoading}
+                        className={`auth-submit ${loading ? 'loading' : ''}`}
+                        disabled={loading}
                     >
-                        {isLoading ? '注册中...' : '注册账号'}
+                        {loading ? t.auth.registering : t.auth.registerBtn}
                     </button>
-                </form>
 
-                <div className="auth-footer">
-                    已拥有账号？ <Link to="/login">直接登录</Link>
-                </div>
+                    <div className="auth-footer">
+                        <p>
+                            {t.auth.hasAccount}{' '}
+                            <Link to="/login">{t.auth.toLogin}</Link>
+                        </p>
+                        <Link to="/" className="back-home">{t.auth.backToHome}</Link>
+                    </div>
+                </form>
             </div>
         </div>
     );
-}
+};
+
+export default RegisterPage;

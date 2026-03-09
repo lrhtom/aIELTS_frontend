@@ -17,6 +17,9 @@ export interface User {
     createdAt: string;
     updatedAt: string;
     atBalance: number;
+    bg_color?: string | null;
+    bg_image_url?: string | null;
+    bg_blur?: number | null;
 }
 
 export interface AuthResponse {

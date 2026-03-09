@@ -1,4 +1,4 @@
-import AppNavbar from '../components/AppNavbar';
+import Layout from '../components/Layout';
 import { Link } from 'react-router-dom';
 import { useLang } from '../i18n/LanguageContext';
 import { translations } from '../i18n/translations';
@@ -9,9 +9,7 @@ export default function HomePage() {
     const t = translations[lang];
 
     return (
-        <div className="home-page">
-            <AppNavbar />
-
+        <Layout>
             <section className="hero">
                 <h1>Master IELTS with <span className="gradient-text">AI</span></h1>
                 <p>{t.home.hero.subtitle}</p>
@@ -35,6 +33,6 @@ export default function HomePage() {
             </section>
 
             <footer className="footer">{t.home.footer}</footer>
-        </div>
+        </Layout>
     );
 }

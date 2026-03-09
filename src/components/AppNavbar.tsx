@@ -1,29 +1,28 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useLang } from '../i18n/LanguageContext';
-import { translations } from '../i18n/translations';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/navbar.css';
 
+interface AppNavbarProps {
+    onToggleSidebar?: () => void;
+}
 
-export default function AppNavbar() {
-    const { lang } = useLang();
-    const nav = translations[lang].nav;
-    const location = useLocation();
-    const { user, logout } = useAuth();
+export default function AppNavbar({ onToggleSidebar }: AppNavbarProps) {
+    const { translations: t } = useLang();
+    const { user } = useAuth();
 
     return (
         <nav className="navbar">
+            <button className="sidebar-open-btn" onClick={onToggleSidebar}>
+                <span className="hamburger-icon">
+                    <span className="hamburger-line"></span>
+                    <span className="hamburger-line"></span>
+                    <span className="hamburger-line"></span>
+                </span>
+            </button>
             <Link to="/" className="navbar-logo"><span>aIELTS</span></Link>
             <div className="navbar-links">
-                <Link to="/" className={location.pathname === '/' ? 'active' : ''}>{nav.home}</Link>
-                <Link to="/prompts" className={location.pathname === '/prompts' ? 'active' : ''}>
-                    {lang === 'zh' ? '💡 AI提示词' : '💡 Prompt Hub'}
-                </Link>
-                {user && (
-                    <>
-                        <Link to="/practice" className={location.pathname.startsWith('/practice') ? 'active' : ''}>{nav.practice}</Link>
-                    </>
-                )}
+                {/* 侧边栏中的导航项已移除，保留其他链接如果需要 */}
             </div>
 
             <div className="navbar-auth">
@@ -43,8 +42,8 @@ export default function AppNavbar() {
                     </Link>
                 ) : (
                     <div className="navbar-guest-actions">
-                        <Link to="/login" className="auth-btn outline-btn">登录</Link>
-                        <Link to="/register" className="auth-btn primary-btn">注册</Link>
+                        <Link to="/login" className="auth-btn outline-btn">{t.auth.loginBtn}</Link>
+                        <Link to="/register" className="auth-btn primary-btn">{t.auth.registerBtn}</Link>
                     </div>
                 )}
             </div>

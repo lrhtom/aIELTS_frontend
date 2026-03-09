@@ -1,10 +1,10 @@
-// ListeningPractice.tsx
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createListeningState } from '../store/listen_page_store';
 import type { VocabItem, ListeningData } from '../store/listen_page_store';
 import { api } from '../api/client';
 import { showToast } from '../components/Toast';
+import { useLang } from '../i18n/LanguageContext';
 import '../styles/listening_page.css';
 import '../styles/reading_page.css';
 
@@ -42,6 +42,7 @@ export default function ListeningPage() {
     const practiceType: 'article' | 'sentence' = state?.practiceType ?? 'article';
     const navigate = useNavigate();
     const onReturnHome = () => navigate('/');
+    const { translations: t } = useLang();
 
     const [st, setSt] = useState(createListeningState);
     const set = <K extends keyof typeof st>(k: K, v: typeof st[K]) =>
@@ -52,6 +53,8 @@ export default function ListeningPage() {
     const userAnswersRef = useRef<Record<number, string>>({});
     const hasRequested = useRef(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const floatBtnRef = useRef<HTMLDivElement | null>(null);
+    const activeEditorRef = useRef<HTMLElement | null>(null);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
     const [ttsStarted, setTtsStarted] = useState(false);
@@ -67,9 +70,30 @@ export default function ListeningPage() {
         };
     }, [audioUrl]);
 
+    const CACHE_KEY = 'listening_session_cache';
+
     useEffect(() => {
         if (hasRequested.current) return;
         hasRequested.current = true;
+
+        // 刷新恢复：优先从 sessionStorage 读取缓存数据
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+            try {
+                const { listeningData: cachedData, vocabList: cachedVocab } = JSON.parse(cached);
+                setSt(s => ({
+                    ...s,
+                    listeningData: cachedData,
+                    vocabList: cachedVocab,
+                    isLoading: false,
+                }));
+                // 音频不可持久化，刷新后无音频但题目保留
+                return;
+            } catch {
+                sessionStorage.removeItem(CACHE_KEY);
+            }
+        }
+
         setSt(createListeningState());
         generateListening();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,9 +136,13 @@ export default function ListeningPage() {
             setAudioLoading(true);
             set('isLoading', false); // Show content but with audio spinner
 
+            const token = localStorage.getItem('access_token');
             const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
                 body: JSON.stringify({ text: fullText })
 
             });
@@ -144,9 +172,14 @@ export default function ListeningPage() {
             setAudioLoading(false);
 
             set('listeningData', parsedData);
+            // 缓存到 sessionStorage 以便刷新恢复
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                listeningData: parsedData,
+                vocabList: parsedList,
+            }));
             // 前端防御：确保 questions 存在
             if (!parsedData.questions || parsedData.questions.length === 0) {
-                showToast('AI 未能生成题目，请重试', 'error');
+                showToast(t.listeningDetails.noQuestions, 'error');
                 onReturnHome();
                 return;
             }
@@ -157,7 +190,7 @@ export default function ListeningPage() {
         } catch (err: unknown) {
             console.error("API Error:", err);
             const error = err as { message?: string, status?: number };
-            showToast(error.message || '请求失败', 'error', error.status);
+            showToast(error.message || t.common.error, 'error', error.status);
             onReturnHome();
         } finally {
             set('isLoading', false);
@@ -169,7 +202,7 @@ export default function ListeningPage() {
         const totalQuestions = st.listeningData.questions.length;
         const answeredQuestions = Object.keys(userAnswersRef.current).length;
         if (answeredQuestions < totalQuestions) {
-            if (!window.confirm('You have unanswered questions. Submit anyway?')) return;
+            if (!window.confirm(t.readingDetails.submitConfirm)) return;
         }
         // 停止 TTS
         if (audioRef.current) {
@@ -193,11 +226,57 @@ export default function ListeningPage() {
             console.error("Audio playback error:", err);
             setTtsSpeaking(false);
             setTtsStarted(false);
-            showToast('播放音频时出错，系统可能限制了自动播放', 'error');
+            showToast(t.listeningDetails.audioError, 'error');
         }
     };
 
     // Resizer logic (REMOVED: The layout is now single-column with inline inputs)
+
+    // 浮动下划线
+    const executeUnderline = () => {
+        if (!activeEditorRef.current) return;
+        activeEditorRef.current.contentEditable = 'true';
+        document.execCommand('underline', false, '');
+        activeEditorRef.current.contentEditable = 'false';
+        if (floatBtnRef.current) floatBtnRef.current.classList.remove('visible');
+        window.getSelection()?.removeAllRanges();
+    };
+
+    useEffect(() => {
+        if (st.step !== 2 || st.isLoading) return;
+        const handleGlobalMouseUp = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const isContent = target.closest('#listeningContent');
+            if (!isContent) {
+                if (floatBtnRef.current) floatBtnRef.current.classList.remove('visible');
+                return;
+            }
+            const selection = window.getSelection();
+            const selectedText = selection?.toString().trim() || '';
+            if (selectedText.length > 0) {
+                activeEditorRef.current = document.getElementById('listeningContent') as HTMLElement;
+                if (floatBtnRef.current) {
+                    floatBtnRef.current.classList.add('visible');
+                    floatBtnRef.current.style.left = (e.pageX + 15) + 'px';
+                    floatBtnRef.current.style.top = (e.pageY - 40) + 'px';
+                }
+            } else {
+                if (floatBtnRef.current) floatBtnRef.current.classList.remove('visible');
+            }
+        };
+        const handleGlobalMouseDown = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (floatBtnRef.current && !floatBtnRef.current.contains(target)) {
+                floatBtnRef.current.classList.remove('visible');
+            }
+        };
+        document.body.addEventListener('mouseup', handleGlobalMouseUp);
+        document.addEventListener('mousedown', handleGlobalMouseDown);
+        return () => {
+            document.body.removeEventListener('mouseup', handleGlobalMouseUp);
+            document.removeEventListener('mousedown', handleGlobalMouseDown);
+        };
+    }, [st.step, st.isLoading]);
 
     // Resizer for results page passage sidebar
     useEffect(() => {
@@ -251,7 +330,7 @@ export default function ListeningPage() {
             <div className="container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <div className="loader">
-                        🧠 AI is writing your IELTS {difficulty} level listening passage... Please wait.
+                        🧠 {t.listeningDetails.writingPassage}
                     </div>
                 </div>
             </div>
@@ -263,7 +342,7 @@ export default function ListeningPage() {
             <div className="container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <div className="loader">
-                        🔊 Generating audio... Please wait.
+                        🔊 {t.listeningDetails.generatingAudio}
                     </div>
                 </div>
             </div>
@@ -362,7 +441,7 @@ export default function ListeningPage() {
                                                 setRenderTick(t => t + 1);
                                             }}
                                         />
-                                        <span style={{ fontWeight: 600 }}>{key}.</span> <span>{optText as string}</span>
+                                        <span style={{ fontWeight: 600 }}>{key}.</span> <span>{removeMarkdown(optText as string)}</span>
                                     </label>
                                 ))}
                             </div>
@@ -374,38 +453,41 @@ export default function ListeningPage() {
 
         return (
             <div className="container">
+                <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
+                    <u>U</u> {t.readingDetails.underline}
+                </div>
                 <div className="page listening-page">
                     <div className="toolbar-area">
                         <div>
                             {!ttsStarted ? (
                                 <button className="tts-start-btn" onClick={startTTS}>
-                                    🔊 开始播放
+                                    🔊 {t.listeningDetails.startAudio}
                                 </button>
                             ) : (
                                 <span className={`tts-status ${ttsSpeaking ? 'speaking' : 'done'}`}>
-                                    {ttsSpeaking ? '🔊 正在朗读...' : '✅ 朗读结束'}
+                                    {ttsSpeaking ? `🔊 ${t.listeningDetails.speaking}` : `✅ ${t.listeningDetails.audioDone}`}
                                 </span>
                             )}
                         </div>
                         <div className="toolbar-info-badges">
                             <span className="toolbar-badge mode-badge">
-                                {isArticleMode ? '📄 文章填空' : isMultipleChoiceMode ? '🎯 选择题' : '✏️ 句子填空'}
+                                {isArticleMode ? `📄 ${t.listeningDetails.typeArticle}` : isMultipleChoiceMode ? `🎯 ${t.listeningDetails.typeMC}` : `✏️ ${t.listeningDetails.typeSentence}`}
                             </span>
                             {!isMultipleChoiceMode && (
                                 <span className="toolbar-badge limit-badge">
-                                    ✍️ 每空不超过 {wordCountMax === wordCountMin
-                                        ? `${wordCountMax} 个词`
-                                        : `${wordCountMin}–${wordCountMax} 个词`}
+                                    ✍️ {t.listeningDetails.wordLimit} {wordCountMax === wordCountMin
+                                        ? `${wordCountMax} ${t.listeningDetails.wordUnit}`
+                                        : `${wordCountMin}–${wordCountMax} ${t.listeningDetails.wordUnit}`}
                                 </span>
                             )}
                         </div>
                     </div>
 
-                    <div className="listening-content-area">
+                    <div className="listening-content-area" id="listeningContent">
                         {isArticleMode ? renderArticleMode() : isMultipleChoiceMode ? renderMultipleChoiceMode() : renderSentenceMode()}
 
                         <div className="submit-quiz-container" style={{ marginTop: '40px', paddingBottom: '40px' }}>
-                            <button onClick={submitQuiz}>Submit Answers</button>
+                            <button onClick={submitQuiz}>{t.readingDetails.submitBtn}</button>
                         </div>
                     </div>
                 </div>
@@ -435,7 +517,7 @@ export default function ListeningPage() {
                 {/* Results Header */}
                 <div className="results-header">
                     <div className="results-header-left">
-                        <h1>Analysis & Explanations</h1>
+                        <h1>{t.results.analysis}</h1>
                     </div>
                     <div className="results-header-right">
                         <div className="score-card">
@@ -443,9 +525,9 @@ export default function ListeningPage() {
                             <div className="score-pct">{pct}%</div>
                         </div>
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className="toggle-passage-btn">
-                            {st.isPassageOpen ? '✕ Hide Passage' : '📖 Show Passage'}
+                            {st.isPassageOpen ? `✕ ${t.results.hidePassage}` : `📖 ${t.results.showPassage}`}
                         </button>
-                        <button onClick={onReturnHome} className="tool-btn">🏠 Home</button>
+                        <button onClick={onReturnHome} className="tool-btn">🏠 {t.common.home}</button>
                     </div>
                 </div>
 
@@ -453,7 +535,7 @@ export default function ListeningPage() {
                 <div className="results-layout" id="listeningResultsLayout">
                     {/* Passage Sidebar */}
                     <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="listeningPassageSidebar">
-                        <h3>Original Passage</h3>
+                        <h3>{t.results.originalPassage}</h3>
                         <h4 dangerouslySetInnerHTML={{ __html: formatHighlight(st.listeningData.title) }}></h4>
                         <div className="passage-text">
                             {passageParagraphs.map((p, idx) => (
@@ -462,7 +544,7 @@ export default function ListeningPage() {
                         </div>
                         {st.vocabList.length > 0 && (
                             <div className="result-vocab-list" style={{ marginTop: '24px' }}>
-                                <h3>📖 Target Vocabulary</h3>
+                                <h3>📖 {t.results.targetVocab}</h3>
                                 <div className="vocab-chips">
                                     {st.vocabList.map((v, i) => (
                                         <span key={i} className="vocab-chip">
@@ -498,13 +580,13 @@ export default function ListeningPage() {
                                             </div>
                                         ))}
                                         <p style={{ marginTop: '12px' }}>
-                                            Your Answer: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | Correct: <strong>{q.answer}</strong>
+                                            {t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.correctAnswer}: <strong>{q.answer}</strong>
                                         </p>
                                         <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                            {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                                            {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
                                         </p>
                                         <div className="explanation">
-                                            <strong>解析:</strong> {q.explanation}
+                                            <strong>{t.results.explanation}:</strong> {q.explanation}
                                         </div>
                                     </div>
                                 );
@@ -513,12 +595,12 @@ export default function ListeningPage() {
                                 return (
                                     <div key={q.id} className="result-block">
                                         <div className="question-text">{q.id}. {q.question.replace(/\*\*/g, '')}</div>
-                                        <p>Your Answer: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | Acceptable: <strong>{q.answers.join(' / ')}</strong></p>
+                                        <p>{t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.acceptableAnswers}: <strong>{q.answers.join(' / ')}</strong></p>
                                         <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                            {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                                            {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
                                         </p>
                                         <div className="explanation">
-                                            <strong>解析:</strong> {q.explanation}
+                                            <strong>{t.results.explanation}:</strong> {q.explanation}
                                         </div>
                                     </div>
                                 );

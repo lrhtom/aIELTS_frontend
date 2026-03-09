@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useLang } from '../i18n/LanguageContext';
 
-type AIProvider = 'deepseek' | 'gemini' | 'doubao' | 'qwen';
+type AIProvider = 'deepseek' | 'gemini' | 'gpt5';
 
 interface AiModelSelectorProps {
     onModelChange?: (provider: AIProvider) => void;
@@ -8,10 +9,13 @@ interface AiModelSelectorProps {
     description?: string;
 }
 
-export default function AiModelSelector({ onModelChange, label = "AI 模型", description = "选择后台出题和批改所使用的引擎" }: AiModelSelectorProps) {
+export default function AiModelSelector({ onModelChange, label, description }: AiModelSelectorProps) {
+    const { translations: t } = useLang();
+    const resolvedLabel = label ?? t.components.aiModel.label;
+    const resolvedDesc = description ?? t.components.aiModel.desc;
     const [provider, setProvider] = useState<AIProvider>(() => {
         const saved = localStorage.getItem('ai_provider');
-        return (saved as AIProvider) || 'openai';
+        return (saved as AIProvider) || 'deepseek';
     });
 
     const handleProviderChange = (p: AIProvider) => {
@@ -24,8 +28,8 @@ export default function AiModelSelector({ onModelChange, label = "AI 模型", de
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {label && <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{label} 🧠</div>}
-            {description && <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{description}</div>}
+            {resolvedLabel && <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{resolvedLabel} 🧠</div>}
+            {resolvedDesc && <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{resolvedDesc}</div>}
             <select
                 style={{
                     padding: '10px 14px',
@@ -45,8 +49,7 @@ export default function AiModelSelector({ onModelChange, label = "AI 模型", de
             >
                 <option value="deepseek">DeepSeek</option>
                 <option value="gemini">Gemini 3.0 Flash</option>
-                <option value="doubao">doubao-seed-2.0-lite</option>
-                <option value="qwen">qwen3.5-397b-a17b</option>
+                <option value="gpt5">GPT-5.3 Chat</option>
             </select>
         </div>
     );

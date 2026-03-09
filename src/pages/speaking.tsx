@@ -1,4 +1,4 @@
-import AppNavbar from '../components/AppNavbar';
+import Layout from '../components/Layout';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import VocabInput from '../components/VocabInput';
@@ -85,10 +85,8 @@ export default function Speaking() {
     };
 
     return (
-        <div className="practice-page">
-            <AppNavbar />
-
-            <div className="practice-container">
+        <Layout>
+<div className=".*">
                 <div className="practice-header">
                     <Link to="/practice/ai" className="back-link">← 返回 AI 练习</Link>
                     <h1>🗣️ 口语练习配置</h1>
@@ -193,6 +191,6 @@ export default function Speaking() {
                     </button>
                 </div>
             </div>
-        </div>
+        </Layout>
     );
 }
