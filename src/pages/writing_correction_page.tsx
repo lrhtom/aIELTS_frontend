@@ -24,6 +24,7 @@ export default function WritingCorrectionPage() {
     const t = translations[lang];
 
     const [text, setText] = useState('');
+    const [promptText, setPromptText] = useState('');
     const [isEvaluating, setIsEvaluating] = useState(false);
     const [result, setResult] = useState<CorrectionResponse | null>(null);
 
@@ -46,7 +47,10 @@ export default function WritingCorrectionPage() {
         try {
             const res = await api<CorrectionResponse>('/writing/generate', {
                 method: 'POST',
-                body: { text },
+                body: { 
+                    text,
+                    prompt: promptText
+                },
             });
             setResult(res);
             showToast(t.writingCorrection.toastSuccess, 'success');
@@ -78,18 +82,37 @@ export default function WritingCorrectionPage() {
 
                 <div className="wc-main-layout">
                     {/* 左边：输入与统计区域 */}
-                    <div className="wc-editor-card">
-                        <div className="wc-editor-header">
-                            <h3>{t.writingCorrection.yourEssay}</h3>
-                            <span className="wc-word-count">{t.writingCorrection.wordCount}<strong>{wordCount}</strong> / 250+</span>
+                    <div className="wc-editor-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        
+                        {/* 题干输入框 (可选) */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div className="wc-editor-header" style={{ borderBottom: 'none', padding: '0 4px' }}>
+                                <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>{t.writingCorrection.promptLabel}</h3>
+                            </div>
+                            <textarea
+                                className="wc-textarea"
+                                style={{ minHeight: '80px', flex: 'none' }}
+                                placeholder={t.writingCorrection.promptPlaceholder}
+                                value={promptText}
+                                onChange={(e) => setPromptText(e.target.value)}
+                                disabled={isEvaluating}
+                            ></textarea>
                         </div>
-                        <textarea
-                            className="wc-textarea"
-                            placeholder={t.writingCorrection.placeholder}
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            disabled={isEvaluating}
-                        ></textarea>
+
+                        {/* 作文输入框 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                            <div className="wc-editor-header" style={{ padding: '0 4px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                                <h3>{t.writingCorrection.yourEssay}</h3>
+                                <span className="wc-word-count">{t.writingCorrection.wordCount}<strong>{wordCount}</strong> / 250+</span>
+                            </div>
+                            <textarea
+                                className="wc-textarea"
+                                placeholder={t.writingCorrection.placeholder}
+                                value={text}
+                                onChange={(e) => setText(e.target.value)}
+                                disabled={isEvaluating}
+                            ></textarea>
+                        </div>
                         <div className="wc-editor-footer">
                             <button
                                 className={`skill-btn reading wc-eval-btn ${isEvaluating ? 'loading' : ''}`}

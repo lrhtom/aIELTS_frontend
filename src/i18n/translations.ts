@@ -268,6 +268,8 @@ export interface Translations {
         lr: string;
         gra: string;
         examinerFeedback: string;
+        promptLabel: string;
+        promptPlaceholder: string;
     };
     settings: {
         heading: string;
@@ -928,6 +930,8 @@ const zh: Translations = {
         lr: '📚 词汇资源 (Lexical Resource)',
         gra: '📝 语法多样性 (Grammatical Range)',
         examinerFeedback: '💡 考官详细反馈 (Detailed Feedback by AI Examiner)',
+        promptLabel: '作文题目 (选填)',
+        promptPlaceholder: '（选填）将你需要回答的雅思原题粘贴在此处，有助于AI更精准地评判跑题情况...',
     },
 };
 
@@ -1386,8 +1390,10 @@ const en: Translations = {
         ta: '🎯 Task Response / Achievement',
         cc: '🔗 Coherence & Cohesion',
         lr: '📚 Lexical Resource',
-        gra: '📝 Grammatical Range',
+        gra: '📝 Grammatical Range and Accuracy',
         examinerFeedback: '💡 Detailed Feedback by AI Examiner',
+        promptLabel: 'Essay Prompt (Optional)',
+        promptPlaceholder: '(Optional) Paste the original IELTS prompt here for more accurate Task Response evaluation...',
     },
 };
 

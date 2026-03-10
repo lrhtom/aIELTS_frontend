@@ -1,6 +1,7 @@
 import Layout from '../components/Layout';
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
 import { showToast } from '../components/Toast';
 import '../styles/prompt_page.css';
@@ -28,7 +29,7 @@ export default function PromptPage() {
     const [isLoading, setIsLoading] = useState(false);
 
     // Form states
-    const [newUsername, setNewUsername] = useState('');
+    const { user } = useAuth();
     const [newContent, setNewContent] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -52,8 +53,8 @@ export default function PromptPage() {
 
     const handlePublish = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newUsername.trim() || !newContent.trim()) {
-            showToast('用户名和内容不能为空！', 'error');
+        if (!newContent.trim()) {
+            showToast('内容不能为空！', 'error');
             return;
         }
 
@@ -62,7 +63,7 @@ export default function PromptPage() {
             await api('/prompts/', {
                 method: 'POST',
                 body: {
-                    username: newUsername.trim(),
+                    username: user?.username || 'Anonymous',
                     prompt_content: newContent.trim()
                 }
             });
@@ -125,14 +126,6 @@ export default function PromptPage() {
                 <div className="prompt-publish-card">
                     <h3>✍️ 贡献灵感</h3>
                     <form onSubmit={handlePublish} className="prompt-form">
-                        <input
-                            type="text"
-                            placeholder="你的大名 (如: lrhtom)"
-                            value={newUsername}
-                            onChange={e => setNewUsername(e.target.value)}
-                            maxLength={50}
-                            required
-                        />
                         <textarea
                             placeholder="在这里粘贴你的魔法提示词..."
                             value={newContent}
