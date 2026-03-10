@@ -28,7 +28,9 @@ const LoginPage: React.FC = () => {
             }
         } catch (err: any) {
             console.error('Login error:', err);
-            if (err.response?.status === 401) {
+            if (err.response?.status === 403 || err.message?.includes('ACCOUNT_BANNED')) {
+                setError(t.auth.errorBanned);
+            } else if (err.response?.status === 401) {
                 setError(t.auth.errorUnauthorized);
             } else {
                 setError(t.auth.errorGeneral);
@@ -36,6 +38,7 @@ const LoginPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
+
     };
 
     return (

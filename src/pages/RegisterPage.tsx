@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../i18n/LanguageContext';
@@ -6,30 +6,89 @@ import { authApi } from '../api/auth';
 import type { ApiError } from '../api/client';
 import '../styles/auth_pages.css';
 
+const RESEND_COOLDOWN = 60; // seconds
+
 const RegisterPage: React.FC = () => {
     const [formData, setFormData] = useState({
         username: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        verificationCode: '',
     });
     const [error, setError] = useState('');
+    const [info, setInfo] = useState('');
     const [loading, setLoading] = useState(false);
+    const [sendingCode, setSendingCode] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const navigate = useNavigate();
     const { login } = useAuth();
     const { translations: t } = useLang();
 
+    useEffect(() => {
+        return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    }, []);
+
+    const startCooldown = () => {
+        setCooldown(RESEND_COOLDOWN);
+        timerRef.current = setInterval(() => {
+            setCooldown(prev => {
+                if (prev <= 1) {
+                    clearInterval(timerRef.current!);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        setError('');
+    };
+
+    const handleSendCode = async () => {
+        const { username, email } = formData;
+        if (!username.trim() || !email.trim()) {
+            setError(t.auth.errorEmailRequired);
+            return;
+        }
+
+        setSendingCode(true);
+        setError('');
+        setInfo('');
+
+        try {
+            await authApi.sendVerificationCode(email.trim(), username.trim());
+            setInfo(t.auth.codeSent);
+            startCooldown();
+        } catch (err) {
+            const apiError = err as ApiError;
+            const msg = apiError.message || '';
+            if (msg.includes('REGISTER_TAKEN')) {
+                setError(t.auth.errorRegisterTaken);
+            } else {
+                setError(t.auth.errorGeneral);
+            }
+        } finally {
+            setSendingCode(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setInfo('');
 
         if (formData.password !== formData.confirmPassword) {
             setError(t.auth.errorPasswordMismatch);
+            return;
+        }
+
+        if (!formData.verificationCode.trim()) {
+            setError(t.auth.errorCodeInvalid);
             return;
         }
 
@@ -38,8 +97,9 @@ const RegisterPage: React.FC = () => {
         try {
             const registerData = {
                 username: formData.username,
-                email: formData.email,
-                password: formData.password
+                email: formData.email.toLowerCase(),
+                password: formData.password,
+                verification_code: formData.verificationCode,
             };
 
             const response = await authApi.register(registerData);
@@ -52,15 +112,24 @@ const RegisterPage: React.FC = () => {
             }
         } catch (err) {
             const apiError = err as ApiError;
-            // 处理后端抛出的 REGISTER_TAKEN 错误
-            const errorMsg = apiError.message.includes('REGISTER_TAKEN')
-                ? t.auth.errorRegisterTaken
-                : apiError.message;
-            setError(errorMsg || t.auth.errorGeneral);
+            const msg = apiError.message || '';
+            if (msg.includes('REGISTER_TAKEN')) {
+                setError(t.auth.errorRegisterTaken);
+            } else if (msg.includes('INVALID_CODE') || msg.includes('VERIFICATION_CODE_REQUIRED')) {
+                setError(t.auth.errorCodeInvalid);
+            } else {
+                setError(msg || t.auth.errorGeneral);
+            }
         } finally {
             setLoading(false);
         }
     };
+
+    const sendBtnLabel = sendingCode
+        ? t.auth.sendingCode
+        : cooldown > 0
+            ? t.auth.resendCode.replace('{n}', String(cooldown))
+            : t.auth.sendCode;
 
     return (
         <div className="auth-container">
@@ -72,6 +141,7 @@ const RegisterPage: React.FC = () => {
 
                 <form className="auth-form" onSubmit={handleSubmit}>
                     {error && <div className="auth-error">{error}</div>}
+                    {info && <div className="auth-info">{info}</div>}
 
                     <div className="form-group">
                         <label htmlFor="username">{t.auth.username}</label>
@@ -83,19 +153,46 @@ const RegisterPage: React.FC = () => {
                             onChange={handleChange}
                             required
                             placeholder={t.auth.username}
+                            disabled={loading}
                         />
                     </div>
 
                     <div className="form-group">
                         <label htmlFor="email">{t.auth.email}</label>
+                        <div className="code-input-group">
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                required
+                                placeholder={t.auth.email}
+                                disabled={loading}
+                            />
+                            <button
+                                type="button"
+                                className="send-code-btn"
+                                onClick={handleSendCode}
+                                disabled={sendingCode || cooldown > 0 || loading}
+                            >
+                                {sendBtnLabel}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="verificationCode">{t.auth.verificationCode}</label>
                         <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={formData.email}
+                            type="text"
+                            id="verificationCode"
+                            name="verificationCode"
+                            value={formData.verificationCode}
                             onChange={handleChange}
                             required
-                            placeholder={t.auth.email}
+                            placeholder={t.auth.codePlaceholder}
+                            maxLength={6}
+                            disabled={loading}
                         />
                     </div>
 
@@ -110,6 +207,7 @@ const RegisterPage: React.FC = () => {
                             required
                             placeholder={t.auth.password}
                             minLength={6}
+                            disabled={loading}
                         />
                     </div>
 
@@ -124,12 +222,13 @@ const RegisterPage: React.FC = () => {
                             required
                             placeholder={t.auth.confirmPassword}
                             minLength={6}
+                            disabled={loading}
                         />
                     </div>
 
                     <button
                         type="submit"
-                        className={`auth-submit ${loading ? 'loading' : ''}`}
+                        className={`auth-submit-btn ${loading ? 'loading' : ''}`}
                         disabled={loading}
                     >
                         {loading ? t.auth.registering : t.auth.registerBtn}

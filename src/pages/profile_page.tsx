@@ -6,16 +6,20 @@ import UserHome from '../components/profile/UserHome';
 import UserSettings from '../components/profile/UserSettings';
 import UserBackpack from '../components/profile/UserBackpack';
 import UserFeedback from '../components/profile/UserFeedback';
+import AdminFeedback from '../components/profile/AdminFeedback';
 import UserBackground from '../components/profile/UserBackground';
+import UserManual from '../components/profile/UserManual';
+import { formatATBalance } from '../utils/format';
 import '../styles/profile_page.css';
 
-type Tab = 'home' | 'settings' | 'backpack' | 'feedback' | 'background';
+type Tab = 'home' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin' | 'manual';
 
 export default function ProfilePage() {
     const { user } = useAuth();
     const { translations: t } = useLang();
     const [activeTab, setActiveTab] = useState<Tab>('home');
     const [styleOpen, setStyleOpen] = useState(false);
+    const [adminOpen, setAdminOpen] = useState(false);
 
     if (!user) return null;
 
@@ -26,6 +30,8 @@ export default function ProfilePage() {
             case 'backpack': return <UserBackpack onBack={() => setActiveTab('home')} />;
             case 'feedback': return <UserFeedback />;
             case 'background': return <UserBackground />;
+            case 'admin': return <AdminFeedback />;
+            case 'manual': return <UserManual />;
             default: return <UserHome onNavigateToBackpack={() => setActiveTab('backpack')} />;
         }
     };
@@ -58,7 +64,7 @@ export default function ProfilePage() {
                                 <div className="profile-user-email">{user.email}</div>
                                 <div className="profile-user-at-balance">
                                     <span className="at-balance-icon">💰</span>
-                                    <span className="at-balance-amount">{user.atBalance || 0} AT</span>
+                                    <span className="at-balance-amount">{formatATBalance(user.atBalance)} AT</span>
                                 </div>
                             </div>
                         </div>
@@ -74,6 +80,14 @@ export default function ProfilePage() {
                                     <span className="menu-item-text">{label}</span>
                                 </button>
                             ))}
+
+                            <button
+                                className={`profile-menu-item ${activeTab === 'manual' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('manual')}
+                            >
+                                <span className="menu-item-icon">📖</span>
+                                <span className="menu-item-text">{t.profile.menu.manual}</span>
+                            </button>
 
                             {/* 网站样式自定义 手风琴 */}
                             <div className="profile-menu-accordion">
@@ -97,6 +111,30 @@ export default function ProfilePage() {
                                     </button>
                                 </div>
                             </div>
+                            {/* 管理后台 - 仅管理员可见 */}
+                            {(user.is_staff || user.is_superuser) && (
+                                <div className="profile-menu-accordion">
+                                    <button
+                                        className={`profile-menu-item profile-accordion-trigger ${adminOpen ? 'open' : ''}`}
+                                        onClick={() => setAdminOpen(o => !o)}
+                                    >
+                                        <span className="menu-item-icon">🛠️</span>
+                                        <span className="menu-item-text">{t.profile.menu.admin}</span>
+                                        <svg className="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                            <polyline points="6 9 12 15 18 9" />
+                                        </svg>
+                                    </button>
+                                    <div className={`profile-accordion-body ${adminOpen ? 'open' : ''}`}>
+                                        <button
+                                            className={`profile-menu-item profile-sub-item ${activeTab === 'admin' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('admin')}
+                                        >
+                                            <span className="menu-item-icon">📋</span>
+                                            <span className="menu-item-text">{t.profile.admin.feedback.title}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </nav>
                     </aside>
 

@@ -215,3 +215,77 @@
         transform: translateX(0);
     }
 }
+
+/* 验证码输入组：邮箱输入和发送按钮并排 */
+.code-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.code-input-group input {
+    flex: 1;
+    min-width: 0;
+}
+
+.send-code-btn {
+    flex-shrink: 0;
+    padding: 0 18px;
+    border-radius: 12px;
+    border: 1.5px solid #3b82f6;
+    background: transparent;
+    color: #3b82f6;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.send-code-btn:hover:not(:disabled) {
+    background: #3b82f6;
+    color: white;
+}
+
+.send-code-btn:disabled {
+    border-color: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+/* info 蓝色提示框 */
+.auth-info {
+    background: rgba(219, 234, 254, 0.8);
+    color: #1d4ed8;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    border-left: 4px solid #3b82f6;
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+/* auth-submit（注册页使用的类名）兼容 */
+.auth-submit {
+    margin-top: 10px;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.auth-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+}
+
+.auth-submit:disabled {
+    background: #94a3b8;
+    box-shadow: none;
+    cursor: not-allowed;
+}

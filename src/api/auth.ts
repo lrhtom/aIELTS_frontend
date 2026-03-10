@@ -17,6 +17,8 @@ export interface User {
     createdAt: string;
     updatedAt: string;
     atBalance: number;
+    is_staff?: boolean;
+    is_superuser?: boolean;
     bg_color?: string | null;
     bg_image_url?: string | null;
     bg_blur?: number | null;
@@ -52,6 +54,10 @@ export const authApi = {
     register: async (data: Record<string, string>): Promise<AuthResponse> => {
         const response = await apiClient.post('/auth/register', data);
         return response.data;
+    },
+
+    sendVerificationCode: async (email: string, username: string): Promise<void> => {
+        await apiClient.post('/auth/send-code', { email, username });
     },
 
     getProfile: async (): Promise<User> => {

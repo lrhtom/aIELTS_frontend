@@ -1,4 +1,4 @@
-// Translations for zh (Chinese) and en (English)
+﻿// Translations for zh (Chinese) and en (English)
 // Usage: t.nav.home, t.home.hero.title, etc.
 
 export type Lang = 'zh' | 'en';
@@ -45,6 +45,18 @@ export interface Translations {
         errorGeneral: string;
         errorPasswordMismatch: string;
         errorRegisterTaken: string;
+        verificationCode: string;
+        codePlaceholder: string;
+        sendCode: string;
+        resendCode: string;
+        codeSent: string;
+        sendingCode: string;
+        errorCodeInvalid: string;
+        errorEmailRequired: string;
+        errorBanned: string;
+        manualTitle: string;
+        manualSearch: string;
+        manualEmpty: string;
     };
     home: {
         hero: {
@@ -175,6 +187,8 @@ export interface Translations {
             backpack: string;
             style: string;
             background: string;
+            admin: string;
+            manual: string;
         };
         welcome: string;
         welcomeDesc: string;
@@ -255,6 +269,17 @@ export interface Translations {
                 dusk: string;
                 sky: string;
                 coral: string;
+            };
+        };
+        admin: {
+            feedback: {
+                title: string;
+                unresolved: string;
+                resolved: string;
+                resolve: string;
+                delete: string;
+                noData: string;
+                total: string;
             };
         };
     };
@@ -357,6 +382,18 @@ const zh: Translations = {
         errorGeneral: '发生错误，请稍后重试。',
         errorPasswordMismatch: '两次输入的密码不一致。',
         errorRegisterTaken: '注册失败：用户名或邮箱可能已被使用。',
+        verificationCode: '邮箱验证码',
+        codePlaceholder: '请输入6位验证码',
+        sendCode: '获取验证码',
+        resendCode: '重新获取({n}s)',
+        codeSent: '验证码已发送到你的邮箱，请查收',
+        sendingCode: '发送中...',
+        errorCodeInvalid: '验证码错误或已过期，请重新获取',
+        errorEmailRequired: '请先填写用户名和邮箱地址',
+        errorBanned: '账号异常，请联系管理员处理。',
+        manualTitle: '使用手册',
+        manualSearch: '搜索功能或页面...',
+        manualEmpty: '未找到相关内容',
     },
     home: {
         hero: {
@@ -406,8 +443,8 @@ const zh: Translations = {
             desc: '与 AI 进行 1:1 模拟对话，提供发音、语法与逻辑评分。',
         },
         writing: {
-            title: 'AI 写作批改',
-            desc: '上传您的作文，从词汇、语法、连贯性多维度获得专业反馈。',
+            title: 'AI写作板块',
+            desc: '上传作文获取细致反馈',
         },
         comingSoon: '更多模块正在同步开发中...',
     },
@@ -491,6 +528,8 @@ const zh: Translations = {
             backpack: '背包',
             style: '网站样式',
             background: '背景自定义',
+            admin: '管理后台',
+            manual: '网站手册',
         },
         welcome: '欢迎来到您的个人主页',
         welcomeDesc: '在这里，您可以查看余额、学习进度以及管理个人偏好。',
@@ -570,7 +609,18 @@ const zh: Translations = {
                 green: '绿意',
                 dusk: '暮色',
                 sky: '天空',
-                coral: '珊瑚',
+                coral: '珊瑚色',
+            },
+        },
+        admin: {
+            feedback: {
+                title: '反馈管理',
+                unresolved: '待处理',
+                resolved: '已解决',
+                resolve: '解决',
+                delete: '删除',
+                noData: '暂无反馈记录',
+                total: '共 {count} 条反馈',
             },
         },
     },
@@ -673,6 +723,18 @@ const en: Translations = {
         errorGeneral: 'An error occurred. Please try again later.',
         errorPasswordMismatch: 'Passwords do not match.',
         errorRegisterTaken: 'Registration failed: Username or email might be taken.',
+        verificationCode: 'Verification Code',
+        codePlaceholder: 'Enter 6-digit code',
+        sendCode: 'Send Code',
+        resendCode: 'Resend ({n}s)',
+        codeSent: 'Code sent to your email, please check your inbox',
+        sendingCode: 'Sending...',
+        errorCodeInvalid: 'Invalid or expired code, please request a new one',
+        errorEmailRequired: 'Please fill in username and email first',
+        errorBanned: 'Account suspended. Please contact the administrator.',
+        manualTitle: 'User Manual',
+        manualSearch: 'Search features or pages...',
+        manualEmpty: 'No results found',
     },
     home: {
         hero: {
@@ -807,6 +869,8 @@ const en: Translations = {
             backpack: 'Backpack',
             style: 'Site Style',
             background: 'Background',
+            admin: 'Admin Panel',
+            manual: 'User Manual',
         },
         welcome: 'Welcome to your Profile',
         welcomeDesc: 'Here you can view your balance, progress, and manage preferences.',
@@ -885,8 +949,19 @@ const en: Translations = {
                 morning: 'Morning Light',
                 green: 'Greenery',
                 dusk: 'Dusk',
-                sky: 'Sky Blue',
+                sky: 'Sky',
                 coral: 'Coral',
+            },
+        },
+        admin: {
+            feedback: {
+                title: 'Feedback Management',
+                unresolved: 'Pending',
+                resolved: 'Resolved',
+                resolve: 'Resolve',
+                delete: 'Delete',
+                noData: 'No feedback found',
+                total: 'Total {count} feedbacks',
             },
         },
     },

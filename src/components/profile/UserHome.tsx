@@ -1,5 +1,6 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
+import { formatATBalance } from '../../utils/format';
 import '../../styles/atBalanceCheck.css';
 
 interface UserHomeProps {
@@ -42,7 +43,7 @@ export default function UserHome({ onNavigateToBackpack }: UserHomeProps) {
                     <div className="user-balance-title">{t.profile.balance.title}</div>
                 </div>
                 <div className="user-balance-amount">
-                    <span className="user-balance-value">{user?.atBalance || 0}</span>
+                    <span className="user-balance-value">{formatATBalance(user?.atBalance)}</span>
                     <span className="user-balance-unit">AT</span>
                 </div>
                 <div className="user-balance-description">

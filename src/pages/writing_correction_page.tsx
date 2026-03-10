@@ -57,13 +57,13 @@ export default function WritingCorrectionPage() {
 
     return (
         <Layout>
-<div className=".*">
+            <div className=".*">
                 <div className="wc-header-row">
                     <div className="practice-header" style={{ marginBottom: 0 }}>
                         <button className="back-link" onClick={() => navigate('/writing')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
                             ← 写作大厅
                         </button>
-                        <h1>📝 写作批改 (Correction)</h1>
+                        <h1>📝 AI写作板块 (AI Writing)</h1>
                         <p>将你的作文输入下方，获知各项评分雅思标准分级图表</p>
                     </div>
 

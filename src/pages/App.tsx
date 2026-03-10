@@ -11,6 +11,8 @@ import Speaking from './speaking';
 import SpeakingChatPage from './speaking_chat';
 import Writing_page from './writing_page';
 import WritingCorrectionPage from './writing_correction_page';
+import ChartSelectionPage from './chart_selection_page';
+import ChartPracticePage from './chart_practice_page';
 import SettingsPage from './settings_page';
 import PromptPage from './prompt_page';
 import LoginPage from './LoginPage';
@@ -41,6 +43,8 @@ export default function App() {
         <Route path="/speaking/chat" element={<ProtectedRoute><SpeakingChatPage /></ProtectedRoute>} />
         <Route path="/writing" element={<ProtectedRoute><Writing_page /></ProtectedRoute>} />
         <Route path="/writing/correction" element={<ProtectedRoute><WritingCorrectionPage /></ProtectedRoute>} />
+        <Route path="/writing/chart" element={<ProtectedRoute><ChartSelectionPage /></ProtectedRoute>} />
+        <Route path="/writing/chart/doing" element={<ProtectedRoute><ChartPracticePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/prompts" element={<ProtectedRoute><PromptPage /></ProtectedRoute>} />

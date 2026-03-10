@@ -244,3 +244,115 @@
         gap: 8px;
     }
 }
+
+/* ─── 图表题选型动画卡片 ────────────────────────────────────────────────── */
+
+.chart-card-btn {
+    padding: 1.5rem;
+    border-radius: 14px;
+    border: 2px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.chart-card-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(13, 148, 136, 0.1) 0%, rgba(13, 148, 136, 0) 70%);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.chart-card-btn:hover {
+    transform: translateY(-6px);
+    border-color: rgba(13, 148, 136, 0.4);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.chart-card-btn:hover::before {
+    width: 200%;
+    padding-top: 200%;
+}
+
+.chart-icon {
+    font-size: 40px;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 1;
+}
+
+.chart-card-btn:hover .chart-icon {
+    transform: scale(1.15) rotate(5deg);
+}
+
+.chart-title {
+    font-size: 18px;
+    font-weight: 600;
+    z-index: 1;
+    transition: color 0.3s ease;
+}
+
+.chart-desc {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    z-index: 1;
+}
+
+/* Active State */
+.chart-card-btn.active {
+    border-color: var(--color-primary);
+    background-color: rgba(13, 148, 136, 0.04);
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15), 0 8px 20px rgba(13, 148, 136, 0.1);
+    transform: translateY(-4px);
+    animation: pulseBorder 2s infinite ease-in-out;
+}
+
+.chart-card-btn.active .chart-title {
+    color: var(--color-primary);
+}
+
+.chart-card-btn.active .chart-icon {
+    animation: popIcon 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes popIcon {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.25) translateY(-4px);
+    }
+
+    100% {
+        transform: scale(1.1) translateY(0);
+    }
+}
+
+@keyframes pulseBorder {
+    0% {
+        box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15), 0 8px 20px rgba(13, 148, 136, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba(13, 148, 136, 0.05), 0 12px 25px rgba(13, 148, 136, 0.15);
+    }
+
+    100% {
+        box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15), 0 8px 20px rgba(13, 148, 136, 0.1);
+    }
+}

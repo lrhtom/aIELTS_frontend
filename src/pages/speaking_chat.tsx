@@ -121,17 +121,15 @@ export default function SpeakingChatPage() {
     // Prevent concurrent handleSend calls
     const pendingRef = useRef(false);
 
-    // AudioContext for volume visualizer
+    // Audio & STT refs
+    const micStreamRef = useRef<MediaStream | null>(null);
     const audioCtxRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animFrameRef = useRef<number | null>(null);
-    const micStreamRef = useRef<MediaStream | null>(null);
-
-    // Frontend live transcript engine
+    const recorderRef = useRef<RecordRTC | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const srRef = useRef<any>(null);
-    // Background WAV engine for backend debug
-    const recorderRef = useRef<RecordRTC | null>(null);
+    const ttsAbortControllerRef = useRef<AbortController | null>(null);
 
     const setStatusSync = (s: Status) => { statusRef.current = s; setStatus(s); };
     const setWordsSync = (fn: (p: Word[]) => Word[]) => {
@@ -175,8 +173,45 @@ Rules:
         let isUnmounted = false;
 
         (async () => {
-            // TTS removed for stub
-            if (!isUnmounted) setStatusSync('idle');
+            try {
+                // Initial TTS welcome
+                const msg = "Welcome to IELTS speaking practice. Tell me when you are ready.";
+                setChatHistory([{ role: 'assistant', content: msg }]);
+
+                const token = localStorage.getItem('access_token') || '';
+                const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        text: msg,
+                        voice: 'en-US-AriaNeural'
+                    })
+                });
+
+                if (!res.ok) throw new Error('Audio logic failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = new Audio(url);
+                audioRef.current = a;
+
+                a.onended = () => {
+                    if (!isUnmounted) setStatusSync('idle');
+                };
+
+                a.onerror = () => {
+                    if (!isUnmounted) setStatusSync('idle');
+                };
+
+                await a.play();
+            } catch (err: any) {
+                if (err.name !== 'AbortError') {
+                    console.error("Welcome TTS error:", err);
+                    if (!isUnmounted) setStatusSync('idle');
+                }
+            }
         })();
 
         return () => {
@@ -249,8 +284,12 @@ Rules:
                 formData.append('reference_text', text);
             }
 
+            const token = localStorage.getItem('access_token') || '';
             const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/speaking/transcribe`, {
                 method: 'POST',
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: formData,
             });
             if (!res.ok) return null;
@@ -312,19 +351,21 @@ Rules:
                 if (statusRef.current !== 'listening' && statusRef.current !== 'processing') return;
                 onendHandled = true;
 
-                stopAudioVisualizer();
-                stopRecTimer();
                 const text = liveTranscriptRef.current.trim();
                 setLiveTranscript('');
                 liveTranscriptRef.current = '';
 
-                // Also stop the background WAV recorder
+                // Stop the background WAV recorder FIRST before killing tracks
                 if (recorderRef.current) {
                     recorderRef.current.stopRecording(() => {
                         const blob = recorderRef.current!.getBlob();
                         recorderRef.current!.reset();
                         recorderRef.current!.destroy();
                         recorderRef.current = null;
+
+                        // Kill tracks now that blob is secured
+                        stopAudioVisualizer();
+                        stopRecTimer();
 
                         if (text) {
                             handleSend(text, blob.size > 1000 ? blob : undefined);
@@ -334,6 +375,9 @@ Rules:
                         }
                     });
                 } else {
+                    stopAudioVisualizer();
+                    stopRecTimer();
+
                     if (text) {
                         handleSend(text);
                     } else {
@@ -410,6 +454,61 @@ Rules:
         }
     };
 
+    // ── TTS for AI Response ───────────────────────────────────────────────
+    const playTTS = async (text: string) => {
+        try {
+            stopAudio(); // Release any playing audio AND abort any ongoing fetch
+
+            setStatusSync('speaking');
+
+            const controller = new AbortController();
+            ttsAbortControllerRef.current = controller;
+
+            const token = localStorage.getItem('access_token') || '';
+            const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
+                method: 'POST',
+                signal: controller.signal,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    text: text,
+                    voice: 'en-US-AriaNeural'
+                })
+            });
+
+            if (!res.ok) throw new Error('Audio logic failed');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+
+            // Just in case another request was fired while we were awaiting
+            if (ttsAbortControllerRef.current !== controller) return;
+
+            const a = new Audio(url);
+            audioRef.current = a;
+
+            a.onended = () => {
+                setStatusSync('idle');
+                pendingRef.current = false;
+            };
+
+            a.onerror = () => {
+                console.error("TTS playback error");
+                setStatusSync('idle');
+                pendingRef.current = false;
+            };
+
+            await a.play();
+        } catch (err: any) {
+            if (err.name !== 'AbortError') {
+                console.error("TTS error:", err);
+                setStatusSync('idle');
+                pendingRef.current = false;
+            }
+        }
+    };
+
     // ── Send text to AI ───────────────────────────────────────────────────
     const handleSend = async (text: string, audioBlob?: Blob) => {
         if (!text) { setStatusSync('idle'); return; }
@@ -438,7 +537,7 @@ Rules:
             );
             const uploadPromise = audioBlob ? uploadRecording(audioBlob, text) : Promise.resolve(null);
 
-            const [chatResponse] = await Promise.all([chatPromise, uploadPromise]);
+            const [chatResponse, audioScores] = await Promise.all([chatPromise, uploadPromise]);
 
             const chatRes = chatResponse.data;
 
@@ -449,17 +548,15 @@ Rules:
                     grammar: chatRes.grammar_score,
                     vocab: chatRes.vocab_score,
                     relevance: chatRes.relevance_score,
+                    ...(audioScores || {})
                 }
             };
             setChatHistory(h => [...h, aiMsg]);
             contextRef.current = [...contextRef.current, userMsg, { role: 'assistant', content: chatRes.reply }];
             setWordsSync(prev => prev.map(w => ({ ...w, count: w.count + countMatches(chatRes.reply, w.en) })));
 
-            // Play audio stub
-            setTimeout(() => {
-                pendingRef.current = false;
-                setStatusSync('idle');
-            }, 100);
+            // Play AI response audio
+            playTTS(chatRes.reply);
 
         } catch (error: unknown) {
             pendingRef.current = false;
@@ -477,6 +574,11 @@ Rules:
 
     // ── TTS: remove functionality ─────────────────────────
     const stopAudio = () => {
+        if (ttsAbortControllerRef.current) {
+            ttsAbortControllerRef.current.abort();
+            ttsAbortControllerRef.current = null;
+        }
+
         const timer = ttsTimerRef.current;
         if (timer) clearTimeout(timer);
         if (audioRef.current) {

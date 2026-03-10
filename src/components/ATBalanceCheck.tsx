@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { calculateCost } from '../config/ai_cost';
+import { formatATBalance } from '../utils/format';
 
 interface ATBalanceCheckProps {
     service: string;
@@ -71,7 +72,7 @@ export default function ATBalanceCheck({
                 </div>
                 <div className="warning-content">
                     <p>本次{service}练习需要消耗约 <strong>{estimatedCost} AT币</strong>。</p>
-                    <p>您的当前余额为 <strong>{user?.atBalance || 0} AT币</strong>。</p>
+                    <p>您的当前余额为 <strong>{formatATBalance(user?.atBalance)} AT币</strong>。</p>
                     <div className="warning-actions">
                         <button
                             className="primary-button"
