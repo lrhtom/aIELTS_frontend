@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import AiModelSelector from '../components/AiModelSelector';
 import { showToast } from '../components/Toast';
 import { api } from '../api/client';
+import { useLang } from '../i18n/LanguageContext';
+import { translations } from '../i18n/translations';
 import '../styles/practice_page.css';
 import '../styles/writing_correction.css';
 
@@ -18,6 +20,8 @@ interface CorrectionResponse {
 
 export default function WritingCorrectionPage() {
     const navigate = useNavigate();
+    const { lang } = useLang();
+    const t = translations[lang];
 
     const [text, setText] = useState('');
     const [isEvaluating, setIsEvaluating] = useState(false);
@@ -32,7 +36,7 @@ export default function WritingCorrectionPage() {
 
     const handleEvaluate = async () => {
         if (!text.trim()) {
-            showToast('The text box is empty! Please write something first.', 'error');
+            showToast(t.writingCorrection.toastEmpty, 'error');
             return;
         }
 
@@ -45,11 +49,11 @@ export default function WritingCorrectionPage() {
                 body: { text },
             });
             setResult(res);
-            showToast('Evaluation complete!', 'success');
+            showToast(t.writingCorrection.toastSuccess, 'success');
         } catch (err: unknown) {
             console.error('Submit writing correction error:', err);
             const error = err as { message?: string, title?: string };
-            showToast(error.message || '提交失败', 'error', error.title || '错误');
+            showToast(error.message || t.writingCorrection.toastFail, 'error', error.title || t.writingCorrection.toastErrorTitle);
         } finally {
             setIsEvaluating(false);
         }
@@ -57,14 +61,14 @@ export default function WritingCorrectionPage() {
 
     return (
         <Layout>
-            <div className=".*">
+            <div className="practice-container" style={{ maxWidth: '100%', padding: '24px 40px' }}>
                 <div className="wc-header-row">
                     <div className="practice-header" style={{ marginBottom: 0 }}>
                         <button className="back-link" onClick={() => navigate('/writing')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                            ← 写作大厅
+                            {t.writingCorrection.backToHall}
                         </button>
-                        <h1>📝 AI写作板块 (AI Writing)</h1>
-                        <p>将你的作文输入下方，获知各项评分雅思标准分级图表</p>
+                        <h1>{t.writingCorrection.title}</h1>
+                        <p>{t.writingCorrection.subtitle}</p>
                     </div>
 
                     <div className="wc-model-box">
@@ -76,23 +80,23 @@ export default function WritingCorrectionPage() {
                     {/* 左边：输入与统计区域 */}
                     <div className="wc-editor-card">
                         <div className="wc-editor-header">
-                            <h3>你的作文内容</h3>
-                            <span className="wc-word-count">字数: <strong>{wordCount}</strong> / 250+</span>
+                            <h3>{t.writingCorrection.yourEssay}</h3>
+                            <span className="wc-word-count">{t.writingCorrection.wordCount}<strong>{wordCount}</strong> / 250+</span>
                         </div>
                         <textarea
                             className="wc-textarea"
-                            placeholder="Type or paste your IELTS Task 1 or Task 2 essay here..."
+                            placeholder={t.writingCorrection.placeholder}
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             disabled={isEvaluating}
                         ></textarea>
                         <div className="wc-editor-footer">
                             <button
-                                className={`skill - btn reading wc - eval - btn ${isEvaluating ? 'loading' : ''} `}
+                                className={`skill-btn reading wc-eval-btn ${isEvaluating ? 'loading' : ''}`}
                                 onClick={handleEvaluate}
                                 disabled={isEvaluating}
                             >
-                                {isEvaluating ? '⏳ AI 正在深度批改中...' : '🏁 开始批改 (Evaluate)'}
+                                {isEvaluating ? t.writingCorrection.evaluatingBtn : t.writingCorrection.evaluateBtn}
                             </button>
                         </div>
                     </div>
@@ -101,31 +105,31 @@ export default function WritingCorrectionPage() {
                     {result && (
                         <div className="wc-result-card">
                             <h2 className="wc-overall-band">
-                                综合得分 (Overall Band)
+                                {t.writingCorrection.overallBand}
                                 <span>{result.Overall_Band.toFixed(1)}</span>
                             </h2>
 
                             <div className="wc-scores-grid">
                                 <div className="wc-score-item">
-                                    <div className="wc-score-label">🎯 任务回应 (Task Response)</div>
+                                    <div className="wc-score-label">{t.writingCorrection.ta}</div>
                                     <div className="wc-score-val">{result.Task_Response.toFixed(1)}</div>
                                 </div>
                                 <div className="wc-score-item">
-                                    <div className="wc-score-label">🔗 连贯与衔接 (Coherence & Cohesion)</div>
+                                    <div className="wc-score-label">{t.writingCorrection.cc}</div>
                                     <div className="wc-score-val">{result.Coherence_Cohesion.toFixed(1)}</div>
                                 </div>
                                 <div className="wc-score-item">
-                                    <div className="wc-score-label">📚 词汇资源 (Lexical Resource)</div>
+                                    <div className="wc-score-label">{t.writingCorrection.lr}</div>
                                     <div className="wc-score-val">{result.Lexical_Resource.toFixed(1)}</div>
                                 </div>
                                 <div className="wc-score-item">
-                                    <div className="wc-score-label">📝 语法多样性 (Grammatical Range)</div>
+                                    <div className="wc-score-label">{t.writingCorrection.gra}</div>
                                     <div className="wc-score-val">{result.Grammatical_Range.toFixed(1)}</div>
                                 </div>
                             </div>
 
                             <div className="wc-feedback-box">
-                                <h3>💡 Detailed Feedback by AI Examiner</h3>
+                                <h3>{t.writingCorrection.examinerFeedback}</h3>
                                 <div className="wc-feedback-content">
                                     {/* 简单解析下 markdown 换行 */}
                                     {result.Feedback.split('\n').map((line, idx) => (

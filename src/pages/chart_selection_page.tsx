@@ -22,6 +22,13 @@ export default function ChartSelectionPage() {
     ];
 
     const handleStart = () => {
+        if (selectedChart === 'random') {
+            const chartPool = ['line', 'pie', 'bar', 'horizontal', 'table'];
+            const randomType = chartPool[Math.floor(Math.random() * chartPool.length)];
+            navigate(`/writing/chart/doing?type=${randomType}`);
+            return;
+        }
+        
         navigate(`/writing/chart/doing?type=${selectedChart}`);
     };
 
@@ -30,7 +37,7 @@ export default function ChartSelectionPage() {
             <div className="practice-hub-container" style={{ padding: '2rem' }}>
                 <div className="practice-header">
                     <Link to="/writing" className="back-link">← AI写作大厅</Link>
-                    <h1>📊 图表题 (Chart Question)</h1>
+                    <h1>📊 图表题 (Chart Question) </h1>
                     <p>选择接下来的 Task 1 小作文要挑战的图表类型</p>
                 </div>
 

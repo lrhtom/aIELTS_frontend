@@ -11,6 +11,10 @@ import Speaking from './speaking';
 import SpeakingChatPage from './speaking_chat';
 import Writing_page from './writing_page';
 import WritingCorrectionPage from './writing_correction_page';
+import Task1SelectionPage from './task1_selection_page';
+import Task2SelectionPage from './task2_selection_page';
+import Task2OpinionSelectionPage from './task2_opinion_selection_page';
+import Task2PracticePage from './task2_practice_page';
 import ChartSelectionPage from './chart_selection_page';
 import ChartPracticePage from './chart_practice_page';
 import SettingsPage from './settings_page';
@@ -43,6 +47,10 @@ export default function App() {
         <Route path="/speaking/chat" element={<ProtectedRoute><SpeakingChatPage /></ProtectedRoute>} />
         <Route path="/writing" element={<ProtectedRoute><Writing_page /></ProtectedRoute>} />
         <Route path="/writing/correction" element={<ProtectedRoute><WritingCorrectionPage /></ProtectedRoute>} />
+        <Route path="/writing/task1" element={<ProtectedRoute><Task1SelectionPage /></ProtectedRoute>} />
+        <Route path="/writing/task2" element={<ProtectedRoute><Task2SelectionPage /></ProtectedRoute>} />
+        <Route path="/writing/task2/opinion" element={<ProtectedRoute><Task2OpinionSelectionPage /></ProtectedRoute>} />
+        <Route path="/writing/task2/doing" element={<ProtectedRoute><Task2PracticePage /></ProtectedRoute>} />
         <Route path="/writing/chart" element={<ProtectedRoute><ChartSelectionPage /></ProtectedRoute>} />
         <Route path="/writing/chart/doing" element={<ProtectedRoute><ChartPracticePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

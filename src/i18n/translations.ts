@@ -1,4 +1,4 @@
-﻿// Translations for zh (Chinese) and en (English)
+// Translations for zh (Chinese) and en (English)
 // Usage: t.nav.home, t.home.hero.title, etc.
 
 export type Lang = 'zh' | 'en';
@@ -149,6 +149,125 @@ export interface Translations {
         toast: {
             noVocab: string;
         };
+    };
+    writingHub: {
+        backToPractice: string;
+        heading: string;
+        subheading: string;
+        practiceMode: string;
+        correction: {
+            title: string;
+            desc: string;
+        };
+        task1: {
+            title: string;
+            desc: string;
+        };
+        task2: {
+            title: string;
+            desc: string;
+        };
+    };
+    task1Selection: {
+        backToWriting: string;
+        heading: string;
+        subheading: string;
+        types: {
+            chart: { title: string; nameEn: string; desc: string };
+            map: { title: string; nameEn: string; desc: string };
+            flowchart: { title: string; nameEn: string; desc: string };
+        };
+        beta: string;
+        startBtn: string;
+        comingSoon: string;
+    };
+    task2Selection: {
+        backToWriting: string;
+        heading: string;
+        subheading: string;
+        types: {
+            opinion: { title: string; nameEn: string; desc: string };
+            report: { title: string; nameEn: string; desc: string };
+            mixed: { title: string; nameEn: string; desc: string };
+            random: { title: string; nameEn: string; desc: string };
+            innovation: { title: string; nameEn: string; desc: string };
+        };
+        startBtn: string;
+    };
+    task2OpinionSelection: {
+        backToTask2Selection: string;
+        heading: string;
+        subheading: string;
+        types: {
+            agree: { title: string; nameEn: string; desc: string };
+            discuss: { title: string; nameEn: string; desc: string };
+            advantages: { title: string; nameEn: string; desc: string };
+            random: { title: string; nameEn: string; desc: string };
+        };
+        startBtn: string;
+    };
+    practiceSandbox: {
+        loadingDescTask1: string;
+        loadingDescTask2: string;
+        loadingTitleTask1: string;
+        loadingTitleTask2: string;
+        promptTitle: string;
+        yourAnswer: string;
+        placeholderTask1: string;
+        placeholderTask2: string;
+        finishBtn: string;
+        settlementTitle: string;
+        settlementDesc: string;
+        congratsTask1: string;
+        congratsTask2: string;
+        wordsWrittenStart: string;
+        wordsWrittenEnd: string;
+        persistTask1: string;
+        persistTask2: string;
+        callAiBtn: string;
+        backBtn: string;
+        evaluatingTitle: string;
+        evaluatingDesc: string;
+        evaluatingDescLine2: string;
+        overallBand: string;
+        backToPracticeBtn: string;
+        taTask1: string;
+        taTask2: string;
+        cc: string;
+        lr: string;
+        gra: string;
+        examinerReport: string;
+        reviewOriginal: string;
+        abortBtn: string;
+        titleTask1: string;
+        titleTask2: string;
+        toastEmpty: string;
+        toastTooShortTask1: string;
+        toastTooShortTask2: string;
+        toastSuccess: string;
+        toastFailGenChart: string;
+        toastFailGenTask2: string;
+        toastFailEval: string;
+    };
+    writingCorrection: {
+        toastEmpty: string;
+        toastSuccess: string;
+        toastFail: string;
+        toastErrorTitle: string;
+        backToHall: string;
+        title: string;
+        subtitle: string;
+        yourEssay: string;
+        wordCount: string;
+        placeholder: string;
+        evaluatingBtn: string;
+        evaluateBtn: string;
+        overallBand: string;
+        ta: string;
+        cc: string;
+        lr: string;
+        gra: string;
+        examinerFeedback: string;
     };
     settings: {
         heading: string;
@@ -491,6 +610,74 @@ const zh: Translations = {
             noVocab: '请先输入一些目标词汇',
         },
     },
+    writingHub: {
+        backToPractice: '← 返回AI突击特训',
+        heading: '写作大厅 (Writing)',
+        subheading: '选择你要进行的写作练习类型',
+        practiceMode: '练习模式',
+        correction: {
+            title: 'AI写作板块 (AI Writing)',
+            desc: '将你的雅思大作文或小作文粘贴至此，AI 考官将根据雅思官方四项评分准则（Task Response, Coherence, Lexical, Grammar）为你进行深入批改和打分。'
+        },
+        task1: {
+            title: '小作文 (Task 1)',
+            desc: '针对雅思小作文（Task 1）进行专项训练。为您提供随机的图表题、地图题和流程图，帮助您学习如何构建高级词汇与描述数据或流程。'
+        },
+        task2: {
+            title: '大作文 (Task 2)',
+            desc: '针对雅思大作文（Task 2）深度特训。您可以选择不同流派类型的命题（包括观点、报告、混合等），或挑战大模型的创新预测试题。'
+        }
+    },
+    task1Selection: {
+        backToWriting: '← 返回写作大厅',
+        heading: '📝 雅思小作文 (Task 1) 分类突击',
+        subheading: '请选择您要专项攻克的 Task 1 题型',
+        types: {
+            chart: { title: '图表题', nameEn: 'Chart', desc: '包含折线、柱状、饼图及表格等数据的描述练习' },
+            map: { title: '地图题', nameEn: 'Map', desc: '描述设施变迁、地理位置重建及方位等空间语言' },
+            flowchart: { title: '流程图', nameEn: 'Flowchart', desc: '描述工业生产制造、自然水循环等步骤性运转原理' }
+        },
+        beta: 'Beta',
+        startBtn: '🚀 开始特训',
+        comingSoon: '即将开发: '
+    },
+    task2Selection: {
+        backToWriting: '← 返回写作大厅',
+        heading: '🖋️ 雅思大作文 (Task 2) 分类突击',
+        subheading: '请选择接下来大作文练习想要挑战的文章架构类型',
+        types: {
+            opinion: { title: '观点题（议论文）', nameEn: 'Opinion Essay', desc: '阐述你对某一社会现象、政策或观点的明确立场（Agree/Disagree 等）' },
+            report: { title: '报告文', nameEn: 'Report', desc: '分析给定现象的原因，并提出相应的解决措施 (Cause & Solution)' },
+            mixed: {
+                title: '混合文',
+                nameEn: 'Mixed Essay',
+                desc: '回答两个以上不同的提问（如：原因+观点同意程度）...',
+            },
+            random: {
+                title: '随机选择',
+                nameEn: 'Random Selection',
+                desc: '系统随机抽取雅思常考话题（如教育、环境等）及考试题型',
+            },
+            innovation: {
+                title: 'AI创新题',
+                nameEn: 'AI Creative Task',
+                desc: '打破常规模式！AI考官将生成雅思全新趋势预测题...',
+            },
+        },
+        startBtn: '🚀 获取随机题干并开始作答'
+    },
+    task2OpinionSelection: {
+        backToTask2Selection: '← 返回大作文选择',
+        heading: '⚖️ 观点题 (Opinion Essay) 专项训练',
+        subheading: '请选择你想集中突破的具体观点题衍生结构',
+        types: {
+            agree: { title: '同意与否', nameEn: 'Agree/Disagree', desc: '给出某一看法，询问你“在多大程度上同意或不同意？” (To what extent do you agree or disagree?)' },
+            discuss: { title: '双边讨论', nameEn: 'Discuss both views', desc: '给出两种对立观点，要求“探讨双方观点并给出你自己的立场” (Discuss both views and give your opinion)' },
+            advantages: { title: '利弊分析', nameEn: 'Advantages/Disadvantages', desc: '分析某一做法“利是否大于弊？” (Do the advantages outweigh the disadvantages?)' },
+            random: { title: '随机选择', nameEn: 'Random Selection', desc: '由系统在上述观点类结构中为您抽取' }
+        },
+        startBtn: '🚀 开始该子类测验'
+    },
     settings: {
         heading: '账户设置',
         subheading: '管理您的账号信息、界面偏好及系统配置',
@@ -678,6 +865,69 @@ const zh: Translations = {
         toast: {
             errorTitle: '异常',
         },
+    },
+    practiceSandbox: {
+        loadingDescTask1: 'AI 考官正在构思图表特训考卷...',
+        loadingDescTask2: 'AI 考官正在构思 {type} 的考卷...',
+        loadingTitleTask1: '正在为您生成专属图表题目...',
+        loadingTitleTask2: '正在为您生成专属题目...',
+        promptTitle: '考卷题目 (Prompt)',
+        yourAnswer: '你的作答 (Your Answer)',
+        placeholderTask1: 'Write your essay here... (Take about 20 minutes)',
+        placeholderTask2: 'Write your essay here... (Take about 40 minutes)',
+        finishBtn: '完成作答，进入核算',
+        settlementTitle: '结算页',
+        settlementDesc: '系统计算结果如下',
+        congratsTask1: '恭喜你完成了这篇雅思小作文！',
+        congratsTask2: '恭喜你完成了这篇雅思大作文！',
+        wordsWrittenStart: '你一共写了 ',
+        wordsWrittenEnd: ' 个单词。',
+        persistTask1: '坚持练习是突破图表题解析的关键！',
+        persistTask2: '坚持练习是突破写作分数的关键！',
+        callAiBtn: '立即呼叫 AI 考官进行深度批改',
+        backBtn: '先不批了，返回大厅',
+        evaluatingTitle: 'AI 考官正在阅卷...',
+        evaluatingDesc: '正在根据雅思评卷细则进行交叉验证打分：',
+        evaluatingDescLine2: '任务回应统筹中... / 连贯与衔接分析中... / 词汇复杂度检索中... / 句式多样性测试中...',
+        overallBand: '综合得分 (Overall Band)',
+        backToPracticeBtn: '返回继续练习',
+        taTask1: '任务完成情况 (Task Achievement)',
+        taTask2: '任务回应 (Task Response)',
+        cc: '连贯与衔接 (Coherence/Cohesion)',
+        lr: '词汇资源 (Lexical Resource)',
+        gra: '语法多样性 (Grammatical Range)',
+        examinerReport: '考官详细反馈 (Examiner Report)',
+        reviewOriginal: '你的原文回顾',
+        abortBtn: '← 放弃考试',
+        titleTask1: '📝 小作文特训 - 图表解析',
+        titleTask2: '🖋️ 大作文特训 - {type}',
+        toastEmpty: '请先输入您的作文',
+        toastTooShortTask1: '字数太少了，再写一点吧 (建议至少 150 词)',
+        toastTooShortTask2: '字数太少了，再多写一点吧 (建议至少 250 词)',
+        toastSuccess: '批改完成！',
+        toastFailGenChart: '图表生成失败',
+        toastFailGenTask2: '题目获取失败',
+        toastFailEval: '批改失败',
+    },
+    writingCorrection: {
+        toastEmpty: '输入框不能为空！请先写点什么。',
+        toastSuccess: '批改完成！',
+        toastFail: '提交失败',
+        toastErrorTitle: '错误',
+        backToHall: '← 写作大厅',
+        title: '📝 AI写作板块 (AI Writing)',
+        subtitle: '将你的作文输入下方，获知各项评分雅思标准分级图表',
+        yourEssay: '你的作文内容',
+        wordCount: '字数: ',
+        placeholder: '在此输入或粘贴您的雅思小作文/大作文...',
+        evaluatingBtn: '⏳ AI 正在深度批改中...',
+        evaluateBtn: '🏁 开始批改 (Evaluate)',
+        overallBand: '综合得分 (Overall Band)',
+        ta: '🎯 任务回应/完成情况 (Task Response)',
+        cc: '🔗 连贯与衔接 (Coherence & Cohesion)',
+        lr: '📚 词汇资源 (Lexical Resource)',
+        gra: '📝 语法多样性 (Grammatical Range)',
+        examinerFeedback: '💡 考官详细反馈 (Detailed Feedback by AI Examiner)',
     },
 };
 
@@ -1019,6 +1269,125 @@ const en: Translations = {
         toast: {
             errorTitle: 'Error',
         },
+    },
+    writingHub: {
+        backToPractice: '← Back to AI Practice',
+        heading: 'Writing Hall (Writing)',
+        subheading: 'Choose the type of writing practice you want to do',
+        practiceMode: 'Practice Mode',
+        correction: {
+            title: 'AI Writing Correction',
+            desc: 'Paste your IELTS Task 1 or Task 2 essay here, and the AI examiner will deeply correct and grade it based on the four official IELTS scoring criteria.'
+        },
+        task1: {
+            title: 'Task 1 Practice',
+            desc: 'Specialized training for IELTS Task 1. We provide random chart, map, and flowchart questions to help you learn how to construct advanced vocabulary.'
+        },
+        task2: {
+            title: 'Task 2 Practice',
+            desc: 'In-depth training for IELTS Task 2. You can choose different types of prompts or challenge the AI model\'s innovative prediction questions.'
+        }
+    },
+    task1Selection: {
+        backToWriting: '← Back to Writing',
+        heading: '📝 IELTS Task 1 Practice',
+        subheading: 'Please select the Task 1 question type you want to focus on',
+        types: {
+            chart: { title: 'Chart Question', nameEn: 'Chart', desc: 'Description exercises covering line, bar, pie charts and tables' },
+            map: { title: 'Map Question', nameEn: 'Map', desc: 'Describe spatial language such as facility changes, location reconstruction and orientation' },
+            flowchart: { title: 'Flowchart', nameEn: 'Flowchart', desc: 'Describe step-by-step operating principles such as industrial manufacturing and natural water cycles' }
+        },
+        beta: 'Beta',
+        startBtn: '🚀 Start Training',
+        comingSoon: 'Coming in the future: '
+    },
+    task2Selection: {
+        backToWriting: '← Back to Writing',
+        heading: '🖋️ IELTS Task 2 Practice',
+        subheading: 'Please select the Task 2 essay structure genre you want to challenge next',
+        types: {
+            opinion: { title: 'Opinion Essay', nameEn: 'Opinion Essay', desc: 'State your clear position on a social phenomenon, policy or view' },
+            report: { title: 'Report', nameEn: 'Report', desc: 'Analyze the causes of a given phenomenon and propose corresponding solutions' },
+            mixed: { title: 'Mixed Essay', nameEn: 'Mixed Essay', desc: 'A dual task combining exploring the causes, impact, and finally giving personal opinions' },
+            random: { title: 'Random Selection', nameEn: 'Random Selection', desc: 'Randomly select common IELTS topics (e.g., Education, Environment) and question types' },
+            innovation: { title: 'AI Creative Task', nameEn: 'AI Creative Task', desc: 'Break the mold! AI examiner generates novel IELTS trend prediction prompts' }
+        },
+        startBtn: '🚀 Get Random Prompt and Start'
+    },
+    task2OpinionSelection: {
+        backToTask2Selection: '← Back to Task 2 Selection',
+        heading: '⚖️ Opinion Essay Sub-topic Practice',
+        subheading: 'Please select the specific Opinion derived structure you want to break through',
+        types: {
+            agree: { title: 'Agree/Disagree', nameEn: 'Agree/Disagree', desc: 'Given a view, asks "To what extent do you agree or disagree?"' },
+            discuss: { title: 'Discuss both views', nameEn: 'Discuss both views', desc: 'Given two opposing views, asks "Discuss both views and give your opinion"' },
+            advantages: { title: 'Advantages/Disadvantages', nameEn: 'Advantages/Disadvantages', desc: 'Analyze a practice: "Do the advantages outweigh the disadvantages?"' },
+            random: { title: 'Random Selection', nameEn: 'Random Selection', desc: 'System will randomly pick from the above opinion structures' }
+        },
+        startBtn: '🚀 Start Sub-topic Quiz'
+    },
+    practiceSandbox: {
+        loadingDescTask1: 'AI Examiner is designing a chart practice test...',
+        loadingDescTask2: 'AI Examiner is designing a {type} practice test...',
+        loadingTitleTask1: 'Generating your exclusive chart prompt...',
+        loadingTitleTask2: 'Generating your exclusive prompt...',
+        promptTitle: 'Prompt',
+        yourAnswer: 'Your Answer',
+        placeholderTask1: 'Write your essay here... (Take about 20 minutes)',
+        placeholderTask2: 'Write your essay here... (Take about 40 minutes)',
+        finishBtn: 'Finish Answering & Proceed to Settlement',
+        settlementTitle: 'Settlement',
+        settlementDesc: 'Results are as follows',
+        congratsTask1: 'Congratulations on finishing this Task 1 essay!',
+        congratsTask2: 'Congratulations on finishing this Task 2 essay!',
+        wordsWrittenStart: 'You wrote a total of ',
+        wordsWrittenEnd: ' words.',
+        persistTask1: 'Persistence is the key to mastering chart descriptions!',
+        persistTask2: 'Persistence is the key to improving your writing band!',
+        callAiBtn: 'Call AI Examiner for In-depth Correction',
+        backBtn: 'Skip correction for now, back to hall',
+        evaluatingTitle: 'AI Examiner is grading...',
+        evaluatingDesc: 'Cross-validating scores based on official IELTS rubrics:',
+        evaluatingDescLine2: 'Task achievement... / Coherence & Cohesion... / Lexical range... / Grammatical accuracy...',
+        overallBand: 'Overall Band',
+        backToPracticeBtn: 'Back to Practice',
+        taTask1: 'Task Achievement',
+        taTask2: 'Task Response',
+        cc: 'Coherence/Cohesion',
+        lr: 'Lexical Resource',
+        gra: 'Grammatical Range',
+        examinerReport: 'Examiner Report',
+        reviewOriginal: 'Original Text Review',
+        abortBtn: '← Abort Test',
+        titleTask1: '📝 Task 1 Training - Chart Analysis',
+        titleTask2: '🖋️ Task 2 Training - {type}',
+        toastEmpty: 'Please input your essay first',
+        toastTooShortTask1: 'Your essay is too short, please write more (aim for 150+ words)',
+        toastTooShortTask2: 'Your essay is too short, please write more (aim for 250+ words)',
+        toastSuccess: 'Correction completed!',
+        toastFailGenChart: 'Failed to generate chart prompt',
+        toastFailGenTask2: 'Failed to generate prompt',
+        toastFailEval: 'Failed to evaluate',
+    },
+    writingCorrection: {
+        toastEmpty: 'The text box is empty! Please write something first.',
+        toastSuccess: 'Evaluation complete!',
+        toastFail: 'Submission failed',
+        toastErrorTitle: 'Error',
+        backToHall: '← Back to Writing Hall',
+        title: '📝 AI Writing',
+        subtitle: 'Enter your essay below to get a graded report based on official IELTS criteria',
+        yourEssay: 'Your Essay Content',
+        wordCount: 'Word Count: ',
+        placeholder: 'Type or paste your IELTS Task 1 or Task 2 essay here...',
+        evaluatingBtn: '⏳ AI is grading deeply...',
+        evaluateBtn: '🏁 Evaluate',
+        overallBand: 'Overall Band',
+        ta: '🎯 Task Response / Achievement',
+        cc: '🔗 Coherence & Cohesion',
+        lr: '📚 Lexical Resource',
+        gra: '📝 Grammatical Range',
+        examinerFeedback: '💡 Detailed Feedback by AI Examiner',
     },
 };
 

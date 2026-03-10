@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showToast } from '../components/Toast';
 import { api } from '../api/client';
+import { useLang } from '../i18n/LanguageContext';
+import { translations } from '../i18n/translations';
 import '../styles/practice_page.css';
 import '../styles/writing_correction.css';
 
@@ -27,6 +29,9 @@ interface EvaluationResult {
 
 export default function ChartPracticePage() {
     const navigate = useNavigate();
+    const { lang } = useLang();
+    const t = translations[lang];
+
     const [searchParams] = useSearchParams();
     const type = searchParams.get('type') || 'line';
 
@@ -53,7 +58,7 @@ export default function ChartPracticePage() {
             } catch (err: unknown) {
                 console.error('Generate chart error:', err);
                 const error = err as { message?: string };
-                showToast(error.message || '图表生成失败', 'error');
+                showToast(error.message || t.practiceSandbox.toastFailGenChart, 'error');
                 if (isMounted) navigate('/writing/chart');
             }
         }
@@ -71,11 +76,11 @@ export default function ChartPracticePage() {
 
     const handleSubmitAnser = () => {
         if (!userAnswer.trim()) {
-            showToast('请先输入您的作文', 'error');
+            showToast(t.practiceSandbox.toastEmpty, 'error');
             return;
         }
         if (wordCount < 50) {
-            showToast('字数太少了，再写一点吧 (建议至少 150 词)', 'error');
+            showToast(t.practiceSandbox.toastTooShortTask1, 'error');
         }
         setStep('settlement');
     };
@@ -94,11 +99,11 @@ export default function ChartPracticePage() {
             });
             setResult(res);
             setStep('result');
-            showToast('批改完成！', 'success');
+            showToast(t.practiceSandbox.toastSuccess, 'success');
         } catch (err: unknown) {
             console.error('Evaluate chart error:', err);
             const error = err as { message?: string };
-            showToast(error.message || '批改失败', 'error');
+            showToast(error.message || t.practiceSandbox.toastFailEval, 'error');
             setStep('settlement'); // fall back to allow retry
         }
     };
@@ -106,27 +111,32 @@ export default function ChartPracticePage() {
     // ─── Render functions ──────────────────────────────────────────────────
 
     const renderLoading = () => (
-        <div className="practice-hub-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-            <div className="loading-spinner" style={{ width: '50px', height: '50px', border: '4px solid var(--border-color)', borderTopColor: 'var(--primary-color)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-            <h2 style={{ marginTop: '2rem' }}>正在使用 AI 引擎随机生成独一无二的图表数据...</h2>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>请耐心等待几秒钟</p>
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div className="spinner" style={{ margin: '0 auto 20px' }}></div>
+            <h2>{t.practiceSandbox.loadingTitleTask1}</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>{t.practiceSandbox.loadingDescTask1}</p>
         </div>
     );
 
     const renderEvaluating = () => (
-        <div className="practice-hub-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-            <div className="loading-spinner" style={{ width: '50px', height: '50px', border: '4px solid var(--border-color)', borderTopColor: '#f97316', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-            <h2 style={{ marginTop: '2rem' }}>雅思 AI 考官正在认真批阅您的 Task 1 作文...</h2>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>包括任务完成度、连贯性、词汇与语法等四大维度</p>
+        <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+            <div className="spinner" style={{ margin: '0 auto 24px', width: '50px', height: '50px', borderWidth: '4px' }}></div>
+            <h2 style={{ fontSize: '28px', marginBottom: '16px' }}>{t.practiceSandbox.evaluatingTitle}</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '18px', lineHeight: 1.6 }}>
+                {t.practiceSandbox.evaluatingDesc}<br />
+                {t.practiceSandbox.evaluatingDescLine2}
+            </p>
         </div>
     );
 
     const renderAnswering = () => (
         <div className="wc-main-layout" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            {/* Left: Chart and Prompt */}
-            <div className="wc-editor-card" style={{ flex: '1.2' }}>
-                <div className="wc-editor-header">
-                    <h3>📊 Task 1 Question</h3>
+            {/* Left Box: Chart & Prompt */}
+            <div className="chart-panel" style={{ backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)' }}>
+                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>📜</span> {t.practiceSandbox.promptTitle}
+                    </h3>
                 </div>
                 <div style={{ padding: '16px', background: 'var(--bg-section)', borderRadius: '8px', marginBottom: '16px' }}>
                     <p style={{ fontSize: '16px', lineHeight: '1.6', fontWeight: '500' }}>
@@ -152,17 +162,23 @@ export default function ChartPracticePage() {
                 </div>
                 <textarea
                     className="wc-textarea"
-                    style={{ flexGrow: 1, minHeight: '300px' }}
-                    placeholder="在此输入您的小作文描述 (建议 150 词以上)..."
+                    style={{
+                        flexGrow: 1, minHeight: '300px',
+                        resize: 'none',
+                        fontFamily: 'monospace',
+                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                    placeholder={t.practiceSandbox.placeholderTask1}
                     value={userAnswer}
                     onChange={(e) => setUserAnswer(e.target.value)}
-                ></textarea>
-                <div className="wc-editor-footer">
+                />
+                <div style={{ padding: '20px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end' }}>
                     <button
-                        className="skill-btn reading wc-eval-btn"
+                        className="primary-button"
                         onClick={handleSubmitAnser}
+                        style={{ padding: '12px 32px', fontSize: '16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
-                        🚀 提交作答 (Submit)
+                        <span>✅</span> {t.practiceSandbox.finishBtn}
                     </button>
                 </div>
             </div>
@@ -180,18 +196,18 @@ export default function ChartPracticePage() {
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
             }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
-                <h2 style={{ marginBottom: '12px' }}>恭喜完成本次图表题训练！</h2>
+                <h2 style={{ marginBottom: '12px' }}>{t.practiceSandbox.settlementTitle}</h2>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
-                    您刚刚完成了一篇独家随机生成的 Task 1 小作文。是否希望 AI 考官现在为您打分？
+                    {t.practiceSandbox.settlementDesc}
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <button
                         className="primary-button"
-                        style={{ padding: '12px', fontSize: '16px' }}
+                        style={{ padding: '16px', fontSize: '18px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                         onClick={handleStartEvaluation}
                     >
-                        进行 AI 批改评分 (AI Evaluation)
+                        <span>🎯</span> {t.practiceSandbox.callAiBtn}
                     </button>
                     <button
                         className="secondary-button"
@@ -201,8 +217,9 @@ export default function ChartPracticePage() {
                             borderRadius: '8px', cursor: 'pointer'
                         }}
                         onClick={() => navigate('/writing')}
+                        onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
                     >
-                        暂不批改，返回大厅
+                        {t.practiceSandbox.backBtn}
                     </button>
                 </div>
             </div>
@@ -225,46 +242,55 @@ export default function ChartPracticePage() {
                 <div className="wc-editor-footer" style={{ marginTop: '16px' }}>
                     <button
                         className="secondary-button"
-                        style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-color)', cursor: 'pointer' }}
+                        style={{
+                            padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-color)', cursor: 'pointer',
+                            fontWeight: 600
+                        }}
                         onClick={() => navigate('/writing/chart')}
                     >
-                        再去练一篇
+                        {t.practiceSandbox.backToPracticeBtn}
                     </button>
                 </div>
             </div>
 
             {/* Right side: Evaluation Result utilizing wc-result-card layout */}
             {result && (
-                <div className="wc-result-card" style={{ flex: '1.2' }}>
-                    <h2 className="wc-overall-band">
-                        综合得分 (Overall Band)
-                        <span>{result.overall.toFixed(1)}</span>
-                    </h2>
+                <div className="wc-result-card" style={{ flex: '1.2', marginTop: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                        <h2 className="wc-overall-band" style={{ margin: 0 }}>
+                            {t.practiceSandbox.overallBand}
+                            <span style={{ fontSize: '42px', marginLeft: '16px', color: 'var(--accent-color)', fontWeight: 800 }}>
+                                {result.overall.toFixed(1)}
+                            </span>
+                        </h2>
+                    </div>
 
                     <div className="wc-scores-grid">
                         <div className="wc-score-item">
-                            <div className="wc-score-label">🎯 任务回应 (Task Achievement)</div>
+                            <div className="wc-score-label">🎯 {t.practiceSandbox.taTask1}</div>
                             <div className="wc-score-val">{result.scores.ta.toFixed(1)}</div>
                         </div>
                         <div className="wc-score-item">
-                            <div className="wc-score-label">🔗 连贯衔接 (Coherence & Cohesion)</div>
+                            <div className="wc-score-label">🔗 {t.practiceSandbox.cc}</div>
                             <div className="wc-score-val">{result.scores.cc.toFixed(1)}</div>
                         </div>
                         <div className="wc-score-item">
-                            <div className="wc-score-label">📚 词汇资源 (Lexical Resource)</div>
+                            <div className="wc-score-label">📚 {t.practiceSandbox.lr}</div>
                             <div className="wc-score-val">{result.scores.lr.toFixed(1)}</div>
                         </div>
                         <div className="wc-score-item">
-                            <div className="wc-score-label">📝 语法多样性 (Grammatical Range)</div>
+                            <div className="wc-score-label">📝 {t.practiceSandbox.gra}</div>
                             <div className="wc-score-val">{result.scores.gra.toFixed(1)}</div>
                         </div>
                     </div>
 
-                    <div className="wc-feedback-box">
-                        <h3>💡 Detailed Feedback by AI Examiner</h3>
-                        <div className="wc-feedback-content">
+                    <div className="wc-feedback-box" style={{ marginTop: '32px' }}>
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '20px' }}>
+                            <span>💡</span> {t.practiceSandbox.examinerReport}
+                        </h3>
+                        <div className="wc-feedback-content" style={{ fontSize: '16px', lineHeight: 1.8 }}>
                             {result.feedback.split('\n').map((line, idx) => (
-                                <p key={idx}>{line}</p>
+                                <p key={idx} style={{ marginBottom: line.trim() === '' ? '0' : '16px' }}>{line}</p>
                             ))}
                         </div>
                     </div>
@@ -275,18 +301,20 @@ export default function ChartPracticePage() {
 
     return (
         <Layout>
-            <div className="practice-container" style={{ maxWidth: '100%', padding: '24px 40px' }}>
+            <div className="practice-container" style={{ maxWidth: '100%', padding: '24px 40px', display: 'flex', flexDirection: 'column' }}>
                 <div className="practice-header" style={{ marginBottom: '24px' }}>
-                    <button className="back-link" onClick={() => navigate('/writing/chart')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                        ← 返回图表选型
-                    </button>
-                    <h1>📊 图表特训 (Task 1)</h1>
+                    {(step === 'loading' || step === 'answering') && (
+                        <button className="back-link" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                            {t.practiceSandbox.abortBtn}
+                        </button>
+                    )}
+                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '28px' }}>📉</span> {t.practiceSandbox.titleTask1}
+                    </h1>
                 </div>
 
                 {step === 'loading' && renderLoading()}
-
                 {step === 'answering' && renderAnswering()}
-
                 {step === 'settlement' && (
                     <>
                         {renderAnswering()} {/* Keep the background visible */}
