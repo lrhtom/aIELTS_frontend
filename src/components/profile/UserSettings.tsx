@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
-import AiModelSelector from '../AiModelSelector';
-import AvatarUpload from '../AvatarUpload';
+import AiModelSelector from '../common/AiModelSelector';
+import AvatarUpload from './AvatarUpload';
 import { authApi } from '../../api/auth';
 
 export default function UserSettings() {

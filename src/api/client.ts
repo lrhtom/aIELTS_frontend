@@ -32,7 +32,15 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 apiClient.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('access_token');
-        if (token) {
+        
+        // 【新增】判断是否为登录、注册、验证码等公开接口。
+        // 如果是这些接口，不携带 Authorization 头，防止被后端的单设备登录逻辑提前 401 拦截。
+        const publicPaths = ['/auth/login', '/auth/register', '/auth/send-code'];
+        const isPublicPath = publicPaths.some(path => config.url?.includes(path));
+
+        if (isPublicPath) {
+            delete config.headers['Authorization'];
+        } else if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
         const provider = localStorage.getItem('ai_provider') || 'deepseek';
@@ -95,7 +103,8 @@ apiClient.interceptors.response.use(
 
         if (error.response?.status === 401 && !originalRequest._retry) {
             // Avoid looping if the refresh token endpoint itself returns 401
-            if (originalRequest.url?.includes('/auth/token/refresh')) {
+            // Also avoid refreshing if the login endpoint itself returns 401 (e.g. invalid credentials)
+            if (originalRequest.url?.includes('/auth/token/refresh') || originalRequest.url?.includes('/auth/login')) {
                 return Promise.reject(error);
             }
 

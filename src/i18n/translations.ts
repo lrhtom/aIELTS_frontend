@@ -116,10 +116,46 @@ export interface Translations {
             label: string;
             desc: string;
         };
+        absurdMode: {
+            label: string;
+            desc: string;
+        };
         startBtn: string;
         toast: {
             noVocab: string;
         };
+    };
+    speakingConfig: {
+        backToAI: string;
+        heading: string;
+        subheading: string;
+        vocabSettings: {
+            title: string;
+            desc: string;
+        };
+        ieltsPart: {
+            title: string;
+            lockedHint: string;
+            parts: {
+                part1: { title: string; desc: string };
+                part2: { title: string; desc: string };
+                part3: { title: string; desc: string };
+            };
+        };
+        subtitles: {
+            title: string;
+            desc: string;
+        };
+        modes: {
+            title: string;
+            items: {
+                chat: { title: string; desc: string };
+                call: { title: string; desc: string };
+                exam: { title: string; desc: string };
+            };
+        };
+        startBtn: string;
+        comingSoon: string;
     };
     listeningConfig: {
         backToAI: string;
@@ -142,6 +178,10 @@ export interface Translations {
             hintRange: string;
         };
         customVocab: {
+            label: string;
+            desc: string;
+        };
+        absurdMode: {
             label: string;
             desc: string;
         };
@@ -176,10 +216,25 @@ export interface Translations {
             chart: { title: string; nameEn: string; desc: string };
             map: { title: string; nameEn: string; desc: string };
             flowchart: { title: string; nameEn: string; desc: string };
+            random: { title: string; nameEn: string; desc: string };
         };
         beta: string;
         startBtn: string;
         comingSoon: string;
+    };
+    chartSelection: {
+        backToHub: string;
+        heading: string;
+        subheading: string;
+        types: {
+            line: { title: string; nameEn: string };
+            pie: { title: string; nameEn: string };
+            bar: { title: string; nameEn: string };
+            horizontal: { title: string; nameEn: string };
+            table: { title: string; nameEn: string };
+            random: { title: string; nameEn: string };
+        };
+        startBtn: string;
     };
     task2Selection: {
         backToWriting: string;
@@ -318,6 +373,7 @@ export interface Translations {
             username: string;
             email: string;
             created: string;
+            lastLogin: string;
         };
         balance: {
             title: string;
@@ -415,6 +471,9 @@ export interface Translations {
         searchPlaceholder: string;
         underline: string;
         submitBtn: string;
+        absurdMode: string;
+        absurdModeOn: string;
+        absurdModeOff: string;
     };
     listeningDetails: {
         startAudio: string;
@@ -576,12 +635,48 @@ const zh: Translations = {
         targetScore: '目标 Band 分数',
         customVocab: {
             label: '使用您的专属词汇库',
-            desc: '开启后，AI 将在文章中优先融入您提供的词汇',
+            desc: '开启后，AI 将在文章中优先融入您提供的信息',
+        },
+        absurdMode: {
+            label: '🎭 荒唐模式',
+            desc: '开启后，AI 生成的文章将充满有趣的笑话，帮助记忆',
         },
         startBtn: '开始生成文章',
         toast: {
             noVocab: '请先输入一些目标词汇',
         },
+    },
+    speakingConfig: {
+        backToAI: '← 返回 AI 练习',
+        heading: '🗣️ 口语练习配置',
+        subheading: '选择题型、模式，AI 为你模拟雅思口语考官',
+        vocabSettings: {
+            title: '📝 自选词汇',
+            desc: '关闭后 AI 根据题型自动选择话题词汇',
+        },
+        ieltsPart: {
+            title: '🎯 雅思题型',
+            lockedHint: '🔒 仅考试模式可选',
+            parts: {
+                part1: { title: 'Part 1', desc: '个人话题问答' },
+                part2: { title: 'Part 2', desc: '2分钟主题演讲' },
+                part3: { title: 'Part 3', desc: '深度讨论分析' },
+            }
+        },
+        subtitles: {
+            title: '📄 显示字幕',
+            desc: '通话/考试模式下显示 AI 的文字内容',
+        },
+        modes: {
+            title: '⚡ 练习模式',
+            items: {
+                chat: { title: '聊天模式', desc: 'AI 文字对话，轻松练习' },
+                call: { title: '通话模式', desc: '语音通话，沉浸式练习' },
+                exam: { title: '考试模式', desc: '模拟真实雅思考试环境' },
+            }
+        },
+        startBtn: '开始口语练习',
+        comingSoon: '考试模式即将上线！',
     },
     listeningConfig: {
         backToAI: '← 返回 AI 练习',
@@ -606,6 +701,10 @@ const zh: Translations = {
         customVocab: {
             label: '融入目标词汇',
             desc: 'AI 将在听力稿中合理嵌入您指定的词汇',
+        },
+        absurdMode: {
+            label: '🎭 荒唐模式',
+            desc: '开启后，AI 生成的听力稿将充满有趣的笑话，帮助记忆',
         },
         startBtn: '开始生成听力题目',
         toast: {
@@ -637,11 +736,26 @@ const zh: Translations = {
         types: {
             chart: { title: '图表题', nameEn: 'Chart', desc: '包含折线、柱状、饼图及表格等数据的描述练习' },
             map: { title: '地图题', nameEn: 'Map', desc: '描述设施变迁、地理位置重建及方位等空间语言' },
-            flowchart: { title: '流程图', nameEn: 'Flowchart', desc: '描述工业生产制造、自然水循环等步骤性运转原理' }
+            flowchart: { title: '流程图', nameEn: 'Flowchart', desc: '描述工业生产制造、自然水循环等步骤性运转原理' },
+            random: { title: '随机抽取', nameEn: 'Random Selection', desc: '系统将从上述三种大类中为您随机抽取一篇进行特训' }
         },
         beta: 'Beta',
         startBtn: '🚀 开始特训',
         comingSoon: '即将开发: '
+    },
+    chartSelection: {
+        backToHub: '← 返回雅思小作文分类',
+        heading: '📊 图表题 (Chart Question)',
+        subheading: '选择接下来的 Task 1 小作文要挑战的图表类型',
+        types: {
+            line: { title: '折线图', nameEn: 'Line graph' },
+            pie: { title: '饼状图', nameEn: 'Pie chart' },
+            bar: { title: '柱状图', nameEn: 'Bar chart' },
+            horizontal: { title: '横向图', nameEn: 'Horizontal chart' },
+            table: { title: '表格', nameEn: 'Table/chart' },
+            random: { title: '随机', nameEn: 'Random' }
+        },
+        startBtn: '开始练习'
     },
     task2Selection: {
         backToWriting: '← 返回写作大厅',
@@ -727,6 +841,7 @@ const zh: Translations = {
             username: '用户名',
             email: '电子邮箱',
             created: '加入日期',
+            lastLogin: '最近登录',
         },
         balance: {
             title: 'AT 代币余额',
@@ -824,6 +939,9 @@ const zh: Translations = {
         searchPlaceholder: '🔍 搜索单词或释义...',
         underline: '下划线',
         submitBtn: '提交答案',
+        absurdMode: '🎭 荒唐模式',
+        absurdModeOn: '开',
+        absurdModeOff: '关',
     },
     listeningDetails: {
         startAudio: '开始播放',
@@ -1052,10 +1170,46 @@ const en: Translations = {
             label: 'Use Custom Vocabulary',
             desc: 'If enabled, AI will incorporate your words into the passage',
         },
+        absurdMode: {
+            label: '🎭 Absurd Mode',
+            desc: 'When enabled, AI will generate a passage full of jokes to aid memorization',
+        },
         startBtn: 'Start Generating Passage',
         toast: {
             noVocab: 'Please enter some target vocabulary first',
         },
+    },
+    speakingConfig: {
+        backToAI: '← Back to AI Practice',
+        heading: '🗣️ Speaking Practice Config',
+        subheading: 'Choose part and mode, let AI act as your IELTS examiner',
+        vocabSettings: {
+            title: '📝 Custom Vocabulary',
+            desc: 'When disabled, AI will automatically select topical vocabulary',
+        },
+        ieltsPart: {
+            title: '🎯 IELTS Part',
+            lockedHint: '🔒 Only available in Exam Mode',
+            parts: {
+                part1: { title: 'Part 1', desc: 'Personal Topic Q&A' },
+                part2: { title: 'Part 2', desc: '2-Minute Monologue' },
+                part3: { title: 'Part 3', desc: 'In-depth Discussion' },
+            }
+        },
+        subtitles: {
+            title: '📄 Show Subtitles',
+            desc: 'Display AI text content in Call/Exam mode',
+        },
+        modes: {
+            title: '⚡ Practice Mode',
+            items: {
+                chat: { title: 'Chat Mode', desc: 'AI text chat for relaxed practice' },
+                call: { title: 'Call Mode', desc: 'Voice call for immersive practice' },
+                exam: { title: 'Exam Mode', desc: 'Simulate real IELTS test environment' },
+            }
+        },
+        startBtn: 'Start Speaking Practice',
+        comingSoon: 'Exam mode is coming soon!',
     },
     listeningConfig: {
         backToAI: '← Back to AI Practice',
@@ -1080,6 +1234,10 @@ const en: Translations = {
         customVocab: {
             label: 'Include Target Vocabulary',
             desc: 'AI will embed your specified words into the script',
+        },
+        absurdMode: {
+            label: '🎭 Absurd Mode',
+            desc: 'When enabled, AI will generate a script full of jokes to aid memorization',
         },
         startBtn: 'Start Generating Quiz',
         toast: {
@@ -1133,6 +1291,7 @@ const en: Translations = {
             username: 'Username',
             email: 'Email',
             created: 'Joined Date',
+            lastLogin: 'Last Login',
         },
         balance: {
             title: 'AT Token Balance',
@@ -1230,6 +1389,9 @@ const en: Translations = {
         searchPlaceholder: '🔍 Search word or meaning...',
         underline: 'Underline',
         submitBtn: 'Submit Answers',
+        absurdMode: '🎭 Absurd Mode',
+        absurdModeOn: 'ON',
+        absurdModeOff: 'OFF',
     },
     listeningDetails: {
         startAudio: 'Start Playing',
@@ -1293,27 +1455,42 @@ const en: Translations = {
         }
     },
     task1Selection: {
-        backToWriting: '← Back to Writing',
-        heading: '📝 IELTS Task 1 Practice',
-        subheading: 'Please select the Task 1 question type you want to focus on',
+        backToWriting: '← Back to Writing Hub',
+        heading: '📝 IELTS Task 1 Category Training',
+        subheading: 'Please select the Task 1 type you want to focus on',
         types: {
-            chart: { title: 'Chart Question', nameEn: 'Chart', desc: 'Description exercises covering line, bar, pie charts and tables' },
-            map: { title: 'Map Question', nameEn: 'Map', desc: 'Describe spatial language such as facility changes, location reconstruction and orientation' },
-            flowchart: { title: 'Flowchart', nameEn: 'Flowchart', desc: 'Describe step-by-step operating principles such as industrial manufacturing and natural water cycles' }
+            chart: { title: 'Chart Question', nameEn: 'Chart', desc: 'Exercises covering line, bar, pie charts and tables' },
+            map: { title: 'Map Question', nameEn: 'Map', desc: 'Describe spatial language such as facility changes and orientation' },
+            flowchart: { title: 'Flowchart', nameEn: 'Flowchart', desc: 'Describe step-by-step processes like industrial manufacturing' },
+            random: { title: 'Random Selection', nameEn: 'Random Selection', desc: 'System will randomly pick one from the above three categories' }
         },
         beta: 'Beta',
         startBtn: '🚀 Start Training',
-        comingSoon: 'Coming in the future: '
+        comingSoon: 'Coming Soon: '
+    },
+    chartSelection: {
+        backToHub: '← Back to Task 1 Selection',
+        heading: '📊 Chart Question',
+        subheading: 'Choose the chart type for your next Task 1 practice',
+        types: {
+            line: { title: 'Line Graph', nameEn: 'Line graph' },
+            pie: { title: 'Pie Chart', nameEn: 'Pie chart' },
+            bar: { title: 'Bar Chart', nameEn: 'Bar chart' },
+            horizontal: { title: 'Horizontal Chart', nameEn: 'Horizontal chart' },
+            table: { title: 'Table', nameEn: 'Table/chart' },
+            random: { title: 'Random', nameEn: 'Random' }
+        },
+        startBtn: 'Start Practice'
     },
     task2Selection: {
-        backToWriting: '← Back to Writing',
-        heading: '🖋️ IELTS Task 2 Practice',
-        subheading: 'Please select the Task 2 essay structure genre you want to challenge next',
+        backToWriting: '← Back to Writing Hub',
+        heading: '🖋️ IELTS Task 2 Category Training',
+        subheading: 'Please select the essay structure you want to challenge',
         types: {
-            opinion: { title: 'Opinion Essay', nameEn: 'Opinion Essay', desc: 'State your clear position on a social phenomenon, policy or view' },
-            report: { title: 'Report', nameEn: 'Report', desc: 'Analyze the causes of a given phenomenon and propose corresponding solutions' },
-            mixed: { title: 'Mixed Essay', nameEn: 'Mixed Essay', desc: 'A dual task combining exploring the causes, impact, and finally giving personal opinions' },
-            random: { title: 'Random Selection', nameEn: 'Random Selection', desc: 'Randomly select common IELTS topics (e.g., Education, Environment) and question types' },
+            opinion: { title: 'Opinion Essay', nameEn: 'Opinion Essay', desc: 'State your clear position on a social phenomenon (Agree/Disagree etc.)' },
+            report: { title: 'Report', nameEn: 'Report', desc: 'Analyze causes of a phenomenon and propose solutions (Cause & Solution)' },
+            mixed: { title: 'Mixed Essay', nameEn: 'Mixed Essay', desc: 'Answer two or more different questions (e.g., Cause + Opinion)' },
+            random: { title: 'Random Selection', nameEn: 'Random Selection', desc: 'System randomly picks from common IELTS topics and question types' },
             innovation: { title: 'AI Creative Task', nameEn: 'AI Creative Task', desc: 'Break the mold! AI examiner generates novel IELTS trend prediction prompts' }
         },
         startBtn: '🚀 Get Random Prompt and Start'

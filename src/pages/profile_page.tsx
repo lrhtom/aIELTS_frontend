@@ -1,4 +1,4 @@
-import Layout from '../components/Layout';
+import Layout from '../components/layout/Layout';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../i18n/LanguageContext';
@@ -7,12 +7,13 @@ import UserSettings from '../components/profile/UserSettings';
 import UserBackpack from '../components/profile/UserBackpack';
 import UserFeedback from '../components/profile/UserFeedback';
 import AdminFeedback from '../components/profile/AdminFeedback';
+import AdminUserManagement from '../components/profile/AdminUserManagement';
 import UserBackground from '../components/profile/UserBackground';
 import UserManual from '../components/profile/UserManual';
 import { formatATBalance } from '../utils/format';
 import '../styles/profile_page.css';
 
-type Tab = 'home' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin' | 'manual';
+type Tab = 'home' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'manual';
 
 export default function ProfilePage() {
     const { user } = useAuth();
@@ -25,14 +26,15 @@ export default function ProfilePage() {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'home': return <UserHome onNavigateToBackpack={() => setActiveTab('backpack')} />;
+            case 'home': return <UserHome />;
             case 'settings': return <UserSettings />;
             case 'backpack': return <UserBackpack onBack={() => setActiveTab('home')} />;
             case 'feedback': return <UserFeedback />;
             case 'background': return <UserBackground />;
-            case 'admin': return <AdminFeedback />;
+            case 'admin_feedback': return <AdminFeedback />;
+            case 'admin_users': return <AdminUserManagement />;
             case 'manual': return <UserManual />;
-            default: return <UserHome onNavigateToBackpack={() => setActiveTab('backpack')} />;
+            default: return <UserHome />;
         }
     };
 
@@ -126,8 +128,15 @@ export default function ProfilePage() {
                                     </button>
                                     <div className={`profile-accordion-body ${adminOpen ? 'open' : ''}`}>
                                         <button
-                                            className={`profile-menu-item profile-sub-item ${activeTab === 'admin' ? 'active' : ''}`}
-                                            onClick={() => setActiveTab('admin')}
+                                            className={`profile-menu-item profile-sub-item ${activeTab === 'admin_users' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('admin_users')}
+                                        >
+                                            <span className="menu-item-icon">👥</span>
+                                            <span className="menu-item-text">用户管理</span>
+                                        </button>
+                                        <button
+                                            className={`profile-menu-item profile-sub-item ${activeTab === 'admin_feedback' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('admin_feedback')}
                                         >
                                             <span className="menu-item-icon">📋</span>
                                             <span className="menu-item-text">{t.profile.admin.feedback.title}</span>

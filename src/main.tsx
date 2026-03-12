@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { LanguageProvider } from './i18n/LanguageContext'
 import { AuthProvider } from './contexts/AuthContext'
 import './styles/index.css'
-import App from './pages/App'
+import App from './App'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

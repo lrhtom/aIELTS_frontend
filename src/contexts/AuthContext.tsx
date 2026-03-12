@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { type User, authApi } from '../api/auth';
 
 // ── 背景模糊层管理 ────────────────────────────────────────
@@ -74,9 +74,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const hasInitRef = useRef(false);
 
     useEffect(() => {
         const initAuth = async () => {
+            if (hasInitRef.current) return;
+            hasInitRef.current = true;
+            
             const token = localStorage.getItem('access_token');
             if (token) {
                 try {
@@ -85,6 +89,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     applyUserBackground(userData);   // ← 恢复会话时应用背景
                 } catch (error) {
                     console.error('Failed to restore session:', error);
+                    // On failure, clear tokens to prevent further loop attempts
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
                 }
             }
             setIsLoading(false);

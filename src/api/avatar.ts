@@ -1,15 +1,10 @@
 import { apiClient } from './client';
+import type { User } from './auth';
 
 export interface AvatarResponse {
     message: string;
     avatar_url?: string;
-    user: {
-        id: string;
-        username: string;
-        email: string;
-        avatar_url?: string;
-        atBalance: number;
-    };
+    user: User;
 }
 
 export interface AvatarError {

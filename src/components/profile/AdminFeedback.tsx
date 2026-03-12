@@ -29,7 +29,7 @@ export default function AdminFeedback() {
     const fetchFeedbacks = useCallback(async (page: number) => {
         setIsLoading(true);
         try {
-            const response = await apiClient.get<PaginatedResponse>(`/admin/feedback?page=${page}`);
+            const response = await apiClient.get<PaginatedResponse>(`/admin/feedback?page=${page}&page_size=10`);
             setFeedbacks(response.data.results);
             setTotalCount(response.data.count);
         } catch (error) {
@@ -75,7 +75,7 @@ export default function AdminFeedback() {
         }
     };
 
-    const totalPages = Math.ceil(totalCount / 20);
+    const totalPages = Math.ceil(totalCount / 10);
 
     const renderPagination = () => {
         if (totalPages <= 1) return null;

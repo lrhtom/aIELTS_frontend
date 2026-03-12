@@ -27,11 +27,11 @@
 }
 
 .wc-model-box {
-    background-color: var(--bg-card);
+    background-color: var(--color-surface);
     padding: 1rem 1.5rem;
     border-radius: 12px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--color-border);
 }
 
 /* Main Layout Grid */
@@ -50,9 +50,9 @@
 
 /* Left Panel: Editor Card */
 .wc-editor-card {
-    background-color: var(--bg-card);
+    background-color: var(--color-surface);
     border-radius: 16px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--color-border);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
@@ -65,22 +65,22 @@
     align-items: center;
     padding: 1.25rem 1.5rem;
     background-color: rgba(0, 0, 0, 0.02);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .wc-editor-header h3 {
     margin: 0;
     font-size: 1.1rem;
-    color: var(--text-primary);
+    color: var(--color-text);
 }
 
 .wc-word-count {
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
 }
 
 .wc-word-count strong {
-    color: var(--accent-color);
+    color: var(--color-primary);
     font-size: 1.1rem;
 }
 
@@ -92,7 +92,7 @@
     padding: 1.5rem;
     font-size: 1rem;
     line-height: 1.6;
-    color: var(--text-primary);
+    color: var(--color-text);
     background-color: transparent;
     outline: none;
     font-family: inherit;
@@ -107,7 +107,7 @@
 .wc-editor-footer {
     padding: 1.25rem 1.5rem;
     background-color: rgba(0, 0, 0, 0.02);
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--color-border);
 }
 
 .wc-eval-btn {
@@ -118,16 +118,16 @@
 }
 
 .wc-eval-btn.loading {
-    background-color: var(--text-secondary);
+    background-color: var(--color-text-secondary);
     cursor: wait;
     transform: none;
 }
 
 /* Right Panel: Result Card */
 .wc-result-card {
-    background-color: var(--bg-card);
+    background-color: var(--color-surface);
     border-radius: 16px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--color-border);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     padding: 2rem 1.5rem;
     display: flex;
@@ -152,7 +152,7 @@
     margin: 0;
     text-align: center;
     font-size: 1.5rem;
-    color: var(--text-primary);
+    color: var(--color-text);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -189,7 +189,7 @@
 
 .wc-score-label {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     margin-bottom: 0.5rem;
     font-weight: 500;
 }
@@ -197,29 +197,29 @@
 .wc-score-val {
     font-size: 1.75rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--color-text);
 }
 
 .wc-feedback-box {
     background-color: rgba(0, 0, 0, 0.03);
     border-radius: 12px;
     padding: 1.5rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--color-border);
 }
 
 .wc-feedback-box h3 {
     margin-top: 0;
     margin-bottom: 1rem;
     font-size: 1.1rem;
-    color: var(--text-primary);
-    border-bottom: 1px solid var(--border-color);
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
     padding-bottom: 0.5rem;
 }
 
 .wc-feedback-content p {
     margin: 0 0 1rem 0;
     line-height: 1.6;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     font-size: 0.95rem;
 }
 

@@ -1,4 +1,4 @@
-import Layout from '../components/Layout';
+import Layout from '../components/layout/Layout';
 import { Link } from 'react-router-dom';
 import { useLang } from '../i18n/LanguageContext';
 import { translations } from '../i18n/translations';
@@ -14,7 +14,7 @@ export default function HomePage() {
                 <h1>Master IELTS with <span className="gradient-text">AI</span></h1>
                 <p>{t.home.hero.subtitle}</p>
                 <Link to="/practice" className="hero-btn">{t.home.hero.startPractice}</Link>
-                <Link to="/practice" className="hero-btn hero-btn-secondary">{t.home.hero.vocab}</Link>
+                <Link to="/vocabulary" className="hero-btn hero-btn-secondary">{t.home.hero.vocab}</Link>
             </section>
 
             <section className="announcements">

@@ -206,7 +206,7 @@
 /* 响应式调整 */
 @media (max-width: 768px) {
     .navbar {
-        padding: 12px px;
+        padding: 12px 20px;
     }
 
     .navbar-links {
@@ -217,7 +217,7 @@
         margin-left: 20px;
     }
 
-    .navbar-guest-actions gap {
+    .navbar-guest-actions {
         gap: 8px;
     }
 }

@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { showToast } from './Toast';
+import { showToast } from './common/Toast';
 import { useLang } from '../i18n/LanguageContext';
 
 interface VocabInputProps {
@@ -51,31 +51,15 @@ export default function VocabInput({ value, onChange, placeholder }: VocabInputP
     };
 
     return (
-        <div>
+        <div className="space-y-4">
             {/* 词汇计数行 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '13px', color: '#78716c' }}>{vi.label}：</span>
-                <span style={{
-                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                    color: '#fff',
-                    borderRadius: '999px',
-                    padding: '2px 12px',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    minWidth: '32px',
-                    textAlign: 'center',
-                }}>
+            <div className="flex flex-wrap items-center gap-2.5 mb-2">
+                <span className="text-[13px] text-stone-500">{vi.label}：</span>
+                <span className="bg-gradient-to-br from-indigo-500 to-violet-500 text-white rounded-full px-3 py-0.5 text-[13px] font-bold min-w-[32px] text-center shadow-sm">
                     {validCount}
                 </span>
                 {invalidLines.length > 0 && (
-                    <span style={{
-                        background: 'linear-gradient(135deg, #ff4d4f, #cf1322)',
-                        color: '#fff',
-                        borderRadius: '999px',
-                        padding: '2px 12px',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                    }}>
+                    <span className="bg-gradient-to-br from-red-500 to-red-700 text-white rounded-full px-3 py-0.5 text-[12px] font-semibold shadow-sm animate-pulse">
                         ⚠ {invalidLines.length} {vi.invalidLines}
                     </span>
                 )}
@@ -83,7 +67,7 @@ export default function VocabInput({ value, onChange, placeholder }: VocabInputP
 
             <textarea
                 ref={textareaRef}
-                className="vocab-textarea"
+                className="vocab-textarea w-full p-4 rounded-xl border border-stone-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all duration-200 text-stone-700 min-h-[200px] bg-white/50 backdrop-blur-sm shadow-inner"
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 onBlur={handleBlur}
@@ -91,7 +75,7 @@ export default function VocabInput({ value, onChange, placeholder }: VocabInputP
             />
 
             {/* 格式说明 */}
-            <p style={{ fontSize: '12px', color: '#a8a29e', marginTop: '6px', marginBottom: 0 }}>
+            <p className="text-[12px] text-stone-400 mt-1.5 mb-0">
                 {vi.formatDesc}
             </p>
         </div>
