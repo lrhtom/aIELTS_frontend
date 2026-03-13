@@ -1,0 +1,597 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   笔记本功能 —— 专属样式
+   依赖 practice_page.css 中的 .config-page-wrap / .config-card / .practice-header 等
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 颜色变量映射 ──────────────────────────────────────────────────────────── */
+.nb-card[data-color="teal"]    { --nb-color: #0d9488; }
+.nb-card[data-color="indigo"]  { --nb-color: #6366f1; }
+.nb-card[data-color="violet"]  { --nb-color: #8b5cf6; }
+.nb-card[data-color="rose"]    { --nb-color: #f43f5e; }
+.nb-card[data-color="amber"]   { --nb-color: #f59e0b; }
+.nb-card[data-color="emerald"] { --nb-color: #10b981; }
+.nb-card[data-color="sky"]     { --nb-color: #0ea5e9; }
+.nb-card[data-color="orange"]  { --nb-color: #f97316; }
+
+/* ── 笔记本列表网格 ────────────────────────────────────────────────────────── */
+.nb-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+/* ── 笔记本卡片 ───────────────────────────────────────────────────────────── */
+.nb-card {
+    --nb-color: #6366f1;
+    position: relative;
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 16px;
+    padding: 18px 18px 14px 22px;
+    cursor: pointer;
+    transition: transform 0.18s, box-shadow 0.18s;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 110px;
+}
+
+.nb-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: var(--nb-color);
+    border-radius: 16px 0 0 16px;
+}
+
+.nb-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    border-color: var(--nb-color);
+}
+
+.nb-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.3;
+    padding-right: 48px;
+}
+
+.nb-card-desc {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.nb-card-meta {
+    margin-top: auto;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nb-card-word-count {
+    font-weight: 600;
+    color: var(--nb-color);
+}
+
+.nb-card-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.nb-card:hover .nb-card-actions { opacity: 1; }
+
+.nb-action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.nb-action-btn:hover { background: var(--color-surface); color: var(--color-text); }
+.nb-action-btn.danger:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+/* ── 空状态 ───────────────────────────────────────────────────────────────── */
+.nb-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+}
+
+.nb-empty-icon { font-size: 36px; display: block; margin-bottom: 12px; }
+
+/* ── 颜色选择器 ───────────────────────────────────────────────────────────── */
+.nb-color-picker {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.nb-color-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2.5px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+
+.nb-color-dot:hover { transform: scale(1.15); }
+.nb-color-dot.selected { border-color: var(--color-text); transform: scale(1.1); }
+
+/* ── 弹窗（新建/编辑笔记本） ─────────────────────────────────────────────── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    padding: 20px;
+}
+
+.modal-box {
+    background: var(--color-surface);
+    border-radius: 20px;
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.modal-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+.modal-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    font-size: 14px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+}
+
+.modal-input:focus { border-color: var(--color-primary); }
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.modal-btn {
+    flex: 1;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    transition: background 0.15s;
+}
+
+.modal-btn:hover { background: var(--color-surface); }
+
+.modal-btn.primary {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.modal-btn.primary:hover { background: var(--color-primary-hover); }
+.modal-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── 单词搜索 & 标签过滤栏 ───────────────────────────────────────────────── */
+.nb-search-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.nb-search-input {
+    flex: 1;
+    padding: 9px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    font-size: 14px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.nb-search-input:focus { border-color: var(--color-primary); }
+
+.nb-tag-filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    min-height: 28px;
+}
+
+/* ── 标签 chip ────────────────────────────────────────────────────────────── */
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    vertical-align: middle;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.tag-chip.active {
+    background: rgba(13, 148, 136, 0.1);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    cursor: pointer;
+}
+
+.tag-chip.filter {
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.tag-chip.filter:hover   { border-color: var(--color-primary); color: var(--color-primary); }
+.tag-chip.filter.selected { background: var(--color-primary); border-color: var(--color-primary); color: white; }
+
+.tag-chip-remove {
+    margin-left: 2px;
+    opacity: 0.6;
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.tag-chip-remove:hover { opacity: 1; color: #dc2626; }
+
+/* ── 单词列表 ─────────────────────────────────────────────────────────────── */
+.word-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.word-item {
+    display: grid;
+    grid-template-columns: 160px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 14px;
+    background: var(--color-surface);
+    transition: background 0.12s;
+}
+
+.word-item:last-child { border-bottom: none; }
+.word-item:hover { background: var(--color-bg); }
+
+.wi-word {
+    font-weight: 700;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wi-zh {
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wi-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.wi-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+/* ── 掌握度星星 ───────────────────────────────────────────────────────────── */
+.mastery-stars {
+    display: flex;
+    gap: 2px;
+    font-size: 12px;
+}
+
+/* ── 内嵌单词表单 ─────────────────────────────────────────────────────────── */
+.word-form {
+    background: var(--color-bg);
+    border: 1.5px solid var(--color-primary);
+    border-radius: 14px;
+    padding: 18px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.word-form-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 2px;
+}
+
+.wf-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.wf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.wf-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.wf-input {
+    padding: 9px 12px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 9px;
+    font-size: 14px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.wf-input:focus { border-color: var(--color-primary); }
+
+.wf-tag-input-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 9px;
+    background: var(--color-surface);
+    cursor: text;
+    transition: border-color 0.15s;
+    min-height: 42px;
+    align-items: center;
+}
+
+.wf-tag-input-wrap:focus-within { border-color: var(--color-primary); }
+
+.wf-tag-raw-input {
+    flex: 1;
+    min-width: 80px;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    color: var(--color-text);
+    padding: 2px 0;
+}
+
+.wf-hint {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+}
+
+.wf-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.wf-btn {
+    padding: 9px 20px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    transition: background 0.15s;
+}
+
+.wf-btn:hover { background: var(--color-bg); }
+.wf-btn.primary { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+.wf-btn.primary:hover { background: var(--color-primary-hover); }
+.wf-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── 展开内嵌编辑行 ───────────────────────────────────────────────────────── */
+.word-item-edit {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+.word-item-edit:last-child { border-bottom: none; }
+
+/* ── 响应式 ──────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .nb-grid { grid-template-columns: 1fr; }
+    .word-item { grid-template-columns: 120px 1fr auto; }
+    .wi-tags { display: none; }
+    .wf-row { grid-template-columns: 1fr; }
+}
+
+/* ── Word enrichment (grammar / definitions / examples) ──────────────────── */
+.wi-phonetic {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    font-weight: 400;
+    margin-left: 4px;
+}
+
+.wi-extra {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+    padding-top: 6px;
+    border-top: 1px dashed var(--color-border);
+    margin-top: 4px;
+}
+
+.wi-grammar-badge {
+    display: inline-block;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    font-size: 11px;
+    padding: 1px 7px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.wi-def-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    flex: 1;
+}
+
+.wi-def-item {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    display: flex;
+    gap: 4px;
+}
+
+.wi-def-pos {
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.wi-example-toggle {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0 2px;
+    font-weight: 500;
+    text-decoration: underline;
+}
+
+.wi-example-list {
+    grid-column: 1 / -1;
+    padding: 6px 0 2px;
+    border-top: 1px dashed var(--color-border);
+    margin-top: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.wi-example-item {}
+
+.wi-ex-en {
+    font-size: 12px;
+    color: var(--color-text);
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.wi-ex-zh {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+/* ── Duplicate word warning ────────────────────────────────────────────────── */
+.wf-input-duplicate {
+    border-color: #ef4444 !important;
+    outline-color: #ef4444 !important;
+}
+
+.wf-duplicate-hint {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    font-size: 11px;
+    color: #ef4444;
+    white-space: nowrap;
+    pointer-events: none;
+}

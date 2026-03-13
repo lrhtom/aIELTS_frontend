@@ -523,7 +523,7 @@ export interface Translations {
 const zh: Translations = {
     nav: {
         home: '主页',
-        practice: '题库',
+        practice: '练习',
         settings: '设置',
         prompts: 'AI 提示词',
         collapse: '收起',

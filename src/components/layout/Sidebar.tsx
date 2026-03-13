@@ -38,6 +38,12 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             <span className="sidebar-text">{t.nav.practice}</span>
           </Link>
         )}
+        {user && (
+          <Link to="/vocabulary/plans" className={`sidebar-item ${location.pathname.startsWith('/vocabulary') ? 'active' : ''}`}>
+            <span className="sidebar-icon">🃏</span>
+            <span className="sidebar-text">背单词</span>
+          </Link>
+        )}
       </nav>
 
       {/* 左下角收起按钮 */}

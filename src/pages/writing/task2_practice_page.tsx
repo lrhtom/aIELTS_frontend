@@ -1,5 +1,5 @@
 import Layout from '../../components/layout/Layout';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
@@ -38,6 +38,8 @@ export default function Task2PracticePage() {
     const [taskData, setTaskData] = useState<Task2Data | null>(null);
     const [userAnswer, setUserAnswer] = useState('');
     const [result, setResult] = useState<EvaluationResult | null>(null);
+    const [isEvaluating, setIsEvaluating] = useState(false);
+    const hasFetchedRef = useRef<string | null>(null);
 
     // Refresh recovery: restore in-progress session first.
     useEffect(() => {
@@ -88,6 +90,10 @@ export default function Task2PracticePage() {
             }
         }
 
+        // Prevent double-fire from React StrictMode or rapid re-mount
+        if (hasFetchedRef.current === cacheKey) return;
+        hasFetchedRef.current = cacheKey;
+
         let isMounted = true;
 
         async function fetchPrompt() {
@@ -105,7 +111,10 @@ export default function Task2PracticePage() {
                 console.error('Generate task2 error:', err);
                 const error = err as { message?: string };
                 showToast(error.message || t.practiceSandbox.toastFailGenTask2, 'error');
-                if (isMounted) navigate(-1);
+                if (isMounted) {
+                    hasFetchedRef.current = null; // allow retry on next mount
+                    navigate(-1);
+                }
             }
         }
         fetchPrompt();
@@ -132,7 +141,8 @@ export default function Task2PracticePage() {
     };
 
     const handleStartEvaluation = async () => {
-        if (!taskData) return;
+        if (!taskData || isEvaluating) return;
+        setIsEvaluating(true);
         setStep('evaluating');
         try {
             const res = await api<EvaluationResult>('/writing/task2/evaluate', {
@@ -150,6 +160,8 @@ export default function Task2PracticePage() {
             const error = err as { message?: string };
             showToast(error.message || t.practiceSandbox.toastFailEval, 'error');
             setStep('settlement');
+        } finally {
+            setIsEvaluating(false);
         }
     };
 
@@ -271,6 +283,7 @@ export default function Task2PracticePage() {
                 <button
                     className="primary-button"
                     onClick={handleStartEvaluation}
+                    disabled={isEvaluating}
                     style={{ padding: '16px', fontSize: '18px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 >
                     <span>🎯</span> {t.practiceSandbox.callAiBtn}

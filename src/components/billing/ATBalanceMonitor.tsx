@@ -28,6 +28,16 @@ export default function ATBalanceMonitor() {
             }
         };
 
+        // 监听AT币退款事件（AI操作失败，费用退还）
+        const handleATRefunded = (event: Event) => {
+            const customEvent = event as CustomEvent<{ refunded: number }>;
+            const { refunded } = customEvent.detail;
+            if (user && refunded > 0) {
+                updateUser({ ...user, atBalance: (user.atBalance || 0) + refunded });
+                showToast(`抱歉，AI操作失败，已退还 ${refunded} AT币`, 'error');
+            }
+        };
+
         // 监听AT币不足事件
         const handleATBalanceInsufficient = (event: Event) => {
             const customEvent = event as CustomEvent<{ message?: string; currentBalance?: number; requiredBalance?: number }>;
@@ -48,10 +58,12 @@ export default function ATBalanceMonitor() {
             }
         };
 
+        window.addEventListener('at-refunded', handleATRefunded);
         window.addEventListener('at-consumed', handleATConsumed);
         window.addEventListener('at-balance-insufficient', handleATBalanceInsufficient);
 
         return () => {
+            window.removeEventListener('at-refunded', handleATRefunded);
             window.removeEventListener('at-consumed', handleATConsumed);
             window.removeEventListener('at-balance-insufficient', handleATBalanceInsufficient);
         };

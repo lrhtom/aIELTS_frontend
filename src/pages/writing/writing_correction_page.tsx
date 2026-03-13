@@ -17,6 +17,7 @@ interface CorrectionResponse {
     Overall_Band: number;
     Feedback?: string;
     feedback?: string;
+    Model_Essay?: string;
 }
 
 export default function WritingCorrectionPage() {
@@ -26,8 +27,12 @@ export default function WritingCorrectionPage() {
 
     const [text, setText] = useState('');
     const [promptText, setPromptText] = useState('');
+    const [taskType, setTaskType] = useState<'task1' | 'task2'>('task2');
     const [isEvaluating, setIsEvaluating] = useState(false);
     const [result, setResult] = useState<CorrectionResponse | null>(null);
+    const [copied, setCopied] = useState(false);
+
+    const minWords = taskType === 'task1' ? 150 : 250;
 
     // 实时计算字数 (使用正则 \s+ 分割并去除空白符)
     const wordCount = useMemo(() => {
@@ -48,9 +53,10 @@ export default function WritingCorrectionPage() {
         try {
             const res = await api<CorrectionResponse>('/writing/generate', {
                 method: 'POST',
-                body: { 
+                body: {
                     text,
-                    prompt: promptText
+                    prompt: promptText,
+                    task_type: taskType,
                 },
             });
             setResult(res);
@@ -84,6 +90,26 @@ export default function WritingCorrectionPage() {
                 <div className="wc-main-layout">
                     {/* 左边：输入与统计区域 */}
                     <div className="wc-editor-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                        {/* 作文类型选择 */}
+                        <div style={{ padding: '16px 20px 0' }}>
+                            <div className="difficulty-options" style={{ maxWidth: '280px' }}>
+                                <button
+                                    className={`difficulty-btn${taskType === 'task1' ? ' selected' : ''}`}
+                                    onClick={() => { setTaskType('task1'); setResult(null); }}
+                                    disabled={isEvaluating}
+                                >
+                                    Task 1 · 小作文
+                                </button>
+                                <button
+                                    className={`difficulty-btn${taskType === 'task2' ? ' selected' : ''}`}
+                                    onClick={() => { setTaskType('task2'); setResult(null); }}
+                                    disabled={isEvaluating}
+                                >
+                                    Task 2 · 大作文
+                                </button>
+                            </div>
+                        </div>
                         
                         {/* 题干输入框 (可选) */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -104,7 +130,7 @@ export default function WritingCorrectionPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
                             <div className="wc-editor-header" style={{ padding: '0 4px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
                                 <h3>{t.writingCorrection.yourEssay}</h3>
-                                <span className="wc-word-count">{t.writingCorrection.wordCount}<strong>{wordCount}</strong> / 250+</span>
+                                <span className="wc-word-count">{t.writingCorrection.wordCount}<strong>{wordCount}</strong> / {minWords}+</span>
                             </div>
                             <textarea
                                 className="wc-textarea"
@@ -135,7 +161,7 @@ export default function WritingCorrectionPage() {
 
                             <div className="wc-scores-grid">
                                 <div className="wc-score-item">
-                                    <div className="wc-score-label">{t.writingCorrection.ta}</div>
+                                    <div className="wc-score-label">{taskType === 'task1' ? 'Task Achievement' : t.writingCorrection.ta}</div>
                                     <div className="wc-score-val">{result.Task_Response.toFixed(1)}</div>
                                 </div>
                                 <div className="wc-score-item">
@@ -161,6 +187,32 @@ export default function WritingCorrectionPage() {
                                     ))}
                                 </div>
                             </div>
+
+                            {result.Model_Essay && (
+                                <div className="wc-model-essay-box">
+                                    <div className="wc-model-essay-header">
+                                        <div>
+                                            <span className="wc-model-essay-badge">Band 8+</span>
+                                            <h3>AI 修改高分范文</h3>
+                                        </div>
+                                        <button
+                                            className={`wc-copy-btn ${copied ? 'copied' : ''}`}
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(result.Model_Essay!);
+                                                setCopied(true);
+                                                setTimeout(() => setCopied(false), 2000);
+                                            }}
+                                        >
+                                            {copied ? '✓ 已复制' : '复制'}
+                                        </button>
+                                    </div>
+                                    <div className="wc-model-essay-content">
+                                        {result.Model_Essay.split(/\n\n+/).map((para, idx) => (
+                                            <p key={idx}>{para.trim()}</p>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

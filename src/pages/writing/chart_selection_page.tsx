@@ -19,14 +19,13 @@ export default function ChartSelectionPage() {
     ];
 
     const handleStart = () => {
+        let type = selectedChart;
         if (selectedChart === 'random') {
             const chartPool = ['line', 'pie', 'bar', 'horizontal', 'table'];
-            const randomType = chartPool[Math.floor(Math.random() * chartPool.length)];
-            navigate(`/writing/chart/doing?type=${randomType}`);
-            return;
+            type = chartPool[Math.floor(Math.random() * chartPool.length)];
         }
-        
-        navigate(`/writing/chart/doing?type=${selectedChart}`);
+        sessionStorage.removeItem(`writing_task1_chart_session_${type}`);
+        navigate(`/writing/chart/doing?type=${type}`);
     };
 
     return (

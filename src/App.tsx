@@ -42,6 +42,11 @@ import ChartPracticePage from './pages/writing/chart_practice_page';
 import VocabularyPracticePage from './pages/vocabulary/vocabulary_practice_page';
 import VocabularyTrainingPage from './pages/vocabulary/vocabulary_training_page';
 import VocabularyTrainingDoingPage from './pages/vocabulary/vocabulary_training_doing_page';
+import VocabularyFlashcardDoingPage from './pages/vocabulary/vocabulary_flashcard_doing_page';
+import NotebookListPage from './pages/vocabulary/notebook_list_page';
+import NotebookDetailPage from './pages/vocabulary/notebook_detail_page';
+import LearningPlanListPage from './pages/vocabulary/learning_plan_list_page';
+import LearningPlanDetailPage from './pages/vocabulary/learning_plan_detail_page';
 
 export default function App() {
   return (
@@ -55,6 +60,12 @@ export default function App() {
         <Route path="/vocabulary" element={<ProtectedRoute><VocabularyPracticePage /></ProtectedRoute>} />
         <Route path="/vocabulary/practice" element={<ProtectedRoute><VocabularyTrainingPage /></ProtectedRoute>} />
         <Route path="/vocabulary/practice/:mode/doing" element={<ProtectedRoute><VocabularyTrainingDoingPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/flashcard" element={<Navigate to="/vocabulary/plans" replace />} />
+        <Route path="/vocabulary/flashcard/doing" element={<ProtectedRoute><VocabularyFlashcardDoingPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/notebook" element={<ProtectedRoute><NotebookListPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/notebook/:id" element={<ProtectedRoute><NotebookDetailPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/plans" element={<ProtectedRoute><LearningPlanListPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/plans/:id" element={<ProtectedRoute><LearningPlanDetailPage /></ProtectedRoute>} />
 
         {/* Protected Routes */}
         <Route path="/practice" element={<ProtectedRoute><PracticeHub /></ProtectedRoute>} />

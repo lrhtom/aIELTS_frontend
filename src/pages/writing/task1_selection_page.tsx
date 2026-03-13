@@ -20,28 +20,27 @@ export default function Task1SelectionPage() {
         { id: 'random', nameZh: t.task1Selection.types.random.title, nameEn: t.task1Selection.types.random.nameEn, icon: '🎲', desc: t.task1Selection.types.random.desc, path: '/writing/random', isBeta: false },
     ];
 
+    const goToPractice = (type: string) => {
+        sessionStorage.removeItem(`writing_task1_chart_session_${type}`);
+        navigate(`/writing/chart/doing?type=${type}`);
+    };
+
     const handleStart = () => {
         if (!selectedType) return;
-        
+
         if (selectedType === 'random') {
             const pool = ['chart', 'map', 'flowchart'];
             const chosen = pool[Math.floor(Math.random() * pool.length)];
             if (chosen === 'chart') navigate('/writing/chart');
-            if (chosen === 'flowchart') navigate('/writing/chart/doing?type=flowchart');
-            if (chosen === 'map') navigate('/writing/chart/doing?type=map');
+            else goToPractice(chosen);
             return;
         }
 
         const target = taskTypes.find(t => t.id === selectedType);
         if (target) {
-            if (target.id === 'chart' || target.id === 'flowchart' || target.id === 'map') {
-                // Determine actual practice page or nested page
-                if (target.id === 'chart') navigate(target.path);
-                if (target.id === 'flowchart') navigate('/writing/chart/doing?type=flowchart');
-                if (target.id === 'map') navigate('/writing/chart/doing?type=map');
-            } else {
-                alert(`${t.task1Selection.comingSoon}${target.nameZh} (${target.nameEn})`);
-            }
+            if (target.id === 'chart') navigate(target.path);
+            else if (target.id === 'flowchart' || target.id === 'map') goToPractice(target.id);
+            else alert(`${t.task1Selection.comingSoon}${target.nameZh} (${target.nameEn})`);
         }
     };
 

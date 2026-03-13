@@ -68,6 +68,13 @@ apiClient.interceptors.response.use(
         return response;
     },
     async (error) => {
+        // 处理AT币退款（AI操作失败）
+        if (error.response?.data?.atRefunded) {
+            window.dispatchEvent(new CustomEvent('at-refunded', {
+                detail: { refunded: error.response.data.atRefunded }
+            }));
+        }
+
         // 处理AT币不足的错误
         if (error.response?.status === 402) { // Payment Required
             const errorMessage = error.response?.data?.message || 'AT币余额不足';

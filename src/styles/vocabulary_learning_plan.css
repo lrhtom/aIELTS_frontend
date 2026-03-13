@@ -1,0 +1,879 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   学习计划功能 —— 专属样式
+   依赖 practice_page.css 中的 .config-page-wrap / .config-card / .practice-header
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Plan accent colours (by index) ────────────────────────────────────────── */
+.lp-plan-card[data-idx="0"] { --lp-color: #0d9488; }   /* teal */
+.lp-plan-card[data-idx="1"] { --lp-color: #6366f1; }   /* indigo */
+.lp-plan-card[data-idx="2"] { --lp-color: #8b5cf6; }   /* violet */
+
+/* Keep old .lp-card colour vars for any leftover usage */
+.lp-card[data-idx="0"] { --lp-color: #0d9488; }
+.lp-card[data-idx="1"] { --lp-color: #6366f1; }
+.lp-card[data-idx="2"] { --lp-color: #8b5cf6; }
+
+/* ── List page header ───────────────────────────────────────────────────────── */
+.lp-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.lp-list-header-text h2 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.lp-list-header-text p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+/* ── Plan list (vertical stack) ─────────────────────────────────────────────── */
+.lp-plan-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ── Plan card ──────────────────────────────────────────────────────────────── */
+.lp-plan-card {
+    --lp-color: #0d9488;
+    display: flex;
+    align-items: stretch;
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.lp-plan-card:hover {
+    border-color: var(--lp-color);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+}
+
+/* Left accent stripe */
+.lp-plan-accent {
+    width: 6px;
+    flex-shrink: 0;
+    background: var(--lp-color);
+}
+
+/* Body */
+.lp-plan-body {
+    flex: 1;
+    padding: 16px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.lp-plan-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.lp-plan-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lp-plan-del {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    padding: 2px 4px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+}
+
+.lp-plan-del:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.lp-plan-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.lp-meta-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--lp-color);
+    flex-shrink: 0;
+}
+
+.lp-meta-sep { opacity: 0.4; }
+
+.lp-plan-meta strong { color: var(--color-text); font-weight: 600; }
+
+.lp-plan-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.lp-plan-btn {
+    padding: 7px 18px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+    white-space: nowrap;
+}
+
+.lp-plan-btn.secondary {
+    background: transparent;
+    border: 1.5px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.lp-plan-btn.secondary:hover {
+    border-color: var(--lp-color);
+    color: var(--lp-color);
+}
+
+.lp-plan-btn.primary {
+    background: var(--lp-color);
+    border: 1.5px solid var(--lp-color);
+    color: #fff;
+}
+
+.lp-plan-btn.primary:hover:not(:disabled) {
+    filter: brightness(0.9);
+}
+
+.lp-plan-btn.primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* ── Add slot ───────────────────────────────────────────────────────────────── */
+.lp-plan-add-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    border: 2px dashed var(--color-border);
+    border-radius: 14px;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.lp-plan-add-slot:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(13, 148, 136, 0.04);
+}
+
+.lp-slot-plus {
+    font-size: 20px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+.lp-slot-hint {
+    margin-left: auto;
+    padding: 2px 8px;
+    background: var(--color-border);
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────────── */
+.lp-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.lp-empty-icon { font-size: 48px; line-height: 1; }
+
+.lp-empty-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 8px 0 0;
+}
+
+.lp-empty-sub {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* ── Old .lp-grid (kept for backwards compat) ───────────────────────────────── */
+.lp-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+/* ── New plan button ───────────────────────────────────────────────────────── */
+.lp-new-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.lp-new-btn:hover:not(:disabled) { background: var(--color-primary-hover); }
+.lp-new-btn.disabled,
+.lp-new-btn:disabled {
+    background: var(--color-border);
+    color: var(--color-text-secondary);
+    cursor: not-allowed;
+}
+
+
+
+.lp-new-btn:disabled {
+    background: var(--color-border);
+    color: var(--color-text-secondary);
+    cursor: not-allowed;
+}
+
+/* ── Modal ─────────────────────────────────────────────────────────────────── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-box {
+    background: var(--color-surface);
+    border-radius: 18px;
+    padding: 28px 28px 20px;
+    min-width: 360px;
+    max-width: 480px;
+    width: 90vw;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.modal-box h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.modal-box input[type="text"],
+.modal-box input[type="number"] {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--color-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--color-text);
+    box-sizing: border-box;
+    outline: none;
+}
+
+.modal-box input:focus {
+    border-color: var(--color-primary);
+}
+
+.modal-box label {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+    display: block;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+.modal-actions button {
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.modal-actions button.btn-primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.modal-actions button.btn-primary:hover {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Detail page
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Top bar ───────────────────────────────────────────────────────────────── */
+.lp-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.lp-name-input {
+    flex: 1;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    outline: none;
+    padding: 2px 4px;
+    min-width: 100px;
+    transition: border-color 0.15s;
+}
+
+.lp-name-input:hover,
+.lp-name-input:focus {
+    border-bottom-color: var(--color-primary);
+}
+
+.lp-daily-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.lp-daily-wrap input[type="number"] {
+    width: 64px;
+    padding: 5px 8px;
+    background: var(--color-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--color-text);
+    outline: none;
+    text-align: center;
+}
+
+.lp-daily-wrap input:focus { border-color: var(--color-primary); }
+
+/* ── Add word tabs ─────────────────────────────────────────────────────────── */
+.lp-add-section {
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+}
+
+.lp-add-section h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    margin: 0 0 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lp-add-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.lp-add-tab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1.5px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.lp-add-tab:hover,
+.lp-add-tab.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.lp-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.lp-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.lp-add-row input[type="text"],
+.lp-add-row input[type="number"],
+.lp-add-row select {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--color-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--color-text);
+    outline: none;
+}
+
+.lp-add-row input:focus,
+.lp-add-row select:focus { border-color: var(--color-primary); }
+
+.lp-add-btn {
+    padding: 8px 16px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.lp-add-btn:hover { background: var(--color-primary-hover); }
+
+.lp-add-btn:disabled {
+    background: var(--color-border);
+    color: var(--color-text-secondary);
+    cursor: not-allowed;
+}
+
+/* ── Book browser ──────────────────────────────────────────────────────────── */
+.lp-book-browser {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg);
+}
+
+.lp-book-word-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13px;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.lp-book-word-row:last-child { border-bottom: none; }
+
+.lp-book-word-row:hover { background: rgba(13, 148, 136, 0.06); }
+
+.lp-book-word-row input[type="checkbox"] { flex-shrink: 0; accent-color: var(--color-primary); }
+
+.lp-book-word-row .bw-word { font-weight: 600; min-width: 120px; }
+
+.lp-book-word-row .bw-zh { color: var(--color-text-secondary); flex: 1; }
+
+/* Pagination for book browser */
+.lp-book-pager {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    justify-content: center;
+}
+
+.lp-book-pager button {
+    padding: 4px 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.12s;
+}
+
+.lp-book-pager button:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+.lp-book-pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Word list ─────────────────────────────────────────────────────────────── */
+.lp-word-section {
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+}
+
+.lp-word-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.lp-word-section-header h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lp-search {
+    flex: 1;
+    min-width: 160px;
+    padding: 6px 12px;
+    background: var(--color-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--color-text);
+    outline: none;
+}
+
+.lp-search:focus { border-color: var(--color-primary); }
+
+.lp-word-list { display: flex; flex-direction: column; gap: 0; }
+
+.lp-word-item {
+    display: grid;
+    grid-template-columns: 140px 1fr 80px 90px 36px;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13px;
+    color: var(--color-text);
+    transition: background 0.1s;
+}
+
+.lp-word-item:last-child { border-bottom: none; }
+
+.lp-word-item:hover { background: rgba(13, 148, 136, 0.04); }
+
+.lp-word-text { font-weight: 600; color: var(--color-text); word-break: break-all; }
+
+.lp-zh-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid transparent;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    outline: none;
+    width: 100%;
+    padding: 2px 4px;
+    transition: border-color 0.15s;
+}
+
+.lp-zh-input:hover,
+.lp-zh-input:focus {
+    border-bottom-color: var(--color-primary);
+    color: var(--color-text);
+}
+
+/* ── FSRS state badges ─────────────────────────────────────────────────────── */
+.lp-fsrs-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.lp-fsrs-badge.state-new        { background: #e5e7eb; color: #6b7280; }
+.lp-fsrs-badge.state-learning   { background: #dbeafe; color: #2563eb; }
+.lp-fsrs-badge.state-review     { background: #d1fae5; color: #059669; }
+.lp-fsrs-badge.state-relearning { background: #ffedd5; color: #ea580c; }
+
+/* ── Due days input ────────────────────────────────────────────────────────── */
+.lp-due-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.lp-due-input {
+    width: 50px;
+    padding: 3px 6px;
+    background: var(--color-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: 7px;
+    font-size: 12px;
+    color: var(--color-text);
+    outline: none;
+    text-align: center;
+}
+
+.lp-due-input:focus { border-color: var(--color-primary); }
+
+/* ── Delete button ─────────────────────────────────────────────────────────── */
+.lp-del-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 7px;
+    font-size: 15px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.lp-del-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+/* ── Empty states ──────────────────────────────────────────────────────────── */
+.lp-empty {
+    text-align: center;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    padding: 32px 0;
+}
+
+/* ── Start button (top of detail page) ────────────────────────────────────── */
+.lp-start-btn {
+    padding: 8px 20px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.lp-start-btn:hover { background: var(--color-primary-hover); }
+
+/* ── Pagination ─────────────────────────────────────────────────────────────── */
+.lp-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 0 4px;
+}
+
+.lp-page-btn {
+    padding: 6px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.lp-page-btn:hover:not(:disabled) { background: var(--color-surface); border-color: var(--color-primary); }
+.lp-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.lp-page-info {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+/* ── Word enrichment (plan detail) ─────────────────────────────────────────── */
+.lp-word-phonetic {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    display: block;
+    margin-top: 2px;
+}
+
+.lp-word-extra {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+    padding: 4px 0 6px;
+    border-top: 1px dashed var(--color-border);
+}
+
+.lp-grammar-badge {
+    display: inline-block;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    font-size: 11px;
+    padding: 1px 7px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.lp-def-list { display: flex; flex-wrap: wrap; gap: 4px 8px; flex: 1; }
+.lp-def-item { font-size: 12px; color: var(--color-text-secondary); display: flex; gap: 4px; }
+.lp-def-pos  { color: var(--color-primary); font-weight: 600; font-size: 11px; white-space: nowrap; }
+
+.lp-example-toggle {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0 2px;
+    font-weight: 500;
+    text-decoration: underline;
+}
+
+.lp-example-list {
+    grid-column: 1 / -1;
+    padding: 4px 0 6px;
+    border-top: 1px dashed var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.lp-example-en { font-size: 12px; font-style: italic; color: var(--color-text); line-height: 1.4; }
+.lp-example-zh { font-size: 11px; color: var(--color-text-secondary); }
+
+/* ── Duplicate word warning ────────────────────────────────────────────────── */
+.lp-input-duplicate {
+    border-color: #ef4444 !important;
+    outline-color: #ef4444 !important;
+}
+
+.lp-duplicate-hint {
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 0;
+    font-size: 11px;
+    color: #ef4444;
+    white-space: nowrap;
+    pointer-events: none;
+    background: var(--color-surface);
+    padding: 1px 4px;
+    border-radius: 4px;
+    border: 1px solid #ef4444;
+    line-height: 1.4;
+}
+
+/* ── Study mode selector (detail page) ─────────────────────────────────────── */
+.lp-mode-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+
+.lp-mode-selector-label {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.lp-mode-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.lp-mode-tab {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1.5px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.lp-mode-tab.active,
+.lp-mode-tab:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .lp-grid { grid-template-columns: 1fr; }
+
+    .lp-word-item {
+        grid-template-columns: 1fr 1fr 70px 36px;
+        grid-template-rows: auto auto;
+    }
+
+    .lp-word-item .lp-fsrs-badge { grid-row: 2; }
+    .lp-word-item .lp-due-wrap   { display: none; }
+}

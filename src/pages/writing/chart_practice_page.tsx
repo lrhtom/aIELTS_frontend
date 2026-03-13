@@ -1,5 +1,5 @@
 import Layout from '../../components/layout/Layout';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
@@ -43,6 +43,9 @@ export default function ChartPracticePage() {
     const [userAnswer, setUserAnswer] = useState('');
     const [result, setResult] = useState<EvaluationResult | null>(null);
     const [previewImageSrc, setPreviewImageSrc] = useState<string | null>(null);
+    const [isEvaluating, setIsEvaluating] = useState(false);
+    // Guard against React StrictMode double-invocation and rapid re-mount
+    const hasFetchedRef = useRef<string | null>(null);
 
     // Refresh recovery: if local session exists, restore and skip loading state.
     useEffect(() => {
@@ -93,6 +96,10 @@ export default function ChartPracticePage() {
             }
         }
 
+        // Prevent double-fire from React StrictMode or rapid re-mount
+        if (hasFetchedRef.current === cacheKey) return;
+        hasFetchedRef.current = cacheKey;
+
         let isMounted = true;
 
         async function fetchChart() {
@@ -110,7 +117,10 @@ export default function ChartPracticePage() {
                 console.error('Generate chart error:', err);
                 const error = err as { message?: string };
                 showToast(error.message || t.practiceSandbox.toastFailGenChart, 'error');
-                if (isMounted) navigate('/writing/chart');
+                if (isMounted) {
+                    hasFetchedRef.current = null; // allow retry on next mount
+                    navigate('/writing/chart');
+                }
             }
         }
         fetchChart();
@@ -144,7 +154,8 @@ export default function ChartPracticePage() {
     };
 
     const handleStartEvaluation = async () => {
-        if (!chartData) return;
+        if (!chartData || isEvaluating) return;
+        setIsEvaluating(true);
         setStep('evaluating');
         try {
             const res = await api<EvaluationResult>('/writing/chart/evaluate', {
@@ -163,6 +174,8 @@ export default function ChartPracticePage() {
             const error = err as { message?: string };
             showToast(error.message || t.practiceSandbox.toastFailEval, 'error');
             setStep('settlement'); // fall back to allow retry
+        } finally {
+            setIsEvaluating(false);
         }
     };
 
@@ -276,6 +289,7 @@ export default function ChartPracticePage() {
                         className="primary-button"
                         style={{ padding: '16px', fontSize: '18px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                         onClick={handleStartEvaluation}
+                        disabled={isEvaluating}
                     >
                         <span>🎯</span> {t.practiceSandbox.callAiBtn}
                     </button>

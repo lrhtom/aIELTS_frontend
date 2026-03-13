@@ -88,7 +88,7 @@ const UserManual: React.FC = () => {
             </div>
 
             <div className="manual-layout">
-                {/* Left Sidebar - Full Collapsible Wrapper */}
+                {/* Left Sidebar */}
                 <aside className={`manual-sidebar-wrapper ${isSidebarClosed ? 'closed' : ''}`}>
                     <div className="manual-sidebar">
                         <nav className="manual-nav">
@@ -126,23 +126,24 @@ const UserManual: React.FC = () => {
                             )}
                         </nav>
                     </div>
-                    {/* Floating Toggle Handle attached to sidebar right edge */}
-                    <button
-                        className="manual-toggle-handle"
-                        onClick={() => setIsSidebarClosed(!isSidebarClosed)}
-                        title={isSidebarClosed ? "打开手册列表" : "关闭手册列表"}
-                    >
-                        <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            className={`toggle-icon ${isSidebarClosed ? 'closed' : ''}`}
-                        >
-                            <polyline points="15 18 9 12 15 6" />
-                        </svg>
-                    </button>
                 </aside>
+
+                {/* Toggle Handle - sibling in flex row, always visible */}
+                <button
+                    className={`manual-toggle-handle ${isSidebarClosed ? 'closed' : ''}`}
+                    onClick={() => setIsSidebarClosed(!isSidebarClosed)}
+                    title={isSidebarClosed ? "打开手册列表" : "关闭手册列表"}
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        className={`toggle-icon ${isSidebarClosed ? 'closed' : ''}`}
+                    >
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
 
                 {/* Right Content Area */}
                 <main className="manual-content">

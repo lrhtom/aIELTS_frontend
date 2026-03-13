@@ -98,11 +98,28 @@ export default function UserBackground() {
         }
     };
 
-    const handleClear = () => {
+    const handleClear = async () => {
         setBgColor('');
         setBgImageUrl('');
         setImageUrlInput('');
         applyUserBackground({ ...user!, bg_color: null, bg_image_url: null });
+
+        setSaving(true);
+        setSaveMsg('');
+        try {
+            const resp = await apiClient.patch('/auth/background', {
+                bg_color: '',
+                bg_image_url: '',
+                bg_blur: bgBlur,
+            });
+            updateUser(resp.data.user);
+            setSaveMsg(`✅ ${t.common.saved}`);
+        } catch {
+            setSaveMsg(`❌ ${t.common.error}`);
+        } finally {
+            setSaving(false);
+            setTimeout(() => setSaveMsg(''), 3000);
+        }
     };
 
     // ── 手动保存颜色/URL 设置（图片上传已自动保存）──
@@ -238,7 +255,7 @@ export default function UserBackground() {
 
             {/* ── 底部操作栏 ── */}
             <div className="ub-actions">
-                <button className="ub-clear-btn" onClick={handleClear}>{t.profile.background.clearBtn}</button>
+                <button className="ub-clear-btn" onClick={handleClear} disabled={saving || uploading}>{t.profile.background.clearBtn}</button>
                 <div className="ub-actions-right">
                     {saveMsg && <span className="ub-save-msg">{saveMsg}</span>}
                     <button

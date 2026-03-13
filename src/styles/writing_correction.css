@@ -226,3 +226,82 @@
 .wc-feedback-content p:last-child {
     margin-bottom: 0;
 }
+
+/* ── AI 高分范文 ─────────────────────────────────────────────────────────── */
+.wc-model-essay-box {
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.04) 0%, rgba(16, 185, 129, 0.06) 100%);
+    border-radius: 12px;
+    border: 1.5px solid rgba(13, 148, 136, 0.25);
+    overflow: hidden;
+}
+
+.wc-model-essay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem 0.75rem;
+    border-bottom: 1px solid rgba(13, 148, 136, 0.15);
+}
+
+.wc-model-essay-header > div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wc-model-essay-header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--color-text);
+}
+
+.wc-model-essay-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #0d9488, #10b981);
+    color: white;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+}
+
+.wc-copy-btn {
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+
+.wc-copy-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.wc-copy-btn.copied {
+    background: rgba(13, 148, 136, 0.1);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.wc-model-essay-content {
+    padding: 1.25rem 1.5rem;
+}
+
+.wc-model-essay-content p {
+    margin: 0 0 1.1rem 0;
+    line-height: 1.8;
+    color: var(--color-text);
+    font-size: 0.95rem;
+}
+
+.wc-model-essay-content p:last-child {
+    margin-bottom: 0;
+}
