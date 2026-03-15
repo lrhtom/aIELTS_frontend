@@ -75,7 +75,7 @@ export default function Task1SelectionPage() {
                                         {typeItem.isBeta && <span style={{ marginLeft: '8px', fontSize: '11px', background: '#f59e0b', color: '#fff', padding: '2px 6px', borderRadius: '12px', fontWeight: 'bold' }}>{t.task1Selection.beta}</span>}
                                     </div>
                                     <div className="chart-card-subtitle">{typeItem.nameEn}</div>
-                                    <div className="chart-card-desc" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>{typeItem.desc}</div>
+                                    <div className="chart-card-desc" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>{typeItem.desc}</div>
                                 </div>
                             </div>
                         ))}
@@ -97,8 +97,8 @@ export default function Task1SelectionPage() {
                 .chart-card-btn {
                     padding: 1.5rem;
                     border-radius: 16px;
-                    border: 2px solid var(--border-color);
-                    background: var(--bg-card);
+                    border: 2px solid var(--color-border);
+                    background: var(--color-surface);
                     cursor: pointer;
                     display: flex;
                     align-items: flex-start;
@@ -109,17 +109,17 @@ export default function Task1SelectionPage() {
                 }
                 .chart-card-btn:hover {
                     transform: translateY(-4px);
-                    border-color: var(--primary-color);
-                    box-shadow: 0 12px 24px -10px rgba(59, 130, 246, 0.2);
+                    border-color: var(--color-primary);
+                    box-shadow: 0 12px 24px -10px rgba(13, 148, 136, 0.2);
                 }
                 .chart-card-btn.active {
-                    border-color: var(--primary-color);
-                    background: rgba(59, 130, 246, 0.05);
-                    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+                    border-color: var(--color-primary);
+                    background: rgba(13, 148, 136, 0.05);
+                    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
                 }
                 .chart-card-icon {
                     font-size: 32px;
-                    background: var(--bg-body);
+                    background: var(--color-bg);
                     width: 60px;
                     height: 60px;
                     display: flex;
@@ -134,11 +134,11 @@ export default function Task1SelectionPage() {
                 .chart-card-title {
                     font-size: 1.25rem;
                     font-weight: 700;
-                    color: var(--text-primary);
+                    color: var(--color-text);
                 }
                 .chart-card-subtitle {
                     font-size: 0.9rem;
-                    color: var(--text-secondary);
+                    color: var(--color-text-secondary);
                     margin-top: 4px;
                 }
             `}</style>

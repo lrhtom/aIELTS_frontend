@@ -430,6 +430,30 @@
 .fc-choice-opt.dimmed  { opacity: 0.35; }
 .fc-choice-opt:disabled { cursor: not-allowed; }
 
+/* ── Write mode — 首字母提示 ─────────────────────────────────────────────── */
+.fc-write-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.fc-write-hint-chars {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--color-primary);
+}
+
+.fc-write-hint-len {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    letter-spacing: 0;
+}
+
 /* ── Write mode ──────────────────────────────────────────────────────────── */
 .fc-write-area {
     max-width: 560px;
@@ -460,7 +484,7 @@
 .fc-write-input:focus    { border-color: var(--color-primary); }
 .fc-write-input.write-correct { border-color: #86efac; background: #f0fdf4; color: #16a34a; }
 .fc-write-input.write-wrong   { border-color: #fca5a5; background: #fef2f2; color: #dc2626; }
-.fc-write-input:disabled { opacity: 0.85; }
+.fc-write-input:read-only { opacity: 0.85; cursor: default; }
 
 .fc-write-submit {
     padding: 12px 20px;
@@ -478,15 +502,98 @@
 .fc-write-submit:hover:not(:disabled) { background: var(--color-primary-hover); }
 .fc-write-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* 快速自评按钮 */
+.fc-quick-assess {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+.fc-qa-btn {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 10px;
+    border: 1.5px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+}
+.fc-qa-btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+.fc-qa-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.fc-qa-unknown   { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+.fc-qa-proficient { background: #f0fdf4; color: #16a34a; border-color: #86efac; }
+.fc-qa-key { font-size: 11px; opacity: 0.6; font-weight: 400; margin-left: 4px; }
+
+/* 抄写模式：卡片内展示参考单词 */
+.fc-unknown-reveal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 8px 14px;
+    background: #fffbeb;
+    border: 1.5px dashed #fbbf24;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #92400e;
+}
+.fc-unknown-word {
+    font-size: 20px;
+    font-weight: 700;
+    color: #b45309;
+    letter-spacing: 0.5px;
+}
+
 .fc-write-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     padding: 10px 16px;
     border-radius: 10px;
     font-size: 14px;
     font-weight: 600;
-    text-align: center;
 }
 .fc-write-result.correct { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
 .fc-write-result.wrong   { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+
+.fc-write-next {
+    flex-shrink: 0;
+    padding: 6px 16px;
+    border-radius: 8px;
+    border: none;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.fc-write-next:hover:not(:disabled)  { background: var(--color-primary-hover); }
+.fc-write-next:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.fc-write-undo {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.fc-write-undo:hover:not(:disabled) { color: var(--color-text); border-color: var(--color-text-secondary); }
+.fc-write-undo:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 抄写模式下独立显示的撤销按钮 */
+.fc-write-area > .fc-write-undo {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    text-align: center;
+}
 
 /* ── 响应式 ──────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {

@@ -78,7 +78,7 @@ export default function Task2SelectionPage() {
                                         {typeItem.nameZh}
                                     </div>
                                     <div className="chart-card-subtitle">{typeItem.nameEn}</div>
-                                    <div className="chart-card-desc" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>{typeItem.desc}</div>
+                                    <div className="chart-card-desc" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>{typeItem.desc}</div>
                                 </div>
                             </div>
                         ))}

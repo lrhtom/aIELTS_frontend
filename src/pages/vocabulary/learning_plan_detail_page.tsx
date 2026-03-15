@@ -69,10 +69,9 @@ export default function LearningPlanDetailPage() {
     const [bookSubMode, setBookSubMode] = useState<BookSubMode>('all');
     const [rangeStart,  setRangeStart]  = useState(1);
     const [rangeEnd,    setRangeEnd]    = useState(50);
-    const [bookWords_,  setBookWords_]  = useState<BookWord[]>([]);
-    const [bookPage,    setBookPage]    = useState(1);
-    const [bookTotal,   setBookTotal]   = useState(0);
-    const [bookQ,       setBookQ]       = useState('');
+    const [allBookWords,  setAllBookWords]  = useState<BookWord[]>([]);
+    const [bookPage,      setBookPage]      = useState(1);
+    const [bookQ,         setBookQ]         = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
     // ── Load plan + words ──────────────────────────────────────────────────
@@ -108,15 +107,15 @@ export default function LearningPlanDetailPage() {
         listVocabBooks().then(r => setBooks(r.books)).catch(() => {});
     }, []);
 
-    // Load book words when book or page changes and subMode=select
+    // Load all book words (client-side search/pagination)
     useEffect(() => {
         if (bookSubMode !== 'select' || !bookId) return;
-        setBookWords_([]);
-        listBookWords(bookId as number, bookPage, 20, bookQ || undefined).then(r => {
-            setBookWords_(r.words);
-            setBookTotal(r.total);
+        setAllBookWords([]);
+        setBookPage(1);
+        listBookWords(bookId as number, 1, 5000).then(r => {
+            setAllBookWords(r.words);
         }).catch(() => {});
-    }, [bookId, bookSubMode, bookPage, bookQ]);
+    }, [bookId, bookSubMode]);
 
     // Reset pagination when search or entries change
     useEffect(() => { setPage(1); }, [search]);
@@ -263,6 +262,24 @@ export default function LearningPlanDetailPage() {
     // Dedup: set of all words already in plan
     const existingWords   = useMemo(() => new Set(entries.map(e => e.word)), [entries]);
     const isDuplicateWord = addWord_.trim() !== '' && existingWords.has(addWord_.trim().toLowerCase());
+
+    // 书库单词：前端过滤 + 分页
+    const { bookWords_, bookTotal } = useMemo(() => {
+        let list = allBookWords;
+        if (bookQ.trim()) {
+            const q = bookQ.trim().toLowerCase();
+            list = list.filter(w =>
+                w.word.toLowerCase().includes(q) ||
+                w.zh_brief.toLowerCase().includes(q)
+            );
+        }
+        const total = list.length;
+        const PAGE_SIZE = 20;
+        return {
+            bookWords_: list.slice((bookPage - 1) * PAGE_SIZE, bookPage * PAGE_SIZE),
+            bookTotal:  total,
+        };
+    }, [allBookWords, bookQ, bookPage]);
 
     // ── Book word selection helpers ────────────────────────────────────────
     const toggleSelectWord = (wordId: number) => {

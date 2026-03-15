@@ -580,7 +580,7 @@ const zh: Translations = {
             title: '掌握雅思，从 aIELTS 开始',
             subtitle: 'AI 驱动的一站式雅思学习平台，助您突破语言瓶颈，实现留学梦想。',
             startPractice: '开始练习',
-            vocab: '词汇库',
+            vocab: '词汇学习',
         },
         announcements: {
             heading: '最新动态',

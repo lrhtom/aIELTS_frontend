@@ -1,9 +1,9 @@
 import Layout from '../../components/layout/Layout';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import {
-    listWords, addWord, updateWord, removeWord,
+    getNotebook, listWords, addWord, updateWord, removeWord,
     type NotebookEntry,
 } from '../../api/notebook';
 import '../../styles/practice_page.css';
@@ -221,7 +221,7 @@ export default function NotebookDetailPage() {
     const nbId     = Number(id);
     const navigate = useNavigate();
 
-    const [entries,       setEntries]       = useState<NotebookEntry[]>([]);
+    const [allEntries,    setAllEntries]    = useState<NotebookEntry[]>([]);
     const [loading,       setLoading]       = useState(true);
     const [selectedTag,   setSelectedTag]   = useState('');
     const [searchQ,       setSearchQ]       = useState('');
@@ -230,59 +230,49 @@ export default function NotebookDetailPage() {
     const [submitting,    setSubmitting]    = useState(false);
     const [nbTitle,       setNbTitle]       = useState('笔记本');
     const [expandedExamples, setExpandedExamples] = useState<Set<number>>(new Set());
-    const [allWords,      setAllWords]      = useState<Set<string>>(new Set());
 
-    /* 加载单词列表 */
-    const fetchEntries = useCallback(async (tag = '', q = '') => {
-        try {
-            const params: Record<string, string> = {};
-            if (tag) params.tag = tag;
-            if (q)   params.q   = q;
-            const { entries: list } = await listWords(nbId, params);
-            setEntries(list);
-        } catch {
-            showToast('加载失败', 'error');
+    /* 前端过滤 */
+    const entries = useMemo(() => {
+        let list = allEntries;
+        if (selectedTag) list = list.filter(e => e.tags.includes(selectedTag));
+        if (searchQ.trim()) {
+            const q = searchQ.trim().toLowerCase();
+            list = list.filter(e =>
+                e.word.toLowerCase().includes(q) ||
+                e.custom_zh.toLowerCase().includes(q)
+            );
         }
-    }, [nbId]);
+        return list;
+    }, [allEntries, selectedTag, searchQ]);
 
+    const allTags  = useMemo(() => {
+        const s = new Set<string>();
+        allEntries.forEach(e => e.tags.forEach(t => s.add(t)));
+        return [...s].sort();
+    }, [allEntries]);
+
+    const allWords = useMemo(() => new Set(allEntries.map(e => e.word)), [allEntries]);
+
+    /* 初始加载：一次性取全部条目 + 笔记本标题 */
     useEffect(() => {
         if (!nbId || isNaN(nbId)) { navigate('/vocabulary/notebook', { replace: true }); return; }
-        // 获取 notebook 标题可从 listNotebooks 取，这里通过 entries 网络调用若失败则跳转
-        fetchEntries()
+        Promise.all([
+            getNotebook(nbId).then(r => setNbTitle(r.notebook.title)),
+            listWords(nbId).then(r => setAllEntries(r.entries)),
+        ])
+            .catch(() => { showToast('加载失败', 'error'); })
             .finally(() => setLoading(false));
-        // 尝试从 localStorage 缓存的 notebook 列表中取标题
-        try {
-            const title = (window as any).__nbTitles?.[nbId];
-            if (title) setNbTitle(title);
-        } catch { /* ignore */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    /* 所有已用标签（从当前条目中提取，不受 tag 过滤影响） */
-    const [allTags, setAllTags] = useState<string[]>([]);
-
-    useEffect(() => {
-        listWords(nbId).then(r => {
-            const tags = new Set<string>();
-            r.entries.forEach(e => e.tags.forEach(t => tags.add(t)));
-            setAllTags([...tags].sort());
-            setAllWords(new Set(r.entries.map(e => e.word)));
-            if (r.entries.length > 0) setNbTitle('笔记本');
-        }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     /* 切换 tag 过滤 */
     const handleTagFilter = (tag: string) => {
-        const next = selectedTag === tag ? '' : tag;
-        setSelectedTag(next);
-        fetchEntries(next, searchQ);
+        setSelectedTag(prev => prev === tag ? '' : tag);
     };
 
     /* 搜索 */
     const handleSearch = (q: string) => {
         setSearchQ(q);
-        fetchEntries(selectedTag, q);
     };
 
     /* 添加单词 */
@@ -300,12 +290,7 @@ export default function NotebookDetailPage() {
                 ...(form.phonetic.trim() && { phonetic: form.phonetic.trim() }),
                 ...(form.grammar.trim()  && { grammar:  form.grammar.trim()  }),
             });
-            setEntries(prev => [entry, ...prev]);
-            setAllTags(prev => {
-                const s = new Set([...prev, ...entry.tags]);
-                return [...s].sort();
-            });
-            setAllWords(prev => new Set([...prev, entry.word]));
+            setAllEntries(prev => [entry, ...prev]);
             setShowAddForm(false);
             showToast(`「${entry.word}」已添加`, 'success');
         } catch (err: any) {
@@ -330,11 +315,7 @@ export default function NotebookDetailPage() {
                 mastery_level: form.mastery_level,
                 tags:          form.tags,
             });
-            setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
-            setAllTags(prev => {
-                const s = new Set([...prev, ...updated.tags]);
-                return [...s].sort();
-            });
+            setAllEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
             setEditId(null);
             showToast('已保存', 'success');
         } catch {
@@ -349,8 +330,7 @@ export default function NotebookDetailPage() {
         if (!confirm(`从笔记本移除「${entry.word}」？`)) return;
         try {
             await removeWord(nbId, entry.id);
-            setEntries(prev => prev.filter(e => e.id !== entry.id));
-            setAllWords(prev => { const s = new Set(prev); s.delete(entry.word); return s; });
+            setAllEntries(prev => prev.filter(e => e.id !== entry.id));
             showToast('已移除', 'success');
         } catch {
             showToast('移除失败', 'error');
@@ -411,7 +391,7 @@ export default function NotebookDetailPage() {
                                 <span
                                     className="tag-chip"
                                     style={{ cursor: 'pointer', opacity: 0.7 }}
-                                    onClick={() => { setSelectedTag(''); fetchEntries('', searchQ); }}
+                                    onClick={() => setSelectedTag('')}
                                 >
                                     ✕ 清除过滤
                                 </span>
@@ -551,8 +531,8 @@ export default function NotebookDetailPage() {
                 {/* 底部统计 */}
                 {!loading && (
                     <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '12px' }}>
-                        共 {entries.length} 个单词
-                        {selectedTag && `，当前过滤：#${selectedTag}`}
+                    共 {allEntries.length} 个单词
+                        {entries.length !== allEntries.length && `，过滤显示 ${entries.length} 个`}
                     </p>
                 )}
             </div>

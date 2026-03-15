@@ -71,8 +71,8 @@ function isReloadNavigation(): boolean {
  */
 function nextMastery(current: number, correct: boolean): number {
     if (!correct) return 1;
-    if (current <= 1) return 2;
-    return Math.min(4, current + 1);
+    if (current <= 1) return 2;  // 第一次答对
+    return 4;                     // 第二次答对 → 毕业
 }
 
 function estimateInterval(card: VocabCard, rating: number): string {
@@ -137,9 +137,11 @@ export default function VocabularyFlashcardDoingPage() {
     const [choiceSelected, setChoiceSelected] = useState<number | null>(null);
 
     // 看中文写英文
-    const [writeInput,     setWriteInput]     = useState('');
-    const [writeSubmitted, setWriteSubmitted] = useState(false);
-    const [writeCorrect,   setWriteCorrect]   = useState<boolean | null>(null);
+    const [writeInput,       setWriteInput]       = useState('');
+    const [writeSubmitted,   setWriteSubmitted]   = useState(false);
+    const [writeCorrect,     setWriteCorrect]     = useState<boolean | null>(null);
+    const [unknownMode,      setUnknownMode]      = useState(false);    // 点击"不会"：展示单词让用户抄写
+    const [quickProficient,  setQuickProficient]  = useState(false);   // 点击"熟练"：直接毕业
 
     /* 初始化 */
     useEffect(() => {
@@ -213,6 +215,8 @@ export default function VocabularyFlashcardDoingPage() {
         setWriteInput('');
         setWriteSubmitted(false);
         setWriteCorrect(null);
+        setUnknownMode(false);
+        setQuickProficient(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visitKey]);
 
@@ -336,14 +340,63 @@ export default function VocabularyFlashcardDoingPage() {
     }, [choiceSelected, submitting, handleAutoRating]);
 
     /* 写英文提交 */
-    const handleWriteSubmit = useCallback(async () => {
+    const handleWriteSubmit = useCallback(() => {
         if (writeSubmitted || submitting || !writeInput.trim() || !currentCard) return;
-        const correct = writeInput.trim().toLowerCase() === currentCard.word.toLowerCase();
-        setWriteCorrect(correct);
-        setWriteSubmitted(true);
-        await new Promise(r => setTimeout(r, 1300));
-        await handleAutoRating(correct);
-    }, [writeSubmitted, submitting, writeInput, currentCard, handleAutoRating]);
+        const input  = writeInput.trim().toLowerCase();
+        const target = currentCard.word.toLowerCase();
+        if (unknownMode) {
+            // 抄写模式：必须完全正确才能进入"下一个"；错了清空重试
+            if (input !== target) {
+                setWriteInput('');
+                return;
+            }
+            // 抄对了：标记为"不会"（mastery=wrong），解锁"下一个"
+            setWriteCorrect(false);
+            setWriteSubmitted(true);
+        } else {
+            setWriteCorrect(input === target);
+            setWriteSubmitted(true);
+        }
+    }, [writeSubmitted, submitting, writeInput, currentCard, unknownMode]);
+
+    const handleWriteNext = useCallback(async () => {
+        if (!writeSubmitted || submitting || writeCorrect === null) return;
+        if (quickProficient) {
+            // 熟练自评：直接毕业，不走 mastery 进阶
+            const ci  = currentCardIdx;
+            const card = currentCard;
+            if (ci < 0 || !card) return;
+            setSubmitting(true);
+            const alreadyForgot = sessionForgot[ci] ?? false;
+            await submitAndAdvance(ci, card, 4, 4, true, false, alreadyForgot);
+        } else {
+            await handleAutoRating(writeCorrect);
+        }
+    }, [writeSubmitted, submitting, writeCorrect, quickProficient,
+        currentCardIdx, currentCard, sessionForgot, submitAndAdvance, handleAutoRating]);
+
+    /* 快速自评 */
+    const handleQuickAssess = useCallback((correct: boolean) => {
+        if (writeSubmitted || submitting) return;
+        if (!correct) {
+            // 不会：展示单词，进入抄写流程
+            setUnknownMode(true);
+        } else {
+            // 熟练：标记直接毕业，解锁"下一个"
+            setQuickProficient(true);
+            setWriteCorrect(true);
+            setWriteSubmitted(true);
+        }
+    }, [writeSubmitted, submitting]);
+
+    /* 撤销：回到初始写题状态（不会/熟练选择页） */
+    const handleWriteUndo = useCallback(() => {
+        setWriteInput('');
+        setWriteSubmitted(false);
+        setWriteCorrect(null);
+        setUnknownMode(false);
+        setQuickProficient(false);
+    }, []);
 
     /* 键盘快捷键（仅记忆卡模式） */
     useEffect(() => {
@@ -365,6 +418,24 @@ export default function VocabularyFlashcardDoingPage() {
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
     }, [step, isFlipped, submitting, handleFlashcardRating, mode]);
+
+    /* 键盘快捷键（写单词模式）
+     * 快速自评可用时（输入框为空、未提交）：↑ 熟练  ↓ 不会 */
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (step !== 'doing' || submitting || mode !== 'write') return;
+            if (writeSubmitted || unknownMode || writeInput.trim()) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                handleQuickAssess(false);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                handleQuickAssess(true);
+            }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [step, submitting, mode, writeSubmitted, unknownMode, writeInput, handleQuickAssess]);
 
     /* 再来一轮 */
     const handleRetry = () => {
@@ -644,6 +715,34 @@ export default function VocabularyFlashcardDoingPage() {
                                             {currentCard.grammar}
                                         </div>
                                     )}
+                                    {/* 首字母提示 */}
+                                    {!unknownMode && (
+                                        <div className="fc-write-hint">
+                                            <span className="fc-write-hint-chars">
+                                                {currentCard.word[0]}
+                                                {'_'.repeat(currentCard.word.length - 1)}
+                                            </span>
+                                            <span className="fc-write-hint-len">
+                                                {currentCard.word.length}个字母
+                                            </span>
+                                        </div>
+                                    )}
+                                    {/* 抄写模式：卡片内展示单词供参考 */}
+                                    {unknownMode && !writeSubmitted && (
+                                        <div className="fc-unknown-reveal">
+                                            <span className="fc-unknown-word">{currentCard.word}</span>
+                                            {currentCard.phonetic && (
+                                                <span className="fc-phonetic" style={{ marginLeft: 10 }}>
+                                                    {currentCard.phonetic}
+                                                </span>
+                                            )}
+                                            <button
+                                                className="fc-speak-btn fc-speak-btn--inline"
+                                                onClick={() => speak(currentCard.word)}
+                                                title="朗读"
+                                            >🔊</button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -656,11 +755,23 @@ export default function VocabularyFlashcardDoingPage() {
                                             ? writeCorrect ? ' write-correct' : ' write-wrong'
                                             : ''
                                     }`}
-                                    placeholder="输入英文单词…"
+                                    placeholder={unknownMode ? '抄写上方单词…' : '输入英文单词…'}
                                     value={writeInput}
                                     onChange={e => setWriteInput(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleWriteSubmit(); }}
-                                    disabled={writeSubmitted}
+                                    onKeyDown={e => {
+                                        // 方向键在快速自评可用时交给全局 handler，阻止浏览器 autocomplete 默认行为
+                                        if (!writeSubmitted && !unknownMode && !writeInput.trim() &&
+                                            (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                                            e.preventDefault();
+                                            return;
+                                        }
+                                        if (e.key === 'Enter') {
+                                            if (!writeSubmitted) handleWriteSubmit();
+                                            else handleWriteNext();
+                                        }
+                                    }}
+                                    autoComplete="new-password"
+                                    readOnly={writeSubmitted}
                                     // eslint-disable-next-line jsx-a11y/no-autofocus
                                     autoFocus
                                 />
@@ -669,7 +780,7 @@ export default function VocabularyFlashcardDoingPage() {
                                     onClick={handleWriteSubmit}
                                     disabled={writeSubmitted || !writeInput.trim() || submitting}
                                 >
-                                    提交
+                                    提交 <span className="fc-qa-key">[键盘↵]</span>
                                 </button>
                                 {/* 朗读按钮始终可点击 */}
                                 <button
@@ -678,11 +789,50 @@ export default function VocabularyFlashcardDoingPage() {
                                     title="朗读单词"
                                 >🔊</button>
                             </div>
+                            {/* 快速自评按钮（未提交、非抄写模式、且输入框为空时显示） */}
+                            {!writeSubmitted && !unknownMode && !writeInput.trim() && (
+                                <div className="fc-quick-assess">
+                                    <button
+                                        className="fc-qa-btn fc-qa-unknown"
+                                        onClick={() => handleQuickAssess(false)}
+                                        disabled={submitting}
+                                    >不会 <span className="fc-qa-key">[键盘↓]</span></button>
+                                    <button
+                                        className="fc-qa-btn fc-qa-proficient"
+                                        onClick={() => handleQuickAssess(true)}
+                                        disabled={submitting}
+                                    >熟练 <span className="fc-qa-key">[键盘↑]</span></button>
+                                </div>
+                            )}
+                            {/* 抄写模式下的撤销入口 */}
+                            {unknownMode && !writeSubmitted && (
+                                <button className="fc-write-undo" onClick={handleWriteUndo}>
+                                    ↩ 撤销
+                                </button>
+                            )}
                             {writeSubmitted && (
                                 <div className={`fc-write-result ${writeCorrect ? 'correct' : 'wrong'}`}>
-                                    {writeCorrect
-                                        ? '✓ 正确！'
-                                        : `✗ 正确答案：${currentCard.word}`}
+                                    <span>
+                                        {unknownMode
+                                            ? `✓ 已抄写：${currentCard.word}`
+                                            : writeCorrect
+                                                ? `✓ 正确：${currentCard.word}`
+                                                : `✗ 正确答案：${currentCard.word}`}
+                                    </span>
+                                    <button
+                                        className="fc-write-next"
+                                        onClick={handleWriteNext}
+                                        disabled={submitting}
+                                    >
+                                        下一个 → <span className="fc-qa-key">[键盘↵]</span>
+                                    </button>
+                                    <button
+                                        className="fc-write-undo"
+                                        onClick={handleWriteUndo}
+                                        disabled={submitting}
+                                    >
+                                        ↩ 撤销
+                                    </button>
                                 </div>
                             )}
                         </div>

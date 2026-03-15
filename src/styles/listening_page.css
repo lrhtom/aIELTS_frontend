@@ -98,6 +98,7 @@
 /* 内联输入框样式 */
 .inline-answer-input {
     display: inline-block;
+    vertical-align: middle;
     width: 120px;
     margin: 0 6px;
     padding: 2px 8px;

@@ -25,6 +25,11 @@ export interface NotebookEntry {
     last_reviewed: string | null;
 }
 
+export async function getNotebook(id: number) {
+    const resp = await apiClient.get(`/notebooks/${id}/`);
+    return resp.data as { notebook: Notebook };
+}
+
 export async function listNotebooks() {
     const resp = await apiClient.get('/notebooks/');
     return resp.data as { notebooks: Notebook[] };

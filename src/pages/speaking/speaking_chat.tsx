@@ -637,7 +637,7 @@ Rules:
                     <h3>📚 词汇 & 设置</h3>
                 </div>
 
-                <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+                <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid var(--color-border)', marginBottom: '1rem' }}>
                     <AiModelSelector label="当前模型" description="" />
                 </div>
 

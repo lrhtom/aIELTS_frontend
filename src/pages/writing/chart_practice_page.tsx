@@ -125,7 +125,7 @@ export default function ChartPracticePage() {
         }
         fetchChart();
 
-        return () => { isMounted = false; };
+        return () => { isMounted = false; hasFetchedRef.current = null; };
     }, [type, navigate, cacheKey]);
 
     // Word count calculation
@@ -163,7 +163,8 @@ export default function ChartPracticePage() {
                 body: {
                     prompt: chartData.prompt,
                     pythonCode: chartData.pythonCode,
-                    userAnswer: userAnswer
+                    userAnswer: userAnswer,
+                    lang,
                 },
             });
             setResult(res);
@@ -185,7 +186,7 @@ export default function ChartPracticePage() {
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div className="spinner" style={{ margin: '0 auto 20px' }}></div>
             <h2>{t.practiceSandbox.loadingTitleTask1}</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>{t.practiceSandbox.loadingDescTask1}</p>
+            <p style={{ color: 'var(--color-text-secondary)' }}>{t.practiceSandbox.loadingDescTask1}</p>
         </div>
     );
 
@@ -193,7 +194,7 @@ export default function ChartPracticePage() {
         <div style={{ textAlign: 'center', padding: '80px 20px' }}>
             <div className="spinner" style={{ margin: '0 auto 24px', width: '50px', height: '50px', borderWidth: '4px' }}></div>
             <h2 style={{ fontSize: '28px', marginBottom: '16px' }}>{t.practiceSandbox.evaluatingTitle}</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '18px', lineHeight: 1.6 }}>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '18px', lineHeight: 1.6 }}>
                 {t.practiceSandbox.evaluatingDesc}<br />
                 {t.practiceSandbox.evaluatingDescLine2}
             </p>
@@ -201,67 +202,59 @@ export default function ChartPracticePage() {
     );
 
     const renderAnswering = () => (
-        <div className="wc-main-layout" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            {/* Left Box: Chart & Prompt */}
-            <div className="chart-panel" style={{ backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)' }}>
-                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>📜</span> {t.practiceSandbox.promptTitle}
-                    </h3>
+        <div className="wp-split">
+            {/* Left: Chart & Prompt */}
+            <div className="wp-panel">
+                <div className="wp-panel-header">
+                    <h3>📊 {t.practiceSandbox.promptTitle}</h3>
                 </div>
-                <div style={{ padding: '16px', background: 'var(--bg-section)', borderRadius: '8px', marginBottom: '16px' }}>
-                    <p style={{ fontSize: '16px', lineHeight: '1.6', fontWeight: '500' }}>
+                <div className="wp-panel-body">
+                    <div className="wp-prompt-block">
                         {chartData?.prompt}
-                    </p>
-                </div>
-                {chartData?.mermaidCode ? (
-                    <MermaidChart chart={chartData.mermaidCode} />
-                ) : resolvedImageSrc ? (
-                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', background: 'white', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                        <img
-                            src={resolvedImageSrc}
-                            alt="Generated Chart"
-                            onClick={() => setPreviewImageSrc(resolvedImageSrc)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    setPreviewImageSrc(resolvedImageSrc);
-                                }
-                            }}
-                            role="button"
-                            tabIndex={0}
-                            aria-label="Open chart image preview"
-                            style={{ maxWidth: '100%', height: 'auto', maxHeight: '400px', objectFit: 'contain', cursor: 'zoom-in' }}
-                        />
                     </div>
-                ) : null}
+                    {chartData?.mermaidCode ? (
+                        <MermaidChart chart={chartData.mermaidCode} />
+                    ) : resolvedImageSrc ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                            <img
+                                src={resolvedImageSrc}
+                                alt="Generated Chart"
+                                onClick={() => setPreviewImageSrc(resolvedImageSrc)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setPreviewImageSrc(resolvedImageSrc);
+                                    }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Open chart image preview"
+                                style={{ maxWidth: '100%', height: 'auto', maxHeight: '380px', objectFit: 'contain', cursor: 'zoom-in' }}
+                            />
+                        </div>
+                    ) : null}
+                </div>
             </div>
 
-            {/* Right: Answer Input */}
-            <div className="wc-editor-card" style={{ flex: '1' }}>
-                <div className="wc-editor-header">
-                    <h3>您的作答区</h3>
-                    <span className="wc-word-count">字数: <strong>{wordCount}</strong> / 150+</span>
+            {/* Right: Editor */}
+            <div className="wp-panel">
+                <div className="wp-panel-header">
+                    <h3>✍️ 您的作答区</h3>
+                    <span className={`wp-word-badge${wordCount >= 150 ? ' ok' : ''}`}>
+                        {wordCount} / 150+ words
+                    </span>
                 </div>
-                <textarea
-                    className="wc-textarea"
-                    style={{
-                        flexGrow: 1, minHeight: '300px',
-                        resize: 'none',
-                        fontFamily: 'monospace',
-                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-                    }}
-                    placeholder={t.practiceSandbox.placeholderTask1}
-                    value={userAnswer}
-                    onChange={(e) => setUserAnswer(e.target.value)}
-                />
-                <div style={{ padding: '20px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button
-                        className="primary-button"
-                        onClick={handleSubmitAnser}
-                        style={{ padding: '12px 32px', fontSize: '16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}
-                    >
-                        <span>✅</span> {t.practiceSandbox.finishBtn}
+                <div className="wp-panel-body">
+                    <textarea
+                        className="wp-answer-textarea"
+                        placeholder={t.practiceSandbox.placeholderTask1}
+                        value={userAnswer}
+                        onChange={(e) => setUserAnswer(e.target.value)}
+                    />
+                </div>
+                <div className="wp-panel-footer">
+                    <button className="wp-submit-btn" onClick={handleSubmitAnser}>
+                        {t.practiceSandbox.finishBtn}
                     </button>
                 </div>
             </div>
@@ -280,7 +273,7 @@ export default function ChartPracticePage() {
             }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
                 <h2 style={{ marginBottom: '12px' }}>{t.practiceSandbox.settlementTitle}</h2>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
+                <p style={{ color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
                     {t.practiceSandbox.settlementDesc}
                 </p>
 
@@ -297,11 +290,11 @@ export default function ChartPracticePage() {
                         className="secondary-button"
                         style={{
                             padding: '12px', fontSize: '16px', background: 'transparent',
-                            border: '1px solid var(--border-color)', color: 'var(--text-primary)',
+                            border: '1px solid var(--color-border)', color: 'var(--text-primary)',
                             borderRadius: '8px', cursor: 'pointer'
                         }}
                         onClick={() => navigate('/writing')}
-                        onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                        onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
                     >
                         {t.practiceSandbox.backBtn}
                     </button>
@@ -311,70 +304,57 @@ export default function ChartPracticePage() {
     );
 
     const renderResult = () => (
-        <div className="wc-main-layout" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-            {/* Left/Top side: Keep user essay and prompt briefly */}
-            <div className="wc-editor-card" style={{ flex: '1' }}>
-                <div className="wc-editor-header">
-                    <h3>回放: 题目与您的作答</h3>
+        <div className="wp-split wp-split--result">
+            {/* Left: Replay */}
+            <div className="wp-panel">
+                <div className="wp-panel-header">
+                    <h3>📄 回放: 题目与您的作答</h3>
                 </div>
-                <div style={{ padding: '12px', background: 'var(--bg-section)', borderRadius: '8px', marginBottom: '16px', fontSize: '14px', fontStyle: 'italic' }}>
-                    {chartData?.prompt}
+                <div className="wp-panel-body">
+                    <div className="wp-prompt-block" style={{ fontSize: '0.9rem' }}>
+                        {chartData?.prompt}
+                    </div>
+                    <div className="wp-essay-replay">{userAnswer}</div>
                 </div>
-                <div style={{ flexGrow: 1, whiteSpace: 'pre-wrap', padding: '16px', border: '1px solid var(--border-color)', borderRadius: '8px', overflowY: 'auto' }}>
-                    {userAnswer}
-                </div>
-                <div className="wc-editor-footer" style={{ marginTop: '16px' }}>
-                    <button
-                        className="secondary-button"
-                        style={{
-                            padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-color)', cursor: 'pointer',
-                            fontWeight: 600
-                        }}
-                        onClick={() => navigate('/writing/chart')}
-                    >
+                <div className="wp-panel-footer">
+                    <button className="back-link" onClick={() => navigate('/writing/chart')}
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
                         {t.practiceSandbox.backToPracticeBtn}
                     </button>
                 </div>
             </div>
 
-            {/* Right side: Evaluation Result utilizing wc-result-card layout */}
+            {/* Right: Scores */}
             {result && (
-                <div className="wc-result-card" style={{ flex: '1.2', marginTop: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                        <h2 className="wc-overall-band" style={{ margin: 0 }}>
-                            {t.practiceSandbox.overallBand}
-                            <span style={{ fontSize: '42px', marginLeft: '16px', color: 'var(--accent-color)', fontWeight: 800 }}>
-                                {result.overall.toFixed(1)}
-                            </span>
-                        </h2>
+                <div className="wc-result-card">
+                    <div className="wc-band-display">
+                        <div className="wc-band-label">{t.practiceSandbox.overallBand}</div>
+                        <div className="wc-band-value">{result.overall.toFixed(1)}</div>
+                        <div className="wc-band-subtitle">IELTS Overall Band Score</div>
                     </div>
 
                     <div className="wc-scores-grid">
-                        <div className="wc-score-item">
-                            <div className="wc-score-label">🎯 {t.practiceSandbox.taTask1}</div>
-                            <div className="wc-score-val">{result.scores.ta.toFixed(1)}</div>
-                        </div>
-                        <div className="wc-score-item">
-                            <div className="wc-score-label">🔗 {t.practiceSandbox.cc}</div>
-                            <div className="wc-score-val">{result.scores.cc.toFixed(1)}</div>
-                        </div>
-                        <div className="wc-score-item">
-                            <div className="wc-score-label">📚 {t.practiceSandbox.lr}</div>
-                            <div className="wc-score-val">{result.scores.lr.toFixed(1)}</div>
-                        </div>
-                        <div className="wc-score-item">
-                            <div className="wc-score-label">📝 {t.practiceSandbox.gra}</div>
-                            <div className="wc-score-val">{result.scores.gra.toFixed(1)}</div>
-                        </div>
+                        {[
+                            { label: `🎯 ${t.practiceSandbox.taTask1}`, val: result.scores.ta },
+                            { label: `🔗 ${t.practiceSandbox.cc}`, val: result.scores.cc },
+                            { label: `📚 ${t.practiceSandbox.lr}`, val: result.scores.lr },
+                            { label: `📝 ${t.practiceSandbox.gra}`, val: result.scores.gra },
+                        ].map(({ label, val }) => (
+                            <div key={label} className="wc-score-item">
+                                <div className="wc-score-label">{label}</div>
+                                <div className="wc-score-val">{val.toFixed(1)}</div>
+                                <div className="wc-score-bar">
+                                    <div className="wc-score-bar-fill" style={{ width: `${(val / 9) * 100}%` }} />
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
-                    <div className="wc-feedback-box" style={{ marginTop: '32px' }}>
-                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '20px' }}>
-                            <span>💡</span> {t.practiceSandbox.examinerReport}
-                        </h3>
-                        <div className="wc-feedback-content" style={{ fontSize: '16px', lineHeight: 1.8 }}>
+                    <div className="wc-feedback-box">
+                        <h3>💡 {t.practiceSandbox.examinerReport}</h3>
+                        <div className="wc-feedback-content">
                             {result.feedback.split('\n').map((line, idx) => (
-                                <p key={idx} style={{ marginBottom: line.trim() === '' ? '0' : '16px' }}>{line}</p>
+                                <p key={idx}>{line}</p>
                             ))}
                         </div>
                     </div>

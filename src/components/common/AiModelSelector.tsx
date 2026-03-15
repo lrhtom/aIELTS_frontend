@@ -28,15 +28,15 @@ export default function AiModelSelector({ onModelChange, label, description }: A
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {resolvedLabel && <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{resolvedLabel} 🧠</div>}
-            {resolvedDesc && <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{resolvedDesc}</div>}
+            {resolvedLabel && <div style={{ fontWeight: 600, color: 'var(--color-text)' }}>{resolvedLabel} 🧠</div>}
+            {resolvedDesc && <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>{resolvedDesc}</div>}
             <select
                 style={{
                     padding: '10px 14px',
                     borderRadius: '8px',
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'var(--bg-card)',
-                    color: 'var(--text-primary)',
+                    border: '1px solid var(--color-border)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text)',
                     fontSize: '15px',
                     cursor: 'pointer',
                     outline: 'none',

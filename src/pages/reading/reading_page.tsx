@@ -365,7 +365,7 @@ export default function Reading_page() {
     // Loading State
     if (st.isLoading) {
         return (
-            <div className="container">
+            <div className="reading-container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <div className="loader">{t.readingDetails.writingPassage}</div>
                 </div>
@@ -381,7 +381,7 @@ export default function Reading_page() {
         );
 
         return (
-            <div className="container reading-container">
+            <div className="reading-container">
                 <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
                     <u>U</u> {t.readingDetails.underline}
                 </div>
@@ -460,7 +460,7 @@ export default function Reading_page() {
         const passageParagraphs = st.quizData.passage.split('\n\n');
 
         return (
-            <div className="container results-container">
+            <div className="results-container">
                 {/* Results Header */}
                 <div className="results-header">
                     <div className="results-header-left">

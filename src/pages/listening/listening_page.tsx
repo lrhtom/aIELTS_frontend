@@ -330,7 +330,7 @@ export default function ListeningPage() {
     // Loading — two distinct phases
     if (st.isLoading) {
         return (
-            <div className="container">
+            <div className="reading-container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <div className="loader">
                         🧠 {t.listeningDetails.writingPassage}
@@ -342,7 +342,7 @@ export default function ListeningPage() {
 
     if (audioLoading) {
         return (
-            <div className="container">
+            <div className="reading-container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <div className="loader">
                         🔊 {t.listeningDetails.generatingAudio}
@@ -455,7 +455,7 @@ export default function ListeningPage() {
         };
 
         return (
-            <div className="container">
+            <div className="reading-container">
                 <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
                     <u>U</u> {t.readingDetails.underline}
                 </div>
@@ -516,7 +516,7 @@ export default function ListeningPage() {
         const passageParagraphs = st.listeningData.passage.split('\n\n');
 
         return (
-            <div className="container results-container">
+            <div className="results-container">
                 {/* Results Header */}
                 <div className="results-header">
                     <div className="results-header-left">

@@ -117,7 +117,7 @@ export default function MermaidChart({ chart }: MermaidChartProps) {
                 background: 'white', 
                 padding: '24px', 
                 borderRadius: '8px', 
-                border: '1px solid var(--border-color)',
+                border: '1px solid var(--color-border)',
                 minHeight: '200px',
                 overflowX: 'auto'
             }}

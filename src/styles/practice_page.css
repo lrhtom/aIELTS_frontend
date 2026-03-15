@@ -447,3 +447,89 @@
         box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15), 0 8px 20px rgba(13, 148, 136, 0.1);
     }
 }
+/* ── 学习计划导入行 ────────────────────────────────────────────────────────── */
+.plan-import-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.plan-import-select {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 14px;
+}
+
+.plan-import-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.plan-import-btn:hover:not(:disabled) { background: var(--color-primary-hover); }
+.plan-import-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── 通用动作按钮（写作练习页使用）────────────────────────────────────── */
+
+.primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+}
+
+.primary-button:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+}
+
+.primary-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.secondary-button:hover:not(:disabled) {
+    color: var(--color-text);
+    border-color: var(--color-text-secondary);
+    background: var(--color-bg);
+}

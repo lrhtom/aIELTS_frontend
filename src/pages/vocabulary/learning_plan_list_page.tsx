@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     listPlans, createPlan, deletePlan, startPlan,
     type LearningPlan,
@@ -18,6 +19,7 @@ interface CreateModal {
 
 export default function LearningPlanListPage() {
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const [plans,    setPlans]    = useState<LearningPlan[]>([]);
     const [loading,  setLoading]  = useState(true);
@@ -95,12 +97,15 @@ export default function LearningPlanListPage() {
         }
     };
 
-    const canCreate = plans.length < MAX_PLANS;
+    const canCreate = user?.is_staff || plans.length < MAX_PLANS;
 
     return (
         <Layout>
             <div className="config-page-wrap" style={{ maxWidth: 760 }}>
                 {/* ── Header ── */}
+                <div className="practice-header" style={{ marginBottom: 0 }}>
+                    <Link to="/vocabulary" className="back-link">返回词汇学习</Link>
+                </div>
                 <div className="lp-list-header">
                     <div className="lp-list-header-text">
                         <h2>学习计划</h2>

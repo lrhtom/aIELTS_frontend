@@ -1,245 +1,471 @@
-/* e:\code\web\work\aIELTS\frontend\src\styles\writing_correction.css */
-
-.writing-correction-page {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-}
-
-.wc-container {
-    max-width: 1200px;
-    width: 100%;
+/* ─── Page Wrapper ───────────────────────────────────────────────────────── */
+.wc-page {
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 28px 40px 48px;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 24px;
 }
 
-/* Header Row setup for Title + Model Selector */
-.wc-header-row {
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.wc-header {
     display: flex;
-    justify-content: space-between;
     align-items: flex-end;
-    margin-bottom: 1rem;
+    justify-content: space-between;
+    gap: 16px;
     flex-wrap: wrap;
-    gap: 15px;
 }
 
-.wc-model-box {
-    background-color: var(--color-surface);
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--color-border);
-}
-
-/* Main Layout Grid */
-.wc-main-layout {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    align-items: start;
-}
-
-@media (min-width: 900px) {
-    .wc-main-layout {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-/* Left Panel: Editor Card */
-.wc-editor-card {
-    background-color: var(--color-surface);
-    border-radius: 16px;
-    border: 1px solid var(--color-border);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+.wc-header-title {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    gap: 4px;
 }
 
-.wc-editor-header {
-    display: flex;
-    justify-content: space-between;
+.wc-header-title .back-link {
+    display: inline-flex;
     align-items: center;
-    padding: 1.25rem 1.5rem;
-    background-color: rgba(0, 0, 0, 0.02);
-    border-bottom: 1px solid var(--color-border);
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.75;
+    transition: opacity 0.2s, color 0.2s;
+    margin-bottom: 10px;
 }
 
-.wc-editor-header h3 {
-    margin: 0;
-    font-size: 1.1rem;
+.wc-header-title .back-link:hover {
+    opacity: 1;
+    color: var(--color-primary);
+}
+
+.wc-header-title h1 {
+    margin: 0 0 4px;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: var(--color-text);
 }
 
-.wc-word-count {
+.wc-header-title p {
+    margin: 0;
     font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+/* ─── Main Body ──────────────────────────────────────────────────────────── */
+.wc-model-box {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
+}
+
+.wc-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 1000px) {
+    .wc-body {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+    .wc-page {
+        padding: 20px 20px 40px;
+    }
+}
+
+/* ─── Editor Card ────────────────────────────────────────────────────────── */
+.wc-editor-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: calc(100vh - 200px);
+}
+
+/* Scrollable inner area between type-switcher and footer */
+.wc-editor-scroll {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* Task Type Switcher */
+.wc-type-switcher {
+    display: flex;
+    gap: 8px;
+    padding: 16px 20px 14px;
+}
+
+.wc-type-btn {
+    padding: 7px 18px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border: 1.5px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.wc-type-btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.wc-type-btn.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.wc-type-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* Sections */
+.wc-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--color-border);
+}
+
+.wc-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wc-section-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wc-optional-tag {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    background: rgba(0, 0, 0, 0.06);
+    padding: 1px 8px;
+    border-radius: 99px;
+}
+
+.wc-word-count {
+    font-size: 0.85rem;
     color: var(--color-text-secondary);
 }
 
 .wc-word-count strong {
     color: var(--color-primary);
-    font-size: 1.1rem;
+    font-weight: 700;
+    font-size: 0.95rem;
 }
 
+/* Textareas */
 .wc-textarea {
     width: 100%;
-    min-height: 480px;
-    border: none;
-    resize: vertical;
-    padding: 1.5rem;
-    font-size: 1rem;
-    line-height: 1.6;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    line-height: 1.65;
     color: var(--color-text);
-    background-color: transparent;
+    background: transparent;
     outline: none;
     font-family: inherit;
+    resize: none;
+    transition: border-color 0.15s;
+}
+
+.wc-textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.08);
 }
 
 .wc-textarea:disabled {
-    opacity: 0.7;
-    background-color: rgba(0, 0, 0, 0.02);
+    opacity: 0.65;
     cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.025);
 }
 
-.wc-editor-footer {
-    padding: 1.25rem 1.5rem;
-    background-color: rgba(0, 0, 0, 0.02);
+.wc-textarea--prompt {
+    min-height: 68px;
+    max-height: 130px;
+}
+
+.wc-textarea--essay {
+    min-height: 220px;
+}
+
+/* Word Count Progress Bar */
+.wc-word-bar {
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.wc-word-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), #10b981);
+    border-radius: 99px;
+    transition: width 0.3s ease;
+    min-width: 0;
+}
+
+/* Footer */
+.wc-footer {
+    padding: 14px 20px;
     border-top: 1px solid var(--color-border);
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 0 0 16px 16px;
 }
 
 .wc-eval-btn {
     width: 100%;
-    padding: 1rem;
-    font-size: 1.1rem;
-    font-weight: 600;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: var(--color-primary);
+    color: white;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.02em;
+}
+
+.wc-eval-btn:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+}
+
+.wc-eval-btn:disabled {
+    cursor: not-allowed;
 }
 
 .wc-eval-btn.loading {
-    background-color: var(--color-text-secondary);
-    cursor: wait;
+    background: var(--color-text-secondary);
     transform: none;
+    cursor: wait;
 }
 
-/* Right Panel: Result Card */
+/* ─── Result Card ────────────────────────────────────────────────────────── */
 .wc-result-card {
-    background-color: var(--color-surface);
-    border-radius: 16px;
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    padding: 2rem 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 24px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.wc-result-card > * + * {
+    margin-top: 20px;
+}
+
+/* ─── Pending Placeholder Card ───────────────────────────────────────────── */
+.wc-pending-card {
+    background: var(--color-surface);
+    border: 1.5px dashed var(--color-border);
+    border-radius: 16px;
+    max-height: calc(100vh - 200px);
+    box-sizing: border-box;
     display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    animation: slideUpFade 0.4s ease forwards;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
-@keyframes slideUpFade {
-    0% {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.wc-overall-band {
-    margin: 0;
+.wc-pending-inner {
     text-align: center;
-    font-size: 1.5rem;
-    color: var(--color-text);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    padding: 24px;
+    max-width: 280px;
 }
 
-.wc-overall-band span {
-    font-size: 3.5rem;
+.wc-pending-icon {
+    font-size: 2.8rem;
+    opacity: 0.35;
+}
+
+.wc-pending-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    opacity: 0.5;
+}
+
+.wc-pending-desc {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
+.wc-loading-spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid rgba(13, 148, 136, 0.15);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: wc-spin 0.75s linear infinite;
+}
+
+@keyframes wc-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Band Display */
+.wc-band-display {
+    text-align: center;
+    padding: 24px 20px;
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.06) 0%, rgba(16, 185, 129, 0.1) 100%);
+    border: 1px solid rgba(13, 148, 136, 0.2);
+    border-radius: 14px;
+}
+
+.wc-band-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+}
+
+.wc-band-value {
+    font-size: 4.5rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #10b981, #059669);
+    line-height: 1;
+    background: linear-gradient(135deg, #0d9488, #10b981);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
 }
 
+.wc-band-subtitle {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.04em;
+}
+
+/* Sub-scores */
 .wc-scores-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
 }
 
 .wc-score-item {
-    background-color: rgba(16, 185, 129, 0.05);
-    /* very light accent */
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.18);
     border-radius: 12px;
-    padding: 1rem;
+    padding: 14px 14px 12px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+    gap: 6px;
 }
 
 .wc-score-label {
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     color: var(--color-text-secondary);
-    margin-bottom: 0.5rem;
     font-weight: 500;
+    line-height: 1.3;
 }
 
 .wc-score-val {
-    font-size: 1.75rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: var(--color-text);
+    line-height: 1;
 }
 
+.wc-score-bar {
+    height: 3px;
+    border-radius: 99px;
+    background: rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.wc-score-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #0d9488, #10b981);
+}
+
+/* Feedback */
 .wc-feedback-box {
-    background-color: rgba(0, 0, 0, 0.03);
-    border-radius: 12px;
-    padding: 1.5rem;
     border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .wc-feedback-box h3 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    font-weight: 700;
     color: var(--color-text);
+    background: rgba(0, 0, 0, 0.025);
     border-bottom: 1px solid var(--color-border);
-    padding-bottom: 0.5rem;
+}
+
+.wc-feedback-content {
+    padding: 14px 16px;
 }
 
 .wc-feedback-content p {
-    margin: 0 0 1rem 0;
-    line-height: 1.6;
+    margin: 0 0 10px;
+    line-height: 1.7;
+    font-size: 0.9rem;
     color: var(--color-text-secondary);
-    font-size: 0.95rem;
 }
 
 .wc-feedback-content p:last-child {
     margin-bottom: 0;
 }
 
-/* ── AI 高分范文 ─────────────────────────────────────────────────────────── */
+/* Model Essay */
 .wc-model-essay-box {
-    background: linear-gradient(135deg, rgba(13, 148, 136, 0.04) 0%, rgba(16, 185, 129, 0.06) 100%);
-    border-radius: 12px;
     border: 1.5px solid rgba(13, 148, 136, 0.25);
+    border-radius: 12px;
     overflow: hidden;
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.03), rgba(16, 185, 129, 0.05));
 }
 
 .wc-model-essay-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem 0.75rem;
+    padding: 12px 16px;
     border-bottom: 1px solid rgba(13, 148, 136, 0.15);
 }
 
@@ -251,7 +477,8 @@
 
 .wc-model-essay-header h3 {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 0.92rem;
+    font-weight: 700;
     color: var(--color-text);
 }
 
@@ -259,7 +486,7 @@
     display: inline-block;
     padding: 2px 10px;
     border-radius: 99px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     background: linear-gradient(135deg, #0d9488, #10b981);
     color: white;
@@ -276,7 +503,7 @@
     border: 1px solid var(--color-border);
     background: var(--color-surface);
     color: var(--color-text-secondary);
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition: all 0.15s;
     flex-shrink: 0;
 }
 
@@ -286,22 +513,181 @@
 }
 
 .wc-copy-btn.copied {
-    background: rgba(13, 148, 136, 0.1);
+    background: rgba(13, 148, 136, 0.08);
     border-color: var(--color-primary);
     color: var(--color-primary);
 }
 
 .wc-model-essay-content {
-    padding: 1.25rem 1.5rem;
+    padding: 16px;
 }
 
 .wc-model-essay-content p {
-    margin: 0 0 1.1rem 0;
-    line-height: 1.8;
+    margin: 0 0 14px;
+    line-height: 1.85;
+    font-size: 0.92rem;
     color: var(--color-text);
-    font-size: 0.95rem;
 }
 
 .wc-model-essay-content p:last-child {
     margin-bottom: 0;
+}
+
+/* ─── Writing Practice Split Layout ─────────────────────────────────────── */
+.wp-split {
+    display: grid;
+    grid-template-columns: minmax(360px, 1fr) 1.4fr;
+    gap: 20px;
+    height: calc(100vh - 164px);
+    min-height: 560px;
+}
+
+.wp-split--result {
+    height: auto;
+    min-height: unset;
+    align-items: start;
+}
+
+.wp-panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+}
+
+.wp-panel-header {
+    padding: 13px 20px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.wp-panel-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.wp-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.wp-panel-footer {
+    padding: 13px 20px;
+    border-top: 1px solid var(--color-border);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.wp-prompt-block {
+    padding: 18px 20px;
+    background: var(--color-bg);
+    border-radius: 12px;
+    border-left: 4px solid var(--color-primary);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: var(--color-text);
+}
+
+.wp-answer-textarea {
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 0.95rem;
+    line-height: 1.8;
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--color-text);
+    background: var(--color-bg);
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+    min-height: 300px;
+}
+
+.wp-answer-textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.08);
+}
+
+.wp-word-badge {
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.wp-word-badge.ok {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.wp-essay-replay {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    color: var(--color-text);
+    font-family: Georgia, serif;
+    padding: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg);
+}
+
+.wp-submit-btn {
+    padding: 10px 28px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: var(--color-primary);
+    color: white;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.wp-submit-btn:hover {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 900px) {
+    .wp-split {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .wp-panel {
+        height: auto;
+    }
 }

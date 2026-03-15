@@ -1,11 +1,12 @@
 import Layout from '../../components/layout/Layout';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import VocabInput from '../../components/VocabInput';
 import AiModelSelector from '../../components/common/AiModelSelector';
+import { listPlans, listPlanWords, type LearningPlan } from '../../api/learning_plan';
 import '../../styles/practice_page.css';
 
 const DIFFICULTIES = ['6.0', '6.5', '7.0', '7.5', '8.0', '8.5'];
@@ -16,13 +17,45 @@ export default function WordSelection_page() {
     const [useCustomVocab, setUseCustomVocab] = useState(true);
     const [difficulty, setDifficulty] = useState('7.0');
     const [absurdMode, setAbsurdMode] = useState(false);
+    const [plans, setPlans] = useState<LearningPlan[]>([]);
+    const [importPlanId, setImportPlanId] = useState(0);
+    const [importingPlan, setImportingPlan] = useState(false);
 
     const { lang } = useLang();
     const t = translations[lang].readingConfig;
 
+    useEffect(() => {
+        listPlans().then(({ plans: ps }) => {
+            setPlans(ps);
+            if (ps.length > 0) setImportPlanId(ps[0].id);
+        }).catch(() => {});
+    }, []);
+
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
         localStorage.setItem('ielts_target_vocab', val);
+    };
+
+    const handleImportPlan = async () => {
+        if (!importPlanId) return;
+        setImportingPlan(true);
+        try {
+            const plan = plans.find(p => p.id === importPlanId);
+            const daily = plan?.daily_count ?? 20;
+            const { entries } = await listPlanWords(importPlanId);
+            const now = Date.now();
+            // 到期（含已复习过的历史到期词）优先，其次新词，总量不超过 daily_count
+            const dueWords  = entries.filter(e => e.fsrs_due && new Date(e.fsrs_due).getTime() <= now);
+            const newWords  = entries.filter(e => !e.fsrs_due && e.fsrs_state === 0);
+            const todayWords = [...dueWords, ...newWords].slice(0, daily);
+            const lines = todayWords.map(e => `${e.word} - ${e.zh}`).join('\n');
+            handleVocabChange(lines);
+            showToast(`已导入 ${todayWords.length} 个单词`, 'success');
+        } catch {
+            showToast('导入失败', 'error');
+        } finally {
+            setImportingPlan(false);
+        }
     };
 
     const handleStart = () => {
@@ -89,10 +122,32 @@ export default function WordSelection_page() {
                     </div>
 
                     {useCustomVocab && (
-                        <VocabInput
-                            value={vocabInput}
-                            onChange={handleVocabChange}
-                        />
+                        <>
+                            {plans.length > 0 && (
+                                <div className="plan-import-row">
+                                    <select
+                                        className="plan-import-select"
+                                        value={importPlanId}
+                                        onChange={e => setImportPlanId(Number(e.target.value))}
+                                    >
+                                        {plans.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        className="plan-import-btn"
+                                        onClick={handleImportPlan}
+                                        disabled={importingPlan}
+                                    >
+                                        {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
+                                    </button>
+                                </div>
+                            )}
+                            <VocabInput
+                                value={vocabInput}
+                                onChange={handleVocabChange}
+                            />
+                        </>
                     )}
                 </div>
 
