@@ -30,6 +30,12 @@ export default function VocabularyPracticePage() {
                         <div className="skill-name">我的笔记本</div>
                         <div className="skill-sub">自建单词本，自定义标签与中文释义</div>
                     </Link>
+
+                    <Link to="/vocabulary/books" className="skill-entry speaking" style={{ textAlign: 'left' }}>
+                        <span className="skill-icon">📚</span>
+                        <div className="skill-name">官方词书</div>
+                        <div className="skill-sub">浏览官方 IELTS 词书，查看单词释义</div>
+                    </Link>
                 </div>
             </div>
         </Layout>

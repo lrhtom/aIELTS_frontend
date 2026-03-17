@@ -75,3 +75,15 @@ export async function updateWord(nbId: number, eid: number, data: { custom_zh?: 
 export async function removeWord(nbId: number, eid: number) {
     await apiClient.delete(`/notebooks/${nbId}/words/${eid}/`);
 }
+
+/* ── Bulk import from vocab book ──────────────────────────────────────── */
+
+export type BulkImportPayload =
+    | { mode: 'book_all';    book_id: number }
+    | { mode: 'book_range';  book_id: number; start: number; end: number }
+    | { mode: 'book_select'; book_id: number; word_ids: number[] };
+
+export async function bulkImportWords(nbId: number, payload: BulkImportPayload) {
+    const resp = await apiClient.post(`/notebooks/${nbId}/words/`, payload);
+    return resp.data as { entries_added: number };
+}

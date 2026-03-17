@@ -12,6 +12,7 @@ export interface VocabCard {
     lapses:         number;
     state:          number;       // 0=New 1=Learning 2=Review 3=Relearning
     last_review:    string | null;
+    plan_id?:       number;       // >0 = plan-scoped card; 0/undefined = global
     // Word enrichment (empty when Word row doesn't exist)
     phonetic:       string;
     grammar:        string;
@@ -44,11 +45,13 @@ export async function submitReview(
     word:             string,
     rating:           number,
     clientLastReview: string | null,
+    planId?:          number,
 ) {
     const resp = await apiClient.post('/vocab/review', {
         word,
         rating,
         client_last_review: clientLastReview,
+        plan_id: planId ?? 0,
     });
     return resp.data as { card: VocabCard };
 }

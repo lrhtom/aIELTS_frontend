@@ -1,7 +1,6 @@
 import Layout from '../../components/layout/Layout';
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { showToast } from '../../components/common/Toast';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { submitReview, type VocabCard } from '../../api/vocab';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_flashcard.css';
@@ -31,6 +30,14 @@ interface SessionCache {
     planId?:        number;
     planName?:      string;
     mode?:          StudyMode;
+}
+
+interface PendingSyncItem {
+    ci:         number;
+    word:       string;
+    rating:     number;
+    lastReview: string | null;
+    planId:     number | undefined;
 }
 
 const SESSION_KEY = 'vocab_flashcard_session';
@@ -63,11 +70,10 @@ function isReloadNavigation(): boolean {
 }
 
 /**
- * 熟练度进阶规则（记忆卡：只有 rating=4 算正确；选择/写单词：答对算正确）
+ * 熟练度进阶规则（4选1 / 写英文模式专用；记忆卡模式 rating=4 直接毕业不经此函数）
  *   wrong      → 1（最低，重来）
  *   correct 0/1→ 2
- *   correct 2  → 3
- *   correct 3  → 4（毕业！）
+ *   correct 2  → 4（毕业！）
  */
 function nextMastery(current: number, correct: boolean): number {
     if (!correct) return 1;
@@ -88,6 +94,7 @@ function estimateInterval(card: VocabCard, rating: number): string {
 }
 
 function formatDue(isoStr: string): string {
+    if (!isoStr) return '待同步';
     const diff = new Date(isoStr).getTime() - Date.now();
     const mins = Math.round(diff / 60000);
     if (mins <= 0) return '今天';
@@ -142,6 +149,9 @@ export default function VocabularyFlashcardDoingPage() {
     const [writeCorrect,     setWriteCorrect]     = useState<boolean | null>(null);
     const [unknownMode,      setUnknownMode]      = useState(false);    // 点击"不会"：展示单词让用户抄写
     const [quickProficient,  setQuickProficient]  = useState(false);   // 点击"熟练"：直接毕业
+
+    /* 批量同步队列（useRef 避免闭包陈旧） */
+    const pendingQueueRef = useRef<PendingSyncItem[]>([]);
 
     /* 初始化 */
     useEffect(() => {
@@ -220,6 +230,17 @@ export default function VocabularyFlashcardDoingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visitKey]);
 
+    /* 每张新卡自动播放一次单词读音（所有模式）
+     * setTimeout 解决 Chrome cancel/speak 竞争：cancel() 后立即 speak() 会被吞掉 */
+    useEffect(() => {
+        if (!initialized || queue.length === 0) return;
+        const word = cards[queue[0]]?.word;
+        if (!word) return;
+        const timer = setTimeout(() => speak(word), 150);
+        return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [visitKey]);
+
     /* 4选1 — 当前卡片变化时重新生成选项 */
     useEffect(() => {
         if (mode !== 'choice' || !cards.length || queue.length === 0) return;
@@ -237,17 +258,52 @@ export default function VocabularyFlashcardDoingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visitKey, mode, cards]);
 
-    /* 队列清空 → 结果页 */
+    /* 将队列中所有待同步项批量提交后端 */
+    const flushPending = useCallback(async (items: PendingSyncItem[]) => {
+        if (!items.length) return;
+
+        // 提交单条评分；遇到 409（乐观锁冲突）时用服务端返回的最新 last_review 自动重试一次
+        const submitOne = async (item: PendingSyncItem) => {
+            try {
+                return await submitReview(item.word, item.rating, item.lastReview, item.planId);
+            } catch (err: unknown) {
+                const axiosErr = err as { response?: { status?: number; data?: { server_last_review?: string | null } } };
+                if (axiosErr?.response?.status === 409) {
+                    const freshLR = axiosErr.response.data?.server_last_review ?? null;
+                    return await submitReview(item.word, item.rating, freshLR, item.planId);
+                }
+                throw err;
+            }
+        };
+
+        const settled = await Promise.allSettled(items.map(submitOne));
+        setCards(prev => {
+            const next = [...prev];
+            settled.forEach((res, i) => {
+                if (res.status === 'fulfilled') next[items[i].ci] = res.value.card;
+            });
+            return next;
+        });
+        setResults(prev => prev.map(r => {
+            const idx = items.findIndex(it => it.word === r.word && r.newDue === '');
+            if (idx < 0) return r;
+            const res = settled[idx];
+            if (res.status !== 'fulfilled') return r;
+            return { ...r, newDue: res.value.card.due, scheduledDays: res.value.card.scheduled_days };
+        }));
+    }, []);
+
+    /* 队列清空 → 先同步剩余条目，再进入结果页 */
     useEffect(() => {
-        if (initialized && step === 'doing' && queue.length === 0 && graduatedCount > 0) {
-            setStep('result');
-        }
-    }, [queue, initialized, step, graduatedCount]);
+        if (!initialized || step !== 'doing' || queue.length !== 0 || graduatedCount === 0) return;
+        const batch = pendingQueueRef.current.splice(0);
+        flushPending(batch).then(() => setStep('result'));
+    }, [queue, initialized, step, graduatedCount, flushPending]);
 
     const currentCardIdx = queue[0] ?? -1;
     const currentCard    = currentCardIdx >= 0 ? cards[currentCardIdx] : null;
 
-    /* ── 核心：推进队列（仅毕业时提交 FSRS） ── */
+    /* ── 核心：推进队列（毕业时加入批量队列，不立即发网络请求） ── */
     const submitAndAdvance = useCallback(async (
         ci:            number,
         card:          VocabCard,
@@ -261,58 +317,57 @@ export default function VocabularyFlashcardDoingPage() {
             setSessionForgot(prev => { const a = [...prev]; a[ci] = true; return a; });
         }
 
-        try {
-            if (graduate) {
-                // 曾经忘过 → 强制 rating=1，复习间隔最多 1 天
-                const finalRating = (alreadyForgot || forgotNow) ? 1 : fsrsRating;
-                const { card: updated } = await submitReview(card.word, finalRating, card.last_review);
-                setCards(prev => prev.map((c, i) => i === ci ? updated : c));
-                setResults(prev => [...prev, {
-                    word:          card.word,
-                    zh:            card.zh,
-                    rating:        finalRating,
-                    newDue:        updated.due,
-                    scheduledDays: updated.scheduled_days,
-                }]);
-                setGraduatedCount(g => g + 1);
+        if (graduate) {
+            // 曾经忘过 → 强制 rating=1，复习间隔最多 1 天
+            const finalRating = (alreadyForgot || forgotNow) ? 1 : fsrsRating;
+            // 加入批量队列，不立即发网络请求
+            pendingQueueRef.current.push({
+                ci,
+                word:       card.word,
+                rating:     finalRating,
+                lastReview: card.last_review,
+                planId:     card.plan_id,
+            });
+            setResults(prev => [...prev, {
+                word:          card.word,
+                zh:            card.zh,
+                rating:        finalRating,
+                newDue:        '',   // 待 flush 后更新
+                scheduledDays: 0,
+            }]);
+            setGraduatedCount(g => g + 1);
+            // 每满 10 个立即同步一次
+            if (pendingQueueRef.current.length >= 10) {
+                const batch = pendingQueueRef.current.splice(0);
+                flushPending(batch);  // fire-and-forget
             }
-        } catch (err: unknown) {
-            const errCode = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            if (errCode === 'CONFLICT') {
-                showToast('数据已被其他设备更新，请返回重新开始', 'error');
-            } else {
-                showToast('提交失败，请重试', 'error');
-            }
-            setLastRating(null);
-            setSubmitting(false);
-            return;
         }
 
         setSessionMastery(prev => { const a = [...prev]; a[ci] = newMastery; return a; });
         setQueue(prev => graduate ? prev.slice(1) : [...prev.slice(1), ci]);
         setVisitKey(k => k + 1);
         setSubmitting(false);
-    }, []);
+    }, [flushPending]);
 
     /**
      * 记忆卡手动评分
-     * - 只有 rating=4（容易）才算"正确"，才能推进熟练度
-     * - rating 1/2/3 均算"忘了"，熟练度重置为 1，重入队
-     * - 仅毕业（熟练度达到 4）时提交 FSRS，且曾忘过的强制 rating=1
+     * - rating=4（容易）：直接毕业，无需第二次确认
+     * - rating 1/2/3：算"忘了"，熟练度重置为 1，重入队
+     * - 仅毕业时提交 FSRS，且曾忘过的强制 rating=1
      */
     const handleFlashcardRating = useCallback(async (rating: number) => {
         if (submitting || !currentCard || currentCardIdx < 0) return;
         setSubmitting(true);
         setLastRating(rating);
         const ci            = currentCardIdx;
-        const curMastery    = sessionMastery[ci] ?? 0;
         const isCorrect     = rating === 4;
         const forgotNow     = !isCorrect;
-        const newMastery    = nextMastery(curMastery, isCorrect);
+        // Easy → graduate immediately in one pass；其他评分重入队
+        const newMastery    = isCorrect ? 4 : 1;
         const graduate      = newMastery === 4;
         const alreadyForgot = sessionForgot[ci] ?? false;
         await submitAndAdvance(ci, currentCard, rating, newMastery, graduate, forgotNow, alreadyForgot);
-    }, [submitting, currentCard, currentCardIdx, sessionMastery, sessionForgot, submitAndAdvance]);
+    }, [submitting, currentCard, currentCardIdx, sessionForgot, submitAndAdvance]);
 
     /* 4选1 / 写单词：自动评分，熟练度提升至 4 时毕业 */
     const handleAutoRating = useCallback(async (isCorrect: boolean) => {
@@ -438,7 +493,9 @@ export default function VocabularyFlashcardDoingPage() {
     }, [step, submitting, mode, writeSubmitted, unknownMode, writeInput, handleQuickAssess]);
 
     /* 再来一轮 */
-    const handleRetry = () => {
+    const handleRetry = async () => {
+        const batch = pendingQueueRef.current.splice(0);
+        await flushPending(batch);
         const n = cards.length;
         setQueue(Array.from({ length: n }, (_, i) => i));
         setSessionMastery(new Array(n).fill(0));
@@ -449,6 +506,16 @@ export default function VocabularyFlashcardDoingPage() {
         setLastRating(null);
         setVisitKey(k => k + 1);
     };
+
+    const backPath  = planId ? `/vocabulary/plans/${planId}` : '/vocabulary/plans';
+    const backLabel = '返回学习计划';
+
+    /* 返回前先同步剩余队列（fire-and-forget：请求已发出，导航不等待响应） */
+    const handleBack = useCallback(() => {
+        const batch = pendingQueueRef.current.splice(0);
+        flushPending(batch);   // 立即发出请求，不阻塞导航
+        navigate(backPath);
+    }, [backPath, flushPending, navigate]);
 
     /* ── 加载中 ── */
     if (!initialized || (!currentCard && step === 'doing')) {
@@ -468,9 +535,6 @@ export default function VocabularyFlashcardDoingPage() {
         lastRating === 2 ? 'status-hard'  :
         lastRating === 3 ? 'status-good'  : 'status-easy';
 
-    const backPath  = planId ? `/vocabulary/plans/${planId}` : '/vocabulary/plans';
-    const backLabel = '返回学习计划';
-
     /* ══ 结果页 ══════════════════════════════════════════════════════════════ */
     if (step === 'result') {
         const counts = [1, 2, 3, 4].map(r => results.filter(x => x.rating === r).length);
@@ -478,7 +542,7 @@ export default function VocabularyFlashcardDoingPage() {
             <Layout>
                 <div className="config-page-wrap">
                     <div className="practice-header">
-                        <Link to={backPath} className="back-link">{backLabel}</Link>
+                        <button className="back-link" onClick={() => navigate(backPath)}>{backLabel}</button>
                         <h1>本轮结果{planName ? ` · ${planName}` : ''}</h1>
                         <p>共掌握 <strong>{results.length}</strong> 个单词</p>
                     </div>
@@ -522,7 +586,7 @@ export default function VocabularyFlashcardDoingPage() {
         <Layout>
             <div className="config-page-wrap" style={{ maxWidth: '680px' }}>
                 <div className="practice-header" style={{ marginBottom: '16px' }}>
-                    <Link to={backPath} className="back-link">{backLabel}</Link>
+                    <button className="back-link" onClick={handleBack}>{backLabel}</button>
                     <h1 style={{ marginBottom: '4px' }}>{planName || '记忆卡背诵'}</h1>
                 </div>
 

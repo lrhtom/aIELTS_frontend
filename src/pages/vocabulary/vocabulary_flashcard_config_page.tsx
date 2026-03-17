@@ -38,7 +38,6 @@ function parseVocabInput(raw: string): VocabEntry[] {
 
 /* ── 卡片排序：到期卡优先，新卡在后 ─────────────────────────────────────── */
 function sortCards(cards: VocabCard[]): VocabCard[] {
-    const now = Date.now();
     return [...cards].sort((a, b) => {
         const aNew = a.state === 0;
         const bNew = b.state === 0;

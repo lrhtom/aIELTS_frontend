@@ -4,10 +4,16 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import {
     getNotebook, listWords, addWord, updateWord, removeWord,
+    bulkImportWords,
     type NotebookEntry,
 } from '../../api/notebook';
+import {
+    listVocabBooks, listBookWords,
+    type VocabBook, type BookWord,
+} from '../../api/learning_plan';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_notebook.css';
+import '../../styles/vocabulary_learning_plan.css';
 
 /* ── 类型 ─────────────────────────────────────────────────────────────────── */
 
@@ -231,6 +237,22 @@ export default function NotebookDetailPage() {
     const [nbTitle,       setNbTitle]       = useState('笔记本');
     const [expandedExamples, setExpandedExamples] = useState<Set<number>>(new Set());
 
+    /* ── 词书导入相关 state ─────────────────────────────────────────────── */
+    type AddTab = 'manual' | 'book';
+    type BookSubMode = 'all' | 'range' | 'select';
+
+    const [addTab,        setAddTab]        = useState<AddTab>('manual');
+    const [books,         setBooks]         = useState<VocabBook[]>([]);
+    const [bookId,        setBookId]        = useState<number | ''>('');
+    const [bookSubMode,   setBookSubMode]   = useState<BookSubMode>('all');
+    const [rangeStart,    setRangeStart]    = useState(1);
+    const [rangeEnd,      setRangeEnd]      = useState(50);
+    const [allBookWords,  setAllBookWords]  = useState<BookWord[]>([]);
+    const [bookPage,      setBookPage]      = useState(1);
+    const [bookQ,         setBookQ]         = useState('');
+    const [selectedIds,   setSelectedIds]   = useState<Set<number>>(new Set());
+    const [importBusy,    setImportBusy]    = useState(false);
+
     /* 前端过滤 */
     const entries = useMemo(() => {
         let list = allEntries;
@@ -273,6 +295,65 @@ export default function NotebookDetailPage() {
     /* 搜索 */
     const handleSearch = (q: string) => {
         setSearchQ(q);
+    };
+
+    /* ── 词书导入 effects & handlers ──────────────────────────────────── */
+    useEffect(() => {
+        listVocabBooks().then(r => setBooks(r.books)).catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        if (bookSubMode !== 'select' || !bookId) return;
+        setAllBookWords([]);
+        setBookPage(1);
+        listBookWords(bookId as number, 1, 5000).then(r => {
+            setAllBookWords(r.words);
+        }).catch(() => {});
+    }, [bookId, bookSubMode]);
+
+    const BOOK_PAGE_SIZE = 20;
+    const { bookWords_, bookTotal } = useMemo(() => {
+        let list = allBookWords;
+        if (bookQ.trim()) {
+            const q = bookQ.trim().toLowerCase();
+            list = list.filter(w =>
+                w.word.toLowerCase().includes(q) ||
+                w.zh_brief.toLowerCase().includes(q)
+            );
+        }
+        return {
+            bookWords_: list.slice((bookPage - 1) * BOOK_PAGE_SIZE, bookPage * BOOK_PAGE_SIZE),
+            bookTotal: list.length,
+        };
+    }, [allBookWords, bookQ, bookPage]);
+
+    const toggleSelectWord = (wordId: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(wordId) ? next.delete(wordId) : next.add(wordId);
+            return next;
+        });
+    };
+
+    const handleBulkImport = async (
+        payload: Parameters<typeof bulkImportWords>[1],
+        expectedTotal?: number,
+    ) => {
+        setImportBusy(true);
+        try {
+            const { entries_added } = await bulkImportWords(nbId, payload);
+            const skipped = expectedTotal !== undefined ? Math.max(0, expectedTotal - entries_added) : 0;
+            const msg = skipped > 0
+                ? `已导入 ${entries_added} 个，跳过 ${skipped} 个重复单词`
+                : `已导入 ${entries_added} 个单词`;
+            showToast(msg, 'success');
+            const r = await listWords(nbId);
+            setAllEntries(r.entries);
+        } catch {
+            showToast('导入失败', 'error');
+        } finally {
+            setImportBusy(false);
+        }
     };
 
     /* 添加单词 */
@@ -399,16 +480,160 @@ export default function NotebookDetailPage() {
                         </div>
                     )}
 
-                    {/* 添加单词表单 */}
+                    {/* 添加单词区（tab 式） */}
                     {showAddForm && (
-                        <WordFormPanel
-                            initial={{ ...EMPTY_FORM }}
-                            submitLabel="添加"
-                            onSubmit={handleAdd}
-                            onCancel={() => setShowAddForm(false)}
-                            submitting={submitting}
-                            existingWords={allWords}
-                        />
+                        <>
+                            <div className="lp-add-tabs" style={{ marginTop: 8 }}>
+                                <button
+                                    className={`lp-add-tab${addTab === 'manual' ? ' active' : ''}`}
+                                    onClick={() => setAddTab('manual')}
+                                >
+                                    手动输入
+                                </button>
+                                <button
+                                    className={`lp-add-tab${addTab === 'book' ? ' active' : ''}`}
+                                    onClick={() => setAddTab('book')}
+                                >
+                                    从词书
+                                </button>
+                            </div>
+
+                            {addTab === 'manual' && (
+                                <WordFormPanel
+                                    initial={{ ...EMPTY_FORM }}
+                                    submitLabel="添加"
+                                    onSubmit={handleAdd}
+                                    onCancel={() => setShowAddForm(false)}
+                                    submitting={submitting}
+                                    existingWords={allWords}
+                                />
+                            )}
+
+                            {addTab === 'book' && (
+                                <div className="lp-add-form">
+                                    <div className="lp-add-row">
+                                        <select
+                                            className="lp-add-select"
+                                            value={bookId}
+                                            onChange={e => {
+                                                setBookId(Number(e.target.value) || '');
+                                                setBookSubMode('all');
+                                                setSelectedIds(new Set());
+                                                setBookPage(1);
+                                            }}
+                                        >
+                                            <option value="">— 选择词书 —</option>
+                                            {books.map(b => (
+                                                <option key={b.id} value={b.id}>
+                                                    {b.name}（{b.word_count} 词）
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {bookId !== '' && (
+                                        <>
+                                            <div className="lp-add-tabs" style={{ marginTop: 4 }}>
+                                                {(['all', 'range', 'select'] as const).map(m => (
+                                                    <button
+                                                        key={m}
+                                                        className={`lp-add-tab${bookSubMode === m ? ' active' : ''}`}
+                                                        style={{ fontSize: 12 }}
+                                                        onClick={() => { setBookSubMode(m); setSelectedIds(new Set()); setBookPage(1); }}
+                                                    >
+                                                        {m === 'all' ? '整本导入' : m === 'range' ? '范围导入' : '勾选导入'}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {bookSubMode === 'all' && (
+                                                <div className="lp-add-row">
+                                                    <button
+                                                        className="lp-add-btn"
+                                                        disabled={importBusy}
+                                                        onClick={() => handleBulkImport(
+                                                            { mode: 'book_all', book_id: bookId as number },
+                                                            books.find(b => b.id === bookId)?.word_count,
+                                                        )}
+                                                    >
+                                                        {importBusy ? '导入中…' : '整本导入'}
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {bookSubMode === 'range' && (
+                                                <div className="lp-add-row">
+                                                    <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>序号</span>
+                                                    <input type="number" min={1} value={rangeStart} onChange={e => setRangeStart(Number(e.target.value))} style={{ maxWidth: 80 }} />
+                                                    <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>~</span>
+                                                    <input type="number" min={1} value={rangeEnd} onChange={e => setRangeEnd(Number(e.target.value))} style={{ maxWidth: 80 }} />
+                                                    <button
+                                                        className="lp-add-btn"
+                                                        disabled={importBusy}
+                                                        onClick={() => handleBulkImport(
+                                                            { mode: 'book_range', book_id: bookId as number, start: rangeStart, end: rangeEnd },
+                                                            Math.max(0, rangeEnd - rangeStart + 1),
+                                                        )}
+                                                    >
+                                                        {importBusy ? '导入中…' : '范围导入'}
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {bookSubMode === 'select' && (
+                                                <>
+                                                    <div className="lp-add-row">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="搜索单词…"
+                                                            value={bookQ}
+                                                            onChange={e => { setBookQ(e.target.value); setBookPage(1); }}
+                                                        />
+                                                        <button
+                                                            className="lp-add-btn"
+                                                            disabled={importBusy || selectedIds.size === 0}
+                                                            onClick={() => {
+                                                                handleBulkImport(
+                                                                    { mode: 'book_select', book_id: bookId as number, word_ids: Array.from(selectedIds) },
+                                                                    selectedIds.size,
+                                                                );
+                                                                setSelectedIds(new Set());
+                                                            }}
+                                                        >
+                                                            {importBusy ? '导入中…' : `导入已选（${selectedIds.size}）`}
+                                                        </button>
+                                                    </div>
+                                                    <div className="lp-book-browser">
+                                                        {bookWords_.map(w => (
+                                                            <div key={w.id} className="lp-book-word-row" onClick={() => toggleSelectWord(w.id)}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedIds.has(w.id)}
+                                                                    onChange={() => toggleSelectWord(w.id)}
+                                                                    onClick={e => e.stopPropagation()}
+                                                                />
+                                                                <span className="bw-word">{w.word}</span>
+                                                                {w.phonetic && (
+                                                                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>{w.phonetic}</span>
+                                                                )}
+                                                                <span className="bw-zh">{w.zh_brief}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    {bookTotal > BOOK_PAGE_SIZE && (
+                                                        <div className="lp-book-pager">
+                                                            <button disabled={bookPage <= 1} onClick={() => setBookPage(p => p - 1)}>上一页</button>
+                                                            <span>{bookPage} / {Math.ceil(bookTotal / BOOK_PAGE_SIZE)}</span>
+                                                            <button disabled={bookPage >= Math.ceil(bookTotal / BOOK_PAGE_SIZE)} onClick={() => setBookPage(p => p + 1)}>下一页</button>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 

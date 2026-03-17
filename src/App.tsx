@@ -47,6 +47,8 @@ import NotebookListPage from './pages/vocabulary/notebook_list_page';
 import NotebookDetailPage from './pages/vocabulary/notebook_detail_page';
 import LearningPlanListPage from './pages/vocabulary/learning_plan_list_page';
 import LearningPlanDetailPage from './pages/vocabulary/learning_plan_detail_page';
+import VocabBookListPage from './pages/vocabulary/vocab_book_list_page';
+import VocabBookDetailPage from './pages/vocabulary/vocab_book_detail_page';
 
 export default function App() {
   return (
@@ -66,6 +68,8 @@ export default function App() {
         <Route path="/vocabulary/notebook/:id" element={<ProtectedRoute><NotebookDetailPage /></ProtectedRoute>} />
         <Route path="/vocabulary/plans" element={<ProtectedRoute><LearningPlanListPage /></ProtectedRoute>} />
         <Route path="/vocabulary/plans/:id" element={<ProtectedRoute><LearningPlanDetailPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/books" element={<ProtectedRoute><VocabBookListPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/books/:id" element={<ProtectedRoute><VocabBookDetailPage /></ProtectedRoute>} />
 
         {/* Protected Routes */}
         <Route path="/practice" element={<ProtectedRoute><PracticeHub /></ProtectedRoute>} />
