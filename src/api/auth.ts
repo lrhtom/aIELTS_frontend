@@ -22,6 +22,7 @@ export interface User {
     bg_color?: string | null;
     bg_image_url?: string | null;
     bg_blur?: number | null;
+    aiGenerationRetryCount?: number;
 }
 
 export interface AuthResponse {
@@ -67,5 +68,10 @@ export const authApi = {
 
     deleteAccount: async (): Promise<void> => {
         await apiClient.delete('/auth/delete-account');
+    },
+
+    updateSettings: async (settings: { ai_generation_retry_count?: number }): Promise<User> => {
+        const response = await apiClient.put('/auth/settings', settings);
+        return response.data.user;
     },
 };

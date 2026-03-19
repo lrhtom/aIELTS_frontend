@@ -2,6 +2,7 @@ import Layout from '../../components/layout/Layout';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { submitReview, type VocabCard } from '../../api/vocab';
+import { showToast } from '../../components/common/Toast';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_flashcard.css';
 
@@ -9,6 +10,7 @@ import '../../styles/vocabulary_flashcard.css';
 
 type Step = 'doing' | 'result';
 type StudyMode = 'flashcard' | 'choice' | 'write';
+type MasterySetting = 'auto' | number;
 
 interface ReviewResult {
     word:          string;
@@ -19,25 +21,19 @@ interface ReviewResult {
 }
 
 interface SessionCache {
-    cards:          VocabCard[];
-    queue:          number[];
-    sessionMastery: number[];
-    sessionForgot:  boolean[];
-    graduatedCount: number;
-    isFlipped:      boolean;
-    step:           Step;
-    results:        ReviewResult[];
-    planId?:        number;
-    planName?:      string;
-    mode?:          StudyMode;
-}
-
-interface PendingSyncItem {
-    ci:         number;
-    word:       string;
-    rating:     number;
-    lastReview: string | null;
-    planId:     number | undefined;
+    cards:           VocabCard[];
+    queue:           number[];
+    sessionMastery:  number[];
+    sessionForgot:   boolean[];
+    sessionErrorCount: number[];     // 新增：追踪每个卡片的错误次数
+    masteryTarget?:  MasterySetting;
+    graduatedCount:  number;
+    isFlipped:       boolean;
+    step:            Step;
+    results:         ReviewResult[];
+    planId?:         number;
+    planName?:       string;
+    mode?:           StudyMode;
 }
 
 const SESSION_KEY = 'vocab_flashcard_session';
@@ -64,21 +60,15 @@ const RS_LABELS  = ['忘了', '困难', '一般', '容易'];
 
 /* ── 工具函数 ─────────────────────────────────────────────────────────────── */
 
-function isReloadNavigation(): boolean {
-    const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-    return entries.length > 0 && entries[0].type === 'reload';
-}
-
 /**
- * 熟练度进阶规则（4选1 / 写英文模式专用；记忆卡模式 rating=4 直接毕业不经此函数）
- *   wrong      → 1（最低，重来）
- *   correct 0/1→ 2
- *   correct 2  → 4（毕业！）
+ * 连续正确计数规则（4选1 / 写英文模式专用）
+ *   wrong   → 0（连对中断）
+ *   correct → +1
+ * 达到 masteryTarget 次后毕业
  */
-function nextMastery(current: number, correct: boolean): number {
-    if (!correct) return 1;
-    if (current <= 1) return 2;  // 第一次答对
-    return 4;                     // 第二次答对 → 毕业
+function nextMastery(current: number, correct: boolean, masteryTarget: number): number {
+    if (!correct) return 0;
+    return Math.min(masteryTarget, current + 1);
 }
 
 function estimateInterval(card: VocabCard, rating: number): string {
@@ -121,7 +111,7 @@ export default function VocabularyFlashcardDoingPage() {
     const [cards,          setCards]          = useState<VocabCard[]>([]);
     /** queue[0] 是当前卡片索引；毕业 = 弹出队头；重入 = 移到队尾 */
     const [queue,          setQueue]          = useState<number[]>([]);
-    const [sessionMastery, setSessionMastery] = useState<number[]>([]); // 每张卡的熟练度 0-4
+    const [sessionMastery, setSessionMastery] = useState<number[]>([]); // 4选1/写英文：当前连续正确次数
     /** 本次会话中是否曾经不会：若曾忘，毕业时强制提交 rating=1（复习间隔 1 天） */
     const [sessionForgot,  setSessionForgot]  = useState<boolean[]>([]);
     const [graduatedCount, setGraduatedCount] = useState(0);
@@ -138,10 +128,14 @@ export default function VocabularyFlashcardDoingPage() {
     const [planId,       setPlanId]       = useState<number | null>(null);
     const [planName,     setPlanName]     = useState('');
     const [mode,         setMode]         = useState<StudyMode>('flashcard');
+    const [masteryTarget, setMasteryTarget] = useState<MasterySetting>(2);
+    const [leaving,      setLeaving]      = useState(false);
 
     // 4选1
     const [choices,        setChoices]        = useState<Array<{ zh: string; correct: boolean }>>([]);
     const [choiceSelected, setChoiceSelected] = useState<number | null>(null);
+    const [choiceCorrect,  setChoiceCorrect]  = useState<boolean | null>(null);
+    const [choiceRevealed, setChoiceRevealed] = useState(false); // 是否已展开题目
 
     // 看中文写英文
     const [writeInput,       setWriteInput]       = useState('');
@@ -150,40 +144,77 @@ export default function VocabularyFlashcardDoingPage() {
     const [unknownMode,      setUnknownMode]      = useState(false);    // 点击"不会"：展示单词让用户抄写
     const [quickProficient,  setQuickProficient]  = useState(false);   // 点击"熟练"：直接毕业
 
-    /* 批量同步队列（useRef 避免闭包陈旧） */
-    const pendingQueueRef = useRef<PendingSyncItem[]>([]);
+    // 追踪每个卡片的错误次数
+    const [sessionErrorCount, setSessionErrorCount] = useState<number[]>([]);
+    
+    // 防止持久化 useEffect 在同步退出时覆盖 sessionStorage
+    const navigatingAwayRef = useRef(false);
+    
+    /**
+     * 根据错误次数动态调整重新插入的位置：
+     * - 第1次错：放到后10个位置
+     * - 第2次错：放到后20个位置
+     * - 第3次错：放到后30个位置
+     * - 依此类推，直到队尾
+     */
+    const reinsertAfterGap = useCallback((rest: number[], cardIndex: number) => {
+        const errorCount = sessionErrorCount[cardIndex] ?? 0;
+        const gap = Math.min((errorCount + 1) * 10, rest.length); // 1错10个, 2错20个, ...
+        const insertPos = Math.min(gap, rest.length);
+        return [...rest.slice(0, insertPos), cardIndex, ...rest.slice(insertPos)];
+    }, [sessionErrorCount]);
 
     /* 初始化 */
     useEffect(() => {
-        if (isReloadNavigation()) {
-            const raw = sessionStorage.getItem(SESSION_KEY);
-            if (raw) {
-                try {
-                    const s: SessionCache = JSON.parse(raw);
-                    const n = s.cards.length;
-                    setCards(s.cards);
-                    setQueue(s.queue ?? Array.from({ length: n }, (_, i) => i));
-                    setSessionMastery(s.sessionMastery ?? new Array(n).fill(0));
-                    setSessionForgot(s.sessionForgot  ?? new Array(n).fill(false));
-                    setGraduatedCount(s.graduatedCount ?? 0);
-                    setIsFlipped(s.isFlipped ?? false);
-                    setStep(s.step ?? 'doing');
-                    setResults(s.results ?? []);
-                    if (s.planId)   setPlanId(s.planId);
-                    if (s.planName) setPlanName(s.planName);
-                    if (s.mode)     setMode(s.mode);
-                    setVisitKey(1);
-                    setInitialized(true);
-                    return;
-                } catch { /* fallthrough */ }
-            }
-        }
         const state = location.state as {
             cards?: VocabCard[];
             planId?: number;
             planName?: string;
             mode?: StudyMode;
+            masteryTarget?: MasterySetting;
         } | null;
+
+        // 首先尝试从 sessionStorage 恢复，如果存在且 planId 匹配
+        const raw = sessionStorage.getItem(SESSION_KEY);
+        if (raw && state?.planId) {
+            try {
+                const cached: SessionCache = JSON.parse(raw);
+                // 仅在 planId 匹配时恢复（确保是同一个学习计划的会话）
+                if (cached.planId === state.planId) {
+                    console.log('[词汇学习] 从 sessionStorage 恢复会话', {
+                        planId: cached.planId,
+                        totalCards: cached.cards.length,
+                        queueLength: cached.queue?.length,
+                        graduatedCount: cached.graduatedCount,
+                    });
+                    const n = cached.cards.length;
+                    setCards(cached.cards);
+                    setQueue(cached.queue ?? Array.from({ length: n }, (_, i) => i));
+                    setSessionMastery(cached.sessionMastery ?? new Array(n).fill(0));
+                    setSessionForgot(cached.sessionForgot  ?? new Array(n).fill(false));
+                    setSessionErrorCount(cached.sessionErrorCount ?? new Array(n).fill(0));
+                    if (typeof cached.masteryTarget === 'number') {
+                        setMasteryTarget(Math.min(5, Math.max(1, cached.masteryTarget)));
+                    } else if (cached.masteryTarget === 'auto') {
+                        setMasteryTarget('auto');
+                    }
+                    setGraduatedCount(cached.graduatedCount ?? 0);
+                    setIsFlipped(cached.isFlipped ?? false);
+                    setStep(cached.step ?? 'doing');
+                    setResults(cached.results ?? []);
+                    if (cached.planId)   setPlanId(cached.planId);
+                    if (cached.planName) setPlanName(cached.planName);
+                    if (cached.mode)     setMode(cached.mode);
+                    setVisitKey(1);
+                    setInitialized(true);
+                    return;
+                }
+            } catch (e) {
+                console.error('[词汇学习] 恢复 sessionStorage 失败', e);
+            }
+        }
+
+        // sessionStorage 不可用或 planId 不匹配，从 location.state 初始化
         if (!state?.cards?.length) {
             const fallback = state?.planId ? `/vocabulary/plans/${state.planId}` : '/vocabulary/plans';
             navigate(fallback, { replace: true });
@@ -198,6 +229,11 @@ export default function VocabularyFlashcardDoingPage() {
         if (state.planId)   setPlanId(state.planId);
         if (state.planName) setPlanName(state.planName);
         if (state.mode)     setMode(state.mode);
+        if (typeof state.masteryTarget === 'number') {
+            setMasteryTarget(Math.min(5, Math.max(1, state.masteryTarget)));
+        } else if (state.masteryTarget === 'auto') {
+            setMasteryTarget('auto');
+        }
         setVisitKey(1);
         setInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -205,16 +241,28 @@ export default function VocabularyFlashcardDoingPage() {
 
     /* 持久化 */
     useEffect(() => {
+        // 如果正在导航离开，则跳过此次持久化（防止用旧状态覆盖 syncCurrentAnsweredBeforeExit 刚刚保存的状态）
+        if (navigatingAwayRef.current) {
+            console.log('[词汇学习] 正在导航，跳过持久化 useEffect（保护 syncCurrentAnsweredBeforeExit 的结果）');
+            return;
+        }
         if (!initialized) return;
         const cache: SessionCache = {
-            cards, queue, sessionMastery, sessionForgot,
+            cards, queue, sessionMastery, sessionForgot, sessionErrorCount,
+            masteryTarget,
             graduatedCount, isFlipped, step, results, mode,
         };
         if (planId)   cache.planId   = planId;
         if (planName) cache.planName = planName;
+        console.log('[词汇学习] 持久化会话到 sessionStorage', {
+            totalCards: cards.length,
+            queueLength: queue.length,
+            graduatedCount,
+            step,
+        });
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(cache));
-    }, [initialized, cards, queue, sessionMastery, sessionForgot,
-        graduatedCount, isFlipped, step, results, planId, planName, mode]);
+    }, [initialized, cards, queue, sessionMastery, sessionForgot, sessionErrorCount,
+        masteryTarget, graduatedCount, isFlipped, step, results, planId, planName, mode]);
 
     /* 每次换卡 (visitKey 变化) 重置卡片状态 */
     useEffect(() => {
@@ -222,6 +270,8 @@ export default function VocabularyFlashcardDoingPage() {
         setIsFlipped(false);
         setLastRating(null);
         setChoiceSelected(null);
+        setChoiceCorrect(null);
+        setChoiceRevealed(false);
         setWriteInput('');
         setWriteSubmitted(false);
         setWriteCorrect(null);
@@ -258,96 +308,93 @@ export default function VocabularyFlashcardDoingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visitKey, mode, cards]);
 
-    /* 将队列中所有待同步项批量提交后端 */
-    const flushPending = useCallback(async (items: PendingSyncItem[]) => {
-        if (!items.length) return;
-
-        // 提交单条评分；遇到 409（乐观锁冲突）时用服务端返回的最新 last_review 自动重试一次
-        const submitOne = async (item: PendingSyncItem) => {
-            try {
-                return await submitReview(item.word, item.rating, item.lastReview, item.planId);
-            } catch (err: unknown) {
-                const axiosErr = err as { response?: { status?: number; data?: { server_last_review?: string | null } } };
-                if (axiosErr?.response?.status === 409) {
-                    const freshLR = axiosErr.response.data?.server_last_review ?? null;
-                    return await submitReview(item.word, item.rating, freshLR, item.planId);
-                }
-                throw err;
+    const submitReviewWithRetry = useCallback(async (
+        word: string,
+        rating: number,
+        lastReview: string | null,
+        cardPlanId: number | undefined,
+    ) => {
+        try {
+            return await submitReview(word, rating, lastReview, cardPlanId);
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { status?: number; data?: { server_last_review?: string | null } } };
+            if (axiosErr?.response?.status === 409) {
+                const freshLR = axiosErr.response.data?.server_last_review ?? null;
+                return await submitReview(word, rating, freshLR, cardPlanId);
             }
-        };
-
-        const settled = await Promise.allSettled(items.map(submitOne));
-        setCards(prev => {
-            const next = [...prev];
-            settled.forEach((res, i) => {
-                if (res.status === 'fulfilled') next[items[i].ci] = res.value.card;
-            });
-            return next;
-        });
-        setResults(prev => prev.map(r => {
-            const idx = items.findIndex(it => it.word === r.word && r.newDue === '');
-            if (idx < 0) return r;
-            const res = settled[idx];
-            if (res.status !== 'fulfilled') return r;
-            return { ...r, newDue: res.value.card.due, scheduledDays: res.value.card.scheduled_days };
-        }));
+            throw err;
+        }
     }, []);
 
-    /* 队列清空 → 先同步剩余条目，再进入结果页 */
+    /* 队列清空 → 直接进入结果页（评分已实时同步） */
     useEffect(() => {
         if (!initialized || step !== 'doing' || queue.length !== 0 || graduatedCount === 0) return;
-        const batch = pendingQueueRef.current.splice(0);
-        flushPending(batch).then(() => setStep('result'));
-    }, [queue, initialized, step, graduatedCount, flushPending]);
+        setStep('result');
+    }, [queue, initialized, step, graduatedCount]);
 
     const currentCardIdx = queue[0] ?? -1;
     const currentCard    = currentCardIdx >= 0 ? cards[currentCardIdx] : null;
 
-    /* ── 核心：推进队列（毕业时加入批量队列，不立即发网络请求） ── */
+    /* ── 核心：每次作答实时提交，再推进队列 ── */
     const submitAndAdvance = useCallback(async (
         ci:            number,
         card:          VocabCard,
-        fsrsRating:    number,   // 毕业时实际提交给 FSRS 的评分
+        fsrsRating:    number,   // 本次实际提交给 FSRS 的评分
         newMastery:    number,   // 本次更新后的本地熟练度
         graduate:      boolean,
         forgotNow:     boolean,  // 本次操作是否属于"忘了"
-        alreadyForgot: boolean,  // 本卡在会话中之前是否已忘过
     ) => {
         if (forgotNow) {
             setSessionForgot(prev => { const a = [...prev]; a[ci] = true; return a; });
+            // 增加错误计数（只在拼错或答错时增加）
+            setSessionErrorCount(prev => { const a = [...prev]; a[ci] = (a[ci] ?? 0) + 1; return a; });
+        }
+
+        let updatedCard: VocabCard;
+        try {
+            const { card: nextCard } = await submitReviewWithRetry(
+                card.word,
+                fsrsRating,
+                card.last_review,
+                card.plan_id,
+            );
+            updatedCard = nextCard;
+            setCards(prev => {
+                const next = [...prev];
+                next[ci] = nextCard;
+                return next;
+            });
+        } catch {
+            showToast('评分同步失败，请检查网络后重试', 'error');
+            setSubmitting(false);
+            return;
         }
 
         if (graduate) {
-            // 曾经忘过 → 强制 rating=1，复习间隔最多 1 天
-            const finalRating = (alreadyForgot || forgotNow) ? 1 : fsrsRating;
-            // 加入批量队列，不立即发网络请求
-            pendingQueueRef.current.push({
-                ci,
-                word:       card.word,
-                rating:     finalRating,
-                lastReview: card.last_review,
-                planId:     card.plan_id,
-            });
             setResults(prev => [...prev, {
-                word:          card.word,
-                zh:            card.zh,
-                rating:        finalRating,
-                newDue:        '',   // 待 flush 后更新
-                scheduledDays: 0,
+                word:          updatedCard.word,
+                zh:            updatedCard.zh,
+                rating:        fsrsRating,
+                newDue:        updatedCard.due,
+                scheduledDays: updatedCard.scheduled_days,
             }]);
             setGraduatedCount(g => g + 1);
-            // 每满 10 个立即同步一次
-            if (pendingQueueRef.current.length >= 10) {
-                const batch = pendingQueueRef.current.splice(0);
-                flushPending(batch);  // fire-and-forget
-            }
         }
 
         setSessionMastery(prev => { const a = [...prev]; a[ci] = newMastery; return a; });
-        setQueue(prev => graduate ? prev.slice(1) : [...prev.slice(1), ci]);
+        setQueue(prev => {
+            const rest = prev.slice(1);
+            if (graduate) {
+                // 毕业时重置错误计数
+                setSessionErrorCount(p => { const a = [...p]; a[ci] = 0; return a; });
+                return rest;
+            }
+            return reinsertAfterGap(rest, ci);
+        });
+
         setVisitKey(k => k + 1);
         setSubmitting(false);
-    }, [flushPending]);
+    }, [submitReviewWithRetry, reinsertAfterGap]);
 
     /**
      * 记忆卡手动评分
@@ -365,34 +412,197 @@ export default function VocabularyFlashcardDoingPage() {
         // Easy → graduate immediately in one pass；其他评分重入队
         const newMastery    = isCorrect ? 4 : 1;
         const graduate      = newMastery === 4;
-        const alreadyForgot = sessionForgot[ci] ?? false;
-        await submitAndAdvance(ci, currentCard, rating, newMastery, graduate, forgotNow, alreadyForgot);
-    }, [submitting, currentCard, currentCardIdx, sessionForgot, submitAndAdvance]);
+        await submitAndAdvance(ci, currentCard, rating, newMastery, graduate, forgotNow);
+    }, [submitting, currentCard, currentCardIdx, submitAndAdvance]);
 
-    /* 4选1 / 写单词：自动评分，熟练度提升至 4 时毕业 */
+    /* 4选1 / 写单词：自动评分，达到 masteryTarget 次连续正确后毕业 */
     const handleAutoRating = useCallback(async (isCorrect: boolean) => {
         if (submitting || !currentCard || currentCardIdx < 0) return;
         setSubmitting(true);
         const ci            = currentCardIdx;
-        const curMastery    = sessionMastery[ci] ?? 0;
-        const newMastery    = nextMastery(curMastery, isCorrect);
-        const graduate      = newMastery === 4;
+        const curMastery    = sessionMastery[ci] ?? 0; // 当前连续正确次数
         const forgotNow     = !isCorrect;
-        const alreadyForgot = sessionForgot[ci] ?? false;
-        setLastRating(newMastery);
-        await submitAndAdvance(ci, currentCard, newMastery, newMastery, graduate, forgotNow, alreadyForgot);
-    }, [submitting, currentCard, currentCardIdx, sessionMastery, sessionForgot, submitAndAdvance]);
 
-    /* 4选1 点击 */
-    const handleChoice = useCallback(async (
+        let newMastery: number;
+        let graduate: boolean;
+        let target: number;
+
+        if (masteryTarget === 'auto') {
+            // 自动：默认按连续2次正确毕业，避免一次答对直接拉长间隔。
+            target = 2;
+        } else {
+            target = masteryTarget;
+        }
+
+        newMastery = nextMastery(curMastery, isCorrect, target);
+        graduate = newMastery >= target;
+
+        // 关键：本地未毕业时，提交 rating=1 保持在学习链路。
+        // 已毕业且答对时提交 rating=4（Easy），让 FSRS 立即推向复习阶段（几天后），避免 10 分钟后被重新加入待学
+        const fsrsRating = graduate ? (isCorrect ? 4 : 1) : 1;
+        const uiRating = isCorrect ? 3 : 1;
+
+        setLastRating(uiRating);
+        await submitAndAdvance(ci, currentCard, fsrsRating, newMastery, graduate, forgotNow);
+    }, [submitting, currentCard, currentCardIdx, sessionMastery, masteryTarget, submitAndAdvance]);
+
+    const buildAutoOutcome = useCallback((isCorrect: boolean, curMastery: number) => {
+        const forgotNow = !isCorrect;
+        const target = masteryTarget === 'auto' ? 2 : masteryTarget;
+        const newMastery = nextMastery(curMastery, isCorrect, target);
+        const graduate = newMastery >= target;
+        // 毕业且答对时：rating=4（Easy）让 FSRS 立即推到复习阶段（几天后）
+        const fsrsRating = graduate ? (isCorrect ? 4 : 1) : 1;
+        return { fsrsRating, newMastery, graduate, forgotNow };
+    }, [masteryTarget]);
+
+    const syncCurrentAnsweredBeforeExit = useCallback(async () => {
+        if (!currentCard || currentCardIdx < 0) return;
+
+        let outcome: { fsrsRating: number; newMastery: number; graduate: boolean; forgotNow: boolean } | null = null;
+
+        if (mode === 'choice' && choiceSelected !== null && choiceCorrect !== null) {
+            const curMastery = sessionMastery[currentCardIdx] ?? 0;
+            outcome = buildAutoOutcome(choiceCorrect, curMastery);
+        } else if (mode === 'write' && writeSubmitted && writeCorrect !== null) {
+            if (quickProficient) {
+                outcome = { fsrsRating: 4, newMastery: 4, graduate: true, forgotNow: false };
+            } else {
+                const curMastery = sessionMastery[currentCardIdx] ?? 0;
+                outcome = buildAutoOutcome(writeCorrect, curMastery);
+            }
+        }
+
+        if (!outcome) return;
+
+        const { card: nextCard } = await submitReviewWithRetry(
+            currentCard.word,
+            outcome.fsrsRating,
+            currentCard.last_review,
+            currentCard.plan_id,
+        );
+
+        // 计算新的本地状态（不通过 setState，直接用于 sessionStorage）
+        const newCards = [...cards];
+        newCards[currentCardIdx] = nextCard;
+
+        const newSessionForgot = [...sessionForgot];
+        if (outcome.forgotNow) {
+            newSessionForgot[currentCardIdx] = true;
+        }
+
+        const newSessionMastery = [...sessionMastery];
+        newSessionMastery[currentCardIdx] = outcome.newMastery;
+
+        const newSessionErrorCount = [...sessionErrorCount];
+        if (outcome.forgotNow) {
+            newSessionErrorCount[currentCardIdx] = (newSessionErrorCount[currentCardIdx] ?? 0) + 1;
+        }
+
+        let newQueue = queue;
+        let newGraduatedCount = graduatedCount;
+        if (outcome.graduate) {
+            newQueue = queue.slice(1);
+            newGraduatedCount = graduatedCount + 1;
+            newSessionErrorCount[currentCardIdx] = 0; // 毕业时重置错误计数
+        } else {
+            newQueue = reinsertAfterGap(queue.slice(1), currentCardIdx);
+        }
+
+        // 立即更新 sessionStorage（绕过 React 状态系统）
+        // 关键：不调用 setState，避免持久化 useEffect 后续覆盖
+        const cache: SessionCache = {
+            cards: newCards,
+            queue: newQueue,
+            sessionMastery: newSessionMastery,
+            sessionForgot: newSessionForgot,
+            sessionErrorCount: newSessionErrorCount,
+            masteryTarget,
+            graduatedCount: newGraduatedCount,
+            isFlipped,
+            step,
+            results,
+            mode,
+        };
+        if (planId) cache.planId = planId;
+        if (planName) cache.planName = planName;
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(cache));
+        
+        console.log('[词汇学习] 退出前同步会话到 sessionStorage', {
+            word: currentCard.word,
+            outcome,
+            newGraduatedCount: newGraduatedCount,
+            queueLength: newQueue.length,
+            navigatingAway: true,
+        });
+        
+        // 标记正在离开，防止持久化 useEffect 执行并覆盖刚保存的状态
+        navigatingAwayRef.current = true;
+    }, [
+        currentCard,
+        currentCardIdx,
+        mode,
+        choiceSelected,
+        choiceCorrect,
+        writeSubmitted,
+        writeCorrect,
+        quickProficient,
+        sessionMastery,
+        sessionForgot,
+        sessionErrorCount,
+        cards,
+        queue,
+        graduatedCount,
+        isFlipped,
+        step,
+        results,
+        planId,
+        planName,
+        masteryTarget,
+        buildAutoOutcome,
+        submitReviewWithRetry,
+        reinsertAfterGap,
+    ]);
+
+    /* 4选1 前置：点击"会"展开题目 */
+    const handleChoiceKnow = useCallback(() => {
+        if (submitting || choiceSelected !== null) return;
+        setChoiceRevealed(true);
+    }, [submitting, choiceSelected]);
+
+    /* 4选1 点击（仅记录选择，不自动进入下一题） */
+    const handleChoice = useCallback((
         opt: { zh: string; correct: boolean },
         idx: number,
     ) => {
         if (choiceSelected !== null || submitting) return;
         setChoiceSelected(idx);
-        await new Promise(r => setTimeout(r, 900));
-        await handleAutoRating(opt.correct);
-    }, [choiceSelected, submitting, handleAutoRating]);
+        setChoiceCorrect(opt.correct);
+        setLastRating(opt.correct ? 3 : 1);
+    }, [choiceSelected, submitting]);
+
+    /* 4选1 点击"不会" */
+    const handleChoiceUnknown = useCallback(() => {
+        if (choiceSelected !== null || submitting) return;
+        // 标记为答错
+        setChoiceSelected(-1);
+        setChoiceCorrect(false);
+        setChoiceRevealed(true);  // 展开题目让用户看到所有选项，然后可以点下一个
+        setLastRating(1);
+    }, [choiceSelected, submitting]);
+
+    /* 4选1 隐藏题目回到初始选择状态 */
+    const handleChoiceHideQuestion = useCallback(() => {
+        if (submitting) return;
+        setChoiceRevealed(false);
+        setChoiceSelected(null);
+        setChoiceCorrect(null);
+    }, [submitting]);
+
+    const handleChoiceNext = useCallback(async () => {
+        if (choiceSelected === null || choiceCorrect === null || submitting) return;
+        await handleAutoRating(choiceCorrect);
+    }, [choiceSelected, choiceCorrect, submitting, handleAutoRating]);
 
     /* 写英文提交 */
     const handleWriteSubmit = useCallback(() => {
@@ -422,13 +632,12 @@ export default function VocabularyFlashcardDoingPage() {
             const card = currentCard;
             if (ci < 0 || !card) return;
             setSubmitting(true);
-            const alreadyForgot = sessionForgot[ci] ?? false;
-            await submitAndAdvance(ci, card, 4, 4, true, false, alreadyForgot);
+            await submitAndAdvance(ci, card, 4, 4, true, false);
         } else {
             await handleAutoRating(writeCorrect);
         }
     }, [writeSubmitted, submitting, writeCorrect, quickProficient,
-        currentCardIdx, currentCard, sessionForgot, submitAndAdvance, handleAutoRating]);
+        currentCardIdx, currentCard, submitAndAdvance, handleAutoRating]);
 
     /* 快速自评 */
     const handleQuickAssess = useCallback((correct: boolean) => {
@@ -493,9 +702,7 @@ export default function VocabularyFlashcardDoingPage() {
     }, [step, submitting, mode, writeSubmitted, unknownMode, writeInput, handleQuickAssess]);
 
     /* 再来一轮 */
-    const handleRetry = async () => {
-        const batch = pendingQueueRef.current.splice(0);
-        await flushPending(batch);
+    const handleRetry = () => {
         const n = cards.length;
         setQueue(Array.from({ length: n }, (_, i) => i));
         setSessionMastery(new Array(n).fill(0));
@@ -510,12 +717,24 @@ export default function VocabularyFlashcardDoingPage() {
     const backPath  = planId ? `/vocabulary/plans/${planId}` : '/vocabulary/plans';
     const backLabel = '返回学习计划';
 
-    /* 返回前先同步剩余队列（fire-and-forget：请求已发出，导航不等待响应） */
+    /* 评分已实时同步，可直接返回 */
     const handleBack = useCallback(() => {
-        const batch = pendingQueueRef.current.splice(0);
-        flushPending(batch);   // 立即发出请求，不阻塞导航
-        navigate(backPath);
-    }, [backPath, flushPending, navigate]);
+        if (leaving) return;
+        if (submitting) return;
+        console.log('[词汇学习] 用户点击返回，开始退出前同步');
+        setLeaving(true);
+        syncCurrentAnsweredBeforeExit()
+            .catch(() => {
+                console.error('[词汇学习] 退出前同步失败', new Error('exit_sync_failed'));
+                showToast('退出前同步失败，请稍后重试', 'error');
+                setLeaving(false);
+                throw new Error('exit_sync_failed');
+            })
+            .then(() => {
+                console.log('[词汇学习] 退出前同步成功，导航返回');
+                navigate(backPath);
+            });
+    }, [backPath, navigate, leaving, submitting, syncCurrentAnsweredBeforeExit]);
 
     /* ── 加载中 ── */
     if (!initialized || (!currentCard && step === 'doing')) {
@@ -542,7 +761,7 @@ export default function VocabularyFlashcardDoingPage() {
             <Layout>
                 <div className="config-page-wrap">
                     <div className="practice-header">
-                        <button className="back-link" onClick={() => navigate(backPath)}>{backLabel}</button>
+                        <button className="back-link" onClick={handleBack}>{backLabel}</button>
                         <h1>本轮结果{planName ? ` · ${planName}` : ''}</h1>
                         <p>共掌握 <strong>{results.length}</strong> 个单词</p>
                     </div>
@@ -569,7 +788,7 @@ export default function VocabularyFlashcardDoingPage() {
                         </div>
                         <div className="fc-result-actions">
                             <button className="fc-action-btn" onClick={handleRetry}>🔄 再来一轮</button>
-                            <button className="fc-action-btn primary" onClick={() => navigate(backPath)}>
+                            <button className="fc-action-btn primary" onClick={handleBack}>
                                 {backLabel}
                             </button>
                         </div>
@@ -742,26 +961,81 @@ export default function VocabularyFlashcardDoingPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="fc-choices">
-                            {choices.map((opt, idx) => {
-                                let cls = 'fc-choice-opt';
-                                if (choiceSelected !== null) {
-                                    if (opt.correct)                 cls += ' correct';
-                                    else if (choiceSelected === idx)  cls += ' wrong';
-                                    else                             cls += ' dimmed';
-                                }
-                                return (
-                                    <button
-                                        key={idx}
-                                        className={cls}
-                                        onClick={() => handleChoice(opt, idx)}
-                                        disabled={choiceSelected !== null || submitting}
-                                    >
-                                        {opt.zh}
-                                    </button>
-                                );
-                            })}
-                        </div>
+
+                        {/* 如果还未展开题目，显示"会/不会"选择 */}
+                        {!choiceRevealed && (
+                            <div className="fc-choice-reveal-actions">
+                                <button
+                                    className="fc-choice-know-btn"
+                                    onClick={handleChoiceKnow}
+                                    disabled={submitting}
+                                >
+                                    会
+                                </button>
+                                <button
+                                    className="fc-choice-unknown-btn"
+                                    onClick={handleChoiceUnknown}
+                                    disabled={submitting}
+                                >
+                                    不会
+                                </button>
+                            </div>
+                        )}
+
+                        {/* 如果已展开题目，显示4个选项 */}
+                        {choiceRevealed && (
+                            <>
+                                <div className="fc-choices">
+                                    {choices.map((opt, idx) => {
+                                        let cls = 'fc-choice-opt';
+                                        if (choiceSelected !== null) {
+                                            if (opt.correct)                 cls += ' correct';
+                                            else if (choiceSelected === idx)  cls += ' wrong';
+                                            else                             cls += ' dimmed';
+                                        }
+                                        return (
+                                            <button
+                                                key={idx}
+                                                className={cls}
+                                                onClick={() => handleChoice(opt, idx)}
+                                                disabled={choiceSelected !== null || submitting}
+                                            >
+                                                {opt.zh}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <div className="fc-choice-actions">
+                                    {choiceSelected === null && (
+                                        <button
+                                            className="fc-choice-hide-btn"
+                                            onClick={handleChoiceHideQuestion}
+                                            disabled={submitting}
+                                        >
+                                            隐藏
+                                        </button>
+                                    )}
+                                    {choiceSelected === null && (
+                                        <button
+                                            className="fc-choice-unknown"
+                                            onClick={handleChoiceUnknown}
+                                            disabled={submitting}
+                                        >
+                                            不会
+                                        </button>
+                                    )}
+                                    {choiceSelected !== null && (
+                                        <button
+                                            className="fc-write-next"
+                                            onClick={handleChoiceNext}
+                                            disabled={submitting}
+                                        >
+                                            下一个
+                                        </button>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </>
                 )}
 

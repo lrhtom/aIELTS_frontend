@@ -18,7 +18,15 @@ export default function VocabBookDetailPage() {
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
     const [searchQ, setSearchQ] = useState('');
+    const [debouncedSearchQ, setDebouncedSearchQ] = useState('');
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQ(searchQ.trim());
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [searchQ]);
 
     useEffect(() => {
         listVocabBooks()
@@ -32,7 +40,7 @@ export default function VocabBookDetailPage() {
     const loadWords = useCallback(async () => {
         setLoading(true);
         try {
-            const r = await listBookWords(bookId, page, PAGE_SIZE, searchQ || undefined);
+            const r = await listBookWords(bookId, page, PAGE_SIZE, debouncedSearchQ || undefined);
             setWords(r.words);
             setTotal(r.total);
         } catch {
@@ -40,7 +48,7 @@ export default function VocabBookDetailPage() {
         } finally {
             setLoading(false);
         }
-    }, [bookId, page, searchQ]);
+    }, [bookId, page, debouncedSearchQ]);
 
     useEffect(() => { loadWords(); }, [loadWords]);
 

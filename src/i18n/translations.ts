@@ -339,6 +339,10 @@ export interface Translations {
             label: string;
             desc: string;
         };
+        aiRetry?: {
+            saveSuccess?: string;
+            saveFailed?: string;
+        };
         system: {
             title: string;
             userId: string;
@@ -807,6 +811,10 @@ const zh: Translations = {
             label: 'AI 引擎',
             desc: '选择后台出题和批改所使用的引擎',
         },
+        aiRetry: {
+            saveSuccess: '✓ 保存成功',
+            saveFailed: '✗ 保存失败',
+        },
         system: {
             title: '系统信息',
             userId: '用户 ID',
@@ -1256,6 +1264,10 @@ const en: Translations = {
             title: 'AI Configuration',
             label: 'AI Engine',
             desc: 'Select the engine for generation and correction',
+        },
+        aiRetry: {
+            saveSuccess: '✓ Saved Successfully',
+            saveFailed: '✗ Failed to Save',
         },
         system: {
             title: 'System',

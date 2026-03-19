@@ -98,7 +98,6 @@ export default function VocabularyFlashcardConfigPage() {
             showToast('没有需要复习的单词，今天已全部完成！', 'success');
             return;
         }
-        sessionStorage.removeItem('vocab_flashcard_session');
         navigate('/vocabulary/flashcard/doing', { state: { cards: sortCards(filtered) } });
     };
 

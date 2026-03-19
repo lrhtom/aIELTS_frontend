@@ -589,6 +589,55 @@
     letter-spacing: 0.5px;
 }
 
+.lp-sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lp-sort-select {
+    padding: 6px 10px;
+    background: var(--color-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--color-text);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.lp-sort-select:hover {
+    border-color: var(--color-text-secondary);
+}
+
+.lp-sort-select:focus {
+    border-color: var(--color-primary);
+}
+
+.lp-sort-direction {
+    padding: 6px 10px;
+    background: var(--color-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s;
+    min-width: 36px;
+}
+
+.lp-sort-direction:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.lp-sort-direction:active {
+    transform: scale(0.95);
+}
+
 .lp-search {
     flex: 1;
     min-width: 160px;

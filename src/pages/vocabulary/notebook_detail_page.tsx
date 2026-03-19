@@ -257,11 +257,23 @@ export default function NotebookDetailPage() {
     const entries = useMemo(() => {
         let list = allEntries;
         if (selectedTag) list = list.filter(e => e.tags.includes(selectedTag));
-        if (searchQ.trim()) {
-            const q = searchQ.trim().toLowerCase();
+        const normalizedQ = searchQ.trim().toLowerCase();
+        if (normalizedQ) {
             list = list.filter(e =>
-                e.word.toLowerCase().includes(q) ||
-                e.custom_zh.toLowerCase().includes(q)
+                e.word.toLowerCase().includes(normalizedQ) ||
+                e.custom_zh.toLowerCase().includes(normalizedQ) ||
+                e.notes.toLowerCase().includes(normalizedQ) ||
+                e.phonetic.toLowerCase().includes(normalizedQ) ||
+                e.grammar.toLowerCase().includes(normalizedQ) ||
+                e.tags.some(t => t.toLowerCase().includes(normalizedQ)) ||
+                e.definitions.some(d =>
+                    d.pos.toLowerCase().includes(normalizedQ) ||
+                    d.meaning.toLowerCase().includes(normalizedQ)
+                ) ||
+                e.examples.some(ex =>
+                    ex.en.toLowerCase().includes(normalizedQ) ||
+                    ex.zh.toLowerCase().includes(normalizedQ)
+                )
             );
         }
         return list;

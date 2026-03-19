@@ -84,10 +84,16 @@ export default function LearningPlanListPage() {
                 showToast(msg, 'success');
                 return;
             }
-            sessionStorage.removeItem('vocab_flashcard_session');
             const mode = (localStorage.getItem(`lp_study_mode_${plan.id}`) ?? 'flashcard') as 'flashcard' | 'choice' | 'write';
+            const rawTarget = localStorage.getItem(`lp_mastery_target_${plan.id}`) ?? '2';
+            const masteryTarget = rawTarget === 'auto'
+                ? 'auto'
+                : (() => {
+                    const n = Number(rawTarget);
+                    return Number.isFinite(n) ? Math.min(5, Math.max(1, n)) : 2;
+                })();
             navigate('/vocabulary/flashcard/doing', {
-                state: { cards, stats, planId: plan.id, planName: plan.name, mode },
+                state: { cards, stats, planId: plan.id, planName: plan.name, mode, masteryTarget },
             });
         } catch (e: unknown) {
             const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || '开始学习失败';

@@ -22,6 +22,7 @@ const FSRS_STATE_CLASS: Record<number, string> = {
 type AddTab = 'manual' | 'notebook' | 'book';
 type BookSubMode = 'all' | 'range' | 'select';
 type StudyMode = 'flashcard' | 'choice' | 'write';
+type MasterySetting = 'auto' | number;
 
 const STUDY_MODES: [StudyMode, string][] = [
     ['flashcard', '记忆卡'],
@@ -44,12 +45,20 @@ export default function LearningPlanDetailPage() {
     const [search,      setSearch]      = useState('');
     const [loading,     setLoading]     = useState(true);
     const [page,        setPage]        = useState(1);
+    const [sortBy,      setSortBy]      = useState<'default' | 'alphabetical' | 'proficiency'>('default');
+    const [sortAsc,     setSortAsc]     = useState(true);
 
     // Starting session
     const [starting,    setStarting]    = useState(false);
     const [studyMode,   setStudyMode]   = useState<StudyMode>(
         () => (localStorage.getItem(`lp_study_mode_${planId}`) as StudyMode) || 'flashcard'
     );
+    const [masteryTarget, setMasteryTarget] = useState<MasterySetting>(() => {
+        const raw = localStorage.getItem(`lp_mastery_target_${planId}`) ?? '2';
+        if (raw === 'auto') return 'auto';
+        const v = Number(raw);
+        return Number.isFinite(v) ? Math.min(5, Math.max(1, v)) : 2;
+    });
 
     // Add section
     const [addTab,      setAddTab]      = useState<AddTab>('manual');
@@ -117,6 +126,10 @@ export default function LearningPlanDetailPage() {
         }).catch(() => {});
     }, [bookId, bookSubMode]);
 
+    useEffect(() => {
+        localStorage.setItem(`lp_mastery_target_${planId}`, String(masteryTarget));
+    }, [planId, masteryTarget]);
+
     // Reset pagination when search or entries change
     useEffect(() => { setPage(1); }, [search]);
     useEffect(() => { setPage(1); }, [entries.length]);
@@ -159,9 +172,15 @@ export default function LearningPlanDetailPage() {
                 showToast(msg, 'success');
                 return;
             }
-            sessionStorage.removeItem('vocab_flashcard_session');
             navigate('/vocabulary/flashcard/doing', {
-                state: { cards, stats, planId: planId, planName: plan?.name, mode: studyMode },
+                state: {
+                    cards,
+                    stats,
+                    planId: planId,
+                    planName: plan?.name,
+                    mode: studyMode,
+                    masteryTarget,
+                },
             });
         } catch (e: unknown) {
             const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || '开始失败';
@@ -247,17 +266,46 @@ export default function LearningPlanDetailPage() {
         }
     };
 
-    // ── Filtered + paginated word list ─────────────────────────────────────
+    // ── Filtered + sorted + paginated word list ──────────────────────────────
     const PAGE_SIZE = 50;
-    const filtered = search.trim()
+    const normalizedSearch = search.trim().toLowerCase();
+    const filtered = normalizedSearch
         ? entries.filter(e =>
-            e.word.includes(search.toLowerCase()) ||
-            e.zh.toLowerCase().includes(search.toLowerCase())
+            e.word.toLowerCase().includes(normalizedSearch) ||
+            e.zh.toLowerCase().includes(normalizedSearch) ||
+            e.phonetic.toLowerCase().includes(normalizedSearch) ||
+            e.grammar.toLowerCase().includes(normalizedSearch) ||
+            e.definitions.some(d =>
+                d.pos.toLowerCase().includes(normalizedSearch) ||
+                d.meaning.toLowerCase().includes(normalizedSearch)
+            ) ||
+            e.examples.some(ex =>
+                ex.en.toLowerCase().includes(normalizedSearch) ||
+                ex.zh.toLowerCase().includes(normalizedSearch)
+            )
         )
         : entries;
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    
+    // Apply sorting
+    const sorted = useMemo(() => {
+        const list = [...filtered];
+        if (sortBy === 'alphabetical') {
+            list.sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase()));
+        } else if (sortBy === 'proficiency') {
+            list.sort((a, b) => {
+                // Sort by FSRS state (lower number = less proficient), then by scheduled days
+                if (a.fsrs_state !== b.fsrs_state) {
+                    return a.fsrs_state - b.fsrs_state;
+                }
+                return a.fsrs_scheduled_days - b.fsrs_scheduled_days;
+            });
+        }
+        return sortAsc ? list : list.reverse();
+    }, [filtered, sortBy, sortAsc]);
+    
+    const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
     const safePage   = Math.min(page, totalPages);
-    const paged      = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+    const paged      = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
     // Dedup: set of all words already in plan
     const existingWords   = useMemo(() => new Set(entries.map(e => e.word)), [entries]);
@@ -344,6 +392,25 @@ export default function LearningPlanDetailPage() {
                                 {label}
                             </button>
                         ))}
+                    </div>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className="lp-mode-selector-label">连续正确：</span>
+                        <select
+                            value={masteryTarget}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === 'auto') {
+                                    setMasteryTarget('auto');
+                                    return;
+                                }
+                                setMasteryTarget(Math.min(5, Math.max(1, Number(value) || 2)));
+                            }}
+                        >
+                            <option value="auto">自动</option>
+                            {[1, 2, 3, 4, 5].map(n => (
+                                <option key={n} value={n}>{n}次</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
@@ -583,6 +650,29 @@ export default function LearningPlanDetailPage() {
                 <div className="lp-word-section">
                     <div className="lp-word-section-header">
                         <h4>词表（{entries.length}）</h4>
+                        <div className="lp-sort-controls">
+                            <select
+                                className="lp-sort-select"
+                                value={sortBy}
+                                onChange={e => {
+                                    setSortBy(e.target.value as 'default' | 'alphabetical' | 'proficiency');
+                                    setPage(1);
+                                }}
+                            >
+                                <option value="default">默认</option>
+                                <option value="alphabetical">英文字典序</option>
+                                <option value="proficiency">熟练度</option>
+                            </select>
+                            {sortBy !== 'default' && (
+                                <button
+                                    className="lp-sort-direction"
+                                    onClick={() => setSortAsc(!sortAsc)}
+                                    title={sortAsc ? '倒序' : '正序'}
+                                >
+                                    {sortAsc ? '↑' : '↓'}
+                                </button>
+                            )}
+                        </div>
                         <input
                             className="lp-search"
                             type="text"

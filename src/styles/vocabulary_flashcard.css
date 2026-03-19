@@ -430,6 +430,116 @@
 .fc-choice-opt.dimmed  { opacity: 0.35; }
 .fc-choice-opt:disabled { cursor: not-allowed; }
 
+.fc-choice-actions {
+    max-width: 560px;
+    margin: 0 auto 16px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.fc-choice-unknown {
+    padding: 8px 18px;
+    border-radius: 10px;
+    border: 1.5px solid #fca5a5;
+    background: #fef2f2;
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+.fc-choice-unknown:hover:not(:disabled) {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.fc-choice-unknown:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ── 4选1 前置：会/不会选择 ─────────────────────────────────────────────── */
+.fc-choice-reveal-actions {
+    max-width: 560px;
+    margin: 0 auto 16px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.fc-choice-know-btn {
+    padding: 12px 32px;
+    border-radius: 12px;
+    border: 2px solid var(--color-primary);
+    background: var(--color-primary);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fc-choice-know-btn:hover:not(:disabled) {
+    background: #0d9880;
+    border-color: #0d9880;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+.fc-choice-know-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.fc-choice-unknown-btn {
+    padding: 12px 32px;
+    border-radius: 12px;
+    border: 2px solid #fca5a5;
+    background: #fef2f2;
+    color: #dc2626;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fc-choice-unknown-btn:hover:not(:disabled) {
+    background: #fdbdbd;
+    border-color: #f87171;
+    transform: translateY(-2px);
+}
+
+.fc-choice-unknown-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── 隐藏题目按钮 ─────────────────────────────────────────────────────────────── */
+.fc-choice-hide-btn {
+    padding: 8px 18px;
+    border-radius: 10px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.fc-choice-hide-btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: translateY(-1px);
+}
+
+.fc-choice-hide-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* ── Write mode — 首字母提示 ─────────────────────────────────────────────── */
 .fc-write-hint {
     display: flex;
