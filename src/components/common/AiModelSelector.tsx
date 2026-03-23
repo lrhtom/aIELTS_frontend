@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLang } from '../../i18n/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { authApi } from '../../api/auth';
 
 type AIProvider = 'deepseek' | 'gemini' | 'gpt5';
 
@@ -13,14 +15,25 @@ export default function AiModelSelector({ onModelChange, label, description }: A
     const { translations: t } = useLang();
     const resolvedLabel = label ?? t.components.aiModel.label;
     const resolvedDesc = description ?? t.components.aiModel.desc;
+    const { user, updateUser } = useAuth();
     const [provider, setProvider] = useState<AIProvider>(() => {
-        const saved = localStorage.getItem('ai_provider');
-        return (saved as AIProvider) || 'deepseek';
+        return (user?.aiProvider as AIProvider) || (localStorage.getItem('ai_provider') as AIProvider) || 'deepseek';
     });
+
+    useEffect(() => {
+        // 如果后端有强偏好下发并且与本地不一致，则跟随服务端
+        if (user?.aiProvider && user.aiProvider !== provider) {
+            setProvider(user.aiProvider as AIProvider);
+            localStorage.setItem('ai_provider', user.aiProvider);
+        }
+    }, [user?.aiProvider]);
 
     const handleProviderChange = (p: AIProvider) => {
         setProvider(p);
         localStorage.setItem('ai_provider', p);
+        if (user) {
+            authApi.updateSettings({ ai_provider: p }).then(u => updateUser(u)).catch(console.error);
+        }
         if (onModelChange) {
             onModelChange(p);
         }

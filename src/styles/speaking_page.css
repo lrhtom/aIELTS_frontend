@@ -92,7 +92,7 @@
 /* Mode 三选一 */
 .speaking-modes {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
 }
 
@@ -199,6 +199,26 @@
 .speaking-mode-card.mode-exam:hover:not(.selected) {
     border-color: rgba(249, 115, 22, 0.4);
     box-shadow: 0 4px 14px rgba(249, 115, 22, 0.08);
+}
+
+/* Scenario mode */
+.speaking-mode-card.mode-scenario.selected {
+    border-color: #ec4899;
+    background: linear-gradient(150deg, #fdf2f8 0%, #fce7f3 100%);
+    box-shadow: 0 6px 20px rgba(236, 72, 153, 0.18);
+}
+
+.speaking-mode-card.mode-scenario.selected .sm-check {
+    background: #ec4899;
+}
+
+.speaking-mode-card.mode-scenario.selected .sm-title {
+    color: #ec4899;
+}
+
+.speaking-mode-card.mode-scenario:hover:not(.selected) {
+    border-color: rgba(236, 72, 153, 0.4);
+    box-shadow: 0 4px 14px rgba(236, 72, 153, 0.08);
 }
 
 /* Start button — purple gradient for speaking */

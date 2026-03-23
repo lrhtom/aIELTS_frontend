@@ -533,3 +533,226 @@
     border-color: var(--color-text-secondary);
     background: var(--color-bg);
 }
+
+/* ─── Writing Selection Pages ───────────────────────────────────────────── */
+
+.writing-selection-page {
+    max-width: 1100px;
+    padding-top: 34px;
+    padding-bottom: 70px;
+}
+
+.writing-selection-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.writing-selection-title {
+    margin-bottom: 0;
+    flex: 1;
+    background:
+        radial-gradient(circle at 86% -10%, rgba(20, 184, 166, 0.18) 0%, rgba(20, 184, 166, 0) 42%),
+        linear-gradient(165deg, #f8fcff 0%, #f7fbfa 100%);
+}
+
+.writing-back-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.writing-selection-card {
+    border-radius: 24px;
+    padding: 28px;
+    background:
+        radial-gradient(circle at 14% -8%, rgba(13, 148, 136, 0.11) 0%, transparent 36%),
+        radial-gradient(circle at 88% 115%, rgba(16, 185, 129, 0.1) 0%, transparent 38%),
+        var(--color-surface);
+}
+
+.writing-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.writing-choice-card {
+    border: 1.5px solid rgba(15, 23, 42, 0.08);
+    border-radius: 18px;
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 252, 252, 0.92) 100%);
+    display: grid;
+    grid-template-columns: 62px 1fr;
+    gap: 14px;
+    align-items: flex-start;
+    text-align: left;
+    padding: 16px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.writing-choice-card::before {
+    content: '';
+    position: absolute;
+    inset: auto auto 0 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #0d9488, #10b981);
+    transform: scaleX(0.15);
+    transform-origin: left;
+    opacity: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.writing-choice-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(13, 148, 136, 0.35);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.09);
+}
+
+.writing-choice-card:hover::before,
+.writing-choice-card.active::before {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.writing-choice-card.active {
+    border-color: rgba(13, 148, 136, 0.62);
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.13), 0 14px 30px rgba(13, 148, 136, 0.14);
+}
+
+.writing-choice-icon {
+    width: 62px;
+    height: 62px;
+    border-radius: 15px;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.12), rgba(16, 185, 129, 0.08));
+    border: 1px solid rgba(13, 148, 136, 0.12);
+}
+
+.writing-choice-content {
+    min-width: 0;
+}
+
+.writing-choice-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--color-text);
+}
+
+.writing-choice-subtitle {
+    margin-top: 3px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--color-text-secondary);
+}
+
+.writing-choice-desc {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--color-text-secondary);
+}
+
+.writing-beta-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: linear-gradient(120deg, #f59e0b, #f97316);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.writing-selection-actions {
+    margin-top: 28px;
+    display: flex;
+    justify-content: center;
+}
+
+.writing-selection-start-btn {
+    min-width: 260px;
+    min-height: 52px;
+    padding: 14px 32px;
+    border-radius: 14px;
+    font-size: 1.05rem;
+}
+
+.writing-practice-page {
+    max-width: 100%;
+    padding: 24px 40px;
+    display: flex;
+    flex-direction: column;
+}
+
+.writing-practice-header {
+    margin-bottom: 24px;
+}
+
+.writing-practice-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.writing-practice-title > span {
+    font-size: 28px;
+}
+
+@media (max-width: 900px) {
+    .writing-selection-header {
+        flex-direction: column;
+    }
+
+    .writing-selection-page {
+        padding-top: 22px;
+    }
+
+    .writing-selection-card {
+        padding: 20px;
+        border-radius: 18px;
+    }
+
+    .writing-selection-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .writing-choice-card {
+        grid-template-columns: 52px 1fr;
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .writing-choice-icon {
+        width: 52px;
+        height: 52px;
+        font-size: 26px;
+        border-radius: 12px;
+    }
+
+    .writing-selection-start-btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .writing-practice-page {
+        padding: 18px 16px 26px;
+    }
+}

@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { showToast } from '../../components/common/Toast';
 import { syncVocab, type VocabCard, type VocabStats } from '../../api/vocab';
+import { authApi } from '../../api/auth';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_flashcard.css';
 
@@ -56,9 +58,14 @@ export default function VocabularyFlashcardConfigPage() {
     const [allCards, setAllCards] = useState<VocabCard[] | null>(null);
     const [stats, setStats] = useState<VocabStats | null>(null);
 
+    const { user, updateUser } = useAuth();
+
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
         localStorage.setItem('ielts_target_vocab', val);
+        if (user) {
+            authApi.updateSettings({ target_vocab_name: val }).then(u => updateUser(u)).catch(console.error);
+        }
         // 输入改变后清空上次同步结果
         setAllCards(null);
         setStats(null);

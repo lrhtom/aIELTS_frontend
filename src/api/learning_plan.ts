@@ -6,12 +6,24 @@ import type { VocabCard, VocabStats } from './vocab';
 // ──────────────────────────────────────────────────────────────────────────────
 
 export interface LearningPlan {
-    id:          number;
-    name:        string;
-    daily_count: number;
-    word_count:  number;
-    created_at:  string;
-    updated_at:  string;
+    id:             number;
+    name:           string;
+    daily_count:    number;
+    default_mode?:  string;
+    mastery_target?: number;
+    word_count:     number;
+    studied_today:  number;
+    today_words:    TodayWord[];
+    created_at:     string;
+    updated_at:     string;
+}
+
+export interface TodayWord {
+    word:     string;
+    zh:       string;
+    state:    number;   // 0=New 1=Learning 2=Review 3=Relearning
+    reps:     number;
+    phonetic: string;
 }
 
 export interface PlanEntry {
@@ -60,7 +72,7 @@ export async function createPlan(name: string, daily_count: number): Promise<{ p
 
 export async function updatePlan(
     id: number,
-    data: Partial<{ name: string; daily_count: number }>,
+    data: Partial<{ name: string; daily_count: number; default_mode: string; mastery_target: number }>,
 ): Promise<{ plan: LearningPlan }> {
     const resp = await apiClient.patch(`/plans/${id}/`, data);
     return resp.data;
@@ -113,8 +125,9 @@ export async function removePlanWord(id: number, eid: number): Promise<void> {
 
 export async function startPlan(
     id: number,
-): Promise<{ cards: VocabCard[]; stats: VocabStats & { studied_today: number; remaining_today: number } }> {
-    const resp = await apiClient.post(`/plans/${id}/start/`);
+    mode: 'study' | 'review' = 'study',
+): Promise<{ cards: VocabCard[]; stats: VocabStats & { studied_today: number; remaining_today: number }; review_mode?: boolean }> {
+    const resp = await apiClient.post(`/plans/${id}/start/`, { mode });
     return resp.data;
 }
 

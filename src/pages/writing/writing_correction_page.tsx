@@ -64,7 +64,7 @@ export default function WritingCorrectionPage() {
     };
 
     const scores = result ? [
-        { label: taskType === 'task1' ? 'Task Achievement' : t.writingCorrection.ta, val: result.Task_Response },
+        { label: taskType === 'task1' ? t.writingCorrection.taTask1 : t.writingCorrection.ta, val: result.Task_Response },
         { label: t.writingCorrection.cc, val: result.Coherence_Cohesion },
         { label: t.writingCorrection.lr, val: result.Lexical_Resource },
         { label: t.writingCorrection.gra, val: result.Grammatical_Range },
@@ -104,14 +104,14 @@ export default function WritingCorrectionPage() {
                                 onClick={() => { setTaskType('task1'); setResult(null); }}
                                 disabled={isEvaluating}
                             >
-                                Task 1 · 小作文
+                                {t.writingCorrection.task1Btn}
                             </button>
                             <button
                                 className={`wc-type-btn${taskType === 'task2' ? ' active' : ''}`}
                                 onClick={() => { setTaskType('task2'); setResult(null); }}
                                 disabled={isEvaluating}
                             >
-                                Task 2 · 大作文
+                                {t.writingCorrection.task2Btn}
                             </button>
                         </div>
 
@@ -119,7 +119,7 @@ export default function WritingCorrectionPage() {
                         <div className="wc-section">
                             <label className="wc-section-label">
                                 {t.writingCorrection.promptLabel}
-                                <span className="wc-optional-tag">可选</span>
+                                <span className="wc-optional-tag">{t.writingCorrection.optionalTag}</span>
                             </label>
                             <textarea
                                 className="wc-textarea wc-textarea--prompt"
@@ -175,7 +175,7 @@ export default function WritingCorrectionPage() {
                             <div className="wc-band-display">
                                 <div className="wc-band-label">{t.writingCorrection.overallBand}</div>
                                 <div className="wc-band-value">{result.Overall_Band.toFixed(1)}</div>
-                                <div className="wc-band-subtitle">IELTS Overall Band Score</div>
+                                <div className="wc-band-subtitle">{t.writingCorrection.overallBandSubtitle}</div>
                             </div>
 
                             {/* Sub-scores */}
@@ -206,8 +206,8 @@ export default function WritingCorrectionPage() {
                                 <div className="wc-model-essay-box">
                                     <div className="wc-model-essay-header">
                                         <div>
-                                            <span className="wc-model-essay-badge">Band 8+</span>
-                                            <h3>AI 修改高分范文</h3>
+                                            <span className="wc-model-essay-badge">{t.writingCorrection.modelEssayBadge}</span>
+                                            <h3>{t.writingCorrection.modelEssayTitle}</h3>
                                         </div>
                                         <button
                                             className={`wc-copy-btn${copied ? ' copied' : ''}`}
@@ -217,7 +217,7 @@ export default function WritingCorrectionPage() {
                                                 setTimeout(() => setCopied(false), 2000);
                                             }}
                                         >
-                                            {copied ? '✓ 已复制' : '复制'}
+                                            {copied ? t.writingCorrection.copiedBtn : t.writingCorrection.copyBtn}
                                         </button>
                                     </div>
                                     <div className="wc-model-essay-content">
@@ -234,12 +234,10 @@ export default function WritingCorrectionPage() {
                             <div className="wc-pending-inner">
                                 <div className="wc-loading-spinner" />
                                 <div className="wc-pending-title">
-                                    {lang === 'zh' ? '批改中...' : 'Evaluating...'}
+                                    {t.writingCorrection.evaluatingTitle}
                                 </div>
                                 <div className="wc-pending-desc">
-                                    {lang === 'zh'
-                                        ? 'AI 正在批改你的作文，请稍候'
-                                        : 'AI is evaluating your essay, please wait…'}
+                                    {t.writingCorrection.evaluatingDesc}
                                 </div>
                             </div>
                         </div>
@@ -248,12 +246,10 @@ export default function WritingCorrectionPage() {
                             <div className="wc-pending-inner">
                                 <div className="wc-pending-icon">📋</div>
                                 <div className="wc-pending-title">
-                                    {lang === 'zh' ? '待批改' : 'Awaiting Submission'}
+                                    {t.writingCorrection.pendingTitle}
                                 </div>
                                 <div className="wc-pending-desc">
-                                    {lang === 'zh'
-                                        ? '粘贴你的作文并点击「开始批改」，AI 评分与详细反馈将在此处显示'
-                                        : 'Paste your essay and click "Evaluate" — AI scores and detailed feedback will appear here.'}
+                                    {t.writingCorrection.pendingDesc}
                                 </div>
                             </div>
                         </div>

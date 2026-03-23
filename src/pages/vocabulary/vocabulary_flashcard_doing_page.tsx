@@ -33,7 +33,7 @@ interface SessionCache {
     results:         ReviewResult[];
     planId?:         number;
     planName?:       string;
-    mode?:           StudyMode;
+    mode:            StudyMode;      // 🔧 必需字段：确保mode始终存在
 }
 
 const SESSION_KEY = 'vocab_flashcard_session';
@@ -77,7 +77,8 @@ function estimateInterval(card: VocabCard, rating: number): string {
         if (rating <= 3) return '明天';
         return `约${Math.max(1, Math.round(s || 4))}天`;
     }
-    if (rating === 1) return '明天';
+    // Review 阶段
+    if (rating === 1) return '5分钟后';  // Again → Relearning
     const factor = rating === 2 ? 0.6 : rating === 3 ? 1.0 : 1.5;
     const days = Math.max(1, Math.round((s || 1) * factor));
     return days === 1 ? '1天' : `约${days}天`;
@@ -130,6 +131,7 @@ export default function VocabularyFlashcardDoingPage() {
     const [mode,         setMode]         = useState<StudyMode>('flashcard');
     const [masteryTarget, setMasteryTarget] = useState<MasterySetting>(2);
     const [leaving,      setLeaving]      = useState(false);
+    const [reviewOnly,   setReviewOnly]   = useState(false); // 复习模式：不提交 FSRS
 
     // 4选1
     const [choices,        setChoices]        = useState<Array<{ zh: string; correct: boolean }>>([]);
@@ -146,6 +148,13 @@ export default function VocabularyFlashcardDoingPage() {
 
     // 追踪每个卡片的错误次数
     const [sessionErrorCount, setSessionErrorCount] = useState<number[]>([]);
+    
+    // 记录加载时的plan配置，用于检测daily_count是否改变
+    const [planDailyCountAtLoad, setPlanDailyCountAtLoad] = useState<number | null>(null);
+    
+    // 今日已学基数（进入本轮前已完成的数量）和每日配额，用于显示累计进度
+    const [studiedTodayBase, setStudiedTodayBase] = useState(0);
+    const [planDailyCount, setPlanDailyCount] = useState(0);
     
     // 防止持久化 useEffect 在同步退出时覆盖 sessionStorage
     const navigatingAwayRef = useRef(false);
@@ -168,53 +177,136 @@ export default function VocabularyFlashcardDoingPage() {
     useEffect(() => {
         const state = location.state as {
             cards?: VocabCard[];
+            stats?: { studied_today?: number; remaining_today?: number };
             planId?: number;
             planName?: string;
+            planDailyCount?: number;
             mode?: StudyMode;
             masteryTarget?: MasterySetting;
+            reviewOnly?: boolean;
+            forceNewSession?: boolean;
         } | null;
 
-        // 首先尝试从 sessionStorage 恢复，如果存在且 planId 匹配
+        // 首要是检查是否强行要求开启新会话（例如从计划页点击"开始学习"时）
+        if (state?.forceNewSession) {
+            console.log('[词汇学习] 新会话开启：清除 sessionStorage 的所有脏历史', { planId: state.planId });
+            sessionStorage.removeItem(SESSION_KEY);
+            
+            // 重要：从浏览器的 history 当中擦除这个 flag，这样如果用户学习到一半按 F5
+            // 刷新页面，就不会被再次误认为是个 new session，而是能正常走 cache 恢复逻辑！
+            const restoredState = { ...state };
+            delete restoredState.forceNewSession;
+            window.history.replaceState({ ...window.history.state, usr: restoredState }, '');
+        }
+
+        // 然后再尝试从 sessionStorage 恢复，如果存在且 planId 匹配
         const raw = sessionStorage.getItem(SESSION_KEY);
         if (raw && state?.planId) {
             try {
                 const cached: SessionCache = JSON.parse(raw);
-                // 仅在 planId 匹配时恢复（确保是同一个学习计划的会话）
+                // 检查两个条件：
+                // 1. planId 必须匹配
+                // 2. (新增) planDailyCount 必须匹配或缓存中不存在daily_count字段（向后兼容）
                 if (cached.planId === state.planId) {
-                    console.log('[词汇学习] 从 sessionStorage 恢复会话', {
-                        planId: cached.planId,
-                        totalCards: cached.cards.length,
-                        queueLength: cached.queue?.length,
-                        graduatedCount: cached.graduatedCount,
-                    });
-                    const n = cached.cards.length;
-                    setCards(cached.cards);
-                    setQueue(cached.queue ?? Array.from({ length: n }, (_, i) => i));
-                    setSessionMastery(cached.sessionMastery ?? new Array(n).fill(0));
-                    setSessionForgot(cached.sessionForgot  ?? new Array(n).fill(false));
-                    setSessionErrorCount(cached.sessionErrorCount ?? new Array(n).fill(0));
-                    if (typeof cached.masteryTarget === 'number') {
-                        setMasteryTarget(Math.min(5, Math.max(1, cached.masteryTarget)));
-                    } else if (cached.masteryTarget === 'auto') {
-                        setMasteryTarget('auto');
+                    // 检查daily_count是否改变（防止用户修改计划后队列未更新）
+                    const cachedDailyCount = (cached as any).planDailyCount || null;
+                    const currentDailyCount = state.planDailyCount || null;
+                    
+                    if (cachedDailyCount !== null && currentDailyCount !== null && cachedDailyCount !== currentDailyCount) {
+                        console.log('[词汇学习] 检测到 daily_count 改变，清除缓存重新开始', {
+                            old: cachedDailyCount,
+                            new: currentDailyCount,
+                        });
+                        sessionStorage.removeItem(SESSION_KEY);
+                        // 继续初始化为当前的location.state
+                    } else {
+                        console.log('[词汇学习] 从 sessionStorage 恢复会话', {
+                            planId: cached.planId,
+                            totalCards: cached.cards.length,
+                            queueLength: cached.queue?.length,
+                            graduatedCount: cached.graduatedCount,
+                            mode: cached.mode,
+                        });
+                        const n = cached.cards.length;
+                        setCards(cached.cards);
+                        setQueue(cached.queue ?? Array.from({ length: n }, (_, i) => i));
+                        setSessionMastery(cached.sessionMastery ?? new Array(n).fill(0));
+                        setSessionForgot(cached.sessionForgot  ?? new Array(n).fill(false));
+                        setSessionErrorCount(cached.sessionErrorCount ?? new Array(n).fill(0));
+                        if (typeof cached.masteryTarget === 'number') {
+                            setMasteryTarget(Math.min(5, Math.max(1, cached.masteryTarget)));
+                        } else if (cached.masteryTarget === 'auto') {
+                            setMasteryTarget('auto');
+                        }
+                        setGraduatedCount(cached.graduatedCount ?? 0);
+                        setIsFlipped(cached.isFlipped ?? false);
+                        setStep(cached.step ?? 'doing');
+                        setResults(cached.results ?? []);
+                        if (cached.planId)   setPlanId(cached.planId);
+                        if (cached.planName) setPlanName(cached.planName);
+                        
+                        // 恢复当前答题的临时状态（用于刷新后显示上次进度）
+                        if ((cached as any).choiceSelected !== undefined) {
+                            setChoiceSelected((cached as any).choiceSelected);
+                        }
+                        if ((cached as any).choiceCorrect !== undefined) {
+                            setChoiceCorrect((cached as any).choiceCorrect);
+                        }
+                        if ((cached as any).choiceRevealed) {
+                            setChoiceRevealed((cached as any).choiceRevealed);
+                        }
+                        if ((cached as any).writeInput !== undefined) {
+                            setWriteInput((cached as any).writeInput);
+                        }
+                        if ((cached as any).writeSubmitted) {
+                            setWriteSubmitted((cached as any).writeSubmitted);
+                        }
+                        if ((cached as any).writeCorrect !== undefined) {
+                            setWriteCorrect((cached as any).writeCorrect);
+                        }
+                        if ((cached as any).lastRating !== undefined) {
+                            setLastRating((cached as any).lastRating);
+                        }
+                        
+                        // 🔧 Mode恢复优先级（重要：新传入的state.mode > 缓存的mode > localStorage > 默认值）
+                        // 这样确保用户在详情页改变mode后，学习页面立即使用新mode
+                        let resolvedMode: StudyMode = 'flashcard';
+                        if (state?.mode && ['flashcard', 'choice', 'write'].includes(state.mode)) {
+                            // 🎯 优先使用新传入的state.mode（用户在详情页的新选择）
+                            resolvedMode = state.mode;
+                            console.log('[词汇学习] Mode从location.state中恢复（优先级最高）', { mode: state.mode });
+                        } else if (cached.mode && ['flashcard', 'choice', 'write'].includes(cached.mode)) {
+                            // 次优先：使用缓存中的mode（同一session中的mode）
+                            resolvedMode = cached.mode;
+                            console.log('[词汇学习] Mode从sessionStorage恢复（state中无mode）', { mode: cached.mode });
+                        } else if (cached.planId) {
+                            // 最后fallback到localStorage持久化设置
+                            const cachedMode = localStorage.getItem(`lp_study_mode_${cached.planId}`) as StudyMode | null;
+                            if (cachedMode && ['flashcard', 'choice', 'write'].includes(cachedMode)) {
+                                resolvedMode = cachedMode;
+                                console.log('[词汇学习] Mode从localStorage恢复（sessionStorage/state中缺失）', { mode: cachedMode, planId: cached.planId });
+                            }
+                        }
+                        setMode(resolvedMode);
+                        
+                        console.log('[词汇学习] 恢复当前答题状态', {
+                            choiceSelected: (cached as any).choiceSelected,
+                            writeSubmitted: (cached as any).writeSubmitted,
+                            lastRating: (cached as any).lastRating,
+                        });
+                        
+                        setVisitKey(1);
+                        setInitialized(true);
+                        setPlanDailyCountAtLoad(currentDailyCount);
+                        return;
                     }
-                    setGraduatedCount(cached.graduatedCount ?? 0);
-                    setIsFlipped(cached.isFlipped ?? false);
-                    setStep(cached.step ?? 'doing');
-                    setResults(cached.results ?? []);
-                    if (cached.planId)   setPlanId(cached.planId);
-                    if (cached.planName) setPlanName(cached.planName);
-                    if (cached.mode)     setMode(cached.mode);
-                    setVisitKey(1);
-                    setInitialized(true);
-                    return;
                 }
             } catch (e) {
                 console.error('[词汇学习] 恢复 sessionStorage 失败', e);
             }
         }
 
-        // sessionStorage 不可用或 planId 不匹配，从 location.state 初始化
+        // sessionStorage 不可用或 planId 不匹配或 daily_count 改变，从 location.state 初始化
         if (!state?.cards?.length) {
             const fallback = state?.planId ? `/vocabulary/plans/${state.planId}` : '/vocabulary/plans';
             navigate(fallback, { replace: true });
@@ -225,19 +317,50 @@ export default function VocabularyFlashcardDoingPage() {
         setQueue(Array.from({ length: n }, (_, i) => i));
         setSessionMastery(new Array(n).fill(0));
         setSessionForgot(new Array(n).fill(false));
+        setSessionErrorCount(new Array(n).fill(0));  // 🔧 修复：初始化错误计数数组
         setGraduatedCount(0);
         if (state.planId)   setPlanId(state.planId);
         if (state.planName) setPlanName(state.planName);
-        if (state.mode)     setMode(state.mode);
+        
+        // 🔧 Mode初始化：从location.state → localStorage fallback → 默认'flashcard'
+        let resolvedMode: StudyMode = 'flashcard';
+        if (state.mode) {
+            resolvedMode = state.mode;
+            console.log('[词汇学习] Mode从location.state恢复', { mode: state.mode });
+        } else if (state.planId) {
+            // 尝试从localStorage恢复该计划的持久化mode设置
+            const cachedMode = localStorage.getItem(`lp_study_mode_${state.planId}`) as StudyMode | null;
+            if (cachedMode && ['flashcard', 'choice', 'write'].includes(cachedMode)) {
+                resolvedMode = cachedMode;
+                console.log('[词汇学习] Mode从localStorage恢复', { mode: cachedMode, planId: state.planId });
+            } else {
+                console.log('[词汇学习] Mode使用默认值flashcard');
+            }
+        }
+        setMode(resolvedMode);
+        
         if (typeof state.masteryTarget === 'number') {
             setMasteryTarget(Math.min(5, Math.max(1, state.masteryTarget)));
         } else if (state.masteryTarget === 'auto') {
             setMasteryTarget('auto');
         }
+        setPlanDailyCountAtLoad(state.planDailyCount || null);
+        setPlanDailyCount(state.planDailyCount || 0);
+        setStudiedTodayBase(state.stats?.studied_today ?? 0);
+        if (state.reviewOnly) setReviewOnly(true);
         setVisitKey(1);
         setInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    /* Mode同步到localStorage（作为长期持久化备份） */
+    useEffect(() => {
+        if (!initialized || !planId) return;
+        if (mode && ['flashcard', 'choice', 'write'].includes(mode)) {
+            localStorage.setItem(`lp_study_mode_${planId}`, mode);
+            console.log('[词汇学习] Mode已同步到localStorage', { planId, mode });
+        }
+    }, [mode, planId, initialized]);
 
     /* 持久化 */
     useEffect(() => {
@@ -247,22 +370,49 @@ export default function VocabularyFlashcardDoingPage() {
             return;
         }
         if (!initialized) return;
-        const cache: SessionCache = {
+        
+        // 扩展SessionCache：保存当前答题的临时状态
+        const cache: SessionCache & { 
+            planDailyCount?: number;
+            // 当前卡片的答题临时状态（用于恢复时显示）
+            currentCardIdx?: number;
+            choiceSelected?: number | null;
+            choiceCorrect?: boolean | null;
+            choiceRevealed?: boolean;
+            writeInput?: string;
+            writeSubmitted?: boolean;
+            writeCorrect?: boolean | null;
+            isFlipped?: boolean;
+            lastRating?: number | null;
+        } = {
             cards, queue, sessionMastery, sessionForgot, sessionErrorCount,
             masteryTarget,
             graduatedCount, isFlipped, step, results, mode,
+            // 新增：保存当前答题状态
+            currentCardIdx: currentCardIdx >= 0 ? currentCardIdx : undefined,
+            choiceSelected: choiceSelected !== null ? choiceSelected : undefined,
+            choiceCorrect: choiceCorrect !== null ? choiceCorrect : undefined,
+            choiceRevealed: choiceRevealed ? choiceRevealed : undefined,
+            writeInput: writeInput || undefined,
+            writeSubmitted: writeSubmitted ? writeSubmitted : undefined,
+            writeCorrect: writeCorrect !== null ? writeCorrect : undefined,
+            lastRating: lastRating !== null ? lastRating : undefined,
         };
         if (planId)   cache.planId   = planId;
         if (planName) cache.planName = planName;
+        if (planDailyCountAtLoad) cache.planDailyCount = planDailyCountAtLoad;
+        
         console.log('[词汇学习] 持久化会话到 sessionStorage', {
             totalCards: cards.length,
             queueLength: queue.length,
             graduatedCount,
             step,
+            currentCardIdx: currentCardIdx >= 0 ? currentCardIdx : 'none',
+            planDailyCount: planDailyCountAtLoad,
         });
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(cache));
     }, [initialized, cards, queue, sessionMastery, sessionForgot, sessionErrorCount,
-        masteryTarget, graduatedCount, isFlipped, step, results, planId, planName, mode]);
+        masteryTarget, graduatedCount, isFlipped, step, results, planId, planName, mode, planDailyCountAtLoad]);
 
     /* 每次换卡 (visitKey 变化) 重置卡片状态 */
     useEffect(() => {
@@ -350,24 +500,28 @@ export default function VocabularyFlashcardDoingPage() {
             setSessionErrorCount(prev => { const a = [...prev]; a[ci] = (a[ci] ?? 0) + 1; return a; });
         }
 
-        let updatedCard: VocabCard;
-        try {
-            const { card: nextCard } = await submitReviewWithRetry(
-                card.word,
-                fsrsRating,
-                card.last_review,
-                card.plan_id,
-            );
-            updatedCard = nextCard;
-            setCards(prev => {
-                const next = [...prev];
-                next[ci] = nextCard;
-                return next;
-            });
-        } catch {
-            showToast('评分同步失败，请检查网络后重试', 'error');
-            setSubmitting(false);
-            return;
+        let updatedCard: VocabCard = card;
+
+        // 复习模式：跳过 FSRS 提交，纯浏览不影响间隔调度
+        if (!reviewOnly) {
+            try {
+                const { card: nextCard } = await submitReviewWithRetry(
+                    card.word,
+                    fsrsRating,
+                    card.last_review,
+                    card.plan_id,
+                );
+                updatedCard = nextCard;
+                setCards(prev => {
+                    const next = [...prev];
+                    next[ci] = nextCard;
+                    return next;
+                });
+            } catch {
+                showToast('评分同步失败，请检查网络后重试', 'error');
+                setSubmitting(false);
+                return;
+            }
         }
 
         if (graduate) {
@@ -394,24 +548,22 @@ export default function VocabularyFlashcardDoingPage() {
 
         setVisitKey(k => k + 1);
         setSubmitting(false);
-    }, [submitReviewWithRetry, reinsertAfterGap]);
+    }, [submitReviewWithRetry, reinsertAfterGap, reviewOnly]);
 
     /**
      * 记忆卡手动评分
-     * - rating=4（容易）：直接毕业，无需第二次确认
-     * - rating 1/2/3：算"忘了"，熟练度重置为 1，重入队
-     * - 仅毕业时提交 FSRS，且曾忘过的强制 rating=1
+     * - rating>=3（一般/容易）：毕业
+     * - rating 1/2（忘了/困难）：重入队列
      */
     const handleFlashcardRating = useCallback(async (rating: number) => {
         if (submitting || !currentCard || currentCardIdx < 0) return;
         setSubmitting(true);
         setLastRating(rating);
         const ci            = currentCardIdx;
-        const isCorrect     = rating === 4;
+        const isCorrect     = rating >= 3;
         const forgotNow     = !isCorrect;
-        // Easy → graduate immediately in one pass；其他评分重入队
         const newMastery    = isCorrect ? 4 : 1;
-        const graduate      = newMastery === 4;
+        const graduate      = isCorrect;
         await submitAndAdvance(ci, currentCard, rating, newMastery, graduate, forgotNow);
     }, [submitting, currentCard, currentCardIdx, submitAndAdvance]);
 
@@ -437,9 +589,12 @@ export default function VocabularyFlashcardDoingPage() {
         newMastery = nextMastery(curMastery, isCorrect, target);
         graduate = newMastery >= target;
 
-        // 关键：本地未毕业时，提交 rating=1 保持在学习链路。
-        // 已毕业且答对时提交 rating=4（Easy），让 FSRS 立即推向复习阶段（几天后），避免 10 分钟后被重新加入待学
-        const fsrsRating = graduate ? (isCorrect ? 4 : 1) : 1;
+        // 新评分策略：真实反映用户记忆状态
+        // 答对未毕业→Good(3)  答错未毕业→Again(1)
+        // 答对毕业→Easy(4)    答错毕业→Hard(2)
+        const fsrsRating = graduate
+            ? (isCorrect ? 4 : 2)
+            : (isCorrect ? 3 : 1);
         const uiRating = isCorrect ? 3 : 1;
 
         setLastRating(uiRating);
@@ -452,7 +607,9 @@ export default function VocabularyFlashcardDoingPage() {
         const newMastery = nextMastery(curMastery, isCorrect, target);
         const graduate = newMastery >= target;
         // 毕业且答对时：rating=4（Easy）让 FSRS 立即推到复习阶段（几天后）
-        const fsrsRating = graduate ? (isCorrect ? 4 : 1) : 1;
+        const fsrsRating = graduate
+            ? (isCorrect ? 4 : 2)
+            : (isCorrect ? 3 : 1);
         return { fsrsRating, newMastery, graduate, forgotNow };
     }, [masteryTarget]);
 
@@ -511,7 +668,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         // 立即更新 sessionStorage（绕过 React 状态系统）
         // 关键：不调用 setState，避免持久化 useEffect 后续覆盖
-        const cache: SessionCache = {
+        const cache: SessionCache & { planDailyCount?: number } = {
             cards: newCards,
             queue: newQueue,
             sessionMastery: newSessionMastery,
@@ -526,6 +683,7 @@ export default function VocabularyFlashcardDoingPage() {
         };
         if (planId) cache.planId = planId;
         if (planName) cache.planName = planName;
+        if (planDailyCountAtLoad) cache.planDailyCount = planDailyCountAtLoad;
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(cache));
         
         console.log('[词汇学习] 退出前同步会话到 sessionStorage', {
@@ -533,6 +691,7 @@ export default function VocabularyFlashcardDoingPage() {
             outcome,
             newGraduatedCount: newGraduatedCount,
             queueLength: newQueue.length,
+            planDailyCount: planDailyCountAtLoad,
             navigatingAway: true,
         });
         
@@ -558,6 +717,7 @@ export default function VocabularyFlashcardDoingPage() {
         results,
         planId,
         planName,
+        planDailyCountAtLoad,
         masteryTarget,
         buildAutoOutcome,
         submitReviewWithRetry,
@@ -736,6 +896,151 @@ export default function VocabularyFlashcardDoingPage() {
             });
     }, [backPath, navigate, leaving, submitting, syncCurrentAnsweredBeforeExit]);
 
+    /* ── 防止进度丢失：监听页面卸载事件 ── */
+    useEffect(() => {
+        // 1. beforeunload：用户刷新/关闭/离开时
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            // 如果还在学习且有未完成的答题，给出警告
+            if (initialized && queue.length > 0) {
+                e.preventDefault();
+                e.returnValue = '您还有未完成的单词，确定要离开吗？';
+                return '您还有未完成的单词，确定要离开吗？';
+            }
+        };
+
+        // 2. pagehide：用户关闭标签页时（比beforeunload更可靠）
+        const handlePageHide = (_e: PageTransitionEvent) => {
+            if (!initialized || step === 'result') {
+                console.log('[词汇学习] 页面即将隐藏，跳过同步（已完成或未初始化）');
+                return;
+            }
+            
+            console.log('[词汇学习] 页面即将隐藏（用户关闭标签页/浏览器），触发紧急同步');
+            
+            // 关键：pagehide时立即同步，不等待异步完成
+            // 因为用户可能已经关闭，异步请求会被中断
+            try {
+                const ci = queue[0] ?? -1;
+                const card = ci >= 0 ? cards[ci] : null;
+                if (!card) return;
+                
+                // 获取当前答题状态
+                let outcome: { fsrsRating: number; newMastery: number; graduate: boolean; forgotNow: boolean } | null = null;
+                
+                if (mode === 'choice' && choiceSelected !== null && choiceCorrect !== null) {
+                    const curMastery = sessionMastery[ci] ?? 0;
+                    outcome = buildAutoOutcome(choiceCorrect, curMastery);
+                } else if (mode === 'write' && writeSubmitted && writeCorrect !== null) {
+                    if (quickProficient) {
+                        outcome = { fsrsRating: 4, newMastery: 4, graduate: true, forgotNow: false };
+                    } else {
+                        const curMastery = sessionMastery[ci] ?? 0;
+                        outcome = buildAutoOutcome(writeCorrect, curMastery);
+                    }
+                } else if (mode === 'flashcard' && lastRating !== null) {
+                    // 记忆卡模式下，如果已评分就代表有进度
+                    outcome = { fsrsRating: lastRating, newMastery: lastRating === 4 ? 4 : 1, graduate: lastRating === 4, forgotNow: lastRating !== 4 };
+                }
+                
+                if (outcome) {
+                    // 同步到sessionStorage
+                    const newCards = [...cards];
+                    newCards[ci] = card;
+                    
+                    const newSessionMastery = [...sessionMastery];
+                    newSessionMastery[ci] = outcome.newMastery;
+                    
+                    const newSessionForgot = [...sessionForgot];
+                    if (outcome.forgotNow) {
+                        newSessionForgot[ci] = true;
+                    }
+                    
+                    let newQueue = queue;
+                    let newGraduatedCount = graduatedCount;
+                    if (outcome.graduate) {
+                        newQueue = queue.slice(1);
+                        newGraduatedCount = graduatedCount + 1;
+                    } else {
+                        newQueue = reinsertAfterGap(queue.slice(1), ci);
+                    }
+                    
+                    const cache: SessionCache & { planDailyCount?: number } = {
+                        cards: newCards,
+                        queue: newQueue,
+                        sessionMastery: newSessionMastery,
+                        sessionForgot: newSessionForgot,
+                        sessionErrorCount: sessionErrorCount,
+                        masteryTarget,
+                        graduatedCount: newGraduatedCount,
+                        isFlipped,
+                        step,
+                        results,
+                        mode,
+                    };
+                    if (planId) cache.planId = planId;
+                    if (planName) cache.planName = planName;
+                    if (planDailyCountAtLoad) cache.planDailyCount = planDailyCountAtLoad;
+                    
+                    sessionStorage.setItem(SESSION_KEY, JSON.stringify(cache));
+                    console.log('[词汇学习] 紧急同步完成（pagehide）', { word: card?.word, outcome });
+                    // 注：不使用 sendBeacon，因为缺少 Authorization header 和正确的 Content-Type，后端会拒绝
+                }
+            } catch (err) {
+                console.error('[词汇学习] 紧急同步失败', err);
+            }
+        };
+
+        // 3. 页面可见性变化：用户切换标签页时
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                console.log('[词汇学习] 页面变成隐藏，同步进度');
+                // 隐藏时同步到sessionStorage（确保当前状态被保存）
+                if (!navigatingAwayRef.current && queue.length > 0) {
+                    const ci = queue[0] ?? -1;
+                    if (ci >= 0) {
+                        // 简单的sessionStorage更新（不涉及网络请求）
+                        const cache: SessionCache & { planDailyCount?: number } = {
+                            cards,
+                            queue,
+                            sessionMastery,
+                            sessionForgot,
+                            sessionErrorCount,
+                            masteryTarget,
+                            graduatedCount,
+                            isFlipped,
+                            step,
+                            results,
+                            mode,
+                        };
+                        if (planId) cache.planId = planId;
+                        if (planName) cache.planName = planName;
+                        if (planDailyCountAtLoad) cache.planDailyCount = planDailyCountAtLoad;
+                        sessionStorage.setItem(SESSION_KEY, JSON.stringify(cache));
+                        console.log('[词汇学习] 标签页隐藏时已备份到sessionStorage');
+                    }
+                }
+            }
+        };
+
+        if (!initialized) return;
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        window.addEventListener('pagehide', handlePageHide as EventListener);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            window.removeEventListener('pagehide', handlePageHide as EventListener);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [
+        initialized, step, queue, mode, 
+        choiceSelected, choiceCorrect, writeSubmitted, writeCorrect, quickProficient,
+        lastRating, cards, sessionMastery, sessionForgot, sessionErrorCount,
+        masteryTarget, graduatedCount, isFlipped, results, planId, planName,
+        planDailyCountAtLoad, buildAutoOutcome, reinsertAfterGap, navigatingAwayRef,
+    ]);
+
     /* ── 加载中 ── */
     if (!initialized || (!currentCard && step === 'doing')) {
         return (
@@ -748,7 +1053,10 @@ export default function VocabularyFlashcardDoingPage() {
     }
 
     const total      = cards.length;
-    const progress   = total > 0 ? Math.round((graduatedCount / total) * 100) : 0;
+    // 累计每日进度：之前已学 + 本轮毕业数
+    const dailyTotal     = planDailyCount > 0 ? planDailyCount : total;
+    const dailyDone      = studiedTodayBase + graduatedCount;
+    const progress       = dailyTotal > 0 ? Math.min(100, Math.round((dailyDone / dailyTotal) * 100)) : 0;
     const statusCls  = lastRating == null ? '' :
         lastRating === 1 ? 'status-again' :
         lastRating === 2 ? 'status-hard'  :
@@ -806,13 +1114,13 @@ export default function VocabularyFlashcardDoingPage() {
             <div className="config-page-wrap" style={{ maxWidth: '680px' }}>
                 <div className="practice-header" style={{ marginBottom: '16px' }}>
                     <button className="back-link" onClick={handleBack}>{backLabel}</button>
-                    <h1 style={{ marginBottom: '4px' }}>{planName || '记忆卡背诵'}</h1>
+                    <h1 style={{ marginBottom: '4px' }}>{planName || '记忆卡背诵'}{reviewOnly && <span style={{ fontSize: 13, fontWeight: 500, background: '#dbeafe', color: '#2563eb', padding: '2px 10px', borderRadius: 20, marginLeft: 10, verticalAlign: 'middle' }}>复习模式</span>}</h1>
                 </div>
 
                 {/* 进度行 */}
                 <div className="fc-header">
                     <span className="fc-counter">
-                        ✓ {graduatedCount} / {total}
+                        ✓ {dailyDone} / {dailyTotal}
                         <span style={{ fontWeight: 400, marginLeft: 6, opacity: 0.6 }}>
                             队列 {queue.length}
                         </span>
@@ -936,7 +1244,7 @@ export default function VocabularyFlashcardDoingPage() {
                             ))}
                         </div>
                         <div className="fc-kb-hint">
-                            Space = 翻转 &nbsp;|&nbsp; 翻牌后按 1 / 2 / 3 / 4 评分（4 = 掌握）
+                            Space = 翻转 &nbsp;|&nbsp; 翻牌后按 1 / 2 / 3 / 4 评分（3/4 = 掌握）
                         </div>
                     </>
                 )}

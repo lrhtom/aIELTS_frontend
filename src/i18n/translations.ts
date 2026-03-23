@@ -152,7 +152,22 @@ export interface Translations {
                 chat: { title: string; desc: string };
                 call: { title: string; desc: string };
                 exam: { title: string; desc: string };
+                scenario: { title: string; desc: string };
             };
+        };
+        scenarioSettings: {
+            title: string;
+            desc: string;
+            placeholder: string;
+        };
+        scenarioSummary: {
+            title: string;
+            subtitle: string;
+            overallScore: string;
+            duration: string;
+            vocabCoverage: string;
+            backBtn: string;
+            viewReport: string;
         };
         startBtn: string;
         comingSoon: string;
@@ -293,6 +308,8 @@ export interface Translations {
         gra: string;
         examinerReport: string;
         reviewOriginal: string;
+        reviewAndAnswer: string;
+        overallBandSubtitle: string;
         abortBtn: string;
         titleTask1: string;
         titleTask2: string;
@@ -318,6 +335,8 @@ export interface Translations {
         evaluatingBtn: string;
         evaluateBtn: string;
         overallBand: string;
+        overallBandSubtitle: string;
+        taTask1: string;
         ta: string;
         cc: string;
         lr: string;
@@ -325,6 +344,17 @@ export interface Translations {
         examinerFeedback: string;
         promptLabel: string;
         promptPlaceholder: string;
+        optionalTag: string;
+        task1Btn: string;
+        task2Btn: string;
+        modelEssayTitle: string;
+        modelEssayBadge: string;
+        copyBtn: string;
+        copiedBtn: string;
+        evaluatingTitle: string;
+        evaluatingDesc: string;
+        pendingTitle: string;
+        pendingDesc: string;
     };
     settings: {
         heading: string;
@@ -675,9 +705,24 @@ const zh: Translations = {
             title: '⚡ 练习模式',
             items: {
                 chat: { title: '聊天模式', desc: 'AI 文字对话，轻松练习' },
-                call: { title: '通话模式', desc: '语音通话，沉浸式练习' },
-                exam: { title: '考试模式', desc: '模拟真实雅思考试环境' },
-            }
+                call: { title: '通话模式', desc: '模拟真实语音通话，不见面纯声音' },
+                exam: { title: '全真模拟', desc: '1对1虚拟考官，计时加压' },
+                scenario: { title: '场景对话', desc: '沉浸场景，角色扮演交流' },
+            },
+        },
+        scenarioSettings: {
+            title: '🎭 设定场景',
+            desc: '请用几句话描述您想演练的场景（例：我们在一家餐厅点菜…）',
+            placeholder: '例如：我在国外刚进门点汉堡，你是收银员，请引导我点餐...',
+        },
+        scenarioSummary: {
+            title: '📊 练习总结报告',
+            subtitle: '场景对话已结束，以下是您的表现评估',
+            overallScore: '综合评分',
+            duration: '练习时长',
+            vocabCoverage: '目标词汇覆盖',
+            backBtn: '返回口语首页',
+            viewReport: '点此查看总结报告',
         },
         startBtn: '开始口语练习',
         comingSoon: '考试模式即将上线！',
@@ -1000,9 +1045,9 @@ const zh: Translations = {
         loadingTitleTask1: '正在为您生成专属图表题目...',
         loadingTitleTask2: '正在为您生成专属题目...',
         promptTitle: '考卷题目 (Prompt)',
-        yourAnswer: '你的作答 (Your Answer)',
-        placeholderTask1: 'Write your essay here... (Take about 20 minutes)',
-        placeholderTask2: 'Write your essay here... (Take about 40 minutes)',
+        yourAnswer: '你的作答',
+        placeholderTask1: '请在此写作...(建议 20 分钟内完成)',
+        placeholderTask2: '请在此写作...(建议 40 分钟内完成)',
         finishBtn: '完成作答，进入核算',
         settlementTitle: '结算页',
         settlementDesc: '系统计算结果如下',
@@ -1026,6 +1071,8 @@ const zh: Translations = {
         gra: '语法多样性 (Grammatical Range)',
         examinerReport: '考官详细反馈 (Examiner Report)',
         reviewOriginal: '你的原文回顾',
+        reviewAndAnswer: '回放: 题目与您的作答',
+        overallBandSubtitle: '雅思综合评分',
         abortBtn: '← 放弃考试',
         titleTask1: '📝 小作文特训 - 图表解析',
         titleTask2: '🖋️ 大作文特训 - {type}',
@@ -1051,6 +1098,8 @@ const zh: Translations = {
         evaluatingBtn: '⏳ AI 正在深度批改中...',
         evaluateBtn: '🏁 开始批改 (Evaluate)',
         overallBand: '综合得分 (Overall Band)',
+        overallBandSubtitle: '雅思综合评分',
+        taTask1: '🎯 任务完成情况 (Task Achievement)',
         ta: '🎯 任务回应/完成情况 (Task Response)',
         cc: '🔗 连贯与衔接 (Coherence & Cohesion)',
         lr: '📚 词汇资源 (Lexical Resource)',
@@ -1058,6 +1107,17 @@ const zh: Translations = {
         examinerFeedback: '💡 考官详细反馈 (Detailed Feedback by AI Examiner)',
         promptLabel: '作文题目 (选填)',
         promptPlaceholder: '（选填）将你需要回答的雅思原题粘贴在此处，有助于AI更精准地评判跑题情况...',
+        optionalTag: '可选',
+        task1Btn: 'Task 1 · 小作文',
+        task2Btn: 'Task 2 · 大作文',
+        modelEssayTitle: 'AI 修改高分范文',
+        modelEssayBadge: 'Band 8+',
+        copyBtn: '复制',
+        copiedBtn: '✓ 已复制',
+        evaluatingTitle: '批改中...',
+        evaluatingDesc: 'AI 正在批改你的作文，请稍候',
+        pendingTitle: '待批改',
+        pendingDesc: '粘贴你的作文并点击「开始批改」，AI 评分与详细反馈将在此处显示',
     },
 };
 
@@ -1212,9 +1272,24 @@ const en: Translations = {
             title: '⚡ Practice Mode',
             items: {
                 chat: { title: 'Chat Mode', desc: 'AI text chat for relaxed practice' },
-                call: { title: 'Call Mode', desc: 'Voice call for immersive practice' },
-                exam: { title: 'Exam Mode', desc: 'Simulate real IELTS test environment' },
-            }
+                call: { title: 'Call Mode', desc: 'Simulated real voice calls' },
+                exam: { title: 'Mock Exam', desc: '1-on-1 virtual examiner with timing' },
+                scenario: { title: 'Scenario', desc: 'Immersive role-play based on scenes' },
+            },
+        },
+        scenarioSettings: {
+            title: '🎭 Set Scenario',
+            desc: 'Briefly describe the scenario you want to role-play (e.g., We are ordering food at a restaurant...).',
+            placeholder: 'e.g. I am ordering a burger abroad. You are the cashier, please guide my order...',
+        },
+        scenarioSummary: {
+            title: '📊 Practice Summary',
+            subtitle: 'Scenario dialogue finished. Here is your evaluation.',
+            overallScore: 'Overall Score',
+            duration: 'Duration',
+            vocabCoverage: 'Vocab Coverage',
+            backBtn: 'Back to Speaking',
+            viewReport: 'Click to View Report',
         },
         startBtn: 'Start Speaking Practice',
         comingSoon: 'Exam mode is coming soon!',
@@ -1551,6 +1626,8 @@ const en: Translations = {
         gra: 'Grammatical Range',
         examinerReport: 'Examiner Report',
         reviewOriginal: 'Original Text Review',
+        reviewAndAnswer: 'Replay: Prompt & Your Response',
+        overallBandSubtitle: 'IELTS Overall Band Score',
         abortBtn: '← Abort Test',
         titleTask1: '📝 Task 1 Training - Chart Analysis',
         titleTask2: '🖋️ Task 2 Training - {type}',
@@ -1576,6 +1653,8 @@ const en: Translations = {
         evaluatingBtn: '⏳ AI is grading deeply...',
         evaluateBtn: '🏁 Evaluate',
         overallBand: 'Overall Band',
+        overallBandSubtitle: 'IELTS Overall Band Score',
+        taTask1: '🎯 Task Achievement',
         ta: '🎯 Task Response / Achievement',
         cc: '🔗 Coherence & Cohesion',
         lr: '📚 Lexical Resource',
@@ -1583,6 +1662,17 @@ const en: Translations = {
         examinerFeedback: '💡 Detailed Feedback by AI Examiner',
         promptLabel: 'Essay Prompt (Optional)',
         promptPlaceholder: '(Optional) Paste the original IELTS prompt here for more accurate Task Response evaluation...',
+        optionalTag: 'Optional',
+        task1Btn: 'Task 1',
+        task2Btn: 'Task 2',
+        modelEssayTitle: 'AI Revised High-Band Model Essay',
+        modelEssayBadge: 'Band 8+',
+        copyBtn: 'Copy',
+        copiedBtn: '✓ Copied',
+        evaluatingTitle: 'Evaluating...',
+        evaluatingDesc: 'AI is evaluating your essay, please wait...',
+        pendingTitle: 'Awaiting Submission',
+        pendingDesc: 'Paste your essay and click "Evaluate". AI scores and detailed feedback will appear here.',
     },
 };
 

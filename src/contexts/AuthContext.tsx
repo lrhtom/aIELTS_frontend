@@ -71,10 +71,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+import { useLang } from '../i18n/LanguageContext';
+import { type Lang } from '../i18n/translations';
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const hasInitRef = useRef(false);
+    const { lang, setLang } = useLang();
 
     useEffect(() => {
         const initAuth = async () => {
@@ -87,6 +91,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const userData = await authApi.getProfile();
                     setUser(userData);
                     applyUserBackground(userData);   // ← 恢复会话时应用背景
+                    if (userData.languagePreference && userData.languagePreference !== lang) {
+                        setLang(userData.languagePreference as Lang, false);
+                    }
+                    if (userData.targetVocabName) {
+                        localStorage.setItem('ielts_target_vocab', userData.targetVocabName);
+                    }
+                    if (userData.aiProvider) {
+                        localStorage.setItem('ai_provider', userData.aiProvider);
+                    }
                 } catch (error) {
                     console.error('Failed to restore session:', error);
                     // On failure, clear tokens to prevent further loop attempts
@@ -128,6 +141,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('refresh_token', tokens.refresh);
         setUser(userData);
         applyUserBackground(userData);   // ← 登录时应用背景
+        if (userData.languagePreference && userData.languagePreference !== lang) {
+            setLang(userData.languagePreference as Lang, false);
+        }
+        if (userData.targetVocabName) {
+            localStorage.setItem('ielts_target_vocab', userData.targetVocabName);
+        }
+        if (userData.aiProvider) {
+            localStorage.setItem('ai_provider', userData.aiProvider);
+        }
     };
 
     const logout = () => {

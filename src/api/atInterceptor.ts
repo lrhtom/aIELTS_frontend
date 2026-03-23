@@ -80,6 +80,20 @@ export class ATInterceptor {
         );
     }
 
+    static async checkScenario(scenario: string, params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ valid: boolean, reason: string, atConsumed?: number }>('/speaking/check-scenario', { scenario }),
+            params
+        );
+    }
+
+    static async scenarioChat(scenario: string, messages: Array<Record<string, unknown>>, params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number, is_continue: number, atConsumed?: number }>('/speaking/scenario-chat', { scenario, messages }),
+            params
+        );
+    }
+
     static async readingExercise(params?: Record<string, number>) {
         return this.intercept('reading', () =>
             apiClient.post('/reading/exercise'),

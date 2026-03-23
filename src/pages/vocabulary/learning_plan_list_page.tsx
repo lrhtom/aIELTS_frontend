@@ -70,22 +70,29 @@ export default function LearningPlanListPage() {
     };
 
     /* ── start ── */
-    const handleStart = async (e: React.MouseEvent, plan: LearningPlan) => {
+    const handleStart = async (e: React.MouseEvent, plan: LearningPlan, forceReview = false) => {
         e.stopPropagation();
         if (starting) return;
         if (plan.word_count === 0) { showToast('计划中没有单词，请先在编辑计划中添加', 'error'); return; }
+
+        const isReview = forceReview || plan.studied_today >= plan.daily_count;
         setStarting(plan.id);
         try {
-            const { cards, stats } = await startPlan(plan.id);
+            const result = await startPlan(plan.id, isReview ? 'review' : 'study');
+            const { cards, stats } = result;
             if (cards.length === 0) {
-                const msg = stats.remaining_today === 0
-                    ? `今日已学习 ${stats.studied_today} 词，完成每日目标！`
-                    : '今日没有需要复习的单词';
+                const msg = isReview
+                    ? '今日还没有学习记录，无法复习'
+                    : stats.remaining_today === 0
+                        ? `今日已学习 ${stats.studied_today} 词，完成每日目标！`
+                        : '今日没有需要复习的单词';
                 showToast(msg, 'success');
                 return;
             }
-            const mode = (localStorage.getItem(`lp_study_mode_${plan.id}`) ?? 'flashcard') as 'flashcard' | 'choice' | 'write';
-            const rawTarget = localStorage.getItem(`lp_mastery_target_${plan.id}`) ?? '2';
+            const mode = (plan.default_mode || localStorage.getItem(`lp_study_mode_${plan.id}`) || 'flashcard') as 'flashcard' | 'choice' | 'write';
+            const rawTarget = plan.mastery_target !== undefined 
+                ? String(plan.mastery_target) 
+                : (localStorage.getItem(`lp_mastery_target_${plan.id}`) ?? '2');
             const masteryTarget = rawTarget === 'auto'
                 ? 'auto'
                 : (() => {
@@ -93,7 +100,7 @@ export default function LearningPlanListPage() {
                     return Number.isFinite(n) ? Math.min(5, Math.max(1, n)) : 2;
                 })();
             navigate('/vocabulary/flashcard/doing', {
-                state: { cards, stats, planId: plan.id, planName: plan.name, mode, masteryTarget },
+                state: { cards, stats, planId: plan.id, planName: plan.name, planDailyCount: plan.daily_count, mode, masteryTarget, reviewOnly: isReview, forceNewSession: true },
             });
         } catch (e: unknown) {
             const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || '开始学习失败';
@@ -164,6 +171,10 @@ export default function LearningPlanListPage() {
                                         <span className="lp-meta-item">
                                             共 <strong>{plan.word_count}</strong> 词
                                         </span>
+                                        <span className="lp-meta-sep">·</span>
+                                        <span className={`lp-meta-item ${plan.studied_today > 0 ? 'lp-today-badge' : ''}`}>
+                                            今日已学 <strong>{plan.studied_today}</strong> 词
+                                        </span>
                                     </div>
                                     <div className="lp-plan-actions">
                                         <button
@@ -177,7 +188,11 @@ export default function LearningPlanListPage() {
                                             onClick={(e) => handleStart(e, plan)}
                                             disabled={starting === plan.id}
                                         >
-                                            {starting === plan.id ? '准备中…' : '▶ 开始学习'}
+                                            {starting === plan.id
+                                                ? '准备中…'
+                                                : plan.studied_today >= plan.daily_count
+                                                    ? '📖 开始复习'
+                                                    : '▶ 开始学习'}
                                         </button>
                                     </div>
                                 </div>
@@ -235,3 +250,5 @@ export default function LearningPlanListPage() {
         </Layout>
     );
 }
+
+// Trigger HMR update

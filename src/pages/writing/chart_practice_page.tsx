@@ -135,6 +135,8 @@ export default function ChartPracticePage() {
         return trimmed.split(/\s+/).length;
     }, [userAnswer]);
 
+    const wordBadge = lang === 'zh' ? `${wordCount} / 150+ 词` : `${wordCount} / 150+ words`;
+
     const resolvedImageSrc = useMemo(() => {
         if (!chartData?.imageUrl) return null;
         return chartData.imageUrl.startsWith('data:')
@@ -183,18 +185,18 @@ export default function ChartPracticePage() {
     // ─── Render functions ──────────────────────────────────────────────────
 
     const renderLoading = () => (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div className="spinner" style={{ margin: '0 auto 20px' }}></div>
+        <div className="wp-state-wrap">
+            <div className="spinner wp-loading-spinner"></div>
             <h2>{t.practiceSandbox.loadingTitleTask1}</h2>
-            <p style={{ color: 'var(--color-text-secondary)' }}>{t.practiceSandbox.loadingDescTask1}</p>
+            <p>{t.practiceSandbox.loadingDescTask1}</p>
         </div>
     );
 
     const renderEvaluating = () => (
-        <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div className="spinner" style={{ margin: '0 auto 24px', width: '50px', height: '50px', borderWidth: '4px' }}></div>
-            <h2 style={{ fontSize: '28px', marginBottom: '16px' }}>{t.practiceSandbox.evaluatingTitle}</h2>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '18px', lineHeight: 1.6 }}>
+        <div className="wp-state-wrap wp-state-wrap--evaluating">
+            <div className="spinner wp-loading-spinner wp-loading-spinner--lg"></div>
+            <h2>{t.practiceSandbox.evaluatingTitle}</h2>
+            <p>
                 {t.practiceSandbox.evaluatingDesc}<br />
                 {t.practiceSandbox.evaluatingDescLine2}
             </p>
@@ -239,9 +241,9 @@ export default function ChartPracticePage() {
             {/* Right: Editor */}
             <div className="wp-panel">
                 <div className="wp-panel-header">
-                    <h3>✍️ 您的作答区</h3>
+                    <h3>✍️ {t.practiceSandbox.yourAnswer}</h3>
                     <span className={`wp-word-badge${wordCount >= 150 ? ' ok' : ''}`}>
-                        {wordCount} / 150+ words
+                        {wordBadge}
                     </span>
                 </div>
                 <div className="wp-panel-body">
@@ -262,39 +264,25 @@ export default function ChartPracticePage() {
     );
 
     const renderSettlement = () => (
-        <div className="modal-overlay" style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-            <div className="modal-content" style={{
-                background: 'var(--color-surface, #fff)', padding: '32px', borderRadius: '16px',
-                maxWidth: '400px', width: '100%', textAlign: 'center',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-            }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
-                <h2 style={{ marginBottom: '12px' }}>{t.practiceSandbox.settlementTitle}</h2>
-                <p style={{ color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
+        <div className="wp-settlement-overlay">
+            <div className="wp-settlement-content">
+                <div className="wp-settlement-icon">🎉</div>
+                <h2>{t.practiceSandbox.settlementTitle}</h2>
+                <p className="wp-settlement-desc">
                     {t.practiceSandbox.settlementDesc}
                 </p>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="wp-settlement-actions">
                     <button
                         className="primary-button"
-                        style={{ padding: '16px', fontSize: '18px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                         onClick={handleStartEvaluation}
                         disabled={isEvaluating}
                     >
                         <span>🎯</span> {t.practiceSandbox.callAiBtn}
                     </button>
                     <button
-                        className="secondary-button"
-                        style={{
-                            padding: '12px', fontSize: '16px', background: 'transparent',
-                            border: '1px solid var(--color-border)', color: 'var(--text-primary)',
-                            borderRadius: '8px', cursor: 'pointer'
-                        }}
+                        className="wp-ghost-btn"
                         onClick={() => navigate('/writing')}
-                        onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
                     >
                         {t.practiceSandbox.backBtn}
                     </button>
@@ -308,17 +296,16 @@ export default function ChartPracticePage() {
             {/* Left: Replay */}
             <div className="wp-panel">
                 <div className="wp-panel-header">
-                    <h3>📄 回放: 题目与您的作答</h3>
+                    <h3>📄 {t.practiceSandbox.reviewAndAnswer}</h3>
                 </div>
                 <div className="wp-panel-body">
-                    <div className="wp-prompt-block" style={{ fontSize: '0.9rem' }}>
+                    <div className="wp-prompt-block wp-prompt-block--compact">
                         {chartData?.prompt}
                     </div>
                     <div className="wp-essay-replay">{userAnswer}</div>
                 </div>
                 <div className="wp-panel-footer">
-                    <button className="back-link" onClick={() => navigate('/writing/chart')}
-                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                    <button className="back-link wp-result-back-btn" onClick={() => navigate('/writing/chart')}>
                         {t.practiceSandbox.backToPracticeBtn}
                     </button>
                 </div>
@@ -330,7 +317,7 @@ export default function ChartPracticePage() {
                     <div className="wc-band-display">
                         <div className="wc-band-label">{t.practiceSandbox.overallBand}</div>
                         <div className="wc-band-value">{result.overall.toFixed(1)}</div>
-                        <div className="wc-band-subtitle">IELTS Overall Band Score</div>
+                        <div className="wc-band-subtitle">{t.practiceSandbox.overallBandSubtitle}</div>
                     </div>
 
                     <div className="wc-scores-grid">
@@ -365,14 +352,14 @@ export default function ChartPracticePage() {
 
     return (
         <Layout>
-            <div className="practice-container" style={{ maxWidth: '100%', padding: '24px 40px', display: 'flex', flexDirection: 'column' }}>
+            <div className="practice-container writing-practice-page">
                 {(step === 'loading' || step === 'answering') && (
-                    <div className="practice-header" style={{ marginBottom: '24px' }}>
-                        <button className="back-link" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                    <div className="practice-header writing-practice-header">
+                        <button className="back-link writing-back-btn" onClick={() => navigate(-1)}>
                             {t.practiceSandbox.abortBtn}
                         </button>
-                        <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontSize: '28px' }}>📉</span> {t.practiceSandbox.titleTask1}
+                        <h1 className="writing-practice-title">
+                            <span>📉</span> {t.practiceSandbox.titleTask1}
                         </h1>
                     </div>
                 )}
@@ -437,9 +424,6 @@ export default function ChartPracticePage() {
                 </div>
             )}
 
-            <style>{`
-                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            `}</style>
         </Layout>
     );
 }

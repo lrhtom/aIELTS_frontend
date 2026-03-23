@@ -8,6 +8,8 @@ import { translations } from '../../i18n/translations';
 import VocabInput from '../../components/VocabInput';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { listPlans, listPlanWords, type LearningPlan } from '../../api/learning_plan';
+import { authApi } from '../../api/auth';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/practice_page.css';
 import '../../styles/listening_page.css';
 
@@ -28,6 +30,7 @@ export default function ListeningConfig() {
 
     const { lang } = useLang();
     const t = translations[lang].listeningConfig;
+    const { user, updateUser } = useAuth();
 
     useEffect(() => {
         listPlans().then(({ plans: ps }) => {
@@ -39,6 +42,9 @@ export default function ListeningConfig() {
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
         localStorage.setItem('ielts_target_vocab', val);
+        if (user) {
+            authApi.updateSettings({ target_vocab_name: val }).then(u => updateUser(u)).catch(console.error);
+        }
     };
 
     const handleImportPlan = async () => {

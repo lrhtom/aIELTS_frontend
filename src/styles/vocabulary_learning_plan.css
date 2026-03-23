@@ -926,3 +926,121 @@
     .lp-word-item .lp-fsrs-badge { grid-row: 2; }
     .lp-word-item .lp-due-wrap   { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   今日已学统计
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* List page badge */
+.lp-today-badge {
+    color: #059669 !important;
+}
+
+.lp-today-badge strong {
+    color: #059669 !important;
+}
+
+/* Detail page: today studied section */
+.lp-today-section {
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+}
+
+.lp-today-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+}
+
+.lp-today-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--color-text);
+}
+
+.lp-today-icon { font-size: 16px; }
+
+.lp-today-title strong {
+    color: #059669;
+    font-weight: 700;
+}
+
+.lp-today-pct {
+    margin-left: 4px;
+    padding: 1px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #d1fae5;
+    color: #059669;
+}
+
+.lp-today-toggle {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    transition: transform 0.2s;
+}
+
+.lp-today-toggle.open {
+    transform: rotate(180deg);
+}
+
+/* Progress bar */
+.lp-today-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border);
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.lp-today-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #059669, #34d399);
+    transition: width 0.3s ease;
+}
+
+/* Word list */
+.lp-today-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.lp-today-word-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13px;
+}
+
+.lp-today-word-row:last-child { border-bottom: none; }
+
+.lp-today-word {
+    font-weight: 600;
+    color: var(--color-text);
+    min-width: 100px;
+}
+
+.lp-today-phonetic {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+.lp-today-zh {
+    flex: 1;
+    color: var(--color-text-secondary);
+}

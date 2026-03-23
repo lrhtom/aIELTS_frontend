@@ -27,6 +27,7 @@ import ListeningPage from './pages/listening/listening_page';
 // 口语
 import Speaking from './pages/speaking/speaking';
 import SpeakingChatPage from './pages/speaking/speaking_chat';
+import SpeakingSummaryPage from './pages/speaking/speaking_summary';
 
 // 写作
 import Writing_page from './pages/writing/writing_page';
@@ -80,6 +81,7 @@ export default function App() {
         <Route path="/listening" element={<ProtectedRoute><ListeningPage /></ProtectedRoute>} />
         <Route path="/speaking" element={<ProtectedRoute><Speaking /></ProtectedRoute>} />
         <Route path="/speaking/chat" element={<ProtectedRoute><SpeakingChatPage /></ProtectedRoute>} />
+        <Route path="/speaking/summary" element={<ProtectedRoute><SpeakingSummaryPage /></ProtectedRoute>} />
         <Route path="/writing" element={<ProtectedRoute><Writing_page /></ProtectedRoute>} />
         <Route path="/writing/correction" element={<ProtectedRoute><WritingCorrectionPage /></ProtectedRoute>} />
         <Route path="/writing/task1" element={<ProtectedRoute><Task1SelectionPage /></ProtectedRoute>} />

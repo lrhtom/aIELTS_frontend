@@ -20,6 +20,8 @@ import { speakingStore } from '../../store/speaking_page_store';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { ATInterceptor } from '../../api/atInterceptor';
 import { showToast } from '../../components/common/Toast';
+import type { SpeakingMode, IeltsPart } from './speaking';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/speaking_chat.css';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -38,7 +40,7 @@ interface ChatMessage {
     };
 }
 
-type Status = 'loading' | 'mic_loading' | 'idle' | 'listening' | 'processing' | 'speaking';
+type Status = 'loading' | 'mic_loading' | 'idle' | 'listening' | 'processing' | 'speaking' | 'finished';
 
 interface Word {
     en: string;
@@ -83,7 +85,16 @@ const getSRConstructor = (): unknown =>
 export default function SpeakingChatPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const vocabRaw: string = (location.state as { vocabInput?: string })?.vocabInput ?? '';
+    const { translations: t } = useLang();
+    const state = location.state as { 
+        vocabInput?: string, 
+        mode?: SpeakingMode, 
+        scenarioInput?: string,
+        part?: IeltsPart
+    };
+    const vocabRaw: string = state?.vocabInput ?? '';
+    const mode: SpeakingMode = state?.mode ?? 'chat';
+    const scenarioPrompt: string = state?.scenarioInput ?? '';
 
     // ── 路由守卫：防止刷新或直接跳转进来 ────────────────────────────────────
     useEffect(() => {
@@ -93,8 +104,7 @@ export default function SpeakingChatPage() {
         }
 
         return () => {
-            // 组件卸载时，无论是由于 React v18 开发模式严苛双重调用，还是真的离开路由
-            // 都在事件循环后置空合规性变量。这样外部跳转返回时就被封禁了。
+            // 组件卸载时，在事件循环后置空合规性变量
             setTimeout(() => {
                 speakingStore.isChatAllowed = false;
             }, 0);
@@ -160,7 +170,15 @@ export default function SpeakingChatPage() {
             });
 
         const wordList = wordsRef.current.map(w => w.en).join(', ');
-        const systemPrompt = `You are an IELTS speaking practice AI examiner.
+        let systemPrompt = '';
+        let welcomeMsg = '';
+
+        if (mode === 'scenario') {
+            // 场景模式：系统提示词主要由后端接口 handle，这里仅做前端展示同步
+            systemPrompt = `Role-play Scenario: ${scenarioPrompt}\nTarget vocabulary: [${wordList}]`;
+            welcomeMsg = `Acting for scenario: "${scenarioPrompt}". I am ready to start. What would you like to say first?`;
+        } else {
+            systemPrompt = `You are an IELTS speaking practice AI examiner.
 Target vocabulary: [${wordList}].
 Rules:
 1. Always reply in English only.
@@ -168,11 +186,11 @@ Rules:
 3. Keep replies concise (1-3 sentences).
 4. No markdown symbols.
 5. Encourage the user to use the target words.`;
+            welcomeMsg = "Welcome to IELTS speaking practice. Tell me when you are ready.";
+        }
 
         contextRef.current = [{ role: 'system', content: systemPrompt }];
-
-        const msg = "Welcome to IELTS speaking practice. Tell me when you are ready.";
-        setChatHistory([{ role: 'assistant', content: msg }]);
+        setChatHistory([{ role: 'assistant', content: welcomeMsg }]);
 
         if (hasInitRef.current) {
             // Already initializing/initialized by a previous Strict Mode effect.
@@ -197,7 +215,7 @@ Rules:
                         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                     },
                     body: JSON.stringify({
-                        text: msg,
+                        text: welcomeMsg,
                         voice: 'en-US-AriaNeural'
                     })
                 });
@@ -546,15 +564,25 @@ Rules:
         }
 
         try {
-            const chatPromise = ATInterceptor.speakingChat(
-                messages as unknown as Array<Record<string, unknown>>,
-                { conversationLength: 1 } // 每回合消耗
-            );
+            let chatPromise;
+            if (mode === 'scenario') {
+                chatPromise = ATInterceptor.scenarioChat(
+                    scenarioPrompt,
+                    messages as unknown as Array<Record<string, unknown>>,
+                    { conversationLength: 1 }
+                );
+            } else {
+                chatPromise = ATInterceptor.speakingChat(
+                    messages as unknown as Array<Record<string, unknown>>,
+                    { conversationLength: 1 }
+                );
+            }
+
             const uploadPromise = audioBlob ? uploadRecording(audioBlob, text) : Promise.resolve(null);
 
             const [chatResponse, audioScores] = await Promise.all([chatPromise, uploadPromise]);
 
-            const chatRes = chatResponse.data;
+            const chatRes = chatResponse.data as any;
 
             const aiMsg: ChatMessage = {
                 role: 'assistant',
@@ -566,12 +594,28 @@ Rules:
                     ...(audioScores || {})
                 }
             };
-            setChatHistory(h => [...h, aiMsg]);
+
+            // 处理场景结束逻辑
+            const isContinue = mode === 'scenario' ? chatRes.is_continue : 1;
+
+            setChatHistory(h => {
+                const newHistory = [...h, aiMsg];
+                if (isContinue === 0) {
+                    newHistory.push({ role: 'system', content: '🎭 Scenario finished. You can view your performance above.' });
+                }
+                return newHistory;
+            });
+
             contextRef.current = [...contextRef.current, userMsg, { role: 'assistant', content: chatRes.reply }];
             setWordsSync(prev => prev.map(w => ({ ...w, count: w.count + countMatches(chatRes.reply, w.en) })));
 
             // Play AI response audio
             playTTS(chatRes.reply);
+
+            if (isContinue === 0) {
+                // 如果对话结束，将状态设为 finished 禁止进一步操作
+                setTimeout(() => setStatusSync('finished'), 100);
+            }
 
         } catch (error: unknown) {
             pendingRef.current = false;
@@ -613,6 +657,7 @@ Rules:
         listening: '录音中...',
         processing: 'AI 思考中...',
         speaking: 'AI 说话中...',
+        finished: '对话已结束',
     };
     const MIC_LABEL: Record<Status, string> = {
         loading: '加载中，请稍候...',
@@ -621,12 +666,13 @@ Rules:
         listening: '🔴 点击结束说话',
         processing: '⏳ AI 思考中...',
         speaking: '🔊 AI 说话中...',
+        finished: '🏁 已结束',
     };
     const formatTime = (s: number) =>
         `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
     const BAR_COUNT = 12;
-    const isDisabled = status === 'loading' || status === 'mic_loading' || status === 'processing' || status === 'speaking';
+    const isDisabled = status === 'loading' || status === 'mic_loading' || status === 'processing' || status === 'speaking' || status === 'finished';
 
     return (
         <div className="sc-root">
@@ -732,7 +778,7 @@ Rules:
                 </div>
 
                 {/* ── Controls ── */}
-                <div className="sc-controls">
+                <footer className="sc-footer">
                     <div className="sc-status-bar">
                         {/* Status indicator */}
                         <div className={`sc-status-indicator sc-status-${status}`}>
@@ -762,20 +808,39 @@ Rules:
                                         : status === 'listening' ? '正在录音，说完后点击红色按钮停止'
                                             : status === 'processing' ? 'AI 正在生成回复，请稍候...'
                                                 : status === 'speaking' ? '正在播放，播完后按钮变绿可继续'
-                                                    : '正在加载，请稍候...'}
+                                                    : status === 'finished' ? '对话已结束，请点击上方查看总结报告'
+                                                        : '正在加载，请稍候...'}
                         </div>
                     </div>
 
-                    {/* Main mic button */}
-                    <button
-                        id="sc-mic-button"
-                        className={`sc-mic-btn sc-mic-${status}`}
-                        onClick={toggleRecording}
-                        disabled={isDisabled}
-                    >
-                        {MIC_LABEL[status]}
-                    </button>
-                </div>
+                    <div className="sc-controls">
+                        {/* [New] 结束时的总结按钮 */}
+                        {status === 'finished' && (
+                            <div className="sc-finish-overlay">
+                                <button 
+                                    className="sc-summary-btn"
+                                    onClick={() => navigate('/speaking/summary', { state: { 
+                                        chatHistory, 
+                                        scenarioPrompt,
+                                        words: words
+                                    }})}
+                                >
+                                    {t.speakingConfig.scenarioSummary.viewReport}
+                                </button>
+                            </div>
+                        )}
+
+                        <button
+                            id="sc-mic-button"
+                            className={`sc-mic-btn sc-mic-${status}`}
+                            onClick={toggleRecording}
+                            disabled={isDisabled}
+                            title={status === 'finished' ? 'Conversation finished' : 'Click to speak'}
+                        >
+                            {MIC_LABEL[status]}
+                        </button>
+                    </div>
+                </footer>
             </main>
         </div>
     );

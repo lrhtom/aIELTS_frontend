@@ -7,6 +7,8 @@ import { translations } from '../../i18n/translations';
 import VocabInput from '../../components/VocabInput';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { listPlans, listPlanWords, type LearningPlan } from '../../api/learning_plan';
+import { authApi } from '../../api/auth';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/practice_page.css';
 
 const DIFFICULTIES = ['6.0', '6.5', '7.0', '7.5', '8.0', '8.5'];
@@ -23,6 +25,7 @@ export default function WordSelection_page() {
 
     const { lang } = useLang();
     const t = translations[lang].readingConfig;
+    const { user, updateUser } = useAuth();
 
     useEffect(() => {
         listPlans().then(({ plans: ps }) => {
@@ -34,6 +37,9 @@ export default function WordSelection_page() {
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
         localStorage.setItem('ielts_target_vocab', val);
+        if (user) {
+            authApi.updateSettings({ target_vocab_name: val }).then(u => updateUser(u)).catch(console.error);
+        }
     };
 
     const handleImportPlan = async () => {

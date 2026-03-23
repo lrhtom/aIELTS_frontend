@@ -129,6 +129,8 @@ export default function Task2PracticePage() {
         return trimmed.split(/\s+/).length;
     }, [userAnswer]);
 
+    const wordBadge = lang === 'zh' ? `${wordCount} / 250+ 词` : `${wordCount} / 250+ words`;
+
     const handleSubmitAnser = () => {
         if (!userAnswer.trim()) {
             showToast(t.practiceSandbox.toastEmpty, 'error');
@@ -176,13 +178,13 @@ export default function Task2PracticePage() {
         'random': t.task2Selection.types.random.title,
         'innovation': t.task2Selection.types.innovation.title,
     };
-    const titleName = typeNameMap[type] || '大作文测试';
+    const titleName = typeNameMap[type] || (lang === 'zh' ? '大作文测试' : 'Task 2 Practice');
 
     const renderLoading = () => (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div className="spinner" style={{ margin: '0 auto 20px' }}></div>
+        <div className="wp-state-wrap">
+            <div className="spinner wp-loading-spinner"></div>
             <h2>{t.practiceSandbox.loadingTitleTask2}</h2>
-            <p style={{ color: 'var(--color-text-secondary)' }}>{t.practiceSandbox.loadingDescTask2.replace('{type}', titleName)}</p>
+            <p>{t.practiceSandbox.loadingDescTask2.replace('{type}', titleName)}</p>
         </div>
     );
 
@@ -205,7 +207,7 @@ export default function Task2PracticePage() {
                 <div className="wp-panel-header">
                     <h3>✍️ {t.practiceSandbox.yourAnswer}</h3>
                     <span className={`wp-word-badge${wordCount >= 250 ? ' ok' : ''}`}>
-                        {wordCount} / 250+ words
+                        {wordBadge}
                     </span>
                 </div>
                 <div className="wp-panel-body">
@@ -226,44 +228,25 @@ export default function Task2PracticePage() {
     );
 
     const renderSettlement = () => (
-        <div className="modal-overlay" style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-            <div className="modal-content" style={{
-                background: 'var(--color-surface, #fff)', padding: '32px', borderRadius: '16px',
-                maxWidth: '400px', width: '100%', textAlign: 'center',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-            }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
-                <h2 style={{ marginBottom: '12px' }}>{t.practiceSandbox.settlementTitle}</h2>
-                <p style={{ color: 'var(--color-text-secondary)', marginBottom: '32px' }}>
+        <div className="wp-settlement-overlay">
+            <div className="wp-settlement-content">
+                <div className="wp-settlement-icon">🎉</div>
+                <h2>{t.practiceSandbox.settlementTitle}</h2>
+                <p className="wp-settlement-desc">
                     {t.practiceSandbox.settlementDesc}
                 </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '400px', margin: '0 auto' }}>
+            <div className="wp-settlement-actions">
                 <button
                     className="primary-button"
                     onClick={handleStartEvaluation}
                     disabled={isEvaluating}
-                    style={{ padding: '16px', fontSize: '18px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 >
                     <span>🎯</span> {t.practiceSandbox.callAiBtn}
                 </button>
                 <button
+                    className="wp-ghost-btn"
                     onClick={() => navigate('/writing/task2')}
-                    style={{
-                        padding: '16px',
-                        fontSize: '16px',
-                        borderRadius: '12px',
-                        backgroundColor: 'transparent',
-                        color: 'var(--color-text-secondary)',
-                        border: '2px solid transparent',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.color = 'var(--color-text)'}
-                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--color-text-secondary)'}
                 >
                     {t.practiceSandbox.backBtn}
                 </button>
@@ -273,10 +256,10 @@ export default function Task2PracticePage() {
     );
 
     const renderEvaluating = () => (
-        <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div className="spinner" style={{ margin: '0 auto 24px', width: '50px', height: '50px', borderWidth: '4px' }}></div>
-            <h2 style={{ fontSize: '28px', marginBottom: '16px' }}>{t.practiceSandbox.evaluatingTitle}</h2>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '18px', lineHeight: 1.6 }}>
+        <div className="wp-state-wrap wp-state-wrap--evaluating">
+            <div className="spinner wp-loading-spinner wp-loading-spinner--lg"></div>
+            <h2>{t.practiceSandbox.evaluatingTitle}</h2>
+            <p>
                 {t.practiceSandbox.evaluatingDesc}<br />
                 {t.practiceSandbox.evaluatingDescLine2}
             </p>
@@ -291,13 +274,12 @@ export default function Task2PracticePage() {
                 <div className="wp-panel">
                     <div className="wp-panel-header">
                         <h3>📄 {t.practiceSandbox.reviewOriginal}</h3>
-                        <button className="back-link" onClick={() => navigate('/writing/task2')}
-                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                        <button className="back-link wp-result-back-btn" onClick={() => navigate('/writing/task2')}>
                             {t.practiceSandbox.backToPracticeBtn}
                         </button>
                     </div>
                     <div className="wp-panel-body">
-                        <div className="wp-prompt-block" style={{ fontSize: '0.9rem' }}>
+                        <div className="wp-prompt-block wp-prompt-block--compact">
                             {taskData?.prompt}
                         </div>
                         <div className="wp-essay-replay">{userAnswer}</div>
@@ -309,7 +291,7 @@ export default function Task2PracticePage() {
                     <div className="wc-band-display">
                         <div className="wc-band-label">{t.practiceSandbox.overallBand}</div>
                         <div className="wc-band-value">{result.overall.toFixed(1)}</div>
-                        <div className="wc-band-subtitle">IELTS Overall Band Score</div>
+                        <div className="wc-band-subtitle">{t.practiceSandbox.overallBandSubtitle}</div>
                     </div>
 
                     <div className="wc-scores-grid">
@@ -344,15 +326,15 @@ export default function Task2PracticePage() {
 
     return (
         <Layout>
-            <div className="practice-container" style={{ maxWidth: '100%', padding: '24px 40px', display: 'flex', flexDirection: 'column' }}>
-                <div className="practice-header" style={{ marginBottom: '24px' }}>
+            <div className="practice-container writing-practice-page">
+                <div className="practice-header writing-practice-header">
                     {(step === 'loading' || step === 'answering') && (
-                        <button className="back-link" onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                        <button className="back-link writing-back-btn" onClick={() => navigate(-1)}>
                             {t.practiceSandbox.abortBtn}
                         </button>
                     )}
-                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontSize: '28px' }}>🖋️</span> {t.practiceSandbox.titleTask2.replace('{type}', titleName)}
+                    <h1 className="writing-practice-title">
+                        <span>🖋️</span> {t.practiceSandbox.titleTask2.replace('{type}', titleName)}
                     </h1>
                 </div>
 

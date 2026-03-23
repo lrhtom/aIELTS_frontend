@@ -4,7 +4,7 @@ import { translations, type Lang, type Translations } from './translations';
 interface LanguageContextValue {
     lang: Lang;
     translations: Translations;
-    setLang: (lang: Lang) => void;
+    setLang: (lang: Lang, syncToServer?: boolean) => void;
 }
 
 const LanguageContext = createContext<LanguageContextValue>({
@@ -19,9 +19,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         return (saved === 'zh' || saved === 'en') ? saved : 'zh';
     });
 
-    const setLang = (newLang: Lang) => {
+    const setLang = (newLang: Lang, syncToServer = true) => {
         setLangState(newLang);
         localStorage.setItem('ielts_lang', newLang);
+        
+        if (syncToServer && localStorage.getItem('access_token')) {
+            import('../api/client').then(({ apiClient }) => {
+                apiClient.put('/auth/settings', { language_preference: newLang }).catch(console.error);
+            });
+        }
     };
 
     const t = useMemo(() => translations[lang], [lang]);

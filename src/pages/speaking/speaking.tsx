@@ -5,11 +5,12 @@ import VocabInput from '../../components/VocabInput';
 import { getInitialVocabInput } from '../../store/word_selection_store';
 import { speakingStore } from '../../store/speaking_page_store';
 import { useLang } from '../../i18n/LanguageContext';
+import { ATInterceptor } from '../../api/atInterceptor';
 import '../../styles/practice_page.css';
 import '../../styles/speaking_page.css';
 
-type IeltsPart = 'part1' | 'part2' | 'part3';
-type SpeakingMode = 'chat' | 'call' | 'exam';
+export type IeltsPart = 'part1' | 'part2' | 'part3';
+export type SpeakingMode = 'chat' | 'call' | 'exam' | 'scenario';
 
 interface PartInfo {
     id: IeltsPart;
@@ -58,6 +59,13 @@ export default function Speaking() {
             desc: sc.modes.items.exam.desc,
             color: 'mode-exam',
         },
+        {
+            id: 'scenario',
+            emoji: '🎭',
+            title: sc.modes.items.scenario.title,
+            desc: sc.modes.items.scenario.desc,
+            color: 'mode-scenario',
+        },
     ];
 
     const [vocabInput, setVocabInput] = useState(() => getInitialVocabInput());
@@ -65,6 +73,8 @@ export default function Speaking() {
     const [selectedPart, setSelectedPart] = useState<IeltsPart>('part1');
     const [showSubtitles, setShowSubtitles] = useState(true);
     const [selectedMode, setSelectedMode] = useState<SpeakingMode>('chat');
+    const [scenarioInput, setScenarioInput] = useState('');
+    const [isChecking, setIsChecking] = useState(false);
 
     const navigate = useNavigate();
 
@@ -72,8 +82,31 @@ export default function Speaking() {
         setVocabInput(val);
     };
 
-    const handleStart = () => {
-        if (selectedMode === 'chat' || selectedMode === 'call') {
+    const handleStart = async () => {
+        if (selectedMode === 'scenario' && !scenarioInput.trim()) {
+            alert('请输入您想设定的场景内容');
+            return;
+        }
+
+        if (selectedMode === 'scenario') {
+            try {
+                setIsChecking(true);
+                const checkRes = await ATInterceptor.checkScenario(scenarioInput.trim());
+                if (!checkRes.data.valid) {
+                    alert('场景检测不通过：' + (checkRes.data.reason || '包含不适宜的话题，请重新修改。'));
+                    setIsChecking(false);
+                    return;
+                }
+            } catch (err: any) {
+                alert('安全性测算失败或余额不足: ' + err.message);
+                setIsChecking(false);
+                return;
+            } finally {
+                setIsChecking(false);
+            }
+        }
+
+        if (selectedMode === 'chat' || selectedMode === 'call' || selectedMode === 'scenario') {
             speakingStore.isChatAllowed = true;
             navigate('/speaking/chat', {
                 state: {
@@ -81,6 +114,7 @@ export default function Speaking() {
                     mode: selectedMode,
                     showSubtitles,
                     part: selectedPart,
+                    scenarioInput: scenarioInput.trim()
                 },
             });
         } else {
@@ -183,15 +217,34 @@ export default function Speaking() {
                     </div>
                 </div>
 
+                {/* ── Board 4: Scenario Settings (Only for scenario mode) ── */}
+                {selectedMode === 'scenario' && (
+                    <div className="config-card fadeIn">
+                        <div style={{ marginBottom: '12px' }}>
+                            <div className="label-text">{sc.scenarioSettings.title}</div>
+                            <div className="label-desc">{sc.scenarioSettings.desc}</div>
+                        </div>
+                        <textarea
+                            className="vocab-textarea"
+                            rows={3}
+                            placeholder={sc.scenarioSettings.placeholder}
+                            value={scenarioInput}
+                            onChange={e => setScenarioInput(e.target.value)}
+                            style={{ width: '100%', resize: 'vertical' }}
+                        />
+                    </div>
+                )}
+
                 {/* ── Start Button ── */}
                 <div className="config-card">
                     <button
                         className="skill-btn speaking-start-btn"
-                        style={{ width: '100%' }}
+                        style={{ width: '100%', opacity: (selectedMode === 'exam' || isChecking) ? 0.6 : 1 }}
                         onClick={handleStart}
+                        disabled={selectedMode === 'exam' || isChecking}
                     >
-                        <span className="btn-icon">🗣️</span>
-                        {sc.startBtn}
+                        <span className="btn-icon">{isChecking ? '⏳' : '🗣️'}</span>
+                        {isChecking ? '正在校检场景...' : sc.startBtn}
                     </button>
                 </div>
             </div>

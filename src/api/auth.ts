@@ -23,6 +23,9 @@ export interface User {
     bg_image_url?: string | null;
     bg_blur?: number | null;
     aiGenerationRetryCount?: number;
+    targetVocabName?: string | null;
+    languagePreference?: string;
+    aiProvider?: string;
 }
 
 export interface AuthResponse {
@@ -70,7 +73,12 @@ export const authApi = {
         await apiClient.delete('/auth/delete-account');
     },
 
-    updateSettings: async (settings: { ai_generation_retry_count?: number }): Promise<User> => {
+    updateSettings: async (settings: { 
+        ai_generation_retry_count?: number;
+        target_vocab_name?: string;
+        language_preference?: string;
+        ai_provider?: string;
+    }): Promise<User> => {
         const response = await apiClient.put('/auth/settings', settings);
         return response.data.user;
     },

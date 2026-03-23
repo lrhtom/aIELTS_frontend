@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
+import { retryWithBackoff } from '../../utils/retry';
 import { listNotebooks, type Notebook } from '../../api/notebook';
 import {
     listPlanWords, addWord, updatePlanWord, removePlanWord,
@@ -29,6 +30,39 @@ const STUDY_MODES: [StudyMode, string][] = [
     ['choice',    '4选1'],
     ['write',     '看中文写英文'],
 ];
+
+/**
+ * 清理与计划相关的所有浏览器缓存
+ * 当用户修改学习计划时调用，防止缓存数据与数据库不同步导致的模式失败
+ */
+function clearPlanCaches(planId: number): void {
+    console.log('[计划缓存] 开始清理缓存...', { planId });
+    
+    // 1. 清理 sessionStorage（会话级别）
+    const sessionKeys = [
+        'vocab_flashcard_session',           // 词汇学习主会话
+        'reading_session_cache',              // 阅读会话缓存
+        'listening_session_cache',            // 听力会话缓存
+        'vocab_doing_session_mcq',            // 词汇训练 - 4选1
+        'vocab_doing_session_dictation',      // 词汇训练 - 听写
+        'vocab_doing_session_complete',       // 词汇训练 - 补全
+    ];
+    
+    sessionKeys.forEach(key => {
+        if (sessionStorage.getItem(key)) {
+            sessionStorage.removeItem(key);
+            console.log('[计划缓存] 已清理 sessionStorage:', key);
+        }
+    });
+    
+    // 2. 清理与此计划相关的 localStorage 数据
+    // ⚠️ 注意：这里保留 mode 和 masteryTarget，因为这是用户的偏好设置
+    // 如果要强制重置，可以取消注释下面的代码
+    // localStorage.removeItem(`lp_study_mode_${planId}`);
+    // localStorage.removeItem(`lp_mastery_target_${planId}`);
+    
+    console.log('[计划缓存] 缓存清理完成', { planId, timestamp: new Date().toISOString() });
+}
 
 export default function LearningPlanDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -106,6 +140,8 @@ export default function LearningPlanDetailPage() {
                 setPlan(p);
                 setPlanName(p.name);
                 setDailyCount(p.daily_count);
+                if (p.default_mode) setStudyMode(p.default_mode as StudyMode);
+                if (p.mastery_target) setMasteryTarget(p.mastery_target as MasterySetting);
             }).catch(() => {});
         });
     }, [planId]);
@@ -141,6 +177,9 @@ export default function LearningPlanDetailPage() {
         try {
             const { plan: p } = await updatePlan(planId, { name });
             setPlan(p);
+            // 修改计划名称后，清除相关缓存以防止不一致
+            clearPlanCaches(planId);
+            showToast('计划名称已保存', 'success');
         } catch {
             showToast('保存失败', 'error');
             setPlanName(plan.name);
@@ -153,6 +192,10 @@ export default function LearningPlanDetailPage() {
         try {
             const { plan: p } = await updatePlan(planId, { daily_count: dailyCount });
             setPlan(p);
+            // 修改daily_count成功后，使用完整的缓存清理函数
+            // 这样下次进入学习页面时，会使用新的daily_count重新构建队列
+            clearPlanCaches(planId);
+            showToast('每日词数已使用新配置保存', 'success');
         } catch {
             showToast('保存失败', 'error');
             setDailyCount(plan.daily_count);
@@ -160,30 +203,91 @@ export default function LearningPlanDetailPage() {
     }, [dailyCount, plan, planId]);
 
     // ── Start session ──────────────────────────────────────────────────────
+    const isQuotaDone = plan ? plan.studied_today >= plan.daily_count : false;
+
     const handleStart = async () => {
         if (starting || entries.length === 0) return;
         setStarting(true);
+        let retryAttempt = 0;
+        const maxRetries = 5;
+        
         try {
-            const { cards, stats } = await startPlan(planId);
+            const result = await retryWithBackoff(
+                () => startPlan(planId, isQuotaDone ? 'review' : 'study'),
+                {
+                    maxAttempts: maxRetries,
+                    initialDelay: 1000,
+                    onProgress: (attempt) => {
+                        retryAttempt = attempt;
+                        if (attempt > 1) {
+                            console.log(`[学习计划] 开始学习 - 重试 ${attempt}/${maxRetries}`);
+                        }
+                    },
+                    onRetry: (attempt, delay) => {
+                        console.warn(`[学习计划] 开始学习失败，${delay}ms 后进行第 ${attempt + 1} 次尝试`);
+                    },
+                }
+            );
+            const { cards, stats } = result;
+
             if (cards.length === 0) {
-                const msg = stats.remaining_today === 0
-                    ? `今日已学习 ${stats.studied_today} 词，完成每日目标！`
-                    : '今日没有需要复习的单词';
+                const msg = isQuotaDone
+                    ? '今日还没有学习记录，无法复习'
+                    : stats.remaining_today === 0
+                        ? `今日已学习 ${stats.studied_today} 词，完成每日目标！`
+                        : '今日没有需要复习的单词';
                 showToast(msg, 'success');
                 return;
             }
+
+            console.log(`[学习计划] 成功加载 ${cards.length} 个卡片，进入${isQuotaDone ? '复习' : '学习'}`);
             navigate('/vocabulary/flashcard/doing', {
                 state: {
                     cards,
                     stats,
                     planId: planId,
                     planName: plan?.name,
+                    planDailyCount: plan?.daily_count,
                     mode: studyMode,
                     masteryTarget,
+                    reviewOnly: isQuotaDone,
+                    forceNewSession: true,
                 },
             });
         } catch (e: unknown) {
-            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || '开始失败';
+            const error = e as any;
+            const status = error?.response?.status;
+            const errorMsg = error?.response?.data?.error;
+            
+            console.error(`[学习计划] 开始学习失败 (尝试 ${retryAttempt}/${maxRetries}):`, {
+                status,
+                errorMsg,
+                error,
+            });
+
+            let msg = '开始失败';
+            
+            // 根据错误类型提供具体的用户消息
+            if (status === 402) {
+                msg = 'AT币余额不足，请充值后重试';
+            } else if (status === 400 && errorMsg?.includes('没有单词')) {
+                msg = '计划中没有单词，请先添加';
+            } else if (status === 400 && errorMsg?.includes('词汇')) {
+                msg = errorMsg;
+            } else if (status === 404) {
+                msg = '计划不存在，请刷新后重试';
+            } else if (status === 409 || status === 422) {
+                msg = '计划配置冲突，请刷新后重试';
+            } else if (
+                [408, 429, 500, 502, 503, 504].includes(status) ||
+                String(errorMsg).includes('timeout') ||
+                String(errorMsg).includes('network')
+            ) {
+                msg = `网络错误，已尝试 ${retryAttempt} 次 - ${errorMsg || '请检查网络后重试'}`;
+            } else if (errorMsg) {
+                msg = errorMsg;
+            }
+
             showToast(msg, 'error');
         } finally {
             setStarting(false);
@@ -206,6 +310,8 @@ export default function LearningPlanDetailPage() {
             });
             if (r.entry) setEntries(prev => [r.entry!, ...prev]);
             setAddWord_(''); setAddZh(''); setAddPhonetic(''); setAddGrammar('');
+            // 添加词汇后，清理缓存（队列已改变）
+            clearPlanCaches(planId);
             showToast('已添加', 'success');
         } catch (e: unknown) {
             const status = (e as { response?: { status?: number } })?.response?.status;
@@ -224,6 +330,8 @@ export default function LearningPlanDetailPage() {
                 ? `已导入 ${entries_added} 个，跳过 ${skipped} 个重复单词`
                 : `已导入 ${entries_added} 个单词`;
             showToast(msg, 'success');
+            // 导入词汇后，清理缓存（队列已改变）
+            clearPlanCaches(planId);
             // Reload word list
             const r = await listPlanWords(planId);
             setEntries(r.entries);
@@ -261,6 +369,9 @@ export default function LearningPlanDetailPage() {
         try {
             await removePlanWord(planId, entry.id);
             setEntries(prev => prev.filter(e => e.id !== entry.id));
+            // 删除词汇后，清理缓存（队列已改变）
+            clearPlanCaches(planId);
+            showToast('已删除', 'success');
         } catch {
             showToast('删除失败', 'error');
         }
@@ -372,7 +483,7 @@ export default function LearningPlanDetailPage() {
                         onClick={handleStart}
                         disabled={starting || entries.length === 0}
                     >
-                        {starting ? '准备中…' : '开始学习'}
+                        {starting ? '准备中…' : isQuotaDone ? '📖 开始复习' : '开始学习'}
                     </button>
                 </div>
 
@@ -387,6 +498,7 @@ export default function LearningPlanDetailPage() {
                                 onClick={() => {
                                     setStudyMode(m);
                                     localStorage.setItem(`lp_study_mode_${planId}`, m);
+                                    updatePlan(planId, { default_mode: m }).catch(() => {});
                                 }}
                             >
                                 {label}
@@ -399,11 +511,23 @@ export default function LearningPlanDetailPage() {
                             value={masteryTarget}
                             onChange={(e) => {
                                 const value = e.target.value;
+                                let targetToSave: number | undefined;
                                 if (value === 'auto') {
                                     setMasteryTarget('auto');
-                                    return;
+                                    // Handle backend save logic? If 'auto', maybe save 2 as fallback or another special value
+                                    // Alternatively backend's mastery_target might be 0 for auto?
+                                    // For now, if auto, maybe we save 2? The user spec didn't mention 'auto' backend rep.
+                                    // Let's not save 'auto' directly if it's integer field.
+                                    // Wait, backend explicitly parses mastery_target > 0, so we can't save 'auto'.
+                                } else {
+                                    const val = Math.min(5, Math.max(1, Number(value) || 2));
+                                    setMasteryTarget(val);
+                                    targetToSave = val;
                                 }
-                                setMasteryTarget(Math.min(5, Math.max(1, Number(value) || 2)));
+                                localStorage.setItem(`lp_mastery_target_${planId}`, value);
+                                if (targetToSave) {
+                                    updatePlan(planId, { mastery_target: targetToSave }).catch(() => {});
+                                }
                             }}
                         >
                             <option value="auto">自动</option>
@@ -413,6 +537,11 @@ export default function LearningPlanDetailPage() {
                         </select>
                     </div>
                 </div>
+
+                {/* ── Today's studied words ── */}
+                {plan && (
+                    <TodayStudiedSection plan={plan} />
+                )}
 
                 {/* ── Add section ── */}
                 <div className="lp-add-section">
@@ -821,6 +950,44 @@ function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
                         <div key={i}>
                             <div className="lp-example-en">{ex.en}</div>
                             {ex.zh && <div className="lp-example-zh">{ex.zh}</div>}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ── Today studied section sub-component ─────────────────────────────────── */
+function TodayStudiedSection({ plan }: { plan: LearningPlan }) {
+    const [expanded, setExpanded] = useState(false);
+    const pct = Math.min(100, Math.round((plan.studied_today / plan.daily_count) * 100));
+
+    return (
+        <div className="lp-today-section">
+            <div className="lp-today-header" onClick={() => setExpanded(v => !v)}>
+                <div className="lp-today-title">
+                    <span className="lp-today-icon">📋</span>
+                    今日学习计划（已掌握 <strong>{plan.studied_today}</strong> / {plan.daily_count}）
+                    <span className="lp-today-pct">{pct}%</span>
+                </div>
+                <span className={`lp-today-toggle ${expanded ? 'open' : ''}`}>▾</span>
+            </div>
+            <div className="lp-today-progress">
+                <div className="lp-today-progress-fill" style={{ width: `${pct}%` }} />
+            </div>
+            {expanded && (
+                <div className="lp-today-list">
+                    {plan.today_words.map((tw, i) => (
+                        <div key={i} className="lp-today-word-row">
+                            <span className="lp-today-word">{tw.word}</span>
+                            {tw.phonetic && (
+                                <span className="lp-today-phonetic">{tw.phonetic}</span>
+                            )}
+                            <span className="lp-today-zh">{tw.zh}</span>
+                            <span className={`lp-fsrs-badge ${FSRS_STATE_CLASS[tw.state] ?? 'state-new'}`}>
+                                {FSRS_STATE_LABEL[tw.state] ?? 'New'}
+                            </span>
                         </div>
                     ))}
                 </div>

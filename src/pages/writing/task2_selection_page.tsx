@@ -50,10 +50,10 @@ export default function Task2SelectionPage() {
 
     return (
         <Layout>
-            <div className="practice-container">
-                <div className="wc-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                    <div className="practice-header" style={{ marginBottom: 0 }}>
-                        <button className="back-link" onClick={() => navigate('/writing')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+            <div className="practice-container writing-selection-page">
+                <div className="writing-selection-header">
+                    <div className="practice-header writing-selection-title">
+                        <button className="back-link writing-back-btn" onClick={() => navigate('/writing')}>
                             {t.task2Selection.backToWriting}
                         </button>
                         <h1>{t.task2Selection.heading}</h1>
@@ -64,39 +64,38 @@ export default function Task2SelectionPage() {
                     </div>
                 </div>
 
-                <div className="config-card">
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '2rem' }}>
+                <div className="config-card writing-selection-card">
+                    <div className="writing-selection-grid">
                         {taskTypes.map(typeItem => (
-                            <div
+                            <button
                                 key={typeItem.id}
-                                className={`chart-card-btn ${selectedType === typeItem.id ? 'active' : ''}`}
+                                type="button"
+                                className={`writing-choice-card ${selectedType === typeItem.id ? 'active' : ''}`}
                                 onClick={() => setSelectedType(typeItem.id)}
                             >
-                                <div className="chart-card-icon">{typeItem.icon}</div>
-                                <div className="chart-card-content">
-                                    <div className="chart-card-title">
-                                        {typeItem.nameZh}
+                                <div className="writing-choice-icon">{typeItem.icon}</div>
+                                <div className="writing-choice-content">
+                                    <div className="writing-choice-title">
+                                        {lang === 'zh' ? typeItem.nameZh : typeItem.nameEn}
                                     </div>
-                                    <div className="chart-card-subtitle">{typeItem.nameEn}</div>
-                                    <div className="chart-card-desc" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>{typeItem.desc}</div>
+                                    <div className="writing-choice-subtitle">{lang === 'zh' ? typeItem.nameEn : typeItem.nameZh}</div>
+                                    <div className="writing-choice-desc">{typeItem.desc}</div>
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px' }}>
-                        <button 
-                            className="primary-button"
+                    <div className="writing-selection-actions">
+                        <button
+                            className="primary-button writing-selection-start-btn"
                             onClick={handleStart}
                             disabled={!selectedType}
-                            style={{ padding: '15px 40px', fontSize: '1.2rem', borderRadius: '12px', opacity: selectedType ? 1 : 0.5 }}
                         >
                             {t.task2Selection.startBtn}
                         </button>
                     </div>
                 </div>
             </div>
-            {/* Styles are inherited from task1_selection_page.tsx via practice_page.css / inline styles */}
         </Layout>
     );
 }
