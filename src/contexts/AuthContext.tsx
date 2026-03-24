@@ -94,9 +94,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     if (userData.languagePreference && userData.languagePreference !== lang) {
                         setLang(userData.languagePreference as Lang, false);
                     }
-                    if (userData.targetVocabName) {
-                        localStorage.setItem('ielts_target_vocab', userData.targetVocabName);
-                    }
+
                     if (userData.aiProvider) {
                         localStorage.setItem('ai_provider', userData.aiProvider);
                     }

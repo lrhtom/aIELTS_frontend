@@ -29,6 +29,7 @@ type Role = 'user' | 'assistant' | 'system';
 interface ChatMessage {
     role: Role;
     content: string;
+    correctedText?: string;
     scores?: {
         grammar?: number;
         vocab?: number;
@@ -114,6 +115,7 @@ export default function SpeakingChatPage() {
     // ── State ──
     const [words, setWords] = useState<Word[]>(() => parseWords(vocabRaw));
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+    const [expandedMsgs, setExpandedMsgs] = useState<Set<number>>(new Set());
     const [status, setStatus] = useState<Status>('loading');
     const [liveTranscript, setLiveTranscript] = useState('');
     const [recError, setRecError] = useState('');
@@ -587,6 +589,7 @@ Rules:
             const aiMsg: ChatMessage = {
                 role: 'assistant',
                 content: chatRes.reply,
+                correctedText: chatRes.corrected_text || '',
                 scores: {
                     grammar: chatRes.grammar_score,
                     vocab: chatRes.vocab_score,
@@ -708,7 +711,21 @@ Rules:
                         <div key={i} className={`sc-bubble-wrapper ${msg.role}`}>
                             <div className={`sc-bubble sc-bubble-${msg.role}`}>
                                 {msg.role === 'assistant' ? (
-                                    <span dangerouslySetInnerHTML={{ __html: highlightWords(msg.content, words) }} />
+                                    <>
+                                        <button
+                                            className="sc-toggle-text-btn"
+                                            onClick={() => setExpandedMsgs(prev => {
+                                                const next = new Set(prev);
+                                                next.has(i) ? next.delete(i) : next.add(i);
+                                                return next;
+                                            })}
+                                        >
+                                            {expandedMsgs.has(i) ? '🔽 隐藏文本' : '▶️ 显示文本'}
+                                        </button>
+                                        {expandedMsgs.has(i) && (
+                                            <span dangerouslySetInnerHTML={{ __html: highlightWords(msg.content, words) }} />
+                                        )}
+                                    </>
                                 ) : msg.role === 'system' ? (
                                     <span className="sc-system-msg">{msg.content}</span>
                                 ) : (
@@ -724,33 +741,42 @@ Rules:
                                     <div className="sc-score-details">
                                         <div className="sc-score-item">
                                             <span className="sc-score-label">🎯 准确度 (Accuracy):</span>
-                                            <span className="sc-score-value">{msg.scores.accuracy ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                            <span className="sc-score-value">{msg.scores.accuracy != null ? (Math.round(msg.scores.accuracy * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
                                             <span className="sc-score-label">👄 发音 (Pronunciation):</span>
-                                            <span className="sc-score-value">{msg.scores.pronunciation ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                            <span className="sc-score-value">{msg.scores.pronunciation != null ? (Math.round(msg.scores.pronunciation * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
                                             <span className="sc-score-label">🌊 流利度 (Fluency):</span>
-                                            <span className="sc-score-value">{msg.scores.fluency ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                            <span className="sc-score-value">{msg.scores.fluency != null ? (Math.round(msg.scores.fluency * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
                                             <span className="sc-score-label">🧩 完整度 (Completeness):</span>
-                                            <span className="sc-score-value">{msg.scores.completeness ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                            <span className="sc-score-value">{msg.scores.completeness != null ? (Math.round(msg.scores.completeness * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-divider" />
                                         <div className="sc-score-item">
                                             <span className="sc-score-label">📝 语法得分 (Grammar):</span>
-                                            <span className="sc-score-value">{msg.scores.grammar ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                            <span className="sc-score-value">{msg.scores.grammar ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
                                             <span className="sc-score-label">🎓 切题度 (Relevance):</span>
-                                            <span className="sc-score-value">{msg.scores.relevance ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                            <span className="sc-score-value">{msg.scores.relevance ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
                                             <span className="sc-score-label">📚 词汇运用 (Vocabulary):</span>
-                                            <span className="sc-score-value">{msg.scores.vocab ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 100</span></span>
+                                            <span className="sc-score-value">{msg.scores.vocab ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
+                                        {msg.correctedText && (
+                                            <>
+                                                <div className="sc-score-divider" />
+                                                <div className="sc-corrected-block">
+                                                    <span className="sc-corrected-label">✍️ AI 修正后的表达：</span>
+                                                    <p className="sc-corrected-text">{msg.correctedText}</p>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </details>
                             )}

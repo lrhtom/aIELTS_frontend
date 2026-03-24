@@ -652,25 +652,39 @@
 
 .lp-search:focus { border-color: var(--color-primary); }
 
-.lp-word-list { display: flex; flex-direction: column; gap: 0; }
-
-.lp-word-item {
-    display: grid;
-    grid-template-columns: 140px 1fr 80px 90px 36px;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 4px;
-    border-bottom: 1px solid var(--color-border);
-    font-size: 13px;
-    color: var(--color-text);
-    transition: background 0.1s;
+.lp-word-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.lp-word-item:last-child { border-bottom: none; }
+.lp-word-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 12px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 251, 250, 0.96) 100%);
+    font-size: 13px;
+    color: var(--color-text);
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
 
-.lp-word-item:hover { background: rgba(13, 148, 136, 0.04); }
+.lp-word-item:hover {
+    border-color: rgba(13, 148, 136, 0.45);
+    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.08);
+    transform: translateY(-1px);
+}
 
-.lp-word-text { font-weight: 600; color: var(--color-text); word-break: break-all; }
+/* Row 1: word + zh input */
+.lp-word-row1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lp-word-text { font-weight: 600; color: var(--color-text); word-break: break-all; flex-shrink: 0; min-width: 100px; }
 
 .lp-zh-input {
     background: transparent;
@@ -679,7 +693,8 @@
     font-size: 13px;
     color: var(--color-text-secondary);
     outline: none;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     padding: 2px 4px;
     transition: border-color 0.15s;
 }
@@ -690,6 +705,23 @@
     color: var(--color-text);
 }
 
+/* Row 2: badge + due + delete */
+.lp-word-row2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-left: 2px;
+}
+
+.lp-word-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    margin-left: auto;
+}
+
 /* ── FSRS state badges ─────────────────────────────────────────────────────── */
 .lp-fsrs-badge {
     display: inline-block;
@@ -698,6 +730,7 @@
     font-size: 11px;
     font-weight: 600;
     text-align: center;
+    flex-shrink: 0;
 }
 
 .lp-fsrs-badge.state-new        { background: #e5e7eb; color: #6b7280; }
@@ -709,7 +742,7 @@
 .lp-due-wrap {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     font-size: 12px;
     color: var(--color-text-secondary);
 }
@@ -728,6 +761,13 @@
 
 .lp-due-input:focus { border-color: var(--color-primary); }
 
+.lp-due-date {
+    font-size: 11px;
+    color: var(--color-text-muted, #9ca3af);
+    white-space: nowrap;
+    margin-left: 2px;
+}
+
 /* ── Delete button ─────────────────────────────────────────────────────────── */
 .lp-del-btn {
     background: transparent;
@@ -738,6 +778,7 @@
     border-radius: 7px;
     font-size: 15px;
     transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
 }
 
 .lp-del-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
@@ -918,13 +959,15 @@
 @media (max-width: 768px) {
     .lp-grid { grid-template-columns: 1fr; }
 
-    .lp-word-item {
-        grid-template-columns: 1fr 1fr 70px 36px;
-        grid-template-rows: auto auto;
+    .lp-word-row1 { flex-wrap: wrap; }
+    .lp-word-text { min-width: 80px; }
+    .lp-word-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
     }
 
-    .lp-word-item .lp-fsrs-badge { grid-row: 2; }
-    .lp-word-item .lp-due-wrap   { display: none; }
+    .lp-word-row2 .lp-due-wrap { display: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -649,6 +649,28 @@
     margin: 4px 0;
 }
 
+/* ── Corrected text block ── */
+.sc-corrected-block {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+}
+.sc-corrected-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6366f1;
+}
+.sc-corrected-text {
+    margin: 6px 0 0;
+    padding: 8px 12px;
+    background: rgba(99, 102, 241, 0.06);
+    border-left: 3px solid #6366f1;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #1e293b;
+    font-style: italic;
+}
+
 /* ── Finished state overlay ── */
 .sc-finish-overlay {
     position: relative;
@@ -702,4 +724,25 @@
     box-shadow: none !important;
     cursor: not-allowed !important;
     opacity: 0.8;
+}
+
+/* ── Toggle text button ── */
+.sc-toggle-text-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.06);
+    color: #6366f1;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 6px;
+}
+.sc-toggle-text-btn:hover {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: #6366f1;
 }

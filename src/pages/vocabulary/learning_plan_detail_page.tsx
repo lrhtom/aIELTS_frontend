@@ -27,8 +27,8 @@ type MasterySetting = 'auto' | number;
 
 const STUDY_MODES: [StudyMode, string][] = [
     ['flashcard', '记忆卡'],
-    ['choice',    '4选1'],
-    ['write',     '看中文写英文'],
+    ['choice', '4选1'],
+    ['write', '看中文写英文'],
 ];
 
 /**
@@ -37,7 +37,7 @@ const STUDY_MODES: [StudyMode, string][] = [
  */
 function clearPlanCaches(planId: number): void {
     console.log('[计划缓存] 开始清理缓存...', { planId });
-    
+
     // 1. 清理 sessionStorage（会话级别）
     const sessionKeys = [
         'vocab_flashcard_session',           // 词汇学习主会话
@@ -47,44 +47,44 @@ function clearPlanCaches(planId: number): void {
         'vocab_doing_session_dictation',      // 词汇训练 - 听写
         'vocab_doing_session_complete',       // 词汇训练 - 补全
     ];
-    
+
     sessionKeys.forEach(key => {
         if (sessionStorage.getItem(key)) {
             sessionStorage.removeItem(key);
             console.log('[计划缓存] 已清理 sessionStorage:', key);
         }
     });
-    
+
     // 2. 清理与此计划相关的 localStorage 数据
     // ⚠️ 注意：这里保留 mode 和 masteryTarget，因为这是用户的偏好设置
     // 如果要强制重置，可以取消注释下面的代码
     // localStorage.removeItem(`lp_study_mode_${planId}`);
     // localStorage.removeItem(`lp_mastery_target_${planId}`);
-    
+
     console.log('[计划缓存] 缓存清理完成', { planId, timestamp: new Date().toISOString() });
 }
 
 export default function LearningPlanDetailPage() {
     const { id } = useParams<{ id: string }>();
-    const planId  = Number(id);
+    const planId = Number(id);
     const navigate = useNavigate();
 
     // Plan meta
-    const [plan,        setPlan]        = useState<LearningPlan | null>(null);
-    const [planName,    setPlanName]    = useState('');
-    const [dailyCount,  setDailyCount]  = useState(20);
+    const [plan, setPlan] = useState<LearningPlan | null>(null);
+    const [planName, setPlanName] = useState('');
+    const [dailyCount, setDailyCount] = useState(20);
 
     // Word list
-    const [entries,     setEntries]     = useState<PlanEntry[]>([]);
-    const [search,      setSearch]      = useState('');
-    const [loading,     setLoading]     = useState(true);
-    const [page,        setPage]        = useState(1);
-    const [sortBy,      setSortBy]      = useState<'default' | 'alphabetical' | 'proficiency'>('default');
-    const [sortAsc,     setSortAsc]     = useState(true);
+    const [entries, setEntries] = useState<PlanEntry[]>([]);
+    const [search, setSearch] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [sortBy, setSortBy] = useState<'default' | 'alphabetical' | 'proficiency'>('default');
+    const [sortAsc, setSortAsc] = useState(true);
 
     // Starting session
-    const [starting,    setStarting]    = useState(false);
-    const [studyMode,   setStudyMode]   = useState<StudyMode>(
+    const [starting, setStarting] = useState(false);
+    const [studyMode, setStudyMode] = useState<StudyMode>(
         () => (localStorage.getItem(`lp_study_mode_${planId}`) as StudyMode) || 'flashcard'
     );
     const [masteryTarget, setMasteryTarget] = useState<MasterySetting>(() => {
@@ -95,26 +95,26 @@ export default function LearningPlanDetailPage() {
     });
 
     // Add section
-    const [addTab,      setAddTab]      = useState<AddTab>('manual');
-    const [addWord_,    setAddWord_]    = useState('');
-    const [addZh,       setAddZh]       = useState('');
+    const [addTab, setAddTab] = useState<AddTab>('manual');
+    const [addWord_, setAddWord_] = useState('');
+    const [addZh, setAddZh] = useState('');
     const [addPhonetic, setAddPhonetic] = useState('');
-    const [addGrammar,  setAddGrammar]  = useState('');
-    const [addBusy,     setAddBusy]     = useState(false);
+    const [addGrammar, setAddGrammar] = useState('');
+    const [addBusy, setAddBusy] = useState(false);
 
     // Notebook tab
-    const [notebooks,   setNotebooks]   = useState<Notebook[]>([]);
-    const [nbId,        setNbId]        = useState<number | ''>('');
+    const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+    const [nbId, setNbId] = useState<number | ''>('');
 
     // Book tab
-    const [books,       setBooks]       = useState<VocabBook[]>([]);
-    const [bookId,      setBookId]      = useState<number | ''>('');
+    const [books, setBooks] = useState<VocabBook[]>([]);
+    const [bookId, setBookId] = useState<number | ''>('');
     const [bookSubMode, setBookSubMode] = useState<BookSubMode>('all');
-    const [rangeStart,  setRangeStart]  = useState(1);
-    const [rangeEnd,    setRangeEnd]    = useState(50);
-    const [allBookWords,  setAllBookWords]  = useState<BookWord[]>([]);
-    const [bookPage,      setBookPage]      = useState(1);
-    const [bookQ,         setBookQ]         = useState('');
+    const [rangeStart, setRangeStart] = useState(1);
+    const [rangeEnd, setRangeEnd] = useState(50);
+    const [allBookWords, setAllBookWords] = useState<BookWord[]>([]);
+    const [bookPage, setBookPage] = useState(1);
+    const [bookQ, setBookQ] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
     // ── Load plan + words ──────────────────────────────────────────────────
@@ -123,7 +123,19 @@ export default function LearningPlanDetailPage() {
             listPlanWords(planId),
         ])
             .then(([r]) => {
-                setEntries(r.entries);
+                // 根据 fsrs_due 自动重算天数
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const updated = r.entries.map(e => {
+                    if (e.fsrs_due) {
+                        const due = new Date(e.fsrs_due);
+                        due.setHours(0, 0, 0, 0);
+                        const diffDays = Math.max(0, Math.round((due.getTime() - today.getTime()) / 86400000));
+                        return { ...e, fsrs_scheduled_days: diffDays };
+                    }
+                    return e;
+                });
+                setEntries(updated);
             })
             .catch(() => showToast('加载计划失败', 'error'))
             .finally(() => setLoading(false));
@@ -142,14 +154,14 @@ export default function LearningPlanDetailPage() {
                 setDailyCount(p.daily_count);
                 if (p.default_mode) setStudyMode(p.default_mode as StudyMode);
                 if (p.mastery_target) setMasteryTarget(p.mastery_target as MasterySetting);
-            }).catch(() => {});
+            }).catch(() => { });
         });
     }, [planId]);
 
     // Load notebooks + books on first render
     useEffect(() => {
-        listNotebooks().then(r => setNotebooks(r.notebooks)).catch(() => {});
-        listVocabBooks().then(r => setBooks(r.books)).catch(() => {});
+        listNotebooks().then(r => setNotebooks(r.notebooks)).catch(() => { });
+        listVocabBooks().then(r => setBooks(r.books)).catch(() => { });
     }, []);
 
     // Load all book words (client-side search/pagination)
@@ -159,7 +171,7 @@ export default function LearningPlanDetailPage() {
         setBookPage(1);
         listBookWords(bookId as number, 1, 5000).then(r => {
             setAllBookWords(r.words);
-        }).catch(() => {});
+        }).catch(() => { });
     }, [bookId, bookSubMode]);
 
     useEffect(() => {
@@ -210,7 +222,7 @@ export default function LearningPlanDetailPage() {
         setStarting(true);
         let retryAttempt = 0;
         const maxRetries = 5;
-        
+
         try {
             const result = await retryWithBackoff(
                 () => startPlan(planId, isQuotaDone ? 'review' : 'study'),
@@ -258,7 +270,7 @@ export default function LearningPlanDetailPage() {
             const error = e as any;
             const status = error?.response?.status;
             const errorMsg = error?.response?.data?.error;
-            
+
             console.error(`[学习计划] 开始学习失败 (尝试 ${retryAttempt}/${maxRetries}):`, {
                 status,
                 errorMsg,
@@ -266,7 +278,7 @@ export default function LearningPlanDetailPage() {
             });
 
             let msg = '开始失败';
-            
+
             // 根据错误类型提供具体的用户消息
             if (status === 402) {
                 msg = 'AT币余额不足，请充值后重试';
@@ -306,7 +318,7 @@ export default function LearningPlanDetailPage() {
                 word,
                 zh: addZh.trim(),
                 ...(addPhonetic.trim() && { phonetic: addPhonetic.trim() }),
-                ...(addGrammar.trim()  && { grammar:  addGrammar.trim()  }),
+                ...(addGrammar.trim() && { grammar: addGrammar.trim() }),
             });
             if (r.entry) setEntries(prev => [r.entry!, ...prev]);
             setAddWord_(''); setAddZh(''); setAddPhonetic(''); setAddGrammar('');
@@ -396,7 +408,7 @@ export default function LearningPlanDetailPage() {
             )
         )
         : entries;
-    
+
     // Apply sorting
     const sorted = useMemo(() => {
         const list = [...filtered];
@@ -413,13 +425,13 @@ export default function LearningPlanDetailPage() {
         }
         return sortAsc ? list : list.reverse();
     }, [filtered, sortBy, sortAsc]);
-    
+
     const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-    const safePage   = Math.min(page, totalPages);
-    const paged      = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+    const safePage = Math.min(page, totalPages);
+    const paged = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
     // Dedup: set of all words already in plan
-    const existingWords   = useMemo(() => new Set(entries.map(e => e.word)), [entries]);
+    const existingWords = useMemo(() => new Set(entries.map(e => e.word)), [entries]);
     const isDuplicateWord = addWord_.trim() !== '' && existingWords.has(addWord_.trim().toLowerCase());
 
     // 书库单词：前端过滤 + 分页
@@ -436,7 +448,7 @@ export default function LearningPlanDetailPage() {
         const PAGE_SIZE = 20;
         return {
             bookWords_: list.slice((bookPage - 1) * PAGE_SIZE, bookPage * PAGE_SIZE),
-            bookTotal:  total,
+            bookTotal: total,
         };
     }, [allBookWords, bookQ, bookPage]);
 
@@ -498,43 +510,12 @@ export default function LearningPlanDetailPage() {
                                 onClick={() => {
                                     setStudyMode(m);
                                     localStorage.setItem(`lp_study_mode_${planId}`, m);
-                                    updatePlan(planId, { default_mode: m }).catch(() => {});
+                                    updatePlan(planId, { default_mode: m }).catch(() => { });
                                 }}
                             >
                                 {label}
                             </button>
                         ))}
-                    </div>
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span className="lp-mode-selector-label">连续正确：</span>
-                        <select
-                            value={masteryTarget}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                let targetToSave: number | undefined;
-                                if (value === 'auto') {
-                                    setMasteryTarget('auto');
-                                    // Handle backend save logic? If 'auto', maybe save 2 as fallback or another special value
-                                    // Alternatively backend's mastery_target might be 0 for auto?
-                                    // For now, if auto, maybe we save 2? The user spec didn't mention 'auto' backend rep.
-                                    // Let's not save 'auto' directly if it's integer field.
-                                    // Wait, backend explicitly parses mastery_target > 0, so we can't save 'auto'.
-                                } else {
-                                    const val = Math.min(5, Math.max(1, Number(value) || 2));
-                                    setMasteryTarget(val);
-                                    targetToSave = val;
-                                }
-                                localStorage.setItem(`lp_mastery_target_${planId}`, value);
-                                if (targetToSave) {
-                                    updatePlan(planId, { mastery_target: targetToSave }).catch(() => {});
-                                }
-                            }}
-                        >
-                            <option value="auto">自动</option>
-                            {[1, 2, 3, 4, 5].map(n => (
-                                <option key={n} value={n}>{n}次</option>
-                            ))}
-                        </select>
                     </div>
                 </div>
 
@@ -862,62 +843,86 @@ export default function LearningPlanDetailPage() {
 
 /* ── Word row sub-component ──────────────────────────────────────────────── */
 interface WordRowProps {
-    entry:      PlanEntry;
+    entry: PlanEntry;
     onZhChange: (entry: PlanEntry, zh: string) => void;
-    onDueDays:  (entry: PlanEntry, days: number) => void;
-    onRemove:   (entry: PlanEntry) => void;
+    onDueDays: (entry: PlanEntry, days: number) => void;
+    onRemove: (entry: PlanEntry) => void;
 }
 
 function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
-    const [zh,              setZh]              = useState(entry.zh);
-    const [days,            setDays]            = useState(entry.fsrs_scheduled_days);
-    const [showExamples,    setShowExamples]    = useState(false);
+    const [zh, setZh] = useState(entry.zh);
+    const [days, setDays] = useState(entry.fsrs_scheduled_days);
+    const [showExamples, setShowExamples] = useState(false);
 
     // Sync when entry updates externally (e.g. after PATCH response)
-    useEffect(() => { setZh(entry.zh); },                  [entry.zh]);
+    useEffect(() => { setZh(entry.zh); }, [entry.zh]);
     useEffect(() => { setDays(entry.fsrs_scheduled_days); }, [entry.fsrs_scheduled_days]);
 
     const hasEnrichment = entry.grammar || entry.definitions.length > 0 || entry.examples.length > 0;
 
     return (
         <div className="lp-word-item">
-            <div className="lp-word-text">
-                {entry.word}
-                {entry.phonetic && (
-                    <span className="lp-word-phonetic">{entry.phonetic}</span>
-                )}
-            </div>
-
-            <input
-                className="lp-zh-input"
-                value={zh}
-                onChange={e => setZh(e.target.value)}
-                onBlur={() => onZhChange(entry, zh)}
-                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                placeholder="中文释义"
-            />
-
-            <span className={`lp-fsrs-badge ${FSRS_STATE_CLASS[entry.fsrs_state] ?? 'state-new'}`}>
-                {FSRS_STATE_LABEL[entry.fsrs_state] ?? 'New'}
-            </span>
-
-            <div className="lp-due-wrap">
+            {/* Row 1: word + zh input */}
+            <div className="lp-word-row1">
+                <div className="lp-word-text">
+                    {entry.word}
+                    {entry.phonetic && (
+                        <span className="lp-word-phonetic">{entry.phonetic}</span>
+                    )}
+                </div>
                 <input
-                    className="lp-due-input"
-                    type="number"
-                    min={0}
-                    value={days}
-                    onChange={e => setDays(Number(e.target.value))}
-                    onBlur={() => onDueDays(entry, days)}
+                    className="lp-zh-input"
+                    value={zh}
+                    onChange={e => setZh(e.target.value)}
+                    onBlur={() => onZhChange(entry, zh)}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    title="设置几天后复习"
+                    placeholder="中文释义"
                 />
-                天后
             </div>
 
-            <button className="lp-del-btn" onClick={() => onRemove(entry)} title="从计划删除">
-                ✕
-            </button>
+            {/* Row 2: state badge + due info + delete */}
+            <div className="lp-word-row2">
+                <span className={`lp-fsrs-badge ${FSRS_STATE_CLASS[entry.fsrs_state] ?? 'state-new'}`}>
+                    {FSRS_STATE_LABEL[entry.fsrs_state] ?? 'New'}
+                </span>
+
+                <div className="lp-word-actions">
+                    <div className="lp-due-wrap">
+                        <input
+                            className="lp-due-input"
+                            type="number"
+                            min={0}
+                            value={days}
+                            onChange={e => setDays(Number(e.target.value))}
+                            onBlur={() => onDueDays(entry, days)}
+                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                            title="设置几天后复习"
+                        />
+                        天后
+                        <span className="lp-due-date" title="下次学习日期">
+                            {(() => {
+                                const today = new Date();
+                                if (days <= 0) {
+                                    return `(${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')})`;
+                                }
+
+                                if (entry.fsrs_due && days === entry.fsrs_scheduled_days) {
+                                    const d = new Date(entry.fsrs_due);
+                                    return `(${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')})`;
+                                }
+
+                                const d = new Date();
+                                d.setDate(d.getDate() + days);
+                                return `(${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')})`;
+                            })()}
+                        </span>
+                    </div>
+
+                    <button className="lp-del-btn" onClick={() => onRemove(entry)} title="从计划删除">
+                        ✕
+                    </button>
+                </div>
+            </div>
 
             {hasEnrichment && (
                 <div className="lp-word-extra">

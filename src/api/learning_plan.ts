@@ -65,6 +65,11 @@ export async function listPlans(): Promise<{ plans: LearningPlan[] }> {
     return resp.data;
 }
 
+export async function getPlanDetail(id: number): Promise<{ plan: LearningPlan }> {
+    const resp = await apiClient.get(`/plans/${id}/`);
+    return resp.data;
+}
+
 export async function createPlan(name: string, daily_count: number): Promise<{ plan: LearningPlan }> {
     const resp = await apiClient.post('/plans/', { name, daily_count });
     return resp.data;

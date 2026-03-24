@@ -1,7 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import html2canvas from 'html2canvas';
 import Layout from '../../components/layout/Layout';
 import { useLang } from '../../i18n/LanguageContext';
-import '../../styles/speaking_page.css'; // Reuse some styles
+import '../../styles/speaking_summary.css';
 
 interface ChatMessage {
     role: 'user' | 'assistant' | 'system';
@@ -10,6 +12,10 @@ interface ChatMessage {
         grammar?: number;
         vocab?: number;
         relevance?: number;
+        accuracy?: number;
+        pronunciation?: number;
+        completeness?: number;
+        fluency?: number;
     };
 }
 
@@ -19,11 +25,66 @@ interface Word {
     count: number;
 }
 
+/** Round to nearest 0.5 */
+const to05 = (n: number) => Math.round(n * 2) / 2;
+/** Azure 100-scale → 9.0-scale */
+const azureTo9 = (v: number | undefined) => v != null ? to05(v * 9 / 100) : 0;
+
+// 7 score dimensions
+const DIMS = [
+    { key: 'accuracy',      label: '🎯 准确度',   azure: true,  color: '#6366f1' },
+    { key: 'pronunciation', label: '👄 发音',     azure: true,  color: '#818cf8' },
+    { key: 'fluency',       label: '🌊 流利度',   azure: true,  color: '#3b82f6' },
+    { key: 'completeness',  label: '🧩 完整度',   azure: true,  color: '#06b6d4' },
+    { key: 'grammar',       label: '📝 语法',     azure: false, color: '#8b5cf6' },
+    { key: 'vocab',         label: '📚 词汇',     azure: false, color: '#7c3aed' },
+    { key: 'relevance',     label: '🎓 切题度',   azure: false, color: '#f59e0b' },
+] as const;
+
+type DimKey = typeof DIMS[number]['key'];
+
 export default function SpeakingSummaryPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const { translations: t } = useLang();
     const s = t.speakingConfig.scenarioSummary;
+    const captureRef = useRef<HTMLDivElement>(null);
+    const [sharing, setSharing] = useState(false);
+
+    const handleShare = async () => {
+        if (!captureRef.current || sharing) return;
+        setSharing(true);
+        try {
+            const canvas = await html2canvas(captureRef.current, {
+                backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#ffffff',
+                scale: 2,
+                useCORS: true,
+            });
+            const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) return;
+
+            // 1. 下载到本地
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `speaking-report-${new Date().toISOString().slice(0, 10)}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            // 2. 复制到剪贴板
+            try {
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+            } catch {
+                // 部分浏览器不支持剪贴板写入图片，静默忽略
+            }
+        } catch (e) {
+            console.error('Share failed', e);
+        } finally {
+            setSharing(false);
+        }
+    };
 
     const state = location.state as {
         chatHistory: ChatMessage[];
@@ -34,9 +95,9 @@ export default function SpeakingSummaryPage() {
     if (!state) {
         return (
             <Layout>
-                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                <div className="ss-empty">
                     <h2>No data available.</h2>
-                    <button onClick={() => navigate('/speaking')}>Back</button>
+                    <button className="ss-back-btn" onClick={() => navigate('/speaking')}>← Back</button>
                 </div>
             </Layout>
         );
@@ -44,110 +105,140 @@ export default function SpeakingSummaryPage() {
 
     const { chatHistory, scenarioPrompt, words } = state;
 
-    // Calculate scores
-    const aiMessages = chatHistory.filter(m => m.role === 'assistant' && m.scores);
-    const avgGrammar = aiMessages.length ? Math.round(aiMessages.reduce((acc, m) => acc + (m.scores?.grammar || 0), 0) / aiMessages.length) : 0;
-    const avgVocab = aiMessages.length ? Math.round(aiMessages.reduce((acc, m) => acc + (m.scores?.vocab || 0), 0) / aiMessages.length) : 0;
-    const avgRelevance = aiMessages.length ? Math.round(aiMessages.reduce((acc, m) => acc + (m.scores?.relevance || 0), 0) / aiMessages.length) : 0;
-    
-    // Overall score (average of the three)
-    const overall = Math.round((avgGrammar + avgVocab + avgRelevance) / 3);
+    // Extract rounds with scores
+    const rounds = chatHistory
+        .filter(m => m.role === 'assistant' && m.scores)
+        .map((m, i) => {
+            const sc = m.scores!;
+            const vals: Record<DimKey, number> = {
+                accuracy:      azureTo9(sc.accuracy),
+                pronunciation: azureTo9(sc.pronunciation),
+                fluency:       azureTo9(sc.fluency),
+                completeness:  azureTo9(sc.completeness),
+                grammar:       sc.grammar ?? 0,
+                vocab:         sc.vocab ?? 0,
+                relevance:     sc.relevance ?? 0,
+            };
+            return { round: i + 1, ...vals };
+        });
 
-    // Vocabulary coverage
+    // Averages per dimension
+    const count = rounds.length || 1;
+    const avgs: Record<DimKey, number> = {} as Record<DimKey, number>;
+    for (const dim of DIMS) {
+        avgs[dim.key] = to05(rounds.reduce((a, r) => a + r[dim.key], 0) / count);
+    }
+
+    // Overall = average of all 7 dimensions
+    const allAvgValues = Object.values(avgs);
+    const overall = to05(allAvgValues.reduce((a, v) => a + v, 0) / allAvgValues.length);
+
+    // Vocab coverage
     const usedWords = words.filter(w => w.count > 0).length;
     const totalWords = words.length;
     const coveragePercent = totalWords ? Math.round((usedWords / totalWords) * 100) : 0;
 
+    const pct = (score: number) => Math.round((score / 9) * 100);
+
     return (
         <Layout>
-            <div className="speaking-container" style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '4rem' }}>
-                <header style={{ marginBottom: '2rem', textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{s.title}</h1>
-                    <p style={{ color: 'var(--color-text-muted)' }}>{s.subtitle}</p>
+            <div className="ss-root" ref={captureRef}>
+                <header className="ss-header">
+                    <h1>{s.title}</h1>
+                    <p>{s.subtitle}</p>
                 </header>
 
-                <div className="sc-summary-card" style={{ 
-                    background: 'var(--color-bg-card)', 
-                    borderRadius: '1.5rem', 
-                    padding: '2rem',
-                    boxShadow: 'var(--shadow-lg)',
-                    marginBottom: '2rem'
-                }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>{s.overallScore}</div>
-                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{overall}</div>
+                {/* Hero scores */}
+                <div className="ss-hero-card">
+                    <div className="ss-hero-grid">
+                        <div className="ss-hero-item">
+                            <span className="ss-hero-label">{s.overallScore}</span>
+                            <span className="ss-hero-value ss-primary">{overall}</span>
+                            <span className="ss-hero-unit">/ 9.0</span>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>{s.vocabCoverage} ({coveragePercent}%)</div>
-                            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--color-secondary)' }}>{usedWords}/{totalWords}</div>
+                        <div className="ss-hero-item">
+                            <span className="ss-hero-label">{s.vocabCoverage}</span>
+                            <span className="ss-hero-value ss-secondary">{usedWords}/{totalWords}</span>
+                            <span className="ss-hero-unit">{coveragePercent}%</span>
                         </div>
                     </div>
 
-                    <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '2rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>Grammar & Accuracy</span>
-                                <div style={{ width: '60%', height: '8px', background: 'var(--color-bg-alt)', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{ width: `${avgGrammar}%`, height: '100%', background: 'var(--color-primary)' }} />
+                    {/* 7-dimension bars */}
+                    <div className="ss-bars">
+                        {DIMS.map(dim => (
+                            <div className="ss-bar-row" key={dim.key}>
+                                <span className="ss-bar-label">{dim.label}</span>
+                                <div className="ss-bar-track">
+                                    <div className="ss-bar-fill" style={{ width: `${pct(avgs[dim.key])}%`, background: dim.color }} />
                                 </div>
-                                <span style={{ fontWeight: 600 }}>{avgGrammar}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>Vocabulary Range</span>
-                                <div style={{ width: '60%', height: '8px', background: 'var(--color-bg-alt)', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{ width: `${avgVocab}%`, height: '100%', background: 'var(--color-secondary)' }} />
-                                </div>
-                                <span style={{ fontWeight: 600 }}>{avgVocab}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>Relevance & Logic</span>
-                                <div style={{ width: '60%', height: '8px', background: 'var(--color-bg-alt)', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{ width: `${avgRelevance}%`, height: '100%', background: 'var(--color-accent)' }} />
-                                </div>
-                                <span style={{ fontWeight: 600 }}>{avgRelevance}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="sc-summary-details" style={{ marginBottom: '2rem' }}>
-                    <h3 style={{ marginBottom: '1rem' }}>Scenario Recruiter</h3>
-                    <div style={{ 
-                        padding: '1rem', 
-                        background: 'rgba(var(--color-primary-rgb), 0.05)', 
-                        borderRadius: '1rem',
-                        borderLeft: '4px solid var(--color-primary)',
-                        fontStyle: 'italic'
-                    }}>
-                        "{scenarioPrompt}"
-                    </div>
-                </div>
-
-                <div className="sc-vocab-review">
-                    <h3 style={{ marginBottom: '1rem' }}>Vocabulary Practice</h3>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                        {words.map((w, i) => (
-                            <div key={i} style={{ 
-                                padding: '0.5rem 1rem', 
-                                borderRadius: '2rem', 
-                                background: w.count > 0 ? 'rgba(var(--color-secondary-rgb), 0.1)' : 'var(--color-bg-alt)',
-                                color: w.count > 0 ? 'var(--color-secondary)' : 'var(--color-text-muted)',
-                                border: w.count > 0 ? '1px solid var(--color-secondary)' : '1px solid var(--color-border)',
-                                fontSize: '0.9rem'
-                            }}>
-                                {w.en} {w.count > 0 && `(x${w.count})`}
+                                <span className="ss-bar-score">{avgs[dim.key]}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div style={{ marginTop: '3rem', textAlign: 'center' }}>
-                    <button 
-                        className="btn-primary" 
-                        onClick={() => navigate('/speaking')}
-                        style={{ padding: '0.75rem 2rem', borderRadius: '2rem' }}
-                    >
+                {/* Per-round detail table */}
+                {rounds.length > 0 && (
+                    <div className="ss-section">
+                        <h3 className="ss-section-title">📋 每轮评分明细 (满分 9.0)</h3>
+                        <div className="ss-table-wrap">
+                            <table className="ss-table">
+                                <thead>
+                                    <tr>
+                                        <th>轮次</th>
+                                        {DIMS.map(d => <th key={d.key}>{d.label.slice(2)}</th>)}
+                                        <th>轮均</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rounds.map(r => {
+                                        const roundAvg = to05(DIMS.reduce((a, d) => a + r[d.key], 0) / DIMS.length);
+                                        return (
+                                            <tr key={r.round}>
+                                                <td className="ss-td-round">R{r.round}</td>
+                                                {DIMS.map(d => <td key={d.key}>{r[d.key]}</td>)}
+                                                <td className="ss-td-avg">{roundAvg}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                    <tr className="ss-tr-summary">
+                                        <td className="ss-td-round">平均</td>
+                                        {DIMS.map(d => <td key={d.key}>{avgs[d.key]}</td>)}
+                                        <td className="ss-td-avg">{overall}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* Scenario description */}
+                {scenarioPrompt && (
+                    <div className="ss-section">
+                        <h3 className="ss-section-title">🎭 场景描述</h3>
+                        <div className="ss-scenario-quote">"{scenarioPrompt}"</div>
+                    </div>
+                )}
+
+                {/* Vocabulary review */}
+                {words.length > 0 && (
+                    <div className="ss-section">
+                        <h3 className="ss-section-title">📝 词汇运用</h3>
+                        <div className="ss-word-chips">
+                            {words.map((w, i) => (
+                                <span key={i} className={`ss-chip ${w.count > 0 ? 'ss-chip-used' : ''}`}>
+                                    {w.en} {w.count > 0 && <span className="ss-chip-count">×{w.count}</span>}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="ss-footer">
+                    <button className="ss-share-btn" onClick={handleShare} disabled={sharing}>
+                        {sharing ? '⏳ 生成中...' : '📤 分享报告'}
+                    </button>
+                    <button className="ss-back-btn" onClick={() => navigate('/speaking')}>
                         {s.backBtn}
                     </button>
                 </div>

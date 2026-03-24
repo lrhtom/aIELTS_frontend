@@ -1,15 +1,12 @@
 import Layout from '../../components/layout/Layout';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getInitialVocabInput } from '../../store/word_selection_store';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import VocabInput from '../../components/VocabInput';
 import AiModelSelector from '../../components/common/AiModelSelector';
-import { listPlans, listPlanWords, type LearningPlan } from '../../api/learning_plan';
-import { authApi } from '../../api/auth';
-import { useAuth } from '../../contexts/AuthContext';
+import { listPlans, getPlanDetail, type LearningPlan } from '../../api/learning_plan';
 import '../../styles/practice_page.css';
 import '../../styles/listening_page.css';
 
@@ -17,7 +14,7 @@ const DIFFICULTIES = ['6.0', '6.5', '7.0', '7.5', '8.0', '8.5'];
 
 export default function ListeningConfig() {
     const navigate = useNavigate();
-    const [vocabInput, setVocabInput] = useState(() => getInitialVocabInput());
+    const [vocabInput, setVocabInput] = useState('');
     const [useCustomVocab, setUseCustomVocab] = useState(true);
     const [difficulty, setDifficulty] = useState('7.0');
     const [wordCountMin, setWordCountMin] = useState(1);
@@ -30,8 +27,6 @@ export default function ListeningConfig() {
 
     const { lang } = useLang();
     const t = translations[lang].listeningConfig;
-    const { user, updateUser } = useAuth();
-
     useEffect(() => {
         listPlans().then(({ plans: ps }) => {
             setPlans(ps);
@@ -41,27 +36,29 @@ export default function ListeningConfig() {
 
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
-        localStorage.setItem('ielts_target_vocab', val);
-        if (user) {
-            authApi.updateSettings({ target_vocab_name: val }).then(u => updateUser(u)).catch(console.error);
-        }
     };
 
     const handleImportPlan = async () => {
         if (!importPlanId) return;
         setImportingPlan(true);
         try {
-            const plan = plans.find(p => p.id === importPlanId);
-            const daily = plan?.daily_count ?? 20;
-            const { entries } = await listPlanWords(importPlanId);
-            const now = Date.now();
-            // 到期（含已复习过的历史到期词）优先，其次新词，总量不超过 daily_count
-            const dueWords  = entries.filter(e => e.fsrs_due && new Date(e.fsrs_due).getTime() <= now);
-            const newWords  = entries.filter(e => !e.fsrs_due && e.fsrs_state === 0);
-            const todayWords = [...dueWords, ...newWords].slice(0, daily);
-            const lines = todayWords.map(e => `${e.word} - ${e.zh}`).join('\n');
+            // 调用计划详情接口，获取后端 FSRS 精确计算的今日词汇队列
+            const { plan: detail } = await getPlanDetail(importPlanId);
+            const todayWords = detail.today_words || [];
+            if (todayWords.length === 0) {
+                showToast('该计划今日暂无待学单词', 'error');
+                return;
+            }
+            // 过滤掉中文释义为空的单词（VocabInput 要求每行必须包含中文）
+            const validWords = todayWords.filter(w => w.zh && w.zh.trim());
+            const skipped = todayWords.length - validWords.length;
+            const lines = validWords.map(w => `${w.word} - ${w.zh}`).join('\n');
             handleVocabChange(lines);
-            showToast(`已导入 ${todayWords.length} 个单词`, 'success');
+            if (skipped > 0) {
+                showToast(`已导入 ${validWords.length} 个单词，${skipped} 个因缺少中文释义被跳过`, 'error');
+            } else {
+                showToast(`已导入 ${validWords.length} 个单词`, 'success');
+            }
         } catch {
             showToast('导入失败', 'error');
         } finally {

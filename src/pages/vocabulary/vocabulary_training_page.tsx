@@ -3,8 +3,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { showToast } from '../../components/common/Toast';
-import { authApi } from '../../api/auth';
-import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/practice_page.css';
 
 type VocabMode = 'mcq' | 'dictation' | 'complete';
@@ -32,17 +30,12 @@ const MODE_OPTIONS: Array<{ id: VocabMode; icon: string; title: string; desc: st
 
 export default function VocabularyTrainingPage() {
     const navigate = useNavigate();
-    const [vocabInput, setVocabInput] = useState(() => localStorage.getItem('ielts_target_vocab') || '');
+    const [vocabInput, setVocabInput] = useState('');
     const [mode, setMode] = useState<VocabMode>('mcq');
     const [shuffleWordOrder, setShuffleWordOrder] = useState(true);
 
-    const { user, updateUser } = useAuth();
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
-        localStorage.setItem('ielts_target_vocab', val);
-        if (user) {
-            authApi.updateSettings({ target_vocab_name: val }).then(u => updateUser(u)).catch(console.error);
-        }
     };
 
     const handleStart = () => {
