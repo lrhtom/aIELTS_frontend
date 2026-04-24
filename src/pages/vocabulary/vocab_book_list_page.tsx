@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { listVocabBooks, type VocabBook } from '../../api/learning_plan';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_notebook.css';
 
 export default function VocabBookListPage() {
+    const { translations: t } = useLang();
     const [books, setBooks] = useState<VocabBook[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -21,17 +23,17 @@ export default function VocabBookListPage() {
         <Layout>
             <div className="config-page-wrap">
                 <div className="practice-header">
-                    <Link to="/vocabulary" className="back-link">返回词汇学习</Link>
-                    <h1>官方词书</h1>
-                    <p>浏览官方词汇书，查看 IELTS 核心词汇</p>
+                    <Link to="/vocabulary" className="back-link">{t.common.back}{t.vocab.hub.title}</Link>
+                    <h1>{t.vocab.books.title}</h1>
+                    <p>{t.vocab.books.desc}</p>
                 </div>
 
                 {loading ? (
-                    <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '40px' }}>加载中...</p>
+                    <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '40px' }}>{t.common.loading}</p>
                 ) : books.length === 0 ? (
                     <div className="nb-empty">
                         <span className="nb-empty-icon">📚</span>
-                        暂无官方词书
+                        {t.vocab.books.emptyTitle}
                     </div>
                 ) : (
                     <div className="nb-grid">
@@ -48,7 +50,7 @@ export default function VocabBookListPage() {
                                     <div className="nb-card-desc">{book.description}</div>
                                 )}
                                 <div className="nb-card-meta">
-                                    <span className="nb-card-word-count">{book.word_count} 词</span>
+                                    <span className="nb-card-word-count">{t.vocab.notebooks.cardWordCount.replace('{n}', book.word_count.toString())}</span>
                                 </div>
                             </Link>
                         ))}

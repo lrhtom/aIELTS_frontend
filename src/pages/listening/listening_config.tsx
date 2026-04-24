@@ -19,7 +19,7 @@ export default function ListeningConfig() {
     const [difficulty, setDifficulty] = useState('7.0');
     const [wordCountMin, setWordCountMin] = useState(1);
     const [wordCountMax, setWordCountMax] = useState(2);
-    const [practiceType, setPracticeType] = useState<'article' | 'sentence' | 'multiple_choice'>('article');
+    const [practiceType, setPracticeType] = useState<'article' | 'sentence' | 'multiple_choice' | 'map'>('article');
     const [absurdMode, setAbsurdMode] = useState(false);
     const [plans, setPlans] = useState<LearningPlan[]>([]);
     const [importPlanId, setImportPlanId] = useState(0);
@@ -143,6 +143,16 @@ export default function ListeningConfig() {
                                 <div className="pt-desc">{t.practiceType.multipleChoice.desc}</div>
                             </div>
                         </button>
+                        <button
+                            className={`practice-type-card ${practiceType === 'map' ? 'selected' : ''}`}
+                            onClick={() => setPracticeType('map')}
+                        >
+                            <span className="pt-icon">🗺️</span>
+                            <div className="pt-text">
+                                <div className="pt-title">{t.practiceType.mapLabelling.title}</div>
+                                <div className="pt-desc">{t.practiceType.mapLabelling.desc}</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
 
@@ -163,7 +173,7 @@ export default function ListeningConfig() {
                 </div>
 
                 {/* Word Count Range (仅在非选择题模式下显示) */}
-                {practiceType !== 'multiple_choice' && (
+                {practiceType !== 'multiple_choice' && practiceType !== 'map' && (
                     <div className="config-card">
                         <h3>{t.wordCount.label}</h3>
                         <div className="wc-dual-sliders">

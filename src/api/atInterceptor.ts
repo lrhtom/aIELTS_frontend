@@ -94,6 +94,97 @@ export class ATInterceptor {
         );
     }
 
+    static async generatePart1(params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ questions: Array<{topic: string, question: string}>, atConsumed?: number }>('/speaking/part1/generate'),
+            params
+        );
+    }
+
+    static async evaluatePart1(question: string, user_answer: string, duration_seconds: number, params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ grammar_score: number, vocab_score: number, relevance_score: number, are_a_score: number, are_r_score: number, are_e_score: number, are_feedback: string, corrected_text: string, length_feedback: string, word_count: number, duration_seconds: number, weighted_total_score: number, final_multiplier: number, atConsumed?: number }>('/speaking/part1/evaluate', { question, user_answer, duration_seconds }),
+            params
+        );
+    }
+
+    static async summaryPart1(history: Array<any>, params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ overall_band_estimate: number, strengths: string, weaknesses: string, are_analysis: string, advice: string, atConsumed?: number }>('/speaking/part1/summary', { history }),
+            params
+        );
+    }
+
+    static async generatePart2(params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ questions: Array<{topic: string, question: string}>, atConsumed?: number }>('/speaking/part2/generate'),
+            params
+        );
+    }
+
+    static async evaluatePart2(question: string, user_answer: string, duration_seconds: number, params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{
+                grammar_score: number,
+                vocab_score: number,
+                relevance_score: number,
+                coherence_score: number,
+                depth_score: number,
+                feedback: string,
+                corrected_text: string,
+                length_feedback: string,
+                word_count: number,
+                duration_seconds: number,
+                weighted_total_score: number,
+                final_multiplier: number,
+                atConsumed?: number
+            }>('/speaking/part2/evaluate', { question, user_answer, duration_seconds }),
+            params
+        );
+    }
+
+    static async summaryPart2(history: Array<any>, params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ overall_band_estimate: number, strengths: string, weaknesses: string, analysis: string, advice: string, atConsumed?: number }>('/speaking/part2/summary', { history }),
+            params
+        );
+    }
+
+    static async generatePart3(params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ questions: Array<{topic: string, question: string}>, atConsumed?: number }>('/speaking/part3/generate'),
+            params
+        );
+    }
+
+    static async evaluatePart3(question: string, user_answer: string, duration_seconds: number, params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{
+                grammar_score: number,
+                vocab_score: number,
+                relevance_score: number,
+                coherence_score: number,
+                depth_score: number,
+                feedback: string,
+                corrected_text: string,
+                length_feedback: string,
+                word_count: number,
+                duration_seconds: number,
+                weighted_total_score: number,
+                final_multiplier: number,
+                atConsumed?: number
+            }>('/speaking/part3/evaluate', { question, user_answer, duration_seconds }),
+            params
+        );
+    }
+
+    static async summaryPart3(history: Array<any>, params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ overall_band_estimate: number, strengths: string, weaknesses: string, analysis: string, advice: string, atConsumed?: number }>('/speaking/part3/summary', { history }),
+            params
+        );
+    }
+
     static async readingExercise(params?: Record<string, number>) {
         return this.intercept('reading', () =>
             apiClient.post('/reading/exercise'),

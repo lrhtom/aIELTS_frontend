@@ -10,7 +10,7 @@ import '../../styles/practice_page.css';
 import '../../styles/speaking_page.css';
 
 export type IeltsPart = 'part1' | 'part2' | 'part3';
-export type SpeakingMode = 'chat' | 'call' | 'exam' | 'scenario';
+export type SpeakingMode = 'chat' | 'call' | 'exam' | 'scenario' | 'part1' | 'part2' | 'part3';
 
 interface PartInfo {
     id: IeltsPart;
@@ -82,6 +82,11 @@ export default function Speaking() {
         setVocabInput(val);
     };
 
+    const isExamPart1 = selectedMode === 'exam' && selectedPart === 'part1';
+    const isExamPart2 = selectedMode === 'exam' && selectedPart === 'part2';
+    const isExamPart3 = selectedMode === 'exam' && selectedPart === 'part3';
+    const isStartDisabled = isChecking;
+
     const handleStart = async () => {
         if (selectedMode === 'scenario' && !scenarioInput.trim()) {
             alert('请输入您想设定的场景内容');
@@ -117,6 +122,60 @@ export default function Speaking() {
                     scenarioInput: scenarioInput.trim()
                 },
             });
+        } else if (isExamPart1) {
+            try {
+                setIsChecking(true);
+                const res = await ATInterceptor.generatePart1();
+                speakingStore.isChatAllowed = true;
+                navigate('/speaking/chat', {
+                    state: {
+                        mode: 'part1',
+                        questions: res.data.questions,
+                        showSubtitles,
+                        part: 'part1'
+                    }
+                });
+            } catch (err: any) {
+                alert('获取Part1题目失败或余额不足: ' + err.message);
+            } finally {
+                setIsChecking(false);
+            }
+        } else if (isExamPart2) {
+            try {
+                setIsChecking(true);
+                const res = await ATInterceptor.generatePart2();
+                speakingStore.isChatAllowed = true;
+                navigate('/speaking/chat', {
+                    state: {
+                        mode: 'part2',
+                        questions: res.data.questions,
+                        showSubtitles,
+                        part: 'part2'
+                    }
+                });
+            } catch (err: any) {
+                alert('获取Part2题目失败或余额不足: ' + err.message);
+            } finally {
+                setIsChecking(false);
+            }
+        } else if (isExamPart3) {
+            try {
+                setIsChecking(true);
+                const res = await ATInterceptor.generatePart3();
+                speakingStore.isChatAllowed = true;
+                navigate('/speaking/chat', {
+                    state: {
+                        mode: 'part3',
+                        questions: res.data.questions,
+                        showSubtitles,
+                        part: 'part3'
+                    }
+                });
+            } catch (err: any) {
+                alert('获取Part3题目失败或余额不足: ' + err.message);
+            } finally {
+                setIsChecking(false);
+            }
         } else {
             alert(sc.comingSoon);
         }
@@ -239,12 +298,12 @@ export default function Speaking() {
                 <div className="config-card">
                     <button
                         className="skill-btn speaking-start-btn"
-                        style={{ width: '100%', opacity: (selectedMode === 'exam' || isChecking) ? 0.6 : 1 }}
+                        style={{ width: '100%', opacity: (isStartDisabled) ? 0.6 : 1 }}
                         onClick={handleStart}
-                        disabled={selectedMode === 'exam' || isChecking}
+                        disabled={isStartDisabled}
                     >
                         <span className="btn-icon">{isChecking ? '⏳' : '🗣️'}</span>
-                        {isChecking ? '正在校检场景...' : sc.startBtn}
+                        {isChecking ? '正在准备...' : sc.startBtn}
                     </button>
                 </div>
             </div>

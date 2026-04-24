@@ -1,40 +1,43 @@
 import Layout from '../../components/layout/Layout';
 import { Link } from 'react-router-dom';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_hub.css';
 
 export default function VocabularyPracticePage() {
+    const { translations: t } = useLang();
+
     return (
         <Layout>
             <div className="practice-hub-container">
                 <div className="practice-hub-header">
-                    <Link to="/" className="back-link">返回首页</Link>
-                    <h1>词汇学习</h1>
-                    <p>从这里进入词汇专项训练模块</p>
+                    <Link to="/" className="back-link">{t.common.back + t.common.home}</Link>
+                    <h1>{t.vocab.hub.title}</h1>
+                    <p>{t.vocab.hub.desc}</p>
                 </div>
 
                 <div className="skill-grid">
                     <Link to="/vocabulary/practice" className="skill-entry reading" style={{ textAlign: 'left' }}>
                         <span className="skill-icon">📝</span>
-                        <div className="skill-name">词汇练习</div>
-                        <div className="skill-sub">听写、拼写纠错与词汇巩固训练</div>
+                        <div className="skill-name">{t.vocab.hub.practiceTitle}</div>
+                        <div className="skill-sub">{t.vocab.hub.practiceDesc}</div>
                     </Link>
 
                     <Link to="/vocabulary/plans" className="skill-entry listening" style={{ textAlign: 'left' }}>
                         <span className="skill-icon">🃏</span>
-                        <div className="skill-name">背单词</div>
-                        <div className="skill-sub">制定学习计划，FSRS 智能间隔重复</div>
+                        <div className="skill-name">{t.vocab.hub.plansTitle}</div>
+                        <div className="skill-sub">{t.vocab.hub.plansDesc}</div>
                     </Link>
 
                     <Link to="/vocabulary/notebook" className="skill-entry writing" style={{ textAlign: 'left' }}>
                         <span className="skill-icon">📓</span>
-                        <div className="skill-name">我的笔记本</div>
-                        <div className="skill-sub">自建单词本，自定义标签与中文释义</div>
+                        <div className="skill-name">{t.vocab.hub.notebookTitle}</div>
+                        <div className="skill-sub">{t.vocab.hub.notebookDesc}</div>
                     </Link>
 
                     <Link to="/vocabulary/books" className="skill-entry speaking" style={{ textAlign: 'left' }}>
                         <span className="skill-icon">📚</span>
-                        <div className="skill-name">官方词书</div>
-                        <div className="skill-sub">浏览官方 IELTS 词书，查看单词释义</div>
+                        <div className="skill-name">{t.vocab.hub.booksTitle}</div>
+                        <div className="skill-sub">{t.vocab.hub.booksDesc}</div>
                     </Link>
                 </div>
             </div>

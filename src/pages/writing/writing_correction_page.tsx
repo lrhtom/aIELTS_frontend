@@ -1,5 +1,5 @@
 import Layout from '../../components/layout/Layout';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, type ChangeEvent, type DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { showToast } from '../../components/common/Toast';
@@ -9,12 +9,18 @@ import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
 
+type AIProvider = 'deepseek' | 'gemini' | 'gpt5';
+
+const TASK1_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const TASK1_IMAGE_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
+
 interface CorrectionResponse {
     Task_Response: number;
     Coherence_Cohesion: number;
     Lexical_Resource: number;
     Grammatical_Range: number;
     Overall_Band: number;
+    word_count?: number;
     Feedback?: string;
     feedback?: string;
     Model_Essay?: string;
@@ -31,14 +37,74 @@ export default function WritingCorrectionPage() {
     const [isEvaluating, setIsEvaluating] = useState(false);
     const [result, setResult] = useState<CorrectionResponse | null>(null);
     const [copied, setCopied] = useState(false);
+    const [provider, setProvider] = useState<AIProvider>(() => {
+        const localProvider = localStorage.getItem('ai_provider') as AIProvider | null;
+        return localProvider || 'deepseek';
+    });
+    const [task1ImageDataUrl, setTask1ImageDataUrl] = useState('');
+    const [task1ImageName, setTask1ImageName] = useState('');
+    const [isTask1ImageDragOver, setIsTask1ImageDragOver] = useState(false);
+    const task1ImageInputRef = useRef<HTMLInputElement | null>(null);
 
     const minWords = taskType === 'task1' ? 150 : 250;
+    const supportsTask1ImageRecognition = provider === 'gpt5';
+    const showTask1ImageUpload = taskType === 'task1' && supportsTask1ImageRecognition;
 
     const wordCount = useMemo(() => {
         const trimmed = text.trim();
         if (!trimmed) return 0;
         return trimmed.split(/\s+/).length;
     }, [text]);
+
+    const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (typeof reader.result === 'string') {
+                resolve(reader.result);
+                return;
+            }
+            reject(new Error('file-read-failed'));
+        };
+        reader.onerror = () => reject(new Error('file-read-failed'));
+        reader.readAsDataURL(file);
+    });
+
+    const handleTask1ImageFile = async (file: File) => {
+        if (!TASK1_IMAGE_ALLOWED_TYPES.has((file.type || '').toLowerCase())) {
+            showToast(t.writingCorrection.task1ImageInvalidType, 'error');
+            return;
+        }
+        if (file.size > TASK1_IMAGE_MAX_SIZE) {
+            showToast(t.writingCorrection.task1ImageTooLarge, 'error');
+            return;
+        }
+
+        try {
+            const dataUrl = await readFileAsDataUrl(file);
+            setTask1ImageDataUrl(dataUrl);
+            setTask1ImageName(file.name || 'task1-image');
+        } catch {
+            showToast(t.writingCorrection.task1ImageReadFail, 'error');
+        }
+    };
+
+    const handleTask1ImageInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            await handleTask1ImageFile(file);
+        }
+        event.target.value = '';
+    };
+
+    const handleTask1ImageDrop = async (event: DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        if (isEvaluating) return;
+        setIsTask1ImageDragOver(false);
+        const file = event.dataTransfer.files?.[0];
+        if (file) {
+            await handleTask1ImageFile(file);
+        }
+    };
 
     const handleEvaluate = async () => {
         if (!text.trim()) {
@@ -48,9 +114,21 @@ export default function WritingCorrectionPage() {
         setIsEvaluating(true);
         setResult(null);
         try {
+            const payload: Record<string, unknown> = {
+                text,
+                prompt: promptText,
+                task_type: taskType,
+                lang,
+            };
+
+            // Task 2 never sends image payload even if Task 1 image exists in local state.
+            if (taskType === 'task1' && showTask1ImageUpload && task1ImageDataUrl) {
+                payload.task1_image_data_url = task1ImageDataUrl;
+            }
+
             const res = await api<CorrectionResponse>('/writing/generate', {
                 method: 'POST',
-                body: { text, prompt: promptText, task_type: taskType, lang },
+                body: payload,
             });
             setResult(res);
             showToast(t.writingCorrection.toastSuccess, 'success');
@@ -84,7 +162,7 @@ export default function WritingCorrectionPage() {
                         <p>{t.writingCorrection.subtitle}</p>
                     </div>
                     <div className="wc-model-box">
-                        <AiModelSelector />
+                        <AiModelSelector onModelChange={(nextProvider) => setProvider(nextProvider)} />
                     </div>
                 </div>
 
@@ -130,6 +208,88 @@ export default function WritingCorrectionPage() {
                             />
                         </div>
 
+                        {/* Task1 image helper (only for vision-capable model) */}
+                        {taskType === 'task1' && (
+                            <div className="wc-section">
+                                <div className="wc-section-head">
+                                    <label className="wc-section-label">{t.writingCorrection.task1ImageLabel}</label>
+                                    <span className="wc-optional-tag">{t.writingCorrection.optionalTag}</span>
+                                </div>
+
+                                {showTask1ImageUpload ? (
+                                    <>
+                                        <input
+                                            ref={task1ImageInputRef}
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                                            className="wc-task1-image-input"
+                                            onChange={handleTask1ImageInputChange}
+                                            disabled={isEvaluating}
+                                        />
+
+                                        <div
+                                            className={`wc-task1-image-dropzone${isTask1ImageDragOver ? ' drag-over' : ''}${isEvaluating ? ' disabled' : ''}`}
+                                            onDragOver={(event) => {
+                                                event.preventDefault();
+                                                if (!isEvaluating) {
+                                                    setIsTask1ImageDragOver(true);
+                                                }
+                                            }}
+                                            onDragLeave={(event) => {
+                                                event.preventDefault();
+                                                const related = event.relatedTarget as Node | null;
+                                                if (!related || !event.currentTarget.contains(related)) {
+                                                    setIsTask1ImageDragOver(false);
+                                                }
+                                            }}
+                                            onDrop={handleTask1ImageDrop}
+                                        >
+                                            <div className="wc-task1-image-drop-title">{t.writingCorrection.task1ImageDropHint}</div>
+                                            <div className="wc-task1-image-drop-subtitle">{t.writingCorrection.task1ImageHint}</div>
+                                            <div className="wc-task1-image-actions">
+                                                <button
+                                                    type="button"
+                                                    className="wc-task1-image-btn"
+                                                    onClick={() => task1ImageInputRef.current?.click()}
+                                                    disabled={isEvaluating}
+                                                >
+                                                    {task1ImageDataUrl ? t.writingCorrection.task1ImageReplaceBtn : t.writingCorrection.task1ImageSelectBtn}
+                                                </button>
+                                                {task1ImageDataUrl && (
+                                                    <button
+                                                        type="button"
+                                                        className="wc-task1-image-btn ghost"
+                                                        onClick={() => {
+                                                            setTask1ImageDataUrl('');
+                                                            setTask1ImageName('');
+                                                        }}
+                                                        disabled={isEvaluating}
+                                                    >
+                                                        {t.writingCorrection.task1ImageRemoveBtn}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {task1ImageDataUrl && (
+                                            <div className="wc-task1-image-preview-wrap">
+                                                <img
+                                                    src={task1ImageDataUrl}
+                                                    alt={t.writingCorrection.task1ImagePreviewAlt}
+                                                    className="wc-task1-image-preview"
+                                                />
+                                                <div className="wc-task1-image-name">{task1ImageName}</div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="wc-task1-image-vision-hint">
+                                        {t.writingCorrection.task1ImageVisionOnlyHint}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Essay */}
                         <div className="wc-section">
                             <div className="wc-section-head">
@@ -170,6 +330,15 @@ export default function WritingCorrectionPage() {
                     {/* Right: Result or Pending Placeholder */}
                     {result ? (
                         <div className="wc-result-card">
+
+                            {/* Task1-only model image capability status */}
+                            {taskType === 'task1' && (
+                                <div className={`wc-task1-image-support-status${supportsTask1ImageRecognition ? ' supported' : ' unsupported'}`}>
+                                    {supportsTask1ImageRecognition
+                                        ? t.writingCorrection.task1ImageModelSupportYes
+                                        : t.writingCorrection.task1ImageModelSupportNo}
+                                </div>
+                            )}
 
                             {/* Overall band */}
                             <div className="wc-band-display">

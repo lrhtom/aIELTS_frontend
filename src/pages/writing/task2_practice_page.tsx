@@ -1,6 +1,8 @@
 import Layout from '../../components/layout/Layout';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
@@ -25,6 +27,18 @@ interface EvaluationResult {
     feedback: string;
 }
 
+function PromptMarkdown({ prompt }: { prompt?: string }) {
+    if (!prompt) return null;
+
+    return (
+        <div className="wp-prompt-markdown">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {prompt}
+            </ReactMarkdown>
+        </div>
+    );
+}
+
 export default function Task2PracticePage() {
     const navigate = useNavigate();
     const { lang } = useLang();
@@ -32,7 +46,8 @@ export default function Task2PracticePage() {
 
     const [searchParams] = useSearchParams();
     const type = searchParams.get('type') || 'opinion';
-    const cacheKey = `writing_task2_session_${type}`;
+    const topicCategory = (searchParams.get('topic') || 'all').trim().toLowerCase() || 'all';
+    const cacheKey = `writing_task2_session_${type}_${topicCategory}`;
 
     const [step, setStep] = useState<Step>('loading');
     const [taskData, setTaskData] = useState<Task2Data | null>(null);
@@ -101,7 +116,10 @@ export default function Task2PracticePage() {
             try {
                 const res = await api<Task2Data>('/writing/task2/generate', {
                     method: 'POST',
-                    body: { type },
+                    body: {
+                        type,
+                        topic_category: topicCategory,
+                    },
                 });
                 if (isMounted) {
                     setTaskData(res);
@@ -120,7 +138,7 @@ export default function Task2PracticePage() {
         fetchPrompt();
 
         return () => { isMounted = false; hasFetchedRef.current = null; };
-    }, [type, navigate, cacheKey]);
+    }, [type, topicCategory, navigate, cacheKey]);
 
     // Word count calculation
     const wordCount = useMemo(() => {
@@ -197,7 +215,7 @@ export default function Task2PracticePage() {
                 </div>
                 <div className="wp-panel-body">
                     <div className="wp-prompt-block">
-                        {taskData?.prompt}
+                        <PromptMarkdown prompt={taskData?.prompt} />
                     </div>
                 </div>
             </div>
@@ -280,7 +298,7 @@ export default function Task2PracticePage() {
                     </div>
                     <div className="wp-panel-body">
                         <div className="wp-prompt-block wp-prompt-block--compact">
-                            {taskData?.prompt}
+                            <PromptMarkdown prompt={taskData?.prompt} />
                         </div>
                         <div className="wp-essay-replay">{userAnswer}</div>
                     </div>

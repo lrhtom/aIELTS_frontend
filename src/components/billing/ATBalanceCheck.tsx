@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLang } from '../../i18n/LanguageContext';
 import { calculateCost } from '../../config/ai_cost';
 import { formatATBalance } from '../../utils/format';
 import '../../styles/atBalanceCheck.css';
@@ -18,6 +19,8 @@ export default function ATBalanceCheck({
     children
 }: ATBalanceCheckProps) {
     const { user } = useAuth();
+    const { translations: t } = useLang();
+    
     // Use memoization instead of effect for cost
     const estimatedCost = useMemo(() => {
         try {
@@ -44,7 +47,10 @@ export default function ATBalanceCheck({
                 // AT币不足，显示警告
                 window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
                     detail: {
-                        message: `${service}服务需要${cost} AT币`,
+                        message: t.billing.needMoreBalance
+                            .replace('{message}', t.billing.insufficientBalance)
+                            .replace('{required}', cost.toString())
+                            .replace('{current}', (user.atBalance || 0).toString()),
                         estimatedCost: cost,
                         currentBalance: user.atBalance
                     }
@@ -53,7 +59,7 @@ export default function ATBalanceCheck({
         }
 
         setIsChecking(false);
-    }, [service, params, user, setBalanceOk, setIsChecking]);
+    }, [service, params, user, setBalanceOk, setIsChecking, t]);
 
     useEffect(() => {
         checkBalance();
@@ -61,7 +67,7 @@ export default function ATBalanceCheck({
     }, [service, params, user?.atBalance, checkBalance]); // Added checkBalance to useEffect dependencies
 
     if (isChecking) {
-        return <div>检查AT币余额...</div>;
+        return <div>{t.billing.checkingBalance}</div>;
     }
 
     if (!balanceOk) {
@@ -69,23 +75,30 @@ export default function ATBalanceCheck({
             <div className="at-balance-warning">
                 <div className="warning-header">
                     <span className="warning-icon">⚠️</span>
-                    <span className="warning-title">AT币余额不足</span>
+                    <span className="warning-title">{t.billing.insufficientBalance}</span>
                 </div>
                 <div className="warning-content">
-                    <p>本次{service}练习需要消耗约 <strong>{estimatedCost} AT币</strong>。</p>
-                    <p>您的当前余额为 <strong>{formatATBalance(user?.atBalance)} AT币</strong>。</p>
+                    <p dangerouslySetInnerHTML={{ 
+                        __html: t.billing.estimateCost
+                            .replace('{service}', service)
+                            .replace('{estimatedCost}', estimatedCost.toString()) 
+                    }} />
+                    <p dangerouslySetInnerHTML={{ 
+                        __html: t.billing.currentBalance
+                            .replace('{balance}', formatATBalance(user?.atBalance).toString()) 
+                    }} />
                     <div className="warning-actions">
                         <button
                             className="primary-button"
                             onClick={() => window.location.href = '/profile'}
                         >
-                            前往充值
+                            {t.billing.goToRecharge}
                         </button>
                         <button
                             className="secondary-button"
                             onClick={onReady}
                         >
-                            尝试使用
+                            {t.billing.tryAnyway}
                         </button>
                     </div>
                 </div>

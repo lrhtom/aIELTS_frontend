@@ -15,6 +15,8 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import RecordRTC, { StereoAudioRecorder } from 'recordrtc';
 import { speakingStore } from '../../store/speaking_page_store';
 import AiModelSelector from '../../components/common/AiModelSelector';
@@ -23,6 +25,7 @@ import { showToast } from '../../components/common/Toast';
 import type { SpeakingMode, IeltsPart } from './speaking';
 import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/speaking_chat.css';
+import ErrorBoundary from '../../components/common/ErrorBoundary';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Role = 'user' | 'assistant' | 'system';
@@ -34,14 +37,31 @@ interface ChatMessage {
         grammar?: number;
         vocab?: number;
         relevance?: number;
+        coherence?: number;
+        depth?: number;
+        feedback?: string;
         accuracy?: number;
         pronunciation?: number;
         completeness?: number;
         fluency?: number;
+        // Part 1 ARE specific
+        are_a?: number;
+        are_r?: number;
+        are_e?: number;
+        are_feedback?: string;
+        length_feedback?: string;
+        word_count?: number;
+        duration?: number;
+        weighted_total_score?: number;
     };
 }
 
 type Status = 'loading' | 'mic_loading' | 'idle' | 'listening' | 'processing' | 'speaking' | 'finished';
+
+interface ExamQuestion {
+    topic: string;
+    question: string;
+}
 
 interface Word {
     en: string;
@@ -68,14 +88,23 @@ function countMatches(text: string, word: string): number {
     return (text.match(rx) || []).length;
 }
 
-function highlightWords(text: string, words: Word[]): string {
-    let out = text;
-    words.forEach(w => {
-        if (!w.en) return;
-        const rx = new RegExp(`\\b(${w.en})\\b`, 'gi');
-        out = out.replace(rx, '<span class="sc-highlight">$1</span>');
-    });
-    return out;
+function MarkdownBubble({ content, className = 'sc-markdown' }: { content: string; className?: string }) {
+    return (
+        <div className={className}>
+            <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                    a: ({ children, ...props }) => (
+                        <a {...props} target="_blank" rel="noreferrer">
+                            {children}
+                        </a>
+                    ),
+                }}
+            >
+                {content}
+            </ReactMarkdown>
+        </div>
+    );
 }
 
 // SpeechRecognition cross-browser factory (avoids TypeScript global type issues)
@@ -83,7 +112,15 @@ const getSRConstructor = (): unknown =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
 
-export default function SpeakingChatPage() {
+export default function SpeakingChatPageWrapper() {
+  return (
+    <ErrorBoundary>
+            <SpeakingChatPage />
+    </ErrorBoundary>
+  );
+}
+
+function SpeakingChatPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const { translations: t } = useLang();
@@ -91,11 +128,15 @@ export default function SpeakingChatPage() {
         vocabInput?: string, 
         mode?: SpeakingMode, 
         scenarioInput?: string,
-        part?: IeltsPart
+        part?: IeltsPart,
+        questions?: ExamQuestion[]
     };
     const vocabRaw: string = state?.vocabInput ?? '';
-    const mode: SpeakingMode = state?.mode ?? 'chat';
+    const initialMode: SpeakingMode = state?.mode ?? 'chat';
     const scenarioPrompt: string = state?.scenarioInput ?? '';
+    const [activeMode, setActiveMode] = useState<SpeakingMode>(initialMode);
+    const [activeExamQuestions, setActiveExamQuestions] = useState<ExamQuestion[]>(state?.questions ?? []);
+    const isExamMode = activeMode === 'part1' || activeMode === 'part2' || activeMode === 'part3';
 
     // ── 路由守卫：防止刷新或直接跳转进来 ────────────────────────────────────
     useEffect(() => {
@@ -121,6 +162,12 @@ export default function SpeakingChatPage() {
     const [recError, setRecError] = useState('');
     const [audioLevel, setAudioLevel] = useState(0);
     const [recordingTime, setRecordingTime] = useState(0);
+    // Exam states
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [, setExamHistory] = useState<Array<any>>([]);
+    const [showTimer, setShowTimer] = useState(false);
+    const [showPart3ContinuePrompt, setShowPart3ContinuePrompt] = useState(false);
+    const [loadingPart3, setLoadingPart3] = useState(false);
 
     // ── Refs (never stale inside callbacks) ──
     const wordsRef = useRef<Word[]>(parseWords(vocabRaw));
@@ -130,6 +177,8 @@ export default function SpeakingChatPage() {
     const ttsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const recStartTimeRef = useRef<number>(0);
+    const lastRecordingTimeRef = useRef<number>(0);
     // Prevent concurrent handleSend calls
     const pendingRef = useRef(false);
 
@@ -142,7 +191,6 @@ export default function SpeakingChatPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const srRef = useRef<any>(null);
     const ttsAbortControllerRef = useRef<AbortController | null>(null);
-    const hasInitRef = useRef(false); // 【新增】防止严格模式下执行两次
 
     const setStatusSync = (s: Status) => { statusRef.current = s; setStatus(s); };
     const setWordsSync = (fn: (p: Word[]) => Word[]) => {
@@ -160,25 +208,34 @@ export default function SpeakingChatPage() {
         setRecordingTime(0);
         pendingRef.current = false;
 
-        // 【新增】进页面立刻索要麦克风权限
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-                // 成功授权后，立刻释放掉这些轨道，免得浏览器右上角一直有个红点（真正用的时候会再次请求）
-                stream.getTracks().forEach(track => track.stop());
-            })
-            .catch(err => {
-                console.warn('初次请求麦克风权限被拒或出错:', err);
-                // 此时并不强行报错中断流程（因为用户点按钮时还会再次申请并抛错）
-            });
+        // 【修复】兼容性判断，防止getUserMedia为undefined时报错
+        if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    // 成功授权后，立刻释放掉这些轨道，免得浏览器右上角一直有个红点（真正用的时候会再次请求）
+                    stream.getTracks().forEach(track => track.stop());
+                })
+                .catch(err => {
+                    console.warn('初次请求麦克风权限被拒或出错:', err);
+                    // 此时并不强行报错中断流程（因为用户点按钮时还会再次申请并抛错）
+                });
+        } else {
+            setRecError('当前浏览器不支持麦克风权限获取（getUserMedia）。请使用最新版Chrome、Edge或Firefox，并确保使用HTTPS访问。');
+            console.warn('navigator.mediaDevices.getUserMedia 不可用，浏览器不支持或非安全上下文。');
+        }
 
         const wordList = wordsRef.current.map(w => w.en).join(', ');
         let systemPrompt = '';
         let welcomeMsg = '';
 
-        if (mode === 'scenario') {
+        if (activeMode === 'scenario') {
             // 场景模式：系统提示词主要由后端接口 handle，这里仅做前端展示同步
             systemPrompt = `Role-play Scenario: ${scenarioPrompt}\nTarget vocabulary: [${wordList}]`;
             welcomeMsg = `Acting for scenario: "${scenarioPrompt}". I am ready to start. What would you like to say first?`;
+        } else if (isExamMode && activeExamQuestions.length > 0) {
+            const partLabel = activeMode === 'part1' ? 'Part 1' : activeMode === 'part2' ? 'Part 2' : 'Part 3';
+            systemPrompt = `You are taking IELTS Speaking ${partLabel}. Topic: ${activeExamQuestions[0].topic}`;
+            welcomeMsg = `Welcome to IELTS Speaking ${partLabel}. Our first topic is ${activeExamQuestions[0].topic}. ${activeExamQuestions[0].question}`;
         } else {
             systemPrompt = `You are an IELTS speaking practice AI examiner.
 Target vocabulary: [${wordList}].
@@ -186,7 +243,7 @@ Rules:
 1. Always reply in English only.
 2. Use the target vocabulary naturally in your responses.
 3. Keep replies concise (1-3 sentences).
-4. No markdown symbols.
+4. Always format your reply using valid Markdown (GFM).
 5. Encourage the user to use the target words.`;
             welcomeMsg = "Welcome to IELTS speaking practice. Tell me when you are ready.";
         }
@@ -194,17 +251,8 @@ Rules:
         contextRef.current = [{ role: 'system', content: systemPrompt }];
         setChatHistory([{ role: 'assistant', content: welcomeMsg }]);
 
-        if (hasInitRef.current) {
-            // Already initializing/initialized by a previous Strict Mode effect.
-            // Ensure we at least exit the loading state eventually if the audio doesn't unlock it.
-            setTimeout(() => {
-                if (statusRef.current === 'loading') setStatusSync('idle');
-            }, 1000);
-            return;
-        }
-        hasInitRef.current = true;
-
         let isUnmounted = false;
+        const controller = new AbortController();
 
         (async () => {
             try {
@@ -212,6 +260,7 @@ Rules:
                 const token = localStorage.getItem('access_token') || '';
                 const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
                     method: 'POST',
+                    signal: controller.signal,
                     headers: {
                         'Content-Type': 'application/json',
                         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -237,8 +286,9 @@ Rules:
                 };
 
                 // The second strict mode unmount will call stopAudio, meaning play() here might get aborted.
+                if (!isUnmounted) setStatusSync('speaking');
                 await a.play().catch(e => {
-                    console.log("Welcome TTS aborted by strict mode unmount?", e);
+                    console.log("Welcome TTS aborted", e);
                     if (!isUnmounted) setStatusSync('idle');
                 });
             } catch (err: any) {
@@ -251,6 +301,7 @@ Rules:
 
         return () => {
             isUnmounted = true;
+            controller.abort();
             stopAudio();
             if (srRef.current) {
                 try { srRef.current.abort(); } catch { /* ignore */ }
@@ -386,6 +437,9 @@ Rules:
                 if (statusRef.current !== 'listening' && statusRef.current !== 'processing') return;
                 onendHandled = true;
 
+                // Capture precise duration using Date.now()
+                lastRecordingTimeRef.current = Math.max(0, Math.round((Date.now() - recStartTimeRef.current) / 1000));
+
                 const text = liveTranscriptRef.current.trim();
                 setLiveTranscript('');
                 liveTranscriptRef.current = '';
@@ -470,6 +524,7 @@ Rules:
                     if (statusRef.current === 'mic_loading') {
                         recorder.startRecording();
                         recorderRef.current = recorder;
+                        recStartTimeRef.current = Date.now();
                         setStatusSync('listening');
                         startRecTimer();
                     }
@@ -490,7 +545,7 @@ Rules:
     };
 
     // ── TTS for AI Response ───────────────────────────────────────────────
-    const playTTS = async (text: string) => {
+    const playTTS = async (text: string, isFinished: boolean = false) => {
         try {
             stopAudio(); // Release any playing audio AND abort any ongoing fetch
 
@@ -524,13 +579,13 @@ Rules:
             audioRef.current = a;
 
             a.onended = () => {
-                setStatusSync('idle');
+                setStatusSync(isFinished ? 'finished' : 'idle');
                 pendingRef.current = false;
             };
 
             a.onerror = () => {
                 console.error("TTS playback error");
-                setStatusSync('idle');
+                setStatusSync(isFinished ? 'finished' : 'idle');
                 pendingRef.current = false;
             };
 
@@ -538,7 +593,7 @@ Rules:
         } catch (err: any) {
             if (err.name !== 'AbortError') {
                 console.error("TTS error:", err);
-                setStatusSync('idle');
+                setStatusSync(isFinished ? 'finished' : 'idle');
                 pendingRef.current = false;
             }
         }
@@ -567,11 +622,40 @@ Rules:
 
         try {
             let chatPromise;
-            if (mode === 'scenario') {
+            let currentExamQ = '';
+            const currentExamItem = isExamMode ? activeExamQuestions[currentQuestionIndex] : null;
+            if (isExamMode && !currentExamItem) {
+                pendingRef.current = false;
+                setStatusSync('idle');
+                setChatHistory(h => [...h, { role: 'system', content: '⚠️ 题目数据缺失，请返回口语页重新开始。' }]);
+                return;
+            }
+            if (activeMode === 'scenario') {
                 chatPromise = ATInterceptor.scenarioChat(
                     scenarioPrompt,
                     messages as unknown as Array<Record<string, unknown>>,
                     { conversationLength: 1 }
+                );
+            } else if (activeMode === 'part1') {
+                currentExamQ = currentExamItem!.question;
+                chatPromise = ATInterceptor.evaluatePart1(
+                    currentExamQ,
+                    text,
+                    lastRecordingTimeRef.current
+                );
+            } else if (activeMode === 'part2') {
+                currentExamQ = currentExamItem!.question;
+                chatPromise = ATInterceptor.evaluatePart2(
+                    currentExamQ,
+                    text,
+                    lastRecordingTimeRef.current
+                );
+            } else if (activeMode === 'part3') {
+                currentExamQ = currentExamItem!.question;
+                chatPromise = ATInterceptor.evaluatePart3(
+                    currentExamQ,
+                    text,
+                    lastRecordingTimeRef.current
                 );
             } else {
                 chatPromise = ATInterceptor.speakingChat(
@@ -586,39 +670,90 @@ Rules:
 
             const chatRes = chatResponse.data as any;
 
+            let isContinue = 1;
+            let nextReply = chatRes.reply || '';
+
+            if (isExamMode) {
+                const nextIndex = currentQuestionIndex + 1;
+                
+                // Add to history for summary
+                setExamHistory(h => {
+                    const newH = [...h, { question: currentExamQ, answer: text, scores: chatRes }];
+                    return newH;
+                });
+
+                if (activeMode === 'part2') {
+                    // 连续联动：Part2 固定只问 1 个大问题，然后弹出是否进入 Part3。
+                    setCurrentQuestionIndex(nextIndex);
+                    nextReply = 'That is the end of Part 2. Would you like to continue with Part 3 practice?';
+                    isContinue = 0;
+                    setShowPart3ContinuePrompt(true);
+                } else {
+                    setCurrentQuestionIndex(nextIndex);
+                    if (nextIndex < activeExamQuestions.length) {
+                        const nextQ = activeExamQuestions[nextIndex];
+                        const isTopicChange = activeExamQuestions[nextIndex].topic !== activeExamQuestions[currentQuestionIndex].topic;
+                        if (isTopicChange) {
+                            nextReply = `Let's move on to the topic of ${nextQ.topic}. ${nextQ.question}`;
+                        } else {
+                            nextReply = nextQ.question;
+                        }
+                    } else {
+                        const partLabel = activeMode === 'part1' ? 'Part 1' : 'Part 3';
+                        nextReply = `That is the end of ${partLabel}. I will now process your overall results. Good job!`;
+                        isContinue = 0;
+                    }
+                }
+            } else {
+                isContinue = activeMode === 'scenario' ? chatRes.is_continue : 1;
+            }
+
             const aiMsg: ChatMessage = {
                 role: 'assistant',
-                content: chatRes.reply,
+                content: nextReply,
                 correctedText: chatRes.corrected_text || '',
                 scores: {
                     grammar: chatRes.grammar_score,
                     vocab: chatRes.vocab_score,
                     relevance: chatRes.relevance_score,
+                    coherence: chatRes.coherence_score,
+                    depth: chatRes.depth_score,
+                    feedback: chatRes.feedback,
+                    are_a: chatRes.are_a_score,
+                    are_r: chatRes.are_r_score,
+                    are_e: chatRes.are_e_score,
+                    are_feedback: chatRes.are_feedback,
+                    length_feedback: chatRes.length_feedback,
+                    word_count: chatRes.word_count,
+                    duration: chatRes.duration_seconds,
+                    weighted_total_score: chatRes.weighted_total_score,
                     ...(audioScores || {})
                 }
             };
 
-            // 处理场景结束逻辑
-            const isContinue = mode === 'scenario' ? chatRes.is_continue : 1;
-
+            // 处理结束逻辑
             setChatHistory(h => {
                 const newHistory = [...h, aiMsg];
                 if (isContinue === 0) {
-                    newHistory.push({ role: 'system', content: '🎭 Scenario finished. You can view your performance above.' });
+                    if (isExamMode) {
+                        const partLabel = activeMode === 'part1' ? 'Part 1' : activeMode === 'part2' ? 'Part 2' : 'Part 3';
+                        if (activeMode === 'part2') {
+                            newHistory.push({ role: 'system', content: '🏁 Part 2 练习已完成。你可以继续 Part 3，或直接查看当前总结报告。' });
+                        } else {
+                            newHistory.push({ role: 'system', content: `🏁 ${partLabel} 练习已完成，点击下方按钮查看最终评估报告。` });
+                        }
+                    } else {
+                        newHistory.push({ role: 'system', content: '🎭 本次练习已结束，查看得分总结。' });
+                    }
                 }
                 return newHistory;
             });
 
-            contextRef.current = [...contextRef.current, userMsg, { role: 'assistant', content: chatRes.reply }];
-            setWordsSync(prev => prev.map(w => ({ ...w, count: w.count + countMatches(chatRes.reply, w.en) })));
+            contextRef.current = [...contextRef.current, userMsg, { role: 'assistant', content: nextReply }];
+            setWordsSync(prev => prev.map(w => ({ ...w, count: w.count + countMatches(nextReply, w.en) })));
 
             // Play AI response audio
-            playTTS(chatRes.reply);
-
-            if (isContinue === 0) {
-                // 如果对话结束，将状态设为 finished 禁止进一步操作
-                setTimeout(() => setStatusSync('finished'), 100);
-            }
+            playTTS(nextReply, isContinue === 0);
 
         } catch (error: unknown) {
             pendingRef.current = false;
@@ -677,6 +812,49 @@ Rules:
     const BAR_COUNT = 12;
     const isDisabled = status === 'loading' || status === 'mic_loading' || status === 'processing' || status === 'speaking' || status === 'finished';
 
+    const handleGoSummary = () => {
+        navigate('/speaking/summary', {
+            state: {
+                chatHistory,
+                scenarioPrompt,
+                words,
+                mode: activeMode,
+            }
+        });
+    };
+
+    const handleContinueToPart3 = async () => {
+        if (loadingPart3) return;
+
+        setLoadingPart3(true);
+        setStatusSync('processing');
+        try {
+            const res = await ATInterceptor.generatePart3();
+            const nextQuestions = (res.data?.questions ?? []) as ExamQuestion[];
+            if (!nextQuestions.length) {
+                throw new Error('未获取到 Part 3 题目，请稍后重试。');
+            }
+
+            const first = nextQuestions[0];
+            const part3Welcome = `Great. Let's continue with IELTS Speaking Part 3. Topic: ${first.topic}. ${first.question}`;
+
+            setActiveMode('part3');
+            setActiveExamQuestions(nextQuestions);
+            setCurrentQuestionIndex(0);
+            setShowPart3ContinuePrompt(false);
+            setChatHistory(h => [...h, { role: 'assistant', content: part3Welcome }]);
+            contextRef.current = [...contextRef.current, { role: 'assistant', content: part3Welcome }];
+            setStatusSync('idle');
+            showToast('已继续进入 Part 3 练习。', 'success');
+        } catch (error: any) {
+            const msg = error?.message || '进入 Part 3 失败，请稍后重试。';
+            showToast(msg, 'error');
+            setStatusSync('finished');
+        } finally {
+            setLoadingPart3(false);
+        }
+    };
+
     return (
         <div className="sc-root">
             {/* ── Sidebar: Word Basket & Ai Settings ── */}
@@ -688,6 +866,10 @@ Rules:
 
                 <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid var(--color-border)', marginBottom: '1rem' }}>
                     <AiModelSelector label="当前模型" description="" />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: 'var(--color-text-secondary)', marginTop: '1rem' }}>
+                        <input type="checkbox" checked={showTimer} onChange={e => setShowTimer(e.target.checked)} />
+                        在录音时显示计时器
+                    </label>
                 </div>
 
                 <div className="sc-word-list">
@@ -723,13 +905,13 @@ Rules:
                                             {expandedMsgs.has(i) ? '🔽 隐藏文本' : '▶️ 显示文本'}
                                         </button>
                                         {expandedMsgs.has(i) && (
-                                            <span dangerouslySetInnerHTML={{ __html: highlightWords(msg.content, words) }} />
+                                            <MarkdownBubble content={msg.content} />
                                         )}
                                     </>
                                 ) : msg.role === 'system' ? (
-                                    <span className="sc-system-msg">{msg.content}</span>
+                                    <MarkdownBubble content={msg.content} className="sc-markdown sc-system-msg" />
                                 ) : (
-                                    <span>{msg.content}</span>
+                                    <MarkdownBubble content={msg.content} />
                                 )}
                             </div>
 
@@ -768,6 +950,69 @@ Rules:
                                             <span className="sc-score-label">📚 词汇运用 (Vocabulary):</span>
                                             <span className="sc-score-value">{msg.scores.vocab ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
+                                        {(msg.scores.coherence !== undefined || msg.scores.depth !== undefined) && (
+                                            <>
+                                                <div className="sc-score-item">
+                                                    <span className="sc-score-label">🧭 连贯度 (Coherence):</span>
+                                                    <span className="sc-score-value">{msg.scores.coherence ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
+                                                </div>
+                                                <div className="sc-score-item">
+                                                    <span className="sc-score-label">🧠 思维深度 (Depth):</span>
+                                                    <span className="sc-score-value">{msg.scores.depth ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
+                                                </div>
+                                                {msg.scores.feedback && (
+                                                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#4b5563', backgroundColor: '#f3f4f6', padding: '6px', borderRadius: '4px' }}>
+                                                        💡 {msg.scores.feedback}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                        {msg.scores.are_a !== undefined && (
+                                            <>
+                                                <div className="sc-score-divider" />
+                                                <div className="sc-score-item">
+                                                    <span className="sc-score-label" title="Answer: 第一句话是否直接回答了问题">🇦 Answer (直接作答):</span>
+                                                    <span className="sc-score-value">{msg.scores.are_a} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
+                                                </div>
+                                                <div className="sc-score-item">
+                                                    <span className="sc-score-label" title="Reason: 是否给出了合理的解释">🇷 Reason (给出原因):</span>
+                                                    <span className="sc-score-value">{msg.scores.are_r} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
+                                                </div>
+                                                <div className="sc-score-item">
+                                                    <span className="sc-score-label" title="Example: 是否补充了个人细节或举例">🇪 Example (补充细节):</span>
+                                                    <span className="sc-score-value">{msg.scores.are_e} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
+                                                </div>
+                                                {msg.scores.are_feedback && (
+                                                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#4b5563', backgroundColor: '#f3f4f6', padding: '6px', borderRadius: '4px' }}>
+                                                        💡 {msg.scores.are_feedback}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                        {msg.scores.duration !== undefined && (
+                                            <>
+                                                <div className="sc-score-divider" />
+                                                <div className="sc-score-item">
+                                                    <span className="sc-score-label">⏱️ 时长与字数:</span>
+                                                    <span className="sc-score-value" style={{ fontSize: '12px' }}>
+                                                        {msg.scores.duration}s | {msg.scores.word_count} words
+                                                    </span>
+                                                </div>
+                                                {msg.scores.weighted_total_score !== undefined && (
+                                                    <div className="sc-score-item" style={{ marginTop: '6px', backgroundColor: '#ecfeff', padding: '6px', borderRadius: '4px' }}>
+                                                        <span className="sc-score-label" style={{ color: '#0891b2', fontWeight: 600 }}>🌟 加权平均总分:</span>
+                                                        <span className="sc-score-value" style={{ color: '#0891b2', fontWeight: 600 }}>
+                                                            {msg.scores.weighted_total_score.toFixed(1)} <span style={{ fontSize: '11px', color: '#67e8f9' }}>/ 9.0</span>
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {msg.scores.length_feedback && (
+                                                    <div style={{ marginTop: '4px', fontSize: '12px', color: '#6b7280' }}>
+                                                        {msg.scores.length_feedback}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
                                         {msg.correctedText && (
                                             <>
                                                 <div className="sc-score-divider" />
@@ -787,7 +1032,7 @@ Rules:
                     {status === 'listening' && liveTranscript && (
                         <div className="sc-bubble sc-bubble-user sc-bubble-live">
                             <span className="sc-live-dot" />
-                            <span>{liveTranscript}</span>
+                            <MarkdownBubble content={liveTranscript} />
                         </div>
                     )}
 
@@ -809,10 +1054,7 @@ Rules:
                         {/* Status indicator */}
                         <div className={`sc-status-indicator sc-status-${status}`}>
                             <span className="sc-dot" />
-                            <span>{STATUS_LABEL[status]}</span>
-                            {status === 'listening' && (
-                                <span className="sc-recording-time">{formatTime(recordingTime)}</span>
-                            )}
+                            <span>{STATUS_LABEL[status]} {status === 'listening' && showTimer ? `(${formatTime(recordingTime)})` : ''}</span>
                         </div>
 
                         {/* Waveform during recording */}
@@ -843,16 +1085,35 @@ Rules:
                         {/* [New] 结束时的总结按钮 */}
                         {status === 'finished' && (
                             <div className="sc-finish-overlay">
-                                <button 
-                                    className="sc-summary-btn"
-                                    onClick={() => navigate('/speaking/summary', { state: { 
-                                        chatHistory, 
-                                        scenarioPrompt,
-                                        words: words
-                                    }})}
-                                >
-                                    {t.speakingConfig.scenarioSummary.viewReport}
-                                </button>
+                                {showPart3ContinuePrompt ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                                        <div style={{ fontSize: '14px', color: '#374151', textAlign: 'center' }}>
+                                            Part 2 已结束，是否继续 Part 3 练习？
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                            <button
+                                                className="sc-summary-btn"
+                                                onClick={handleContinueToPart3}
+                                                disabled={loadingPart3}
+                                            >
+                                                {loadingPart3 ? '正在准备 Part 3...' : '是，继续 Part 3'}
+                                            </button>
+                                            <button
+                                                className="sc-summary-btn"
+                                                onClick={handleGoSummary}
+                                            >
+                                                否，查看总结
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        className="sc-summary-btn"
+                                        onClick={handleGoSummary}
+                                    >
+                                        {t.speakingConfig.scenarioSummary.viewReport}
+                                    </button>
+                                )}
                             </div>
                         )}
 

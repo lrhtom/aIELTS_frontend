@@ -2,6 +2,7 @@ import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createReadingState } from '../../store/reading_page_store';
 import type { VocabItem, QuizData } from '../../store/reading_page_store';
+import type { ReadingQuestionType, ReadingJudgementMode } from '../../store/reading_page_store';
 import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
@@ -15,6 +16,8 @@ export default function Reading_page() {
     const onReturnHome = () => navigate('/');
     const { translations: t } = useLang();
     const absurdMode: boolean = Boolean(state?.absurdMode);
+    const questionType: ReadingQuestionType = state?.questionType === 'true_false' ? 'true_false' : 'multiple_choice';
+    const judgementMode: ReadingJudgementMode = state?.judgementMode === 'easy' ? 'easy' : 'normal';
 
     // 用单一 useState 替代 reactive store
     const [st, setSt] = useState(createReadingState);
@@ -76,13 +79,19 @@ export default function Reading_page() {
             // 调用后端 API，不再直接调 AI
             const parsedData = await api<QuizData>('/reading/generate', {
                 method: 'POST',
-                body: { words, difficulty, absurdMode },
+                body: { words, difficulty, absurdMode, questionType, judgementMode },
             });
 
-            set('quizData', parsedData);
+            const normalizedQuizData: QuizData = {
+                ...parsedData,
+                questionType: parsedData.questionType || questionType,
+                judgementMode: parsedData.judgementMode || (questionType === 'true_false' ? judgementMode : null),
+            };
+
+            set('quizData', normalizedQuizData);
             // 缓存到 sessionStorage 以便刷新恢复
             sessionStorage.setItem(CACHE_KEY, JSON.stringify({
-                quizData: parsedData,
+                quizData: normalizedQuizData,
                 vocabList: parsedList,
             }));
             userAnswersRef.current = {};
@@ -353,7 +362,7 @@ export default function Reading_page() {
                                     defaultChecked={userAnswersRef.current[q.id] === key}
                                     onChange={() => { userAnswersRef.current[q.id] = key; }}
                                 />
-                                <strong>{key}.</strong> <span dangerouslySetInnerHTML={{ __html: formatHighlight(value) }}></span>
+                                <strong>{key.length === 1 ? `${key}.` : key}</strong> <span dangerouslySetInnerHTML={{ __html: formatHighlight(value) }}></span>
                             </label>
                         ))}
                     </div>
@@ -379,6 +388,9 @@ export default function Reading_page() {
             v.word.toLowerCase().includes(st.searchQuery.toLowerCase()) ||
             v.meaning.toLowerCase().includes(st.searchQuery.toLowerCase())
         );
+        const questionPanelTitle = st.quizData.questionType === 'true_false'
+            ? (st.quizData.judgementMode === 'easy' ? t.readingDetails.questionsTrueFalseEasy : t.readingDetails.questionsTrueFalseNormal)
+            : t.readingDetails.questionsMcq;
 
         return (
             <div className="reading-container">
@@ -437,7 +449,7 @@ export default function Reading_page() {
 
                         {/* Right Sidebar */}
                         <div id="rightSidebar" ref={rightSidebarRef} className={`reading-sidebar ${st.isRightOpen ? 'open' : ''}`}>
-                            <h2 style={{ marginTop: 0 }}>{t.readingDetails.questions}</h2>
+                            <h2 style={{ marginTop: 0 }}>{questionPanelTitle}</h2>
                             {questionsMemoBlock}
                             <div className="submit-quiz-container">
                                 <button onClick={submitQuiz}>{t.readingDetails.submitBtn}</button>

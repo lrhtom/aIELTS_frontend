@@ -3,6 +3,7 @@ import { apiClient } from './client';
 export interface VocabCard {
     word:           string;
     zh:             string;
+    entry_id?:      number;
     due:            string;       // ISO datetime
     stability:      number;
     difficulty:     number;

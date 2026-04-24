@@ -15,3 +15,33 @@
 @media (max-width: 768px) {
   /* 移除响应式padding-left，保持布局不变 */
 }
+
+/* ── Browser warning banner ── */
+.browser-warning-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: linear-gradient(90deg, #fef3c7, #fde68a);
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+}
+.browser-warning-close {
+  background: none;
+  border: none;
+  color: #92400e;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.browser-warning-close:hover {
+  background: rgba(146, 64, 14, 0.12);
+}

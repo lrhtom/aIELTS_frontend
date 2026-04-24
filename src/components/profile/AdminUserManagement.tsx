@@ -27,6 +27,7 @@ export default function AdminUserManagement() {
     const [users, setUsers] = useState<UserRow[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
+    const [jumpPageInput, setJumpPageInput] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [keyword, setKeyword] = useState('');
     const [roleFilter, setRoleFilter] = useState<'all' | 'normal' | 'admin' | 'banned'>('all');
@@ -89,9 +90,24 @@ export default function AdminUserManagement() {
         }
     };
 
-    const totalPages = Math.ceil(totalCount / 20);
+    const totalPages = Math.max(1, Math.ceil(totalCount / 20));
     const pageAdminCount = users.filter((user) => user.is_staff || user.is_superuser).length;
     const pageBannedCount = users.filter((user) => user.is_banned).length;
+
+    const handleJumpToPage = () => {
+        const rawValue = jumpPageInput.trim();
+        if (!rawValue) {
+            toast.error('请输入页码');
+            return;
+        }
+        const parsed = Number(rawValue);
+        if (!Number.isInteger(parsed)) {
+            toast.error(`请输入 1 到 ${totalPages} 的整数页码`);
+            return;
+        }
+        setCurrentPage(Math.min(totalPages, Math.max(1, parsed)));
+        setJumpPageInput('');
+    };
 
     const filteredUsers = useMemo(() => {
         const normalizedKeyword = keyword.trim().toLowerCase();
@@ -152,6 +168,31 @@ export default function AdminUserManagement() {
                 <button className="admin-users-page-btn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
                     &raquo;
                 </button>
+                <div className="admin-users-page-jump">
+                    <span>跳到</span>
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        value={jumpPageInput}
+                        onChange={(e) => {
+                            const next = e.target.value;
+                            if (next === '' || /^\d+$/.test(next)) {
+                                setJumpPageInput(next);
+                            }
+                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleJumpToPage(); }}
+                        placeholder="页码"
+                        aria-label="跳转到指定页"
+                    />
+                    <button
+                        className="admin-users-page-btn admin-users-page-jump-btn"
+                        type="button"
+                        onClick={handleJumpToPage}
+                        disabled={!jumpPageInput.trim()}
+                    >
+                        GO
+                    </button>
+                </div>
             </div>
         );
     };
@@ -572,6 +613,36 @@ export default function AdminUserManagement() {
                     justify-content: center;
                     align-items: center;
                     gap: 8px;
+                    flex-wrap: wrap;
+                }
+
+                .admin-users-page-jump {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 0.82rem;
+                    color: #64748b;
+                }
+
+                .admin-users-page-jump input {
+                    width: 72px;
+                    height: 34px;
+                    border-radius: 8px;
+                    border: 1px solid #cbd5e1;
+                    background: #fff;
+                    color: #334155;
+                    text-align: center;
+                    padding: 0 8px;
+                    outline: none;
+                }
+
+                .admin-users-page-jump input:focus {
+                    border-color: #0d9488;
+                }
+
+                .admin-users-page-jump-btn {
+                    min-width: 46px;
+                    padding: 0 10px;
                 }
 
                 .admin-users-page-btn {
@@ -656,6 +727,11 @@ export default function AdminUserManagement() {
 
                     .admin-users-btn {
                         max-width: 100%;
+                    }
+
+                    .admin-users-page-jump {
+                        width: 100%;
+                        justify-content: center;
                     }
                 }
             `}</style>

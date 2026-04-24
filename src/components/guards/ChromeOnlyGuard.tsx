@@ -2,48 +2,53 @@ import { type ReactNode, useState } from 'react';
 import '../../styles/ChromeOnlyGuard.css';
 
 export default function ChromeOnlyGuard({ children }: { children: ReactNode }) {
-    // A more strict check for Google Chrome (avoiding Edge, Opera, Brave, etc. if possible, or allowing generic Chromium if preferred,
-    // but the user specifically asked for Google Chrome).
-    const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+    // 兼容 iOS Chrome (CriOS) 和桌面端/安卓端 Chrome
+    // 同时排除 Edge (Edg) 和 Opera (OPR)
+    const isChrome = (/Chrome/.test(navigator.userAgent) || /CriOS/.test(navigator.userAgent)) && 
+                     !/Edg\/|OPR\//.test(navigator.userAgent);
 
-    // We also consider an override just in case the user gets completely stuck,
-    // but the prompt asked to *always* block and show a button. We will strictly block non-Chrome.
-    const [copied, setCopied] = useState(false);
+    const [dismissed, setDismissed] = useState(
+        () => sessionStorage.getItem('chrome_warning_dismissed') === 'true'
+    );
 
-    if (isChrome) {
-        return <>{children}</>;
-    }
+    const dismiss = () => {
+        setDismissed(true);
+        sessionStorage.setItem('chrome_warning_dismissed', 'true');
+    };
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(window.location.href);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        navigator.clipboard.writeText(window.location.href).catch(() => {
+            // Fallback for some mobile browsers
+            const input = document.createElement('input');
+            input.value = window.location.href;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+        });
     };
 
     return (
-        <div className="chrome-guard-overlay">
-            <div className="chrome-guard-card">
-                <div className="chrome-guard-icon">⚠️</div>
-                <h1 className="chrome-guard-title">浏览器不兼容</h1>
-                <p className="chrome-guard-desc">
-                    很抱歉！本系统的核心口语对话与识别引擎（Web Speech API & RecordRTC）专门针对 <strong>Google Chrome (谷歌浏览器)</strong> 进行了深度优化与适配。您当前使用的浏览器可能会导致录音失败或评分功能受限。
-                </p>
-                <div className="chrome-guard-actions">
-                    <button className="chrome-btn-copy" onClick={handleCopy}>
-                        {copied ? '✅ 链接已复制' : '🔗 复制当前网址'}
-                    </button>
-                    <a
-                        className="chrome-btn-download"
-                        href="https://www.google.com/chrome/"
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        🌐 下载 Google Chrome
-                    </a>
+        <div className="app-root-container">
+            {!isChrome && !dismissed && (
+                <div className="chrome-guard-banner">
+                    <div className="chrome-guard-banner-content">
+                        <span className="chrome-guard-banner-icon">⚠️</span>
+                        <div className="chrome-guard-banner-text">
+                            <strong>浏览器兼容性提示：</strong>
+                            推荐使用 Chrome 浏览器以获得完整语音体验。
+                        </div>
+                        <div className="chrome-guard-banner-actions">
+                            <button className="chrome-guard-banner-copy" onClick={handleCopy}>
+                                📋 复制网址
+                            </button>
+                            <button className="chrome-guard-banner-close" onClick={dismiss}>✕</button>
+                        </div>
+                    </div>
                 </div>
-                <div className="chrome-guard-footer">
-                    *请复制网址后，手动打开您电脑上的 Google Chrome 浏览器并粘贴访问。
-                </div>
+            )}
+            <div className="app-main-content">
+                {children}
             </div>
         </div>
     );

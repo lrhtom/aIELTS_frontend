@@ -23,10 +23,14 @@ export default function AiModelSelector({ onModelChange, label, description }: A
     useEffect(() => {
         // 如果后端有强偏好下发并且与本地不一致，则跟随服务端
         if (user?.aiProvider && user.aiProvider !== provider) {
-            setProvider(user.aiProvider as AIProvider);
-            localStorage.setItem('ai_provider', user.aiProvider);
+            const nextProvider = user.aiProvider as AIProvider;
+            setProvider(nextProvider);
+            localStorage.setItem('ai_provider', nextProvider);
+            if (onModelChange) {
+                onModelChange(nextProvider);
+            }
         }
-    }, [user?.aiProvider]);
+    }, [user?.aiProvider, provider, onModelChange]);
 
     const handleProviderChange = (p: AIProvider) => {
         setProvider(p);

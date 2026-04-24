@@ -124,16 +124,15 @@ function buildDictationQuestions(entries: VocabEntry[], shuffleWordOrder: boolea
 function createMaskedWord(word: string): string {
     const chars = word.split('');
     const letterIndexes = chars
-        .map((ch, idx) => ({ ch, idx }))
-        .filter((item) => /[a-zA-Z]/.test(item.ch))
-        .map((item) => item.idx);
+        .map((ch, idx) => (/[a-zA-Z]/.test(ch) ? idx : -1))
+        .filter((idx) => idx !== -1);
 
     if (letterIndexes.length === 0) return word;
 
+    // 提示模式（hint）：首字母必显 + 额外随机显示 10%~25% 字母
     const firstLetterIndex = letterIndexes[0];
     const otherLetterIndexes = letterIndexes.slice(1);
 
-    // 规则：首字母必显 + 额外随机显示 10%~25% 字母
     const minExtra = Math.ceil(letterIndexes.length * 0.1);
     const maxExtra = Math.ceil(letterIndexes.length * 0.25);
     const extraRevealCount = Math.min(
@@ -526,7 +525,7 @@ export default function VocabularyTrainingDoingPage() {
             mode === 'dictation'
                 ? '系统正在为你准备 完全听写模式'
                 : mode === 'complete'
-                    ? '系统正在为你准备 补全单词模式'
+                    ? '系统正在为你准备 看中文写英文'
                     : '系统正在为你准备 4选1模式';
         return (
             <Layout>
@@ -543,7 +542,7 @@ export default function VocabularyTrainingDoingPage() {
     if (step === 'result') {
         const total = questions.length;
         const pct = Math.round((score / total) * 100);
-        const modeLabel = mode === 'dictation' ? '完全听写模式' : mode === 'complete' ? '补全单词模式' : '4选1模式';
+        const modeLabel = mode === 'dictation' ? '完全听写模式' : mode === 'complete' ? '看中文写英文' : '4选1模式';
         return (
             <Layout>
                 <div className="practice-container">
@@ -725,7 +724,7 @@ export default function VocabularyTrainingDoingPage() {
 
                     <div className="config-card" style={{ textAlign: 'center', padding: '34px 24px 24px', marginBottom: '16px' }}>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>
-                            补全单词模式
+                            ✏️ 看中文写英文
                         </div>
                         <div style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '10px' }}>
                             释义：{q.zh}
@@ -886,7 +885,7 @@ export default function VocabularyTrainingDoingPage() {
                     {completeChecked && (
                         <div className="config-card" style={{ textAlign: 'center' }}>
                             <div style={{ fontWeight: 600, fontSize: '15px', color: isCorrect ? '#16a34a' : '#dc2626' }}>
-                                {isCorrect ? '✅ 补全正确！' : `❌ 正确答案：${q.en}`}
+                                {isCorrect ? '✅ 拼写正确！' : `❌ 正确答案：${q.en}`}
                             </div>
                         </div>
                     )}

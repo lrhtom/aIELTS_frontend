@@ -9,8 +9,12 @@ export interface LearningPlan {
     id:             number;
     name:           string;
     daily_count:    number;
+    has_activity_today: boolean;
+    today_target:   number;
     default_mode?:  string;
     mastery_target?: number;
+    copy_repetitions?: number;
+    copy_review_days?: number;
     word_count:     number;
     studied_today:  number;
     today_words:    TodayWord[];
@@ -56,6 +60,11 @@ export interface BookWord {
     order:    number;
 }
 
+export interface DailyLearningTime {
+    study_date: string;
+    total_seconds: number;
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Plan CRUD
 // ──────────────────────────────────────────────────────────────────────────────
@@ -77,7 +86,14 @@ export async function createPlan(name: string, daily_count: number): Promise<{ p
 
 export async function updatePlan(
     id: number,
-    data: Partial<{ name: string; daily_count: number; default_mode: string; mastery_target: number }>,
+    data: Partial<{
+        name: string;
+        daily_count: number;
+        default_mode: string;
+        mastery_target: number;
+        copy_repetitions: number;
+        copy_review_days: number;
+    }>,
 ): Promise<{ plan: LearningPlan }> {
     const resp = await apiClient.patch(`/plans/${id}/`, data);
     return resp.data;
@@ -114,7 +130,12 @@ export async function addWord(
 export async function updatePlanWord(
     id: number,
     eid: number,
-    data: { zh?: string; next_review_days?: number },
+    data: {
+        zh?: string;
+        next_review_days?: number;
+        increment_review_days?: number;
+        mark_reviewed?: boolean;
+    },
 ): Promise<{ entry: PlanEntry }> {
     const resp = await apiClient.patch(`/plans/${id}/words/${eid}/`, data);
     return resp.data;
@@ -133,6 +154,16 @@ export async function startPlan(
     mode: 'study' | 'review' = 'study',
 ): Promise<{ cards: VocabCard[]; stats: VocabStats & { studied_today: number; remaining_today: number }; review_mode?: boolean }> {
     const resp = await apiClient.post(`/plans/${id}/start/`, { mode });
+    return resp.data;
+}
+
+export async function getTodayLearningTime(): Promise<DailyLearningTime> {
+    const resp = await apiClient.get('/learning-time/today/');
+    return resp.data;
+}
+
+export async function syncTodayLearningTime(elapsed_seconds: number): Promise<DailyLearningTime> {
+    const resp = await apiClient.post('/learning-time/today/', { elapsed_seconds });
     return resp.data;
 }
 

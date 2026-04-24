@@ -14,8 +14,26 @@ type Step = 'loading' | 'answering' | 'settlement' | 'evaluating' | 'result';
 interface ChartData {
     imageUrl: string | null;
     mermaidCode?: string | null;
+    mapSvg?: string | null;
+    mapViewport?: {
+        width: number;
+        height: number;
+    } | null;
+    mapIconPlacements?: MapIconPlacement[] | null;
+    mapIconAssets?: Record<string, string> | null;
+    mapIconDataUrls?: Record<string, string> | null;
     prompt: string;
     pythonCode: string;
+}
+
+interface MapIconPlacement {
+    iconKey: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    rotation?: number;
+    label?: string;
 }
 
 interface EvaluationResult {
@@ -36,6 +54,7 @@ export default function ChartPracticePage() {
 
     const [searchParams] = useSearchParams();
     const type = searchParams.get('type') || 'line';
+    const isMapType = type === 'map';
     const cacheKey = `writing_task1_chart_session_${type}`;
 
     const [step, setStep] = useState<Step>('loading');
@@ -43,6 +62,7 @@ export default function ChartPracticePage() {
     const [userAnswer, setUserAnswer] = useState('');
     const [result, setResult] = useState<EvaluationResult | null>(null);
     const [previewImageSrc, setPreviewImageSrc] = useState<string | null>(null);
+    const [previewMode, setPreviewMode] = useState<'image' | 'map'>('image');
     const [isEvaluating, setIsEvaluating] = useState(false);
     // Guard against React StrictMode double-invocation and rapid re-mount
     const hasFetchedRef = useRef<string | null>(null);
@@ -144,6 +164,117 @@ export default function ChartPracticePage() {
             : `${import.meta.env.VITE_API_BASE}${chartData.imageUrl}`;
     }, [chartData?.imageUrl]);
 
+    const mapSvgDataUrl = useMemo(() => {
+        if (!chartData?.mapSvg) return null;
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(chartData.mapSvg)}`;
+    }, [chartData?.mapSvg]);
+
+    const mapViewport = useMemo(() => {
+        if (chartData?.mapViewport?.width && chartData?.mapViewport?.height) {
+            return chartData.mapViewport;
+        }
+        if (!chartData?.mapSvg) return null;
+        const matched = chartData.mapSvg.match(/viewBox\s*=\s*["']\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+([\d.]+)\s*["']/i);
+        if (!matched) return { width: 1000, height: 620 };
+        const width = Number(matched[1]) || 1000;
+        const height = Number(matched[2]) || 620;
+        return { width, height };
+    }, [chartData?.mapViewport, chartData?.mapSvg]);
+
+    const resolvedMapIconAssets = useMemo(() => {
+        const rawAssets = chartData?.mapIconAssets || {};
+        const inlineDataUrls = chartData?.mapIconDataUrls || {};
+        const assetEntries = Object.entries(rawAssets);
+        const inlineEntries = Object.entries(inlineDataUrls);
+        if (!assetEntries.length && !inlineEntries.length) return {} as Record<string, string>;
+
+        const resolved: Record<string, string> = {};
+        for (const [key, value] of assetEntries) {
+            if (!value) continue;
+            resolved[key] = value.startsWith('data:') || value.startsWith('http')
+                ? value
+                : `${import.meta.env.VITE_API_BASE}${value}`;
+        }
+
+        for (const [key, value] of inlineEntries) {
+            if (!value) continue;
+            resolved[key] = value.startsWith('data:') || value.startsWith('http')
+                ? value
+                : `${import.meta.env.VITE_API_BASE}${value}`;
+        }
+
+        return resolved;
+    }, [chartData?.mapIconAssets, chartData?.mapIconDataUrls]);
+
+    const normalizedMapPlacements = useMemo(() => {
+        if (!mapViewport) return [] as MapIconPlacement[];
+        const viewW = mapViewport.width || 1000;
+        const viewH = mapViewport.height || 620;
+        const placements = chartData?.mapIconPlacements || [];
+        if (!Array.isArray(placements)) return [] as MapIconPlacement[];
+
+        return placements
+            .filter((item): item is MapIconPlacement => !!item && typeof item.iconKey === 'string')
+            .map((item) => {
+                const w = Math.max(12, Math.min(Number(item.w) || 60, viewW));
+                const h = Math.max(12, Math.min(Number(item.h) || 60, viewH));
+                const x = Math.max(0, Math.min(Number(item.x) || 0, viewW - w));
+                const y = Math.max(0, Math.min(Number(item.y) || 0, viewH - h));
+                const rotation = Number(item.rotation) || 0;
+                return {
+                    ...item,
+                    x,
+                    y,
+                    w,
+                    h,
+                    rotation,
+                    label: (item.label || '').trim(),
+                };
+            });
+    }, [chartData?.mapIconPlacements, mapViewport]);
+
+    const openImagePreview = (src: string) => {
+        setPreviewMode('image');
+        setPreviewImageSrc(src);
+    };
+
+    const openMapPreview = () => {
+        if (!mapSvgDataUrl) return;
+        setPreviewMode('map');
+        setPreviewImageSrc(mapSvgDataUrl);
+    };
+
+    const closePreview = () => {
+        setPreviewImageSrc(null);
+        setPreviewMode('image');
+    };
+
+    const renderMapOverlay = (viewW: number, viewH: number) => (
+        <div className="wp-map-overlay-layer">
+            {normalizedMapPlacements.map((item, idx) => {
+                const iconSrc = resolvedMapIconAssets[item.iconKey];
+                if (!iconSrc) return null;
+
+                return (
+                    <div
+                        key={`${item.iconKey}-${idx}`}
+                        className="wp-map-icon-node"
+                        style={{
+                            left: `${(item.x / viewW) * 100}%`,
+                            top: `${(item.y / viewH) * 100}%`,
+                            width: `${(item.w / viewW) * 100}%`,
+                            height: `${(item.h / viewH) * 100}%`,
+                            transform: `rotate(${item.rotation || 0}deg)`,
+                        }}
+                    >
+                        <img src={iconSrc} alt={item.label || item.iconKey} loading="lazy" />
+                        {item.label ? <span className="wp-map-icon-label">{item.label}</span> : null}
+                    </div>
+                );
+            })}
+        </div>
+    );
+
     const handleSubmitAnser = () => {
         if (!userAnswer.trim()) {
             showToast(t.practiceSandbox.toastEmpty, 'error');
@@ -203,6 +334,33 @@ export default function ChartPracticePage() {
         </div>
     );
 
+    const renderMapScene = () => {
+        if (!isMapType || !mapSvgDataUrl || !mapViewport) return null;
+        const viewW = mapViewport.width || 1000;
+        const viewH = mapViewport.height || 620;
+
+        return (
+            <div className="wp-map-scene" style={{ aspectRatio: `${viewW} / ${viewH}` }}>
+                <img
+                    src={mapSvgDataUrl}
+                    alt="Generated map"
+                    className="wp-map-base-svg"
+                    onClick={openMapPreview}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openMapPreview();
+                        }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Open map preview"
+                />
+                {renderMapOverlay(viewW, viewH)}
+            </div>
+        );
+    };
+
     const renderAnswering = () => (
         <div className="wp-split">
             {/* Left: Chart & Prompt */}
@@ -214,18 +372,20 @@ export default function ChartPracticePage() {
                     <div className="wp-prompt-block">
                         {chartData?.prompt}
                     </div>
-                    {chartData?.mermaidCode ? (
+                    {isMapType && mapSvgDataUrl ? (
+                        renderMapScene()
+                    ) : chartData?.mermaidCode ? (
                         <MermaidChart chart={chartData.mermaidCode} />
                     ) : resolvedImageSrc ? (
                         <div style={{ display: 'flex', justifyContent: 'center', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
                             <img
                                 src={resolvedImageSrc}
                                 alt="Generated Chart"
-                                onClick={() => setPreviewImageSrc(resolvedImageSrc)}
+                                onClick={() => openImagePreview(resolvedImageSrc)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
-                                        setPreviewImageSrc(resolvedImageSrc);
+                                        openImagePreview(resolvedImageSrc);
                                     }
                                 }}
                                 role="button"
@@ -302,6 +462,29 @@ export default function ChartPracticePage() {
                     <div className="wp-prompt-block wp-prompt-block--compact">
                         {chartData?.prompt}
                     </div>
+                    {isMapType && mapSvgDataUrl ? (
+                        <div style={{ marginBottom: '12px' }}>{renderMapScene()}</div>
+                    ) : chartData?.mermaidCode ? (
+                        <MermaidChart chart={chartData.mermaidCode} />
+                    ) : resolvedImageSrc ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', background: 'white', padding: '8px', borderRadius: '8px', border: '1px solid var(--color-border)', marginBottom: '12px' }}>
+                            <img
+                                src={resolvedImageSrc}
+                                alt="Generated Chart"
+                                onClick={() => openImagePreview(resolvedImageSrc)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        openImagePreview(resolvedImageSrc);
+                                    }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Open chart image preview"
+                                style={{ maxWidth: '100%', height: 'auto', maxHeight: '260px', objectFit: 'contain', cursor: 'zoom-in' }}
+                            />
+                        </div>
+                    ) : null}
                     <div className="wp-essay-replay">{userAnswer}</div>
                 </div>
                 <div className="wp-panel-footer">
@@ -380,14 +563,14 @@ export default function ChartPracticePage() {
 
             {previewImageSrc && (
                 <div
-                    onClick={() => setPreviewImageSrc(null)}
+                    onClick={closePreview}
                     role="button"
                     tabIndex={0}
                     aria-label="Close chart image preview"
                     onKeyDown={(e) => {
                         if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            setPreviewImageSrc(null);
+                            closePreview();
                         }
                     }}
                     style={{
@@ -407,20 +590,40 @@ export default function ChartPracticePage() {
                         cursor: 'zoom-out',
                     }}
                 >
-                    <img
-                        src={previewImageSrc}
-                        alt="Full preview chart"
-                        onClick={() => setPreviewImageSrc(null)}
-                        style={{
-                            maxWidth: 'min(92vw, 1200px)',
-                            maxHeight: '88vh',
-                            width: 'auto',
-                            height: 'auto',
-                            objectFit: 'contain',
-                            borderRadius: '12px',
-                            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45)',
-                        }}
-                    />
+                    {previewMode === 'map' && isMapType && mapSvgDataUrl && mapViewport ? (
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                width: 'min(94vw, 1400px)',
+                                maxHeight: '88vh',
+                                cursor: 'default',
+                            }}
+                        >
+                            <div className="wp-map-scene wp-map-scene--modal" style={{ aspectRatio: `${mapViewport.width || 1000} / ${mapViewport.height || 620}` }}>
+                                <img
+                                    src={mapSvgDataUrl}
+                                    alt="Full preview map"
+                                    className="wp-map-base-svg"
+                                />
+                                {renderMapOverlay(mapViewport.width || 1000, mapViewport.height || 620)}
+                            </div>
+                        </div>
+                    ) : (
+                        <img
+                            src={previewImageSrc}
+                            alt="Full preview chart"
+                            onClick={closePreview}
+                            style={{
+                                maxWidth: 'min(92vw, 1200px)',
+                                maxHeight: '88vh',
+                                width: 'auto',
+                                height: 'auto',
+                                objectFit: 'contain',
+                                borderRadius: '12px',
+                                boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45)',
+                            }}
+                        />
+                    )}
                 </div>
             )}
 

@@ -1,15 +1,49 @@
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
+import { getTodayLearningTime } from '../../api/learning_plan';
 import { formatATBalance } from '../../utils/format';
 
 export default function UserHome() {
     const { user } = useAuth();
     const { translations: t } = useLang();
+    const [todayLearningSeconds, setTodayLearningSeconds] = useState<number | null>(null);
 
     const formatDate = (value?: string | null) => {
         if (!value) return '-';
         return new Date(value).toLocaleString();
     };
+
+    const formatDuration = (seconds: number | null) => {
+        if (seconds === null) return '--:--:--';
+        const safe = Math.max(0, seconds);
+        const h = Math.floor(safe / 3600).toString().padStart(2, '0');
+        const m = Math.floor((safe % 3600) / 60).toString().padStart(2, '0');
+        const s = (safe % 60).toString().padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    };
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadTodayLearningTime = async () => {
+            try {
+                const data = await getTodayLearningTime();
+                if (!cancelled) {
+                    setTodayLearningSeconds(Math.max(0, Number(data.total_seconds) || 0));
+                }
+            } catch {
+                if (!cancelled) {
+                    setTodayLearningSeconds(0);
+                }
+            }
+        };
+
+        void loadTodayLearningTime();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     return (
         <div className="user-home">
@@ -60,6 +94,10 @@ export default function UserHome() {
                         <div className="user-info-item">
                             <div className="user-info-label">{t.profile.info.lastLogin}</div>
                             <div className="user-info-value">{formatDate(user?.last_login)}</div>
+                        </div>
+                        <div className="user-info-item">
+                            <div className="user-info-label">{t.profile.info.todayLearningTime}</div>
+                            <div className="user-info-value">{formatDuration(todayLearningSeconds)}</div>
                         </div>
                     </div>
                 </div>

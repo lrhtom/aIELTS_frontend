@@ -1,11 +1,13 @@
 import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
+const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/send-code'];
 
 export const apiClient = axios.create({
     baseURL: `${API_BASE}/api`,
     headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': '69420',
     },
 });
 
@@ -29,14 +31,40 @@ const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue = [];
 };
 
+async function refreshAccessTokenForFetch(): Promise<string | null> {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+        return null;
+    }
+
+    try {
+        const response = await axios.post(`${API_BASE}/api/auth/token/refresh`, {
+            refresh: refreshToken,
+        });
+
+        const newAccessToken = response.data?.access;
+        if (!newAccessToken) {
+            return null;
+        }
+
+        localStorage.setItem('access_token', newAccessToken);
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+        return newAccessToken;
+    } catch {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        window.dispatchEvent(new Event('auth:logout'));
+        return null;
+    }
+}
+
 apiClient.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('access_token');
         
         // 【新增】判断是否为登录、注册、验证码等公开接口。
         // 如果是这些接口，不携带 Authorization 头，防止被后端的单设备登录逻辑提前 401 拦截。
-        const publicPaths = ['/auth/login', '/auth/register', '/auth/send-code'];
-        const isPublicPath = publicPaths.some(path => config.url?.includes(path));
+        const isPublicPath = PUBLIC_AUTH_PATHS.some(path => config.url?.includes(path));
 
         if (isPublicPath) {
             delete config.headers['Authorization'];
@@ -200,4 +228,81 @@ export async function api<T = unknown>(path: string, options: RequestOptions = {
         }
         throw error;
     }
+}
+
+/**
+ * 原生 Fetch 包装器，用于处理 SSE 流式响应。
+ * 注入 Authorization 和 X-AI-Provider 头。
+ */
+export async function fetchStream(path: string, options: RequestOptions = {}): Promise<Response> {
+    const { method = 'GET', body } = options;
+    const url = `${API_BASE}/api${path}`;
+
+    const isPublicPath = PUBLIC_AUTH_PATHS.some(p => path.includes(p));
+    const requestWithToken = async (accessToken: string | null) => {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream, application/json;q=0.9, */*;q=0.8',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'ngrok-skip-browser-warning': '69420',
+        };
+
+        if (!isPublicPath && accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+
+        const provider = localStorage.getItem('ai_provider') || 'deepseek';
+        headers['X-AI-Provider'] = provider;
+
+        return fetch(url, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+        });
+    };
+
+    let token = localStorage.getItem('access_token');
+    let response = await requestWithToken(token);
+
+    if (response.status === 401 && !isPublicPath) {
+        const refreshedToken = await refreshAccessTokenForFetch();
+        if (refreshedToken) {
+            token = refreshedToken;
+            response = await requestWithToken(token);
+        }
+    }
+
+    if (response.status === 402) {
+        // Handle AT Coin error specifically
+        try {
+            const data = await response.json();
+            const errorMessage = data.message || data.error || 'AT币余额不足';
+            window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
+                detail: {
+                    message: errorMessage,
+                    requiredBalance: data.requiredBalance,
+                    currentBalance: data.currentBalance
+                }
+            }));
+            const err = new Error(errorMessage) as ApiError;
+            err.status = 402;
+            throw err;
+        } catch {
+            throw new Error('AT币余额不足');
+        }
+    }
+
+    if (!response.ok) {
+        let msg = '请求失败';
+        try {
+            const data = await response.json();
+            msg = data.error || data.message || msg;
+        } catch {}
+        const err = new Error(msg) as ApiError;
+        err.status = response.status;
+        throw err;
+    }
+
+    return response;
 }

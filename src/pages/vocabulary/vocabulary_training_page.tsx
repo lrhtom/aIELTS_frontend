@@ -23,8 +23,8 @@ const MODE_OPTIONS: Array<{ id: VocabMode; icon: string; title: string; desc: st
     {
         id: 'complete',
         icon: '✏️',
-        title: '补全单词模式',
-        desc: '根据提示补齐缺失字母并巩固拼写',
+        title: '看中文写英文',
+        desc: '根据中文释义拼写英文单词，可选择不同难度',
     },
 ];
 
@@ -39,7 +39,8 @@ export default function VocabularyTrainingPage() {
     };
 
     const handleStart = () => {
-        if (!vocabInput.trim()) {
+        const validVocabInput = vocabInput.trim();
+        if (!validVocabInput) {
             showToast('请先输入词汇（英文-中文）', 'error');
             return;
         }
@@ -47,7 +48,8 @@ export default function VocabularyTrainingPage() {
         sessionStorage.removeItem(`vocab_doing_session_${mode}`);
         navigate(`/vocabulary/practice/${mode}/doing`, {
             state: {
-                vocabInput,
+                vocabInput: validVocabInput,
+                mode,
                 shuffleWordOrder,
             },
         });

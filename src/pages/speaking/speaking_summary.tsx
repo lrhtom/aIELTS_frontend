@@ -12,10 +12,15 @@ interface ChatMessage {
         grammar?: number;
         vocab?: number;
         relevance?: number;
+        coherence?: number;
+        depth?: number;
         accuracy?: number;
         pronunciation?: number;
         completeness?: number;
         fluency?: number;
+        are_a?: number;
+        are_r?: number;
+        are_e?: number;
     };
 }
 
@@ -41,7 +46,7 @@ const DIMS = [
     { key: 'relevance',     label: '🎓 切题度',   azure: false, color: '#f59e0b' },
 ] as const;
 
-type DimKey = typeof DIMS[number]['key'];
+type DimKey = string;
 
 export default function SpeakingSummaryPage() {
     const location = useLocation();
@@ -90,6 +95,7 @@ export default function SpeakingSummaryPage() {
         chatHistory: ChatMessage[];
         scenarioPrompt: string;
         words: Word[];
+        mode?: string;
     };
 
     if (!state) {
@@ -103,14 +109,33 @@ export default function SpeakingSummaryPage() {
         );
     }
 
-    const { chatHistory, scenarioPrompt, words } = state;
+    const { chatHistory, scenarioPrompt, words, mode } = state;
+    const isPart1 = mode === 'part1';
+    const isPart2 = mode === 'part2';
+    const isPart3 = mode === 'part3';
+
+    let activeDims: any[] = [...DIMS];
+    if (isPart1) {
+        activeDims = [
+            ...DIMS,
+            { key: 'are_a', label: '🇦 Answer', azure: false, color: '#f43f5e' },
+            { key: 'are_r', label: '🇷 Reason', azure: false, color: '#f97316' },
+            { key: 'are_e', label: '🇪 Example', azure: false, color: '#eab308' },
+        ];
+    } else if (isPart2 || isPart3) {
+        activeDims = [
+            ...DIMS,
+            { key: 'coherence', label: '🧭 连贯度', azure: false, color: '#22c55e' },
+            { key: 'depth', label: '🧠 深度', azure: false, color: '#ef4444' },
+        ];
+    }
 
     // Extract rounds with scores
     const rounds = chatHistory
         .filter(m => m.role === 'assistant' && m.scores)
         .map((m, i) => {
             const sc = m.scores!;
-            const vals: Record<DimKey, number> = {
+            const vals: any = {
                 accuracy:      azureTo9(sc.accuracy),
                 pronunciation: azureTo9(sc.pronunciation),
                 fluency:       azureTo9(sc.fluency),
@@ -118,18 +143,25 @@ export default function SpeakingSummaryPage() {
                 grammar:       sc.grammar ?? 0,
                 vocab:         sc.vocab ?? 0,
                 relevance:     sc.relevance ?? 0,
+                coherence:     sc.coherence ?? 0,
+                depth:         sc.depth ?? 0,
             };
+            if (isPart1) {
+                vals.are_a = sc.are_a ?? 0;
+                vals.are_r = sc.are_r ?? 0;
+                vals.are_e = sc.are_e ?? 0;
+            }
             return { round: i + 1, ...vals };
         });
 
     // Averages per dimension
     const count = rounds.length || 1;
-    const avgs: Record<DimKey, number> = {} as Record<DimKey, number>;
-    for (const dim of DIMS) {
+    const avgs: Record<DimKey, number> = {};
+    for (const dim of activeDims) {
         avgs[dim.key] = to05(rounds.reduce((a, r) => a + r[dim.key], 0) / count);
     }
 
-    // Overall = average of all 7 dimensions
+    // Overall = average of all dimensions
     const allAvgValues = Object.values(avgs);
     const overall = to05(allAvgValues.reduce((a, v) => a + v, 0) / allAvgValues.length);
 
@@ -165,7 +197,7 @@ export default function SpeakingSummaryPage() {
 
                     {/* 7-dimension bars */}
                     <div className="ss-bars">
-                        {DIMS.map(dim => (
+                        {activeDims.map(dim => (
                             <div className="ss-bar-row" key={dim.key}>
                                 <span className="ss-bar-label">{dim.label}</span>
                                 <div className="ss-bar-track">
@@ -186,24 +218,24 @@ export default function SpeakingSummaryPage() {
                                 <thead>
                                     <tr>
                                         <th>轮次</th>
-                                        {DIMS.map(d => <th key={d.key}>{d.label.slice(2)}</th>)}
+                                        {activeDims.map(d => <th key={d.key}>{d.label.slice(2)}</th>)}
                                         <th>轮均</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {rounds.map(r => {
-                                        const roundAvg = to05(DIMS.reduce((a, d) => a + r[d.key], 0) / DIMS.length);
+                                        const roundAvg = to05(activeDims.reduce((a, d) => a + r[d.key], 0) / activeDims.length);
                                         return (
                                             <tr key={r.round}>
                                                 <td className="ss-td-round">R{r.round}</td>
-                                                {DIMS.map(d => <td key={d.key}>{r[d.key]}</td>)}
+                                                {activeDims.map(d => <td key={d.key}>{r[d.key]}</td>)}
                                                 <td className="ss-td-avg">{roundAvg}</td>
                                             </tr>
                                         );
                                     })}
                                     <tr className="ss-tr-summary">
                                         <td className="ss-td-round">平均</td>
-                                        {DIMS.map(d => <td key={d.key}>{avgs[d.key]}</td>)}
+                                        {activeDims.map(d => <td key={d.key}>{avgs[d.key]}</td>)}
                                         <td className="ss-td-avg">{overall}</td>
                                     </tr>
                                 </tbody>
@@ -213,7 +245,7 @@ export default function SpeakingSummaryPage() {
                 )}
 
                 {/* Scenario description */}
-                {scenarioPrompt && (
+                {scenarioPrompt && !isPart1 && (
                     <div className="ss-section">
                         <h3 className="ss-section-title">🎭 场景描述</h3>
                         <div className="ss-scenario-quote">"{scenarioPrompt}"</div>

@@ -5,6 +5,9 @@ export interface VocabItem {
     meaning: string;
 }
 
+export type ReadingQuestionType = 'multiple_choice' | 'true_false';
+export type ReadingJudgementMode = 'easy' | 'normal';
+
 export interface Question {
     id: number;
     question: string;
@@ -17,6 +20,8 @@ export interface QuizData {
     title: string;
     passage: string;
     questions: Question[];
+    questionType?: ReadingQuestionType;
+    judgementMode?: ReadingJudgementMode | null;
 }
 
 // ─── Store 初始状态工厂 ────────────────────────────────────────────────────────

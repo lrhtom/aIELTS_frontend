@@ -338,6 +338,17 @@
     gap: 8px;
 }
 
+.fc-learning-timer {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0f766e;
+    background: #ccfbf1;
+    border: 1px solid #99f6e4;
+    border-radius: 99px;
+    padding: 3px 10px;
+    white-space: nowrap;
+}
+
 .fc-mode-badge {
     font-size: 11px;
     padding: 2px 9px;
@@ -436,6 +447,43 @@
     display: flex;
     justify-content: center;
     gap: 10px;
+}
+
+.fc-choice-actions--answered {
+    align-items: center;
+}
+
+.fc-choice-face-meaning {
+    margin-top: 12px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(13, 148, 136, 0.24);
+    background: rgba(13, 148, 136, 0.08);
+    color: var(--color-primary);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: center;
+}
+
+.fc-choice-feedback {
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    border: 1.5px solid transparent;
+}
+
+.fc-choice-feedback.correct {
+    color: #16a34a;
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+
+.fc-choice-feedback.wrong {
+    color: #dc2626;
+    background: #fef2f2;
+    border-color: #fca5a5;
 }
 
 .fc-choice-unknown {
@@ -557,6 +605,14 @@
     color: var(--color-primary);
 }
 
+.fc-write-copy-chars {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: var(--color-primary);
+}
+
 .fc-write-hint-len {
     font-size: 12px;
     font-weight: 400;
@@ -649,10 +705,35 @@
     color: #92400e;
 }
 .fc-unknown-word {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
     color: #b45309;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.2px;
+}
+
+.fc-copy-meaning {
+    margin-top: 12px;
+    font-size: 18px;
+    color: var(--color-primary);
+    font-weight: 700;
+    text-align: center;
+}
+
+.fc-copy-remaining {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 4px 12px;
+}
+
+.fc-copy-hint {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    line-height: 1.45;
+    padding: 0 2px;
 }
 
 .fc-write-result {
@@ -714,6 +795,9 @@
     .fc-result-item     { grid-template-columns: 110px 1fr; }
     .fc-ri-due          { display: none; }
     .fc-face            { padding: 28px 20px; }
+    .fc-header-right    { flex-wrap: wrap; justify-content: flex-end; }
+    .fc-learning-timer  { font-size: 11px; padding: 2px 8px; }
+    .fc-write-copy-chars { font-size: 21px; letter-spacing: 0.5px; }
 }
 
 /* ── 背面 Word enrichment ─────────────────────────────────────────────────── */

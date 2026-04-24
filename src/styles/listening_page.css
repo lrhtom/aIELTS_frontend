@@ -357,3 +357,110 @@
     color: var(--color-text-secondary);
     line-height: 1.4;
 }
+
+/* ─── 地图题样式 ──────────────────────────────────────────────────────── */
+
+.map-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.map-svg-container {
+    flex: 1.2;
+    min-width: 0;
+}
+
+.map-svg {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.map-options-panel {
+    flex: 0.8;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.map-options-panel h3 {
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.5;
+}
+
+.map-options-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.map-option-item {
+    font-size: 13px;
+    padding: 4px 10px;
+    background: rgba(13, 148, 136, 0.06);
+    border-radius: 6px;
+    color: #334155;
+    font-weight: 500;
+}
+
+.map-questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.map-q-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.map-q-number {
+    font-weight: 700;
+    font-size: 16px;
+    color: #ef4444;
+    min-width: 28px;
+}
+
+.map-select {
+    flex: 1;
+    padding: 8px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--font);
+    color: var(--color-text);
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+}
+
+.map-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+@media (max-width: 768px) {
+    .map-layout {
+        flex-direction: column;
+    }
+    .map-svg-container,
+    .map-options-panel {
+        flex: 1;
+    }
+}

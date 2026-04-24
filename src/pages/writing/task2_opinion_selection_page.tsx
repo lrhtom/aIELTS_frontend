@@ -1,6 +1,6 @@
 import Layout from '../../components/layout/Layout';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
@@ -8,10 +8,25 @@ import '../../styles/practice_page.css';
 
 export default function Task2OpinionSelectionPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { lang } = useLang();
     const t = translations[lang];
+    const selectedTopicCategory = (searchParams.get('topic') || 'all').trim().toLowerCase() || 'all';
+    const topicQuery = `topic=${encodeURIComponent(selectedTopicCategory)}`;
 
     const [selectedType, setSelectedType] = useState<string | null>(null);
+
+    const clearTask2Session = (taskType: string) => {
+        const prefix = `writing_task2_session_${taskType}`;
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i += 1) {
+            const key = sessionStorage.key(i);
+            if (key && key.startsWith(prefix)) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(key => sessionStorage.removeItem(key));
+    };
 
     const taskTypes = [
         { id: 'opinion_agree', nameZh: t.task2OpinionSelection.types.agree.title, nameEn: t.task2OpinionSelection.types.agree.nameEn, icon: '⚖️', desc: t.task2OpinionSelection.types.agree.desc },
@@ -25,13 +40,15 @@ export default function Task2OpinionSelectionPage() {
         if (selectedType === 'opinion_random') {
             const typesPool = ['opinion_agree', 'opinion_discuss', 'opinion_advantages'];
             const randomType = typesPool[Math.floor(Math.random() * typesPool.length)];
-            navigate(`/writing/task2/doing?type=${randomType}`);
+            clearTask2Session(randomType);
+            navigate(`/writing/task2/doing?type=${randomType}&${topicQuery}`);
             return;
         }
 
         const target = taskTypes.find(t => t.id === selectedType);
         if (target) {
-            navigate(`/writing/task2/doing?type=${target.id}`);
+            clearTask2Session(target.id);
+            navigate(`/writing/task2/doing?type=${target.id}&${topicQuery}`);
         }
     };
 
@@ -40,7 +57,7 @@ export default function Task2OpinionSelectionPage() {
             <div className="practice-container">
                 <div className="wc-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
                     <div className="practice-header" style={{ marginBottom: 0 }}>
-                        <button className="back-link" onClick={() => navigate('/writing/task2')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                        <button className="back-link" onClick={() => navigate(`/writing/task2?${topicQuery}`)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
                             {t.task2OpinionSelection.backToTask2Selection}
                         </button>
                         <h1>{t.task2OpinionSelection.heading}</h1>

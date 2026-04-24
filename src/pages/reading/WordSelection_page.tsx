@@ -10,12 +10,16 @@ import { listPlans, getPlanDetail, type LearningPlan } from '../../api/learning_
 import '../../styles/practice_page.css';
 
 const DIFFICULTIES = ['6.0', '6.5', '7.0', '7.5', '8.0', '8.5'];
+type ReadingQuestionType = 'multiple_choice' | 'true_false';
+type ReadingJudgementMode = 'easy' | 'normal';
 
 export default function WordSelection_page() {
     const navigate = useNavigate();
     const [vocabInput, setVocabInput] = useState('');
     const [useCustomVocab, setUseCustomVocab] = useState(true);
     const [difficulty, setDifficulty] = useState('7.0');
+    const [questionType, setQuestionType] = useState<ReadingQuestionType>('multiple_choice');
+    const [judgementMode, setJudgementMode] = useState<ReadingJudgementMode>('normal');
     const [absurdMode, setAbsurdMode] = useState(false);
     const [plans, setPlans] = useState<LearningPlan[]>([]);
     const [importPlanId, setImportPlanId] = useState(0);
@@ -75,6 +79,8 @@ export default function WordSelection_page() {
                 difficulty,
                 useCustomVocab,
                 absurdMode,
+                questionType,
+                judgementMode,
             },
         });
     };
@@ -108,6 +114,53 @@ export default function WordSelection_page() {
                         ))}
                     </div>
                 </div>
+
+                {/* Question Type */}
+                <div className="config-card">
+                    <h3>{t.questionType.label}</h3>
+                    <div className="reading-mode-grid">
+                        <button
+                            type="button"
+                            className={`reading-mode-card ${questionType === 'multiple_choice' ? 'active' : ''}`}
+                            onClick={() => setQuestionType('multiple_choice')}
+                        >
+                            <div className="reading-mode-card-title">{t.questionType.multipleChoice.title}</div>
+                            <div className="reading-mode-card-desc">{t.questionType.multipleChoice.desc}</div>
+                        </button>
+                        <button
+                            type="button"
+                            className={`reading-mode-card ${questionType === 'true_false' ? 'active' : ''}`}
+                            onClick={() => setQuestionType('true_false')}
+                        >
+                            <div className="reading-mode-card-title">{t.questionType.trueFalse.title}</div>
+                            <div className="reading-mode-card-desc">{t.questionType.trueFalse.desc}</div>
+                        </button>
+                    </div>
+                </div>
+
+                {questionType === 'true_false' && (
+                    <div className="config-card">
+                        <h3>{t.judgementMode.label}</h3>
+                        <div className="reading-mode-grid">
+                            <button
+                                type="button"
+                                className={`reading-mode-card ${judgementMode === 'easy' ? 'active' : ''}`}
+                                onClick={() => setJudgementMode('easy')}
+                            >
+                                <div className="reading-mode-card-title">{t.judgementMode.easy.title}</div>
+                                <div className="reading-mode-card-desc">{t.judgementMode.easy.desc}</div>
+                            </button>
+                            <button
+                                type="button"
+                                className={`reading-mode-card ${judgementMode === 'normal' ? 'active' : ''}`}
+                                onClick={() => setJudgementMode('normal')}
+                            >
+                                <div className="reading-mode-card-title">{t.judgementMode.normal.title}</div>
+                                <div className="reading-mode-card-desc">{t.judgementMode.normal.desc}</div>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Custom Vocab Toggle */}
                 <div className="config-card">

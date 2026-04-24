@@ -1,8 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/guards/ProtectedRoute';
 import ToastContainer from './components/common/Toast';
+import GlobalAssistantBall from './components/common/GlobalAssistantBall';
 import ChromeOnlyGuard from './components/guards/ChromeOnlyGuard';
 import ATBalanceMonitor from './components/billing/ATBalanceMonitor';
+import { useAuth } from './contexts/AuthContext';
 
 // 通用页面 
 import HomePage from './pages/home_page';
@@ -11,6 +13,10 @@ import AIPractice from './pages/ai_practice';
 import ProfilePage from './pages/profile_page';
 import PromptPage from './pages/prompt_page';
 import SettingsPage from './pages/settings_page';
+import StorePage from './pages/store_page';
+import CreativeWorkshopPage from './pages/creative_workshop/creative_workshop_page';
+import CreativeWorkshopFavoritesPage from './pages/creative_workshop/creative_workshop_favorites_page';
+import CreativeWorkshopPreviewPage from './pages/creative_workshop/creative_workshop_preview_page';
 
 // 认证
 import LoginPage from './pages/auth/LoginPage';
@@ -35,6 +41,9 @@ import WritingCorrectionPage from './pages/writing/writing_correction_page';
 import Task1SelectionPage from './pages/writing/task1_selection_page';
 import Task2SelectionPage from './pages/writing/task2_selection_page';
 import Task2OpinionSelectionPage from './pages/writing/task2_opinion_selection_page';
+import Task2OpinionDrillPage from './pages/writing/task2_opinion_drill_page';
+import Task2OpinionDrillGeneratingPage from './pages/writing/task2_opinion_drill_generating_page';
+import Task2OpinionDrillDoingPage from './pages/writing/task2_opinion_drill_doing_page';
 import Task2PracticePage from './pages/writing/task2_practice_page';
 import ChartSelectionPage from './pages/writing/chart_selection_page';
 import ChartPracticePage from './pages/writing/chart_practice_page';
@@ -44,6 +53,9 @@ import VocabularyPracticePage from './pages/vocabulary/vocabulary_practice_page'
 import VocabularyTrainingPage from './pages/vocabulary/vocabulary_training_page';
 import VocabularyTrainingDoingPage from './pages/vocabulary/vocabulary_training_doing_page';
 import VocabularyFlashcardDoingPage from './pages/vocabulary/vocabulary_flashcard_doing_page';
+import CustomMemoryCreatePage from './pages/vocabulary/custom_memory_create_page';
+import CustomMemoryStudyPage from './pages/vocabulary/custom_memory_study_page';
+import CustomMemoryResultPage from './pages/vocabulary/custom_memory_result_page';
 import NotebookListPage from './pages/vocabulary/notebook_list_page';
 import NotebookDetailPage from './pages/vocabulary/notebook_detail_page';
 import LearningPlanListPage from './pages/vocabulary/learning_plan_list_page';
@@ -52,10 +64,13 @@ import VocabBookListPage from './pages/vocabulary/vocab_book_list_page';
 import VocabBookDetailPage from './pages/vocabulary/vocab_book_detail_page';
 
 export default function App() {
+  const { user, isLoading } = useAuth();
+
   return (
     <ChromeOnlyGuard>
       <ToastContainer />
       <ATBalanceMonitor />
+      {!isLoading && user && <GlobalAssistantBall />}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -63,6 +78,9 @@ export default function App() {
         <Route path="/vocabulary" element={<ProtectedRoute><VocabularyPracticePage /></ProtectedRoute>} />
         <Route path="/vocabulary/practice" element={<ProtectedRoute><VocabularyTrainingPage /></ProtectedRoute>} />
         <Route path="/vocabulary/practice/:mode/doing" element={<ProtectedRoute><VocabularyTrainingDoingPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/custom-cards" element={<ProtectedRoute><CustomMemoryCreatePage /></ProtectedRoute>} />
+        <Route path="/vocabulary/custom-cards/study" element={<ProtectedRoute><CustomMemoryStudyPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/custom-cards/result" element={<ProtectedRoute><CustomMemoryResultPage /></ProtectedRoute>} />
         <Route path="/vocabulary/flashcard" element={<Navigate to="/vocabulary/plans" replace />} />
         <Route path="/vocabulary/flashcard/doing" element={<ProtectedRoute><VocabularyFlashcardDoingPage /></ProtectedRoute>} />
         <Route path="/vocabulary/notebook" element={<ProtectedRoute><NotebookListPage /></ProtectedRoute>} />
@@ -87,12 +105,19 @@ export default function App() {
         <Route path="/writing/task1" element={<ProtectedRoute><Task1SelectionPage /></ProtectedRoute>} />
         <Route path="/writing/task2" element={<ProtectedRoute><Task2SelectionPage /></ProtectedRoute>} />
         <Route path="/writing/task2/opinion" element={<ProtectedRoute><Task2OpinionSelectionPage /></ProtectedRoute>} />
+        <Route path="/writing/task2/opinion-drill" element={<ProtectedRoute><Task2OpinionDrillPage /></ProtectedRoute>} />
+        <Route path="/writing/task2/opinion-drill/generating" element={<ProtectedRoute><Task2OpinionDrillGeneratingPage /></ProtectedRoute>} />
+        <Route path="/writing/task2/opinion-drill/doing" element={<ProtectedRoute><Task2OpinionDrillDoingPage /></ProtectedRoute>} />
         <Route path="/writing/task2/doing" element={<ProtectedRoute><Task2PracticePage /></ProtectedRoute>} />
         <Route path="/writing/chart" element={<ProtectedRoute><ChartSelectionPage /></ProtectedRoute>} />
         <Route path="/writing/chart/doing" element={<ProtectedRoute><ChartPracticePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/prompts" element={<ProtectedRoute><PromptPage /></ProtectedRoute>} />
+        <Route path="/store" element={<ProtectedRoute><StorePage /></ProtectedRoute>} />
+        <Route path="/creative-workshop" element={<ProtectedRoute><CreativeWorkshopPage /></ProtectedRoute>} />
+        <Route path="/creative-workshop/favorites" element={<ProtectedRoute><CreativeWorkshopFavoritesPage /></ProtectedRoute>} />
+        <Route path="/creative-workshop/pages/:id" element={<ProtectedRoute><CreativeWorkshopPreviewPage /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

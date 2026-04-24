@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { retryWithBackoff } from '../../utils/retry';
+import { useLang } from '../../i18n/LanguageContext';
 import { listNotebooks, type Notebook } from '../../api/notebook';
 import {
     listPlanWords, addWord, updatePlanWord, removePlanWord,
@@ -22,14 +23,32 @@ const FSRS_STATE_CLASS: Record<number, string> = {
 
 type AddTab = 'manual' | 'notebook' | 'book';
 type BookSubMode = 'all' | 'range' | 'select';
-type StudyMode = 'flashcard' | 'choice' | 'write';
+type StudyMode = 'flashcard' | 'choice' | 'write' | 'copy';
 type MasterySetting = 'auto' | number;
 
 const STUDY_MODES: [StudyMode, string][] = [
     ['flashcard', '记忆卡'],
     ['choice', '4选1'],
     ['write', '看中文写英文'],
+    ['copy', '抄写模式'],
 ];
+
+function clampCopyRepetitions(value: number): number {
+    return Math.min(20, Math.max(1, Number.isFinite(value) ? Math.floor(value) : 3));
+}
+
+function clampCopyReviewDays(value: number): number {
+    return Math.min(365, Math.max(0, Number.isFinite(value) ? Math.floor(value) : 2));
+}
+
+function getPlanTodayTarget(plan: LearningPlan): number {
+    return Math.max(plan.studied_today, plan.today_target ?? plan.daily_count);
+}
+
+function shouldStartReview(plan: LearningPlan): boolean {
+    const todayTarget = getPlanTodayTarget(plan);
+    return !!plan.has_activity_today && todayTarget > 0 && plan.studied_today >= todayTarget;
+}
 
 /**
  * 清理与计划相关的所有浏览器缓存
@@ -38,9 +57,20 @@ const STUDY_MODES: [StudyMode, string][] = [
 function clearPlanCaches(planId: number): void {
     console.log('[计划缓存] 开始清理缓存...', { planId });
 
+    const planSessionPrefix = `vocab_flashcard_session_plan_${planId}`;
+    const dynamicPlanSessionKeys: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i += 1) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith(planSessionPrefix)) {
+            dynamicPlanSessionKeys.push(key);
+        }
+    }
+
     // 1. 清理 sessionStorage（会话级别）
     const sessionKeys = [
         'vocab_flashcard_session',           // 词汇学习主会话
+        `vocab_flashcard_session_plan_${planId}`,
+        ...dynamicPlanSessionKeys,
         'reading_session_cache',              // 阅读会话缓存
         'listening_session_cache',            // 听力会话缓存
         'vocab_doing_session_mcq',            // 词汇训练 - 4选1
@@ -48,7 +78,7 @@ function clearPlanCaches(planId: number): void {
         'vocab_doing_session_complete',       // 词汇训练 - 补全
     ];
 
-    sessionKeys.forEach(key => {
+    Array.from(new Set(sessionKeys)).forEach(key => {
         if (sessionStorage.getItem(key)) {
             sessionStorage.removeItem(key);
             console.log('[计划缓存] 已清理 sessionStorage:', key);
@@ -65,6 +95,7 @@ function clearPlanCaches(planId: number): void {
 }
 
 export default function LearningPlanDetailPage() {
+    const { translations: t } = useLang();
     const { id } = useParams<{ id: string }>();
     const planId = Number(id);
     const navigate = useNavigate();
@@ -79,6 +110,7 @@ export default function LearningPlanDetailPage() {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
+    const [pageJumpInput, setPageJumpInput] = useState('');
     const [sortBy, setSortBy] = useState<'default' | 'alphabetical' | 'proficiency'>('default');
     const [sortAsc, setSortAsc] = useState(true);
 
@@ -92,6 +124,14 @@ export default function LearningPlanDetailPage() {
         if (raw === 'auto') return 'auto';
         const v = Number(raw);
         return Number.isFinite(v) ? Math.min(5, Math.max(1, v)) : 2;
+    });
+    const [copyRepetitions, setCopyRepetitions] = useState<number>(() => {
+        const raw = Number(localStorage.getItem(`lp_copy_repetitions_${planId}`) ?? '3');
+        return clampCopyRepetitions(raw);
+    });
+    const [copyReviewDays, setCopyReviewDays] = useState<number>(() => {
+        const raw = Number(localStorage.getItem(`lp_copy_review_days_${planId}`) ?? '2');
+        return clampCopyReviewDays(raw);
     });
 
     // Add section
@@ -114,6 +154,7 @@ export default function LearningPlanDetailPage() {
     const [rangeEnd, setRangeEnd] = useState(50);
     const [allBookWords, setAllBookWords] = useState<BookWord[]>([]);
     const [bookPage, setBookPage] = useState(1);
+    const [bookPageJumpInput, setBookPageJumpInput] = useState('');
     const [bookQ, setBookQ] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
@@ -123,21 +164,10 @@ export default function LearningPlanDetailPage() {
             listPlanWords(planId),
         ])
             .then(([r]) => {
-                // 根据 fsrs_due 自动重算天数
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const updated = r.entries.map(e => {
-                    if (e.fsrs_due) {
-                        const due = new Date(e.fsrs_due);
-                        due.setHours(0, 0, 0, 0);
-                        const diffDays = Math.max(0, Math.round((due.getTime() - today.getTime()) / 86400000));
-                        return { ...e, fsrs_scheduled_days: diffDays };
-                    }
-                    return e;
-                });
-                setEntries(updated);
+                // 以后端返回的 fsrs_scheduled_days 为准，避免前端时区重算导致天数偏差。
+                setEntries(r.entries);
             })
-            .catch(() => showToast('加载计划失败', 'error'))
+            .catch(() => showToast(t.vocab.details.msgLoadFail, 'error'))
             .finally(() => setLoading(false));
     }, [planId]);
 
@@ -154,6 +184,12 @@ export default function LearningPlanDetailPage() {
                 setDailyCount(p.daily_count);
                 if (p.default_mode) setStudyMode(p.default_mode as StudyMode);
                 if (p.mastery_target) setMasteryTarget(p.mastery_target as MasterySetting);
+                if (typeof p.copy_repetitions === 'number') {
+                    setCopyRepetitions(clampCopyRepetitions(p.copy_repetitions));
+                }
+                if (typeof p.copy_review_days === 'number') {
+                    setCopyReviewDays(clampCopyReviewDays(p.copy_review_days));
+                }
             }).catch(() => { });
         });
     }, [planId]);
@@ -178,6 +214,14 @@ export default function LearningPlanDetailPage() {
         localStorage.setItem(`lp_mastery_target_${planId}`, String(masteryTarget));
     }, [planId, masteryTarget]);
 
+    useEffect(() => {
+        localStorage.setItem(`lp_copy_repetitions_${planId}`, String(copyRepetitions));
+    }, [planId, copyRepetitions]);
+
+    useEffect(() => {
+        localStorage.setItem(`lp_copy_review_days_${planId}`, String(copyReviewDays));
+    }, [planId, copyReviewDays]);
+
     // Reset pagination when search or entries change
     useEffect(() => { setPage(1); }, [search]);
     useEffect(() => { setPage(1); }, [entries.length]);
@@ -191,31 +235,69 @@ export default function LearningPlanDetailPage() {
             setPlan(p);
             // 修改计划名称后，清除相关缓存以防止不一致
             clearPlanCaches(planId);
-            showToast('计划名称已保存', 'success');
+            showToast(t.vocab.details.msgSaveSuccess, 'success');
         } catch {
-            showToast('保存失败', 'error');
+            showToast(t.vocab.details.msgSaveFail, 'error');
             setPlanName(plan.name);
         }
     }, [planName, plan, planId]);
 
     const saveDaily = useCallback(async () => {
         if (!plan || dailyCount === plan.daily_count) return;
-        if (dailyCount < 1 || dailyCount > 200) { showToast('每日词数需在 1-200 之间', 'error'); return; }
+        if (plan.has_activity_today) {
+            showToast('今日已学习过单词，今日不能修改每日词数，请明天再调整。', 'error');
+            setDailyCount(plan.daily_count);
+            return;
+        }
+        if (dailyCount < 1 || dailyCount > 200) { showToast(t.vocab.details.msgDailyRange, 'error'); return; }
         try {
             const { plan: p } = await updatePlan(planId, { daily_count: dailyCount });
             setPlan(p);
             // 修改daily_count成功后，使用完整的缓存清理函数
             // 这样下次进入学习页面时，会使用新的daily_count重新构建队列
             clearPlanCaches(planId);
-            showToast('每日词数已使用新配置保存', 'success');
+            showToast(t.vocab.details.msgDailySaveSuccess, 'success');
         } catch {
-            showToast('保存失败', 'error');
+            showToast(t.vocab.details.msgSaveFail, 'error');
             setDailyCount(plan.daily_count);
         }
     }, [dailyCount, plan, planId]);
 
+    const saveCopyConfig = useCallback(async () => {
+        if (!plan) return;
+
+        const nextRepeats = clampCopyRepetitions(copyRepetitions);
+        const nextReviewDays = clampCopyReviewDays(copyReviewDays);
+        if (nextRepeats !== copyRepetitions) setCopyRepetitions(nextRepeats);
+        if (nextReviewDays !== copyReviewDays) setCopyReviewDays(nextReviewDays);
+
+        const originalRepeats = plan.copy_repetitions ?? 3;
+        const originalReviewDays = plan.copy_review_days ?? 2;
+        const hasChanged = nextRepeats !== originalRepeats || nextReviewDays !== originalReviewDays;
+        if (!hasChanged) {
+            return;
+        }
+
+        try {
+            const { plan: updated } = await updatePlan(planId, {
+                copy_repetitions: nextRepeats,
+                copy_review_days: nextReviewDays,
+            });
+            setPlan(updated);
+            setCopyRepetitions(clampCopyRepetitions(updated.copy_repetitions ?? nextRepeats));
+            setCopyReviewDays(clampCopyReviewDays(updated.copy_review_days ?? nextReviewDays));
+            showToast('抄写配置已保存', 'success');
+        } catch (e: unknown) {
+            const errorMsg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
+            showToast(errorMsg || '抄写配置保存失败', 'error');
+            setCopyRepetitions(clampCopyRepetitions(plan.copy_repetitions ?? 3));
+            setCopyReviewDays(clampCopyReviewDays(plan.copy_review_days ?? 2));
+        }
+    }, [copyRepetitions, copyReviewDays, plan, planId]);
+
     // ── Start session ──────────────────────────────────────────────────────
-    const isQuotaDone = plan ? plan.studied_today >= plan.daily_count : false;
+    const isQuotaDone = plan ? shouldStartReview(plan) : false;
+    const isTodayConfigLocked = !!plan?.has_activity_today;
 
     const handleStart = async () => {
         if (starting || entries.length === 0) return;
@@ -244,10 +326,10 @@ export default function LearningPlanDetailPage() {
 
             if (cards.length === 0) {
                 const msg = isQuotaDone
-                    ? '今日还没有学习记录，无法复习'
+                    ? t.vocab.plans.msgNoReviewRecord
                     : stats.remaining_today === 0
-                        ? `今日已学习 ${stats.studied_today} 词，完成每日目标！`
-                        : '今日没有需要复习的单词';
+                        ? t.vocab.plans.msgDailyGoalReached.replace('{n}', String(stats.studied_today))
+                        : t.vocab.plans.msgNoDueReview;
                 showToast(msg, 'success');
                 return;
             }
@@ -262,8 +344,10 @@ export default function LearningPlanDetailPage() {
                     planDailyCount: plan?.daily_count,
                     mode: studyMode,
                     masteryTarget,
+                    copyRepetitions: clampCopyRepetitions(plan?.copy_repetitions ?? copyRepetitions),
+                    copyReviewDays: clampCopyReviewDays(plan?.copy_review_days ?? copyReviewDays),
                     reviewOnly: isQuotaDone,
-                    forceNewSession: true,
+                    forceNewSession: studyMode !== 'copy',
                 },
             });
         } catch (e: unknown) {
@@ -277,25 +361,25 @@ export default function LearningPlanDetailPage() {
                 error,
             });
 
-            let msg = '开始失败';
+            let msg = t.vocab.plans.msgStartFail;
 
             // 根据错误类型提供具体的用户消息
             if (status === 402) {
-                msg = 'AT币余额不足，请充值后重试';
+                msg = t.vocab.details.msgInsufficientAT;
             } else if (status === 400 && errorMsg?.includes('没有单词')) {
-                msg = '计划中没有单词，请先添加';
+                msg = t.vocab.plans.msgEmptyWord;
             } else if (status === 400 && errorMsg?.includes('词汇')) {
                 msg = errorMsg;
             } else if (status === 404) {
-                msg = '计划不存在，请刷新后重试';
+                msg = t.vocab.details.msgPlanNotFound;
             } else if (status === 409 || status === 422) {
-                msg = '计划配置冲突，请刷新后重试';
+                msg = t.vocab.details.msgPlanConflict;
             } else if (
                 [408, 429, 500, 502, 503, 504].includes(status) ||
                 String(errorMsg).includes('timeout') ||
                 String(errorMsg).includes('network')
             ) {
-                msg = `网络错误，已尝试 ${retryAttempt} 次 - ${errorMsg || '请检查网络后重试'}`;
+                msg = t.vocab.details.msgNetworkErr.replace('{n}', String(retryAttempt)).replace('{msg}', errorMsg || t.common.error);
             } else if (errorMsg) {
                 msg = errorMsg;
             }
@@ -309,8 +393,8 @@ export default function LearningPlanDetailPage() {
     // ── Add words ──────────────────────────────────────────────────────────
     const handleAddManual = async () => {
         const word = addWord_.trim().toLowerCase();
-        if (!word) { showToast('单词不能为空', 'error'); return; }
-        if (existingWords.has(word)) { showToast('该单词已在计划中', 'error'); return; }
+        if (!word) { showToast(t.vocab.details.msgWordEmpty, 'error'); return; }
+        if (existingWords.has(word)) { showToast(t.vocab.details.msgDuplicate, 'error'); return; }
         setAddBusy(true);
         try {
             const r = await addWord(planId, {
@@ -324,10 +408,10 @@ export default function LearningPlanDetailPage() {
             setAddWord_(''); setAddZh(''); setAddPhonetic(''); setAddGrammar('');
             // 添加词汇后，清理缓存（队列已改变）
             clearPlanCaches(planId);
-            showToast('已添加', 'success');
+            showToast(t.vocab.details.msgAddSuccess, 'success');
         } catch (e: unknown) {
             const status = (e as { response?: { status?: number } })?.response?.status;
-            showToast(status === 409 ? '该单词已在计划中' : '添加失败', 'error');
+            showToast(status === 409 ? t.vocab.details.msgDuplicate : t.vocab.details.msgAddFail, 'error');
         } finally {
             setAddBusy(false);
         }
@@ -339,8 +423,8 @@ export default function LearningPlanDetailPage() {
             const { entries_added } = await addWord(planId, payload);
             const skipped = expectedTotal !== undefined ? Math.max(0, expectedTotal - entries_added) : 0;
             const msg = skipped > 0
-                ? `已导入 ${entries_added} 个，跳过 ${skipped} 个重复单词`
-                : `已导入 ${entries_added} 个单词`;
+                ? t.vocab.details.msgImportSuccessSkip.replace('{n}', String(entries_added)).replace('{skipped}', String(skipped))
+                : t.vocab.details.msgImportSuccess.replace('{n}', String(entries_added));
             showToast(msg, 'success');
             // 导入词汇后，清理缓存（队列已改变）
             clearPlanCaches(planId);
@@ -348,7 +432,7 @@ export default function LearningPlanDetailPage() {
             const r = await listPlanWords(planId);
             setEntries(r.entries);
         } catch {
-            showToast('导入失败', 'error');
+            showToast(t.vocab.details.msgImportFail, 'error');
         } finally {
             setAddBusy(false);
         }
@@ -361,36 +445,37 @@ export default function LearningPlanDetailPage() {
             const { entry: updated } = await updatePlanWord(planId, entry.id, { zh: newZh });
             setEntries(prev => prev.map(e => e.id === entry.id ? updated : e));
         } catch {
-            showToast('保存失败', 'error');
+            showToast(t.vocab.details.msgSaveFail, 'error');
         }
     };
 
     const handleDueDays = async (entry: PlanEntry, days: number) => {
-        if (isNaN(days) || days < 0) { showToast('天数需为非负整数', 'error'); return; }
+        if (isNaN(days) || days < 0) { showToast(t.vocab.details.msgDaysInvalid, 'error'); return; }
         try {
             const { entry: updated } = await updatePlanWord(planId, entry.id, { next_review_days: days });
             setEntries(prev => prev.map(e => e.id === entry.id ? updated : e));
-            showToast('复习日期已更新', 'success');
+            showToast(t.vocab.details.msgUpdateSuccess, 'success');
         } catch {
-            showToast('更新失败', 'error');
+            showToast(t.vocab.details.msgUpdateFail, 'error');
         }
     };
 
     const handleRemove = async (entry: PlanEntry) => {
-        if (!confirm(`从计划中删除"${entry.word}"？`)) return;
+        if (!confirm(t.vocab.details.msgDeleteConfirm.replace('{word}', entry.word))) return;
         try {
             await removePlanWord(planId, entry.id);
             setEntries(prev => prev.filter(e => e.id !== entry.id));
             // 删除词汇后，清理缓存（队列已改变）
             clearPlanCaches(planId);
-            showToast('已删除', 'success');
+            showToast(t.vocab.details.msgDeleteSuccess, 'success');
         } catch {
-            showToast('删除失败', 'error');
+            showToast(t.vocab.details.msgDeleteFail, 'error');
         }
     };
 
     // ── Filtered + sorted + paginated word list ──────────────────────────────
     const PAGE_SIZE = 50;
+    const BOOK_PAGE_SIZE = 20;
     const normalizedSearch = search.trim().toLowerCase();
     const filtered = normalizedSearch
         ? entries.filter(e =>
@@ -445,12 +530,43 @@ export default function LearningPlanDetailPage() {
             );
         }
         const total = list.length;
-        const PAGE_SIZE = 20;
         return {
-            bookWords_: list.slice((bookPage - 1) * PAGE_SIZE, bookPage * PAGE_SIZE),
+            bookWords_: list.slice((bookPage - 1) * BOOK_PAGE_SIZE, bookPage * BOOK_PAGE_SIZE),
             bookTotal: total,
         };
-    }, [allBookWords, bookQ, bookPage]);
+    }, [allBookWords, bookQ, bookPage, BOOK_PAGE_SIZE]);
+
+    const bookTotalPages = Math.max(1, Math.ceil(bookTotal / BOOK_PAGE_SIZE));
+
+    const handlePageJump = () => {
+        const rawValue = pageJumpInput.trim();
+        if (!rawValue) {
+            showToast('请输入页码', 'error');
+            return;
+        }
+        const parsed = Number(rawValue);
+        if (!Number.isInteger(parsed)) {
+            showToast(`请输入 1 到 ${totalPages} 的整数页码`, 'error');
+            return;
+        }
+        setPage(Math.min(totalPages, Math.max(1, parsed)));
+        setPageJumpInput('');
+    };
+
+    const handleBookPageJump = () => {
+        const rawValue = bookPageJumpInput.trim();
+        if (!rawValue) {
+            showToast('请输入页码', 'error');
+            return;
+        }
+        const parsed = Number(rawValue);
+        if (!Number.isInteger(parsed)) {
+            showToast(`请输入 1 到 ${bookTotalPages} 的整数页码`, 'error');
+            return;
+        }
+        setBookPage(Math.min(bookTotalPages, Math.max(1, parsed)));
+        setBookPageJumpInput('');
+    };
 
     // ── Book word selection helpers ────────────────────────────────────────
     const toggleSelectWord = (wordId: number) => {
@@ -478,32 +594,39 @@ export default function LearningPlanDetailPage() {
                         onBlur={saveName}
                         onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                     />
-                    <div className="lp-daily-wrap">
-                        每日
-                        <input
-                            type="number"
-                            min={1} max={200}
-                            value={dailyCount}
-                            onChange={e => setDailyCount(Number(e.target.value))}
-                            onBlur={saveDaily}
-                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                        />
-                        词
+                    <div className="lp-daily-box">
+                        <div className="lp-daily-wrap">
+                            {t.vocab.details.dailyPrefix}
+                            <input
+                                type="number"
+                                min={1} max={200}
+                                value={dailyCount}
+                                disabled={isTodayConfigLocked}
+                                title={isTodayConfigLocked ? '今日已学习，明天可调整每日词数' : ''}
+                                onChange={e => setDailyCount(Number(e.target.value))}
+                                onBlur={saveDaily}
+                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                            />
+                            {t.vocab.details.dailySuffix}
+                        </div>
+                        {isTodayConfigLocked && (
+                            <div className="lp-daily-lock-hint">今日已学习过单词，今日不能修改每日词数，请明天再调整。</div>
+                        )}
                     </div>
                     <button
                         className="lp-start-btn"
                         onClick={handleStart}
                         disabled={starting || entries.length === 0}
                     >
-                        {starting ? '准备中…' : isQuotaDone ? '📖 开始复习' : '开始学习'}
+                        {starting ? t.vocab.plans.preparing : isQuotaDone ? t.vocab.plans.startReview : t.vocab.plans.startStudy}
                     </button>
                 </div>
 
                 {/* ── Study mode selector ── */}
                 <div className="lp-mode-selector">
-                    <span className="lp-mode-selector-label">学习模式：</span>
+                    <span className="lp-mode-selector-label">{t.vocab.details.modeLabel}</span>
                     <div className="lp-mode-tabs">
-                        {STUDY_MODES.map(([m, label]) => (
+                        {STUDY_MODES.map(([m]) => (
                             <button
                                 key={m}
                                 className={`lp-mode-tab${studyMode === m ? ' active' : ''}`}
@@ -513,11 +636,64 @@ export default function LearningPlanDetailPage() {
                                     updatePlan(planId, { default_mode: m }).catch(() => { });
                                 }}
                             >
-                                {label}
+                                {m === 'flashcard'
+                                    ? t.vocab.modes.flashcard
+                                    : m === 'choice'
+                                        ? t.vocab.modes.choice
+                                        : m === 'write'
+                                            ? t.vocab.modes.write
+                                            : t.vocab.modes.copy}
                             </button>
                         ))}
                     </div>
                 </div>
+
+                {studyMode === 'copy' && (
+                    <div className="lp-copy-config-card">
+                        <div className="lp-copy-config-row">
+                            <label htmlFor="lp-copy-repetitions">每个单词抄写几遍</label>
+                            <input
+                                id="lp-copy-repetitions"
+                                type="number"
+                                min={1}
+                                max={20}
+                                value={copyRepetitions}
+                                onChange={(e) => setCopyRepetitions(Number(e.target.value))}
+                                onBlur={saveCopyConfig}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        (e.target as HTMLInputElement).blur();
+                                    }
+                                }}
+                            />
+                        </div>
+                        <div className="lp-copy-config-row">
+                            <label htmlFor="lp-copy-review-days">该词抄写完成后，在当前复习间隔基础上增加几天</label>
+                            <input
+                                id="lp-copy-review-days"
+                                type="number"
+                                min={0}
+                                max={365}
+                                value={copyReviewDays}
+                                disabled={isTodayConfigLocked}
+                                title={isTodayConfigLocked ? '今日已学习，明天可调整复习天数' : ''}
+                                onChange={(e) => setCopyReviewDays(Number(e.target.value))}
+                                onBlur={saveCopyConfig}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        (e.target as HTMLInputElement).blur();
+                                    }
+                                }}
+                            />
+                        </div>
+                        {isTodayConfigLocked && (
+                            <div className="lp-daily-lock-hint">今日已学习过单词，今日不能修改“完成后几天复习”，请明天再调整。</div>
+                        )}
+                        <p className="lp-copy-config-hint">
+                            抄写提交必须完全正确。每次抄完一遍会按学习队列重排规则重新插入，直到该词次数耗尽后从队列移除。完成后会在当前复习间隔基础上额外增加 {copyReviewDays} 天。
+                        </p>
+                    </div>
+                )}
 
                 {/* ── Today's studied words ── */}
                 {plan && (
@@ -526,16 +702,16 @@ export default function LearningPlanDetailPage() {
 
                 {/* ── Add section ── */}
                 <div className="lp-add-section">
-                    <h4>添加单词</h4>
+                    <h4>{t.vocab.details.addWords}</h4>
 
                     <div className="lp-add-tabs">
-                        {(['manual', 'notebook', 'book'] as AddTab[]).map(t => (
+                        {(['manual', 'notebook', 'book'] as AddTab[]).map(tab => (
                             <button
-                                key={t}
-                                className={`lp-add-tab${addTab === t ? ' active' : ''}`}
-                                onClick={() => setAddTab(t)}
+                                key={tab}
+                                className={`lp-add-tab${addTab === tab ? ' active' : ''}`}
+                                onClick={() => setAddTab(tab)}
                             >
-                                {t === 'manual' ? '手动输入' : t === 'notebook' ? '从笔记本' : '从词书'}
+                                {tab === 'manual' ? t.vocab.details.tabManual : tab === 'notebook' ? t.vocab.details.tabNotebook : t.vocab.details.tabBook}
                             </button>
                         ))}
                     </div>
@@ -547,7 +723,7 @@ export default function LearningPlanDetailPage() {
                                 <div style={{ position: 'relative', flex: 1 }}>
                                     <input
                                         type="text"
-                                        placeholder="英文单词"
+                                        placeholder={t.vocab.details.manualWord}
                                         value={addWord_}
                                         onChange={e => setAddWord_(e.target.value)}
                                         onKeyDown={e => { if (e.key === 'Enter') handleAddManual(); }}
@@ -555,30 +731,30 @@ export default function LearningPlanDetailPage() {
                                         style={{ width: '100%' }}
                                     />
                                     {isDuplicateWord && (
-                                        <span className="lp-duplicate-hint">已在计划中</span>
+                                        <span className="lp-duplicate-hint">{t.vocab.details.manualDuplicate}</span>
                                     )}
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder="中文释义（可选）"
+                                    placeholder={t.vocab.details.manualZh}
                                     value={addZh}
                                     onChange={e => setAddZh(e.target.value)}
                                     onKeyDown={e => { if (e.key === 'Enter') handleAddManual(); }}
                                 />
                                 <button className="lp-add-btn" onClick={handleAddManual} disabled={addBusy || isDuplicateWord}>
-                                    添加
+                                    {t.vocab.details.manualAddBtn}
                                 </button>
                             </div>
                             <div className="lp-add-row">
                                 <input
                                     type="text"
-                                    placeholder="音标（可选）e.g. /əˈbændən/"
+                                    placeholder={t.vocab.details.manualPhonetic}
                                     value={addPhonetic}
                                     onChange={e => setAddPhonetic(e.target.value)}
                                 />
                                 <input
                                     type="text"
-                                    placeholder="词性（可选）e.g. v. / n. adj."
+                                    placeholder={t.vocab.details.manualGrammar}
                                     value={addGrammar}
                                     onChange={e => setAddGrammar(e.target.value)}
                                 />
@@ -591,9 +767,9 @@ export default function LearningPlanDetailPage() {
                         <div className="lp-add-form">
                             <div className="lp-add-row">
                                 <select value={nbId} onChange={e => setNbId(Number(e.target.value))}>
-                                    <option value="">— 选择笔记本 —</option>
+                                    <option value="">{t.vocab.details.nbSelect}</option>
                                     {notebooks.map(nb => (
-                                        <option key={nb.id} value={nb.id}>{nb.title}（{nb.word_count} 词）</option>
+                                        <option key={nb.id} value={nb.id}>{nb.title} ({t.vocab.notebooks.cardWordCount.replace('{n}', String(nb.word_count))})</option>
                                     ))}
                                 </select>
                                 <button
@@ -604,7 +780,7 @@ export default function LearningPlanDetailPage() {
                                         notebooks.find(nb => nb.id === nbId)?.word_count,
                                     )}
                                 >
-                                    {addBusy ? '导入中…' : '全部导入'}
+                                    {addBusy ? t.vocab.details.nbImporting : t.vocab.details.nbImportAll}
                                 </button>
                             </div>
                         </div>
@@ -623,9 +799,9 @@ export default function LearningPlanDetailPage() {
                                         setBookPage(1);
                                     }}
                                 >
-                                    <option value="">— 选择词书 —</option>
+                                    <option value="">{t.vocab.details.bookSelect}</option>
                                     {books.map(b => (
-                                        <option key={b.id} value={b.id}>{b.name}（{b.word_count} 词）</option>
+                                        <option key={b.id} value={b.id}>{b.name} ({t.vocab.notebooks.cardWordCount.replace('{n}', String(b.word_count))})</option>
                                     ))}
                                 </select>
                             </div>
@@ -640,7 +816,7 @@ export default function LearningPlanDetailPage() {
                                                 style={{ fontSize: 12 }}
                                                 onClick={() => { setBookSubMode(m); setSelectedIds(new Set()); setBookPage(1); }}
                                             >
-                                                {m === 'all' ? '整本导入' : m === 'range' ? '范围导入' : '勾选导入'}
+                                                {m === 'all' ? t.vocab.details.bookModeAll : m === 'range' ? t.vocab.details.bookModeRange : t.vocab.details.bookModeSelect}
                                             </button>
                                         ))}
                                     </div>
@@ -655,7 +831,7 @@ export default function LearningPlanDetailPage() {
                                                     books.find(b => b.id === bookId)?.word_count,
                                                 )}
                                             >
-                                                {addBusy ? '导入中…' : '整本导入'}
+                                                {addBusy ? t.vocab.details.nbImporting : t.vocab.details.bookModeAll}
                                             </button>
                                         </div>
                                     )}
@@ -663,7 +839,7 @@ export default function LearningPlanDetailPage() {
                                     {bookSubMode === 'range' && (
                                         <div className="lp-add-row">
                                             <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
-                                                序号
+                                                {t.vocab.details.bookRangeIdx}
                                             </span>
                                             <input
                                                 type="number" min={1} value={rangeStart}
@@ -686,7 +862,7 @@ export default function LearningPlanDetailPage() {
                                                     end: rangeEnd,
                                                 }, Math.max(0, rangeEnd - rangeStart + 1))}
                                             >
-                                                {addBusy ? '导入中…' : '范围导入'}
+                                                {addBusy ? t.vocab.details.nbImporting : t.vocab.details.bookModeRange}
                                             </button>
                                         </div>
                                     )}
@@ -696,7 +872,7 @@ export default function LearningPlanDetailPage() {
                                             <div className="lp-add-row">
                                                 <input
                                                     type="text"
-                                                    placeholder="搜索单词…"
+                                                    placeholder={t.vocab.notebookDetail.searchPlaceholder}
                                                     value={bookQ}
                                                     onChange={e => { setBookQ(e.target.value); setBookPage(1); }}
                                                 />
@@ -712,7 +888,7 @@ export default function LearningPlanDetailPage() {
                                                         setSelectedIds(new Set());
                                                     }}
                                                 >
-                                                    {addBusy ? '导入中…' : `导入已选（${selectedIds.size}）`}
+                                                    {addBusy ? t.vocab.details.nbImporting : t.vocab.details.bookImportSelected.replace('{n}', String(selectedIds.size))}
                                                 </button>
                                             </div>
                                             <div className="lp-book-browser">
@@ -739,14 +915,38 @@ export default function LearningPlanDetailPage() {
                                                 ))}
                                             </div>
                                             <div className="lp-book-pager">
-                                                <button disabled={bookPage <= 1} onClick={() => setBookPage(p => p - 1)}>上一页</button>
-                                                <span>{bookPage} / {Math.max(1, Math.ceil(bookTotal / 20))}</span>
+                                                <button disabled={bookPage <= 1} onClick={() => setBookPage(p => p - 1)}>{t.vocab.details.bookPrevPage}</button>
+                                                <span>{bookPage} / {bookTotalPages}</span>
                                                 <button
-                                                    disabled={bookPage >= Math.ceil(bookTotal / 20)}
+                                                    disabled={bookPage >= bookTotalPages}
                                                     onClick={() => setBookPage(p => p + 1)}
                                                 >
-                                                    下一页
+                                                    {t.vocab.details.bookNextPage}
                                                 </button>
+                                                <div className="lp-page-jump">
+                                                    <span>跳到</span>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={bookPageJumpInput}
+                                                        onChange={e => {
+                                                            const next = e.target.value;
+                                                            if (next === '' || /^\d+$/.test(next)) {
+                                                                setBookPageJumpInput(next);
+                                                            }
+                                                        }}
+                                                        onKeyDown={e => { if (e.key === 'Enter') handleBookPageJump(); }}
+                                                        placeholder="页码"
+                                                        aria-label="跳转到指定页"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleBookPageJump}
+                                                        disabled={!bookPageJumpInput.trim()}
+                                                    >
+                                                        GO
+                                                    </button>
+                                                </div>
                                             </div>
                                         </>
                                     )}
@@ -759,7 +959,12 @@ export default function LearningPlanDetailPage() {
                 {/* ── Word list ── */}
                 <div className="lp-word-section">
                     <div className="lp-word-section-header">
-                        <h4>词表（{entries.length}）</h4>
+                        
+                    <h4 dangerouslySetInnerHTML={{ __html: t.vocab.details.listTitle
+                        .replace('{learned}', String(entries.filter(e => e.fsrs_state !== 0).length))
+                        .replace('{total}', String(entries.length)) 
+                    }} />
+
                         <div className="lp-sort-controls">
                             <select
                                 className="lp-sort-select"
@@ -769,15 +974,15 @@ export default function LearningPlanDetailPage() {
                                     setPage(1);
                                 }}
                             >
-                                <option value="default">默认</option>
-                                <option value="alphabetical">英文字典序</option>
-                                <option value="proficiency">熟练度</option>
+                                <option value="default">{t.vocab.details.sortDefault}</option>
+                                <option value="alphabetical">{t.vocab.details.sortAlpha}</option>
+                                <option value="proficiency">{t.vocab.details.sortProf}</option>
                             </select>
                             {sortBy !== 'default' && (
                                 <button
                                     className="lp-sort-direction"
                                     onClick={() => setSortAsc(!sortAsc)}
-                                    title={sortAsc ? '倒序' : '正序'}
+                                    title={sortAsc ? t.vocab.details.sortDesc : t.vocab.details.sortAsc}
                                 >
                                     {sortAsc ? '↑' : '↓'}
                                 </button>
@@ -786,17 +991,17 @@ export default function LearningPlanDetailPage() {
                         <input
                             className="lp-search"
                             type="text"
-                            placeholder="搜索单词或释义…"
+                            placeholder={t.vocab.details.listSearch}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                     </div>
 
                     {loading ? (
-                        <div className="lp-empty">加载中…</div>
+                        <div className="lp-empty">{t.common.loading}</div>
                     ) : filtered.length === 0 ? (
                         <div className="lp-empty">
-                            {search ? '没有匹配的单词' : '还没有单词，请先添加'}
+                            {search ? t.vocab.details.listNoMatch : t.vocab.details.listEmpty}
                         </div>
                     ) : (
                         <>
@@ -818,19 +1023,42 @@ export default function LearningPlanDetailPage() {
                                         disabled={safePage <= 1}
                                         onClick={() => setPage(p => Math.max(1, p - 1))}
                                     >
-                                        ← 上一页
+                                        {t.vocab.details.prevPage}
                                     </button>
                                     <span className="lp-page-info">
-                                        第 {safePage} / {totalPages} 页
-                                        &nbsp;·&nbsp;共 {filtered.length} 词
+                                        {t.vocab.details.pageInfo.replace('{page}', String(safePage)).replace('{total}', String(totalPages)).replace('{n}', String(filtered.length))}
                                     </span>
                                     <button
                                         className="lp-page-btn"
                                         disabled={safePage >= totalPages}
                                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                     >
-                                        下一页 →
+                                        {t.vocab.details.nextPage}
                                     </button>
+                                    <div className="lp-page-jump">
+                                        <span>跳到</span>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={pageJumpInput}
+                                            onChange={e => {
+                                                const next = e.target.value;
+                                                if (next === '' || /^\d+$/.test(next)) {
+                                                    setPageJumpInput(next);
+                                                }
+                                            }}
+                                            onKeyDown={e => { if (e.key === 'Enter') handlePageJump(); }}
+                                            placeholder="页码"
+                                            aria-label="跳转到指定页"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handlePageJump}
+                                            disabled={!pageJumpInput.trim()}
+                                        >
+                                            GO
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </>
@@ -850,6 +1078,7 @@ interface WordRowProps {
 }
 
 function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
+    const { translations: t } = useLang();
     const [zh, setZh] = useState(entry.zh);
     const [days, setDays] = useState(entry.fsrs_scheduled_days);
     const [showExamples, setShowExamples] = useState(false);
@@ -864,8 +1093,19 @@ function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
         <div className="lp-word-item">
             {/* Row 1: word + zh input */}
             <div className="lp-word-row1">
-                <div className="lp-word-text">
-                    {entry.word}
+                <div className="lp-word-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{entry.word}</span>
+                    <button 
+                        onClick={() => {
+                            const u = new SpeechSynthesisUtterance(entry.word);
+                            u.lang = 'en-US';
+                            window.speechSynthesis.speak(u);
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: 0, color: 'var(--primary-color)' }}
+                        title="🔊 Play"
+                    >
+                        🔊
+                    </button>
                     {entry.phonetic && (
                         <span className="lp-word-phonetic">{entry.phonetic}</span>
                     )}
@@ -876,7 +1116,7 @@ function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
                     onChange={e => setZh(e.target.value)}
                     onBlur={() => onZhChange(entry, zh)}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    placeholder="中文释义"
+                    placeholder={t.vocab.details.manualZh}
                 />
             </div>
 
@@ -898,7 +1138,7 @@ function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
                             onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                             title="设置几天后复习"
                         />
-                        天后
+                        {t.vocab.intervals.daysUnit}
                         <span className="lp-due-date" title="下次学习日期">
                             {(() => {
                                 const today = new Date();
@@ -918,7 +1158,7 @@ function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
                         </span>
                     </div>
 
-                    <button className="lp-del-btn" onClick={() => onRemove(entry)} title="从计划删除">
+                    <button className="lp-del-btn" onClick={() => onRemove(entry)} title={t.vocab.plans.btnDelete}>
                         ✕
                     </button>
                 </div>
@@ -944,7 +1184,7 @@ function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
                             className="lp-example-toggle"
                             onClick={() => setShowExamples(v => !v)}
                         >
-                            {showExamples ? '收起例句' : `查看例句 (${entry.examples.length})`}
+                            {showExamples ? t.vocab.details.btnCollapseEx : t.vocab.details.btnExpandEx.replace('{n}', String(entry.examples.length))}
                         </button>
                     )}
                 </div>
@@ -965,15 +1205,19 @@ function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
 
 /* ── Today studied section sub-component ─────────────────────────────────── */
 function TodayStudiedSection({ plan }: { plan: LearningPlan }) {
+    const { translations: t } = useLang();
     const [expanded, setExpanded] = useState(false);
-    const pct = Math.min(100, Math.round((plan.studied_today / plan.daily_count) * 100));
+    const todayTotal = getPlanTodayTarget(plan);
+    const pct = todayTotal > 0
+        ? Math.min(100, Math.round((plan.studied_today / todayTotal) * 100))
+        : 0;
 
     return (
         <div className="lp-today-section">
             <div className="lp-today-header" onClick={() => setExpanded(v => !v)}>
                 <div className="lp-today-title">
                     <span className="lp-today-icon">📋</span>
-                    今日学习计划（已掌握 <strong>{plan.studied_today}</strong> / {plan.daily_count}）
+                    <span dangerouslySetInnerHTML={{ __html: t.vocab.details.todayTitle.replace('{studied}', String(plan.studied_today)).replace('{total}', String(todayTotal)) }} />
                     <span className="lp-today-pct">{pct}%</span>
                 </div>
                 <span className={`lp-today-toggle ${expanded ? 'open' : ''}`}>▾</span>

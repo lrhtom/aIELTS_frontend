@@ -226,6 +226,130 @@
     min-height: 220px;
 }
 
+/* Task1 image upload */
+.wc-task1-image-input {
+    display: none;
+}
+
+.wc-task1-image-dropzone {
+    border: 1.5px dashed rgba(13, 148, 136, 0.35);
+    border-radius: 12px;
+    padding: 16px;
+    background: linear-gradient(145deg, rgba(13, 148, 136, 0.05), rgba(16, 185, 129, 0.06));
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.wc-task1-image-dropzone.drag-over {
+    border-color: var(--color-primary);
+    background: linear-gradient(145deg, rgba(13, 148, 136, 0.12), rgba(16, 185, 129, 0.12));
+}
+
+.wc-task1-image-dropzone.disabled {
+    opacity: 0.6;
+}
+
+.wc-task1-image-drop-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.wc-task1-image-drop-subtitle {
+    margin-top: 5px;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.wc-task1-image-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.wc-task1-image-btn {
+    border: none;
+    border-radius: 9px;
+    background: var(--color-primary);
+    color: #fff;
+    padding: 7px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.wc-task1-image-btn:hover:not(:disabled) {
+    filter: brightness(0.95);
+}
+
+.wc-task1-image-btn.ghost {
+    background: rgba(15, 23, 42, 0.08);
+    color: var(--color-text);
+}
+
+.wc-task1-image-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.wc-task1-image-preview-wrap {
+    margin-top: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.85);
+}
+
+.wc-task1-image-preview {
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.03), rgba(15, 23, 42, 0.06));
+}
+
+.wc-task1-image-name {
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    border-top: 1px solid var(--color-border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wc-task1-image-vision-hint {
+    border-radius: 10px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.08);
+    color: #92400e;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    line-height: 1.6;
+}
+
+.wc-task1-image-support-status {
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.wc-task1-image-support-status.supported {
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+}
+
+.wc-task1-image-support-status.unsupported {
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+}
+
 /* Word Count Progress Bar */
 .wc-word-bar {
     height: 4px;
@@ -619,6 +743,61 @@
     color: var(--color-text);
 }
 
+.wp-prompt-markdown > *:first-child {
+    margin-top: 0;
+}
+
+.wp-prompt-markdown > *:last-child {
+    margin-bottom: 0;
+}
+
+.wp-prompt-markdown p {
+    margin: 0 0 0.8em;
+}
+
+.wp-prompt-markdown ul,
+.wp-prompt-markdown ol {
+    margin: 0 0 0.8em 1.2em;
+    padding: 0;
+}
+
+.wp-prompt-markdown li + li {
+    margin-top: 0.25em;
+}
+
+.wp-prompt-markdown blockquote {
+    margin: 0 0 0.8em;
+    padding-left: 0.9em;
+    border-left: 3px solid rgba(13, 148, 136, 0.25);
+    color: var(--color-text-secondary);
+}
+
+.wp-prompt-markdown code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.9em;
+    background: rgba(15, 23, 42, 0.06);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+}
+
+.wp-prompt-markdown pre {
+    margin: 0 0 0.8em;
+    padding: 0.8em 0.9em;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.06);
+    overflow-x: auto;
+}
+
+.wp-prompt-markdown pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.wp-prompt-markdown a {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
 .wp-answer-textarea {
     flex: 1;
     width: 100%;
@@ -805,6 +984,63 @@
 
 .wp-prompt-block--compact {
     font-size: 0.9rem;
+}
+
+.wp-map-scene {
+    position: relative;
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.wp-map-base-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    cursor: zoom-in;
+}
+
+.wp-map-overlay-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.wp-map-icon-node {
+    position: absolute;
+    transform-origin: center center;
+}
+
+.wp-map-icon-node img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.35));
+}
+
+.wp-map-icon-label {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: calc(100% + 2px);
+    white-space: nowrap;
+    font-size: 10px;
+    font-weight: 600;
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.55);
+    border-radius: 999px;
+    padding: 1px 6px;
+    line-height: 1.2;
+}
+
+.wp-map-scene--modal {
+    border-radius: 14px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
 }
 
 @media (max-width: 900px) {

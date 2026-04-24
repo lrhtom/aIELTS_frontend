@@ -120,20 +120,18 @@ export default function UserSettings() {
                 <div className="user-settings-section-header">
                     <div className="user-settings-section-icon">🔄</div>
                     <div className="user-settings-section-title">
-                        {lang === 'zh' ? 'AI生成重试次数' : 'AI Generation Retry Count'}
+                        {t.settings.aiRetry.aiRetryCount}
                     </div>
                 </div>
                 <div className="user-settings-section-description">
-                    {lang === 'zh' 
-                        ? '当AI生成内容失败时，系统会自动重试指定的次数' 
-                        : 'When AI content generation fails, the system will automatically retry the specified number of times'}
+                    {t.settings.aiRetry.aiRetryDesc}
                 </div>
                 
                 <div className="ai-retry-settings">
                     <div className="ai-retry-slider-container">
                         <label className="ai-retry-label" htmlFor="aiRetrySlider">
-                            {lang === 'zh' ? '重试次数：' : 'Retry Count:'} 
-                            <span className="ai-retry-value">{aiRetryCount} 次</span>
+                            {t.settings.aiRetry.aiRetryLabel} 
+                            <span className="ai-retry-value">{aiRetryCount} {t.settings.aiRetry.aiRetryUnit}</span>
                         </label>
                         <input
                             id="aiRetrySlider"
@@ -160,7 +158,7 @@ export default function UserSettings() {
                         onClick={handleUpdateAiRetryCount}
                         disabled={isUpdatingRetryCount || aiRetryCount === (user?.aiGenerationRetryCount ?? 0)}
                     >
-                        {isUpdatingRetryCount ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '保存设置' : 'Save Settings')}
+                        {isUpdatingRetryCount ? t.common.saving : t.settings.aiRetry.saveBtn}
                     </button>
 
                     {updateRetryCountMessage && (
@@ -174,35 +172,17 @@ export default function UserSettings() {
                 {/* 警告信息 */}
                 <div className="ai-retry-warning-section">
                     <div className="ai-retry-warning-title">
-                        ⚠️ {lang === 'zh' ? '重要提示' : 'Important Notice'}
+                        ⚠️ {t.settings.aiRetry.importantNotice}
                     </div>
                     <div className="ai-retry-warning-content">
                         <p className="ai-retry-warning-text">
-                            {lang === 'zh' 
-                                ? '⚠️ 更多的重试次数会导致AT币消耗增加!'
-                                : '⚠️ More retry attempts will result in increased AT coin consumption!'}
+                            ⚠️ {t.settings.aiRetry.notice1}
                         </p>
                         <ul className="ai-retry-warning-list">
-                            <li>
-                                {lang === 'zh' 
-                                    ? '每次重试都会消耗AT币（按照您的会员等级计算）'
-                                    : 'Each retry will consume AT coins (calculated according to your membership level)'}
-                            </li>
-                            <li>
-                                {lang === 'zh' 
-                                    ? '建议免费用户设置为0-2次，付费用户可设置为3-5次'
-                                    : 'Free users are recommended to set 0-2 retries, paid users can set 3-5 retries'}
-                            </li>
-                            <li>
-                                {lang === 'zh' 
-                                    ? '过高的重试次数（8-10）可能导致费用快速增长'
-                                    : 'High retry counts (8-10) may cause costs to increase rapidly'}
-                            </li>
-                            <li>
-                                {lang === 'zh' 
-                                    ? '请根据您的AT币余额谨慎设置此值'
-                                    : 'Please set this value carefully based on your AT coin balance'}
-                            </li>
+                            <li>{t.settings.aiRetry.notice2}</li>
+                            <li>{t.settings.aiRetry.notice3}</li>
+                            <li>{t.settings.aiRetry.notice4}</li>
+                            <li>{t.settings.aiRetry.notice5}</li>
                         </ul>
                     </div>
                 </div>

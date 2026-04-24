@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createListeningState } from '../../store/listen_page_store';
-import type { VocabItem, ListeningData } from '../../store/listen_page_store';
+import type { VocabItem, ListeningData, MapLandmark, MapDecoration } from '../../store/listen_page_store';
 import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
@@ -39,7 +39,7 @@ export default function ListeningPage() {
     const difficulty: string = state?.difficulty ?? '7.0';
     const wordCountMin: number = state?.wordCountMin ?? 1;
     const wordCountMax: number = state?.wordCountMax ?? 2;
-    const practiceType: 'article' | 'sentence' = state?.practiceType ?? 'article';
+    const practiceType: 'article' | 'sentence' | 'multiple_choice' | 'map' = state?.practiceType ?? 'article';
     const navigate = useNavigate();
     const onReturnHome = () => navigate('/');
     const { translations: t } = useLang();
@@ -356,6 +356,7 @@ export default function ListeningPage() {
     if (st.step === 2 && st.listeningData) {
         const isArticleMode = st.listeningData.type === 'article';
         const isMultipleChoiceMode = st.listeningData.type === 'multiple_choice';
+        const isMapMode = st.listeningData.type === 'map';
 
         // 去除原文所有的 ** 标记（考试呈现时不需要加粗高亮）
         const removeMarkdown = (text: string) => {
@@ -454,6 +455,131 @@ export default function ListeningPage() {
             );
         };
 
+        // ─── 地图题模式 ─────────────────────────────────────
+        const renderMapMode = () => {
+            if (st.listeningData?.type !== 'map') return null;
+            const mapData = st.listeningData.map;
+            const options = st.listeningData.options;
+            const questions = st.listeningData.questions;
+            const vw = mapData.width || 600;
+            const vh = mapData.height || 400;
+
+            const renderDecoration = (d: MapDecoration, i: number) => {
+                const dw = d.w || 40;
+                const dh = d.h || 40;
+                switch (d.type) {
+                    case 'tree':
+                        return <g key={`dec-${i}`}><circle cx={d.x} cy={d.y - 8} r={12} fill="#22c55e" opacity={0.6} /><rect x={d.x - 2} y={d.y} width={4} height={10} fill="#a16207" /></g>;
+                    case 'lake':
+                        return <ellipse key={`dec-${i}`} cx={d.x + dw / 2} cy={d.y + dh / 2} rx={dw / 2} ry={dh / 2} fill="#93c5fd" opacity={0.5} stroke="#60a5fa" strokeWidth={1} />;
+                    case 'garden':
+                        return <rect key={`dec-${i}`} x={d.x} y={d.y} width={dw} height={dh} fill="#86efac" opacity={0.4} rx={6} stroke="#4ade80" strokeWidth={1} />;
+                    case 'parking':
+                        return <g key={`dec-${i}`}><rect x={d.x} y={d.y} width={dw} height={dh} fill="#e5e7eb" rx={4} stroke="#9ca3af" strokeWidth={1} /><text x={d.x + dw / 2} y={d.y + dh / 2 + 4} textAnchor="middle" fontSize={10} fill="#6b7280">P</text></g>;
+                    case 'fountain':
+                        return <g key={`dec-${i}`}><circle cx={d.x} cy={d.y} r={15} fill="#bfdbfe" stroke="#60a5fa" strokeWidth={1} /><circle cx={d.x} cy={d.y} r={6} fill="#93c5fd" /></g>;
+                    default:
+                        return null;
+                }
+            };
+
+            const renderLandmark = (lm: MapLandmark) => {
+                const isQuestion = lm.questionId != null;
+                if (isQuestion) {
+                    // 编号红色标记圆圈
+                    return (
+                        <g key={lm.id}>
+                            <circle cx={lm.x} cy={lm.y} r={16} fill="#ef4444" opacity={0.9} />
+                            <text x={lm.x} y={lm.y + 5} textAnchor="middle" fontSize={13} fontWeight="bold" fill="white">{lm.questionId}</text>
+                        </g>
+                    );
+                }
+                // 已标注地标
+                if (lm.shape === 'circle') {
+                    const r = lm.r || 25;
+                    return (
+                        <g key={lm.id}>
+                            <circle cx={lm.x} cy={lm.y} r={r} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={1.5} />
+                            <text x={lm.x} y={lm.y + 4} textAnchor="middle" fontSize={10} fontWeight="600" fill="#334155">{lm.label}</text>
+                        </g>
+                    );
+                }
+                const w = lm.w || 70;
+                const h = lm.h || 45;
+                return (
+                    <g key={lm.id}>
+                        <rect x={lm.x - w / 2} y={lm.y - h / 2} width={w} height={h} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={1.5} rx={4} />
+                        <text x={lm.x} y={lm.y + 4} textAnchor="middle" fontSize={10} fontWeight="600" fill="#334155">{lm.label}</text>
+                    </g>
+                );
+            };
+
+            return (
+                <div className="map-layout">
+                    <div className="map-svg-container">
+                        <h3 style={{ margin: '0 0 8px 0', color: '#0f172a' }}>🗺️ {mapData.name}</h3>
+                        <svg viewBox={`0 0 ${vw} ${vh}`} className="map-svg">
+                            {/* Background */}
+                            <rect width={vw} height={vh} fill="#fefce8" rx={8} />
+                            {/* Grid */}
+                            {Array.from({ length: Math.floor(vw / 50) }, (_, i) => (
+                                <line key={`gv-${i}`} x1={(i + 1) * 50} y1={0} x2={(i + 1) * 50} y2={vh} stroke="#e5e7eb" strokeWidth={0.5} />
+                            ))}
+                            {Array.from({ length: Math.floor(vh / 50) }, (_, i) => (
+                                <line key={`gh-${i}`} x1={0} y1={(i + 1) * 50} x2={vw} y2={(i + 1) * 50} stroke="#e5e7eb" strokeWidth={0.5} />
+                            ))}
+                            {/* Decorations */}
+                            {mapData.decorations?.map((d, i) => renderDecoration(d, i))}
+                            {/* Paths */}
+                            {mapData.paths?.map((p, i) => (
+                                <g key={`path-${i}`}>
+                                    <polyline
+                                        points={p.points.map(pt => pt.join(',')).join(' ')}
+                                        fill="none" stroke="#94a3b8" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
+                                    />
+                                    {p.label && p.points.length >= 2 && (
+                                        <text
+                                            x={(p.points[0][0] + p.points[1][0]) / 2}
+                                            y={(p.points[0][1] + p.points[1][1]) / 2 - 6}
+                                            textAnchor="middle" fontSize={9} fill="#6b7280" fontStyle="italic"
+                                        >{p.label}</text>
+                                    )}
+                                </g>
+                            ))}
+                            {/* Landmarks */}
+                            {mapData.landmarks?.map(lm => renderLandmark(lm))}
+                        </svg>
+                    </div>
+                    <div className="map-options-panel">
+                        <h3 style={{ margin: '0 0 12px 0' }}>{t.listeningDetails.mapInstructions}</h3>
+                        <div className="map-options-list">
+                            {options.map((opt, i) => (
+                                <div key={i} className="map-option-item">{opt}</div>
+                            ))}
+                        </div>
+                        <div className="map-questions-list">
+                            {questions.map(q => (
+                                <div key={q.id} className="map-q-row">
+                                    <span className="map-q-number">{q.id}.</span>
+                                    <select
+                                        className="map-select"
+                                        defaultValue={userAnswersRef.current[q.id] || ''}
+                                        onChange={e => { userAnswersRef.current[q.id] = e.target.value; setRenderTick(t => t + 1); }}
+                                    >
+                                        <option value="">{t.listeningDetails.selectOption}</option>
+                                        {options.map((opt, i) => {
+                                            const letter = opt.split('.')[0]?.trim();
+                                            return <option key={i} value={letter}>{opt}</option>;
+                                        })}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         return (
             <div className="reading-container">
                 <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
@@ -474,9 +600,9 @@ export default function ListeningPage() {
                         </div>
                         <div className="toolbar-info-badges">
                             <span className="toolbar-badge mode-badge">
-                                {isArticleMode ? `📄 ${t.listeningDetails.typeArticle}` : isMultipleChoiceMode ? `🎯 ${t.listeningDetails.typeMC}` : `✏️ ${t.listeningDetails.typeSentence}`}
+                                {isMapMode ? `🗺️ ${t.listeningDetails.typeMap}` : isArticleMode ? `📄 ${t.listeningDetails.typeArticle}` : isMultipleChoiceMode ? `🎯 ${t.listeningDetails.typeMC}` : `✏️ ${t.listeningDetails.typeSentence}`}
                             </span>
-                            {!isMultipleChoiceMode && (
+                            {!isMultipleChoiceMode && !isMapMode && (
                                 <span className="toolbar-badge limit-badge">
                                     ✍️ {t.listeningDetails.wordLimit} {wordCountMax === wordCountMin
                                         ? `${wordCountMax} ${t.listeningDetails.wordUnit}`
@@ -487,7 +613,7 @@ export default function ListeningPage() {
                     </div>
 
                     <div className="listening-content-area" id="listeningContent">
-                        {isArticleMode ? renderArticleMode() : isMultipleChoiceMode ? renderMultipleChoiceMode() : renderSentenceMode()}
+                        {isMapMode ? renderMapMode() : isArticleMode ? renderArticleMode() : isMultipleChoiceMode ? renderMultipleChoiceMode() : renderSentenceMode()}
 
                         <div className="submit-quiz-container" style={{ marginTop: '40px', paddingBottom: '40px' }}>
                             <button onClick={submitQuiz}>{t.readingDetails.submitBtn}</button>
@@ -502,10 +628,11 @@ export default function ListeningPage() {
     if (st.step === 3 && st.listeningData) {
         let score = 0;
         const isMultipleChoiceMode = st.listeningData.type === 'multiple_choice';
+        const isMapMode = st.listeningData.type === 'map';
 
         st.listeningData.questions.forEach((q: any) => {
             const userAns = userAnswersRef.current[q.id] || '';
-            if (isMultipleChoiceMode) {
+            if (isMapMode || isMultipleChoiceMode) {
                 if (userAns.trim().toUpperCase() === q.answer?.trim().toUpperCase()) score++;
             } else {
                 if (checkAnswer(userAns, q.answers)) score++;
@@ -584,6 +711,26 @@ export default function ListeningPage() {
                                         ))}
                                         <p style={{ marginTop: '12px' }}>
                                             {t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.correctAnswer}: <strong>{q.answer}</strong>
+                                        </p>
+                                        <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
+                                            {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
+                                        </p>
+                                        <div className="explanation">
+                                            <strong>{t.results.explanation}:</strong> {q.explanation}
+                                        </div>
+                                    </div>
+                                );
+                            } else if (isMapMode) {
+                                isCorrect = userAns.trim().toUpperCase() === q.answer?.trim().toUpperCase();
+                                // 找到对应的选项文字
+                                const mapOptions = st.listeningData && st.listeningData.type === 'map' ? st.listeningData.options : [];
+                                const correctOptText = mapOptions.find((o: string) => o.startsWith(q.answer)) || q.answer;
+                                const userOptText = mapOptions.find((o: string) => o.startsWith(userAns)) || userAns;
+                                return (
+                                    <div key={q.id} className="result-block">
+                                        <div className="question-text">📍 Location {q.id}</div>
+                                        <p>
+                                            {t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userOptText || 'None'}</strong> | {t.results.correctAnswer}: <strong>{correctOptText}</strong>
                                         </p>
                                         <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
                                             {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}

@@ -6,12 +6,39 @@ import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
 
+type Task2TopicCategory =
+    | 'all'
+    | 'education'
+    | 'technology'
+    | 'culture'
+    | 'urbanization'
+    | 'government'
+    | 'environment'
+    | 'media'
+    | 'society'
+    | 'abstract'
+    | 'random'
+    | 'innovation';
+
 export default function Task2SelectionPage() {
     const navigate = useNavigate();
     const { lang } = useLang();
     const t = translations[lang];
 
     const [selectedType, setSelectedType] = useState<string | null>(null);
+    const [selectedTopicCategory, setSelectedTopicCategory] = useState<Task2TopicCategory>('all');
+
+    const clearTask2Session = (taskType: string) => {
+        const prefix = `writing_task2_session_${taskType}`;
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i += 1) {
+            const key = sessionStorage.key(i);
+            if (key && key.startsWith(prefix)) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(key => sessionStorage.removeItem(key));
+    };
 
     const taskTypes = [
         { id: 'opinion', nameZh: t.task2Selection.types.opinion.title, nameEn: t.task2Selection.types.opinion.nameEn, icon: '⚖️', desc: t.task2Selection.types.opinion.desc },
@@ -20,6 +47,23 @@ export default function Task2SelectionPage() {
         { id: 'random', nameZh: t.task2Selection.types.random.title, nameEn: t.task2Selection.types.random.nameEn, icon: '🎲', desc: t.task2Selection.types.random.desc },
         { id: 'innovation', nameZh: t.task2Selection.types.innovation.title, nameEn: t.task2Selection.types.innovation.nameEn, icon: '🔮', desc: t.task2Selection.types.innovation.desc },
     ];
+
+    const topicChoices: Array<{ id: Task2TopicCategory; label: string }> = [
+        { id: 'all', label: t.task2Selection.topics.all },
+        { id: 'education', label: t.task2Selection.topics.education },
+        { id: 'technology', label: t.task2Selection.topics.technology },
+        { id: 'culture', label: t.task2Selection.topics.culture },
+        { id: 'urbanization', label: t.task2Selection.topics.urbanization },
+        { id: 'government', label: t.task2Selection.topics.government },
+        { id: 'environment', label: t.task2Selection.topics.environment },
+        { id: 'media', label: t.task2Selection.topics.media },
+        { id: 'society', label: t.task2Selection.topics.society },
+        { id: 'abstract', label: t.task2Selection.topics.abstract },
+        { id: 'random', label: t.task2Selection.topics.random },
+        { id: 'innovation', label: t.task2Selection.topics.innovation },
+    ];
+
+    const topicQuery = `topic=${encodeURIComponent(selectedTopicCategory)}`;
 
     const handleStart = () => {
         if (!selectedType) return;
@@ -31,9 +75,11 @@ export default function Task2SelectionPage() {
             if (randomMain === 'opinion') {
                 const opinionPool = ['opinion_agree', 'opinion_discuss', 'opinion_advantages'];
                 const randomOpinion = opinionPool[Math.floor(Math.random() * opinionPool.length)];
-                navigate(`/writing/task2/doing?type=${randomOpinion}`);
+                clearTask2Session(randomOpinion);
+                navigate(`/writing/task2/doing?type=${randomOpinion}&${topicQuery}`);
             } else {
-                navigate(`/writing/task2/doing?type=${randomMain}`);
+                clearTask2Session(randomMain);
+                navigate(`/writing/task2/doing?type=${randomMain}&${topicQuery}`);
             }
             return;
         }
@@ -41,9 +87,10 @@ export default function Task2SelectionPage() {
         const target = taskTypes.find(t => t.id === selectedType);
         if (target) {
             if (target.id === 'opinion') {
-                navigate(`/writing/task2/opinion`);
+                navigate(`/writing/task2/opinion?${topicQuery}`);
             } else {
-                navigate(`/writing/task2/doing?type=${target.id}`);
+                clearTask2Session(target.id);
+                navigate(`/writing/task2/doing?type=${target.id}&${topicQuery}`);
             }
         }
     };
@@ -65,6 +112,27 @@ export default function Task2SelectionPage() {
                 </div>
 
                 <div className="config-card writing-selection-card">
+                    <div className="task2-topic-single-wrap">
+                        <div className="task2-topic-single-head">
+                            <h3>{t.task2Selection.topicLabel}</h3>
+                            <p>{t.task2Selection.topicHint}</p>
+                        </div>
+                        <div className="task2-topic-single-grid" role="radiogroup" aria-label={t.task2Selection.topicLabel}>
+                            {topicChoices.map(topic => (
+                                <button
+                                    key={topic.id}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={selectedTopicCategory === topic.id}
+                                    className={`task2-topic-chip ${selectedTopicCategory === topic.id ? 'active' : ''}`}
+                                    onClick={() => setSelectedTopicCategory(topic.id)}
+                                >
+                                    {topic.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="writing-selection-grid">
                         {taskTypes.map(typeItem => (
                             <button

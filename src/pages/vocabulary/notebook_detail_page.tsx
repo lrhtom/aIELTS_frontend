@@ -11,6 +11,7 @@ import {
     listVocabBooks, listBookWords,
     type VocabBook, type BookWord,
 } from '../../api/learning_plan';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_notebook.css';
 import '../../styles/vocabulary_learning_plan.css';
@@ -100,6 +101,7 @@ function WordFormPanel({
     submitting:     boolean;
     existingWords?: Set<string>;
 }) {
+    const { translations: t } = useLang();
     const [form, setForm] = useState<WordForm>({ ...EMPTY_FORM, ...initial });
     const set = (k: keyof WordForm) => (v: any) => setForm(f => ({ ...f, [k]: v }));
 
@@ -108,51 +110,51 @@ function WordFormPanel({
 
     return (
         <div className="word-form">
-            <div className="word-form-title">{submitLabel === '添加' ? '添加单词' : '编辑单词'}</div>
+            <div className="word-form-title">{submitLabel === t.vocab.notebookDetail.btnAdd ? t.vocab.notebookDetail.modalAddTitle : t.vocab.notebookDetail.modalEditTitle}</div>
 
             <div className="wf-row">
                 <div className="wf-field">
-                    <div className="wf-label">英文单词 *</div>
+                    <div className="wf-label">{t.vocab.notebookDetail.wordLabel}</div>
                     <div style={{ position: 'relative' }}>
                         <input
                             className={`wf-input${isDuplicate ? ' wf-input-duplicate' : ''}`}
-                            placeholder="e.g. abandon"
+                            placeholder={t.vocab.notebookDetail.wordPlaceholder}
                             value={form.word}
-                            disabled={submitLabel !== '添加'}
+                            disabled={submitLabel !== t.vocab.notebookDetail.btnAdd}
                             onChange={e => set('word')(e.target.value.trim())}
                         />
                         {isDuplicate && (
-                            <span className="wf-duplicate-hint">已在笔记本中</span>
+                            <span className="wf-duplicate-hint">{t.vocab.notebookDetail.msgDuplicate}</span>
                         )}
                     </div>
                 </div>
                 <div className="wf-field">
-                    <div className="wf-label">中文释义</div>
+                    <div className="wf-label">{t.vocab.notebookDetail.zhLabel}</div>
                     <input
                         className="wf-input"
-                        placeholder="e.g. 放弃；抛弃"
+                        placeholder={t.vocab.notebookDetail.zhPlaceholder}
                         value={form.custom_zh}
                         onChange={e => set('custom_zh')(e.target.value)}
                     />
                 </div>
             </div>
 
-            {submitLabel === '添加' && (
+            {submitLabel === t.vocab.notebookDetail.btnAdd && (
                 <div className="wf-row">
                     <div className="wf-field">
-                        <div className="wf-label">音标（可选）</div>
+                        <div className="wf-label">{t.vocab.notebookDetail.phoneticLabel}</div>
                         <input
                             className="wf-input"
-                            placeholder="e.g. /əˈbændən/"
+                            placeholder={t.vocab.notebookDetail.phoneticPlaceholder}
                             value={form.phonetic}
                             onChange={e => set('phonetic')(e.target.value)}
                         />
                     </div>
                     <div className="wf-field">
-                        <div className="wf-label">词性（可选）</div>
+                        <div className="wf-label">{t.vocab.notebookDetail.grammarLabel}</div>
                         <input
                             className="wf-input"
-                            placeholder="e.g. v. / n. adj."
+                            placeholder={t.vocab.notebookDetail.grammarPlaceholder}
                             value={form.grammar}
                             onChange={e => set('grammar')(e.target.value)}
                         />
@@ -161,18 +163,18 @@ function WordFormPanel({
             )}
 
             <div className="wf-field">
-                <div className="wf-label">标签</div>
+                <div className="wf-label">{t.vocab.notebookDetail.tagLabel}</div>
                 <TagInputField
                     tags={form.tags}
                     tagInput={form.tagInput}
                     onChange={set('tagInput')}
                     onTagsChange={set('tags')}
                 />
-                <div className="wf-hint">按回车或逗号添加标签；Backspace 删除最后一个</div>
+                <div className="wf-hint">{t.vocab.notebookDetail.tagHint}</div>
             </div>
 
             <div className="wf-field">
-                <div className="wf-label">掌握度（0–5 星）</div>
+                <div className="wf-label">{t.vocab.notebookDetail.masteryLabel}</div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     {[0, 1, 2, 3, 4, 5].map(n => (
                         <span
@@ -189,16 +191,16 @@ function WordFormPanel({
                         </span>
                     ))}
                     <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginLeft: '4px' }}>
-                        {form.mastery_level === 0 ? '未评级' : `${form.mastery_level} 星`}
+                        {form.mastery_level === 0 ? t.vocab.notebookDetail.masteryUnrated : t.vocab.notebookDetail.masteryRating.replace('{n}', String(form.mastery_level))}
                     </span>
                 </div>
             </div>
 
             <div className="wf-field">
-                <div className="wf-label">个人笔记（可选）</div>
+                <div className="wf-label">{t.vocab.notebookDetail.notesLabel}</div>
                 <textarea
                     className="wf-input"
-                    placeholder="记录记忆技巧、例句摘录等…"
+                    placeholder={t.vocab.notebookDetail.notesPlaceholder}
                     value={form.notes}
                     rows={2}
                     style={{ resize: 'vertical', minHeight: '60px' }}
@@ -207,13 +209,13 @@ function WordFormPanel({
             </div>
 
             <div className="wf-actions">
-                <button className="wf-btn" onClick={onCancel} disabled={submitting}>取消</button>
+                <button className="wf-btn" onClick={onCancel} disabled={submitting}>{t.vocab.notebookDetail.btnCancel}</button>
                 <button
                     className="wf-btn primary"
                     onClick={() => onSubmit(form)}
                     disabled={submitting || !form.word.trim() || isDuplicate}
                 >
-                    {submitting ? '保存中…' : submitLabel}
+                    {submitting ? t.common.saving : submitLabel}
                 </button>
             </div>
         </div>
@@ -223,6 +225,7 @@ function WordFormPanel({
 /* ── 主页面 ───────────────────────────────────────────────────────────────── */
 
 export default function NotebookDetailPage() {
+    const { translations: t } = useLang();
     const { id }   = useParams<{ id: string }>();
     const nbId     = Number(id);
     const navigate = useNavigate();
@@ -234,7 +237,7 @@ export default function NotebookDetailPage() {
     const [showAddForm,   setShowAddForm]   = useState(false);
     const [editId,        setEditId]        = useState<number | null>(null);
     const [submitting,    setSubmitting]    = useState(false);
-    const [nbTitle,       setNbTitle]       = useState('笔记本');
+    const [nbTitle,       setNbTitle]       = useState(t.vocab.notebookDetail.titleDefault);
     const [expandedExamples, setExpandedExamples] = useState<Set<number>>(new Set());
 
     /* ── 词书导入相关 state ─────────────────────────────────────────────── */
@@ -249,6 +252,7 @@ export default function NotebookDetailPage() {
     const [rangeEnd,      setRangeEnd]      = useState(50);
     const [allBookWords,  setAllBookWords]  = useState<BookWord[]>([]);
     const [bookPage,      setBookPage]      = useState(1);
+    const [bookPageJumpInput, setBookPageJumpInput] = useState('');
     const [bookQ,         setBookQ]         = useState('');
     const [selectedIds,   setSelectedIds]   = useState<Set<number>>(new Set());
     const [importBusy,    setImportBusy]    = useState(false);
@@ -294,10 +298,10 @@ export default function NotebookDetailPage() {
             getNotebook(nbId).then(r => setNbTitle(r.notebook.title)),
             listWords(nbId).then(r => setAllEntries(r.entries)),
         ])
-            .catch(() => { showToast('加载失败', 'error'); })
+            .catch(() => { showToast(t.common.error, 'error'); })
             .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [nbId, navigate, t.common.error]);
 
     /* 切换 tag 过滤 */
     const handleTagFilter = (tag: string) => {
@@ -338,6 +342,23 @@ export default function NotebookDetailPage() {
             bookTotal: list.length,
         };
     }, [allBookWords, bookQ, bookPage]);
+
+    const bookTotalPages = Math.max(1, Math.ceil(bookTotal / BOOK_PAGE_SIZE));
+
+    const handleBookPageJump = () => {
+        const rawValue = bookPageJumpInput.trim();
+        if (!rawValue) {
+            showToast('请输入页码', 'error');
+            return;
+        }
+        const parsed = Number(rawValue);
+        if (!Number.isInteger(parsed)) {
+            showToast(`请输入 1 到 ${bookTotalPages} 的整数页码`, 'error');
+            return;
+        }
+        setBookPage(Math.min(bookTotalPages, Math.max(1, parsed)));
+        setBookPageJumpInput('');
+    };
 
     const toggleSelectWord = (wordId: number) => {
         setSelectedIds(prev => {
@@ -420,13 +441,13 @@ export default function NotebookDetailPage() {
 
     /* 删除单词 */
     const handleRemove = async (entry: NotebookEntry) => {
-        if (!confirm(`从笔记本移除「${entry.word}」？`)) return;
+        if (!confirm(t.vocab.notebooks.msgDeleteConfirm.replace('{title}', entry.word))) return;
         try {
             await removeWord(nbId, entry.id);
             setAllEntries(prev => prev.filter(e => e.id !== entry.id));
-            showToast('已移除', 'success');
+            showToast(t.vocab.notebooks.msgDeleteSuccess, 'success');
         } catch {
-            showToast('移除失败', 'error');
+            showToast(t.vocab.notebooks.msgFail, 'error');
         }
     };
 
@@ -500,13 +521,13 @@ export default function NotebookDetailPage() {
                                     className={`lp-add-tab${addTab === 'manual' ? ' active' : ''}`}
                                     onClick={() => setAddTab('manual')}
                                 >
-                                    手动输入
+                                    {t.vocab.notebookDetail.tabManual}
                                 </button>
                                 <button
                                     className={`lp-add-tab${addTab === 'book' ? ' active' : ''}`}
                                     onClick={() => setAddTab('book')}
                                 >
-                                    从词书
+                                    {t.vocab.notebookDetail.tabBook}
                                 </button>
                             </div>
 
@@ -534,7 +555,7 @@ export default function NotebookDetailPage() {
                                                 setBookPage(1);
                                             }}
                                         >
-                                            <option value="">— 选择词书 —</option>
+                                            <option value="">{t.vocab.notebookDetail.bookSelect}</option>
                                             {books.map(b => (
                                                 <option key={b.id} value={b.id}>
                                                     {b.name}（{b.word_count} 词）
@@ -553,7 +574,7 @@ export default function NotebookDetailPage() {
                                                         style={{ fontSize: 12 }}
                                                         onClick={() => { setBookSubMode(m); setSelectedIds(new Set()); setBookPage(1); }}
                                                     >
-                                                        {m === 'all' ? '整本导入' : m === 'range' ? '范围导入' : '勾选导入'}
+                                                        {m === 'all' ? t.vocab.notebookDetail.bookModeAll : m === 'range' ? t.vocab.notebookDetail.bookModeRange : t.vocab.notebookDetail.bookModeSelect}
                                                     </button>
                                                 ))}
                                             </div>
@@ -568,14 +589,14 @@ export default function NotebookDetailPage() {
                                                             books.find(b => b.id === bookId)?.word_count,
                                                         )}
                                                     >
-                                                        {importBusy ? '导入中…' : '整本导入'}
+                                                        {importBusy ? t.common.saving : t.vocab.notebookDetail.bookModeAll}
                                                     </button>
                                                 </div>
                                             )}
 
                                             {bookSubMode === 'range' && (
                                                 <div className="lp-add-row">
-                                                    <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>序号</span>
+                                                    <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>{t.vocab.notebookDetail.bookRangeIdx}</span>
                                                     <input type="number" min={1} value={rangeStart} onChange={e => setRangeStart(Number(e.target.value))} style={{ maxWidth: 80 }} />
                                                     <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>~</span>
                                                     <input type="number" min={1} value={rangeEnd} onChange={e => setRangeEnd(Number(e.target.value))} style={{ maxWidth: 80 }} />
@@ -587,7 +608,7 @@ export default function NotebookDetailPage() {
                                                             Math.max(0, rangeEnd - rangeStart + 1),
                                                         )}
                                                     >
-                                                        {importBusy ? '导入中…' : '范围导入'}
+                                                        {importBusy ? t.common.saving : t.vocab.notebookDetail.bookModeRange}
                                                     </button>
                                                 </div>
                                             )}
@@ -597,7 +618,7 @@ export default function NotebookDetailPage() {
                                                     <div className="lp-add-row">
                                                         <input
                                                             type="text"
-                                                            placeholder="搜索单词…"
+                                                            placeholder={t.vocab.notebookDetail.searchPlaceholder}
                                                             value={bookQ}
                                                             onChange={e => { setBookQ(e.target.value); setBookPage(1); }}
                                                         />
@@ -612,7 +633,7 @@ export default function NotebookDetailPage() {
                                                                 setSelectedIds(new Set());
                                                             }}
                                                         >
-                                                            {importBusy ? '导入中…' : `导入已选（${selectedIds.size}）`}
+                                                            {importBusy ? t.common.saving : t.vocab.notebookDetail.bookImportSelected.replace('{n}', String(selectedIds.size))}
                                                         </button>
                                                     </div>
                                                     <div className="lp-book-browser">
@@ -634,9 +655,33 @@ export default function NotebookDetailPage() {
                                                     </div>
                                                     {bookTotal > BOOK_PAGE_SIZE && (
                                                         <div className="lp-book-pager">
-                                                            <button disabled={bookPage <= 1} onClick={() => setBookPage(p => p - 1)}>上一页</button>
-                                                            <span>{bookPage} / {Math.ceil(bookTotal / BOOK_PAGE_SIZE)}</span>
-                                                            <button disabled={bookPage >= Math.ceil(bookTotal / BOOK_PAGE_SIZE)} onClick={() => setBookPage(p => p + 1)}>下一页</button>
+                                                            <button disabled={bookPage <= 1} onClick={() => setBookPage(p => Math.max(1, p - 1))}>{t.vocab.notebookDetail.bookPrevPage}</button>
+                                                            <span>{bookPage} / {bookTotalPages}</span>
+                                                            <button disabled={bookPage >= bookTotalPages} onClick={() => setBookPage(p => Math.min(bookTotalPages, p + 1))}>{t.vocab.notebookDetail.bookNextPage}</button>
+                                                            <div className="lp-page-jump">
+                                                                <span>跳到</span>
+                                                                <input
+                                                                    type="text"
+                                                                    inputMode="numeric"
+                                                                    value={bookPageJumpInput}
+                                                                    onChange={e => {
+                                                                        const next = e.target.value;
+                                                                        if (next === '' || /^\d+$/.test(next)) {
+                                                                            setBookPageJumpInput(next);
+                                                                        }
+                                                                    }}
+                                                                    onKeyDown={e => { if (e.key === 'Enter') handleBookPageJump(); }}
+                                                                    placeholder="页码"
+                                                                    aria-label="跳转到指定页"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleBookPageJump}
+                                                                    disabled={!bookPageJumpInput.trim()}
+                                                                >
+                                                                    GO
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </>
@@ -652,11 +697,11 @@ export default function NotebookDetailPage() {
                 {/* 单词列表 */}
                 <div className="config-card" style={{ padding: 0, overflow: 'hidden' }}>
                     {loading ? (
-                        <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '30px' }}>加载中…</p>
+                        <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '30px' }}>{t.common.loading}</p>
                     ) : entries.length === 0 ? (
                         <div className="nb-empty">
                             <span className="nb-empty-icon">📝</span>
-                            {selectedTag || searchQ ? '没有匹配的单词' : '还没有单词，点击「添加单词」开始记录'}
+                            {selectedTag || searchQ ? t.vocab.notebookDetail.emptySearch : t.vocab.notebookDetail.emptyList}
                         </div>
                     ) : (
                         <div className="word-list">
@@ -672,7 +717,7 @@ export default function NotebookDetailPage() {
                                                 mastery_level: entry.mastery_level,
                                                 tagInput:      '',
                                             }}
-                                            submitLabel="保存"
+                                            submitLabel={t.vocab.notebookDetail.btnSave}
                                             onSubmit={form => handleEdit(entry, form)}
                                             onCancel={() => setEditId(null)}
                                             submitting={submitting}
@@ -768,8 +813,8 @@ export default function NotebookDetailPage() {
                 {/* 底部统计 */}
                 {!loading && (
                     <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '12px' }}>
-                    共 {allEntries.length} 个单词
-                        {entries.length !== allEntries.length && `，过滤显示 ${entries.length} 个`}
+                    {t.vocab.notebookDetail.wordCount.replace('{n}', String(allEntries.length))}
+                        {entries.length !== allEntries.length && t.vocab.notebookDetail.filteredCount.replace('{n}', String(entries.length))}
                     </p>
                 )}
             </div>

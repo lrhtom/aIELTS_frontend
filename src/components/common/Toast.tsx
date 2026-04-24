@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/toast.css';
 
 export type ToastType = 'error' | 'success';
@@ -15,10 +16,6 @@ let addToastFn: ((message: string, type: ToastType, code?: string | number) => v
 
 /**
  * 全局调用方法，替代 alert()
- * 用法：
- *   showToast('操作成功！', 'success');                // 绿色卡片
- *   showToast('请求异常', 'error', 400);              // 红色卡片，显示 "400：请求异常"
- *   showToast('网络异常，请重试', 'error');             // 红色卡片，显示 "异常：网络异常，请重试"
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export function showToast(message: string, type: ToastType = 'error', code?: string | number) {
@@ -31,9 +28,9 @@ export function showToast(message: string, type: ToastType = 'error', code?: str
 
 /**
  * Toast 容器组件 —— 放在 App 根组件中即可
- * <ToastContainer />
  */
 export default function ToastContainer() {
+    const { translations: t } = useLang();
     const [toasts, setToasts] = useState<ToastItem[]>([]);
 
     const addToast = useCallback((message: string, type: ToastType, code?: string | number) => {
@@ -58,19 +55,19 @@ export default function ToastContainer() {
 
     return (
         <div className="toast-container">
-            {toasts.map(t => (
+            {toasts.map(tItem => (
                 <div
-                    key={t.id}
-                    className={`toast-card toast-${t.type}`}
-                    onClick={() => removeToast(t.id)}
+                    key={tItem.id}
+                    className={`toast-card toast-${tItem.type}`}
+                    onClick={() => removeToast(tItem.id)}
                 >
                     <span className="toast-icon">
-                        {t.type === 'error' ? '✕' : '✓'}
+                        {tItem.type === 'error' ? '✕' : '✓'}
                     </span>
                     <span className="toast-message">
-                        {t.type === 'error'
-                            ? <><span className="toast-code">{t.code ?? '异常'}</span>：{t.message}</>
-                            : t.message
+                        {tItem.type === 'error'
+                            ? <><span className="toast-code">{tItem.code ?? t.common.error}</span>：{tItem.message}</>
+                            : tItem.message
                         }
                     </span>
                 </div>

@@ -7,65 +7,178 @@ import {
     listPlans, createPlan, deletePlan, startPlan,
     type LearningPlan,
 } from '../../api/learning_plan';
+import {
+    createCustomDeck,
+    listCustomDecks,
+    startCustomDeck,
+    type CustomMemoryDeck,
+} from '../../api/custom_memory';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_learning_plan.css';
 
 const MAX_PLANS = 3;
 
+function getPlanTodayTarget(plan: LearningPlan): number {
+    return Math.max(plan.studied_today, plan.today_target ?? plan.daily_count);
+}
+
+function shouldStartReview(plan: LearningPlan): boolean {
+    const todayTarget = getPlanTodayTarget(plan);
+    return !!plan.has_activity_today && todayTarget > 0 && plan.studied_today >= todayTarget;
+}
+
+function getCustomTodayTarget(deck: CustomMemoryDeck): number {
+    return Math.max(deck.studied_today, deck.today_target ?? Math.min(deck.daily_count, deck.card_count));
+}
+
+function shouldStartCustomReview(deck: CustomMemoryDeck): boolean {
+    const todayTarget = getCustomTodayTarget(deck);
+    return !!deck.has_activity_today && todayTarget > 0 && deck.studied_today >= todayTarget;
+}
+
 interface CreateModal {
     name:        string;
     daily_count: number;
+    entry_mode:  'word' | 'custom';
+}
+
+function buildDefaultPlanName() {
+    const now = new Date();
+    const pad2 = (n: number) => String(n).padStart(2, '0');
+    return `学习计划 ${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
 }
 
 export default function LearningPlanListPage() {
+    const { translations: t } = useLang();
     const navigate = useNavigate();
     const { user } = useAuth();
 
     const [plans,    setPlans]    = useState<LearningPlan[]>([]);
+    const [customDecks, setCustomDecks] = useState<CustomMemoryDeck[]>([]);
     const [loading,  setLoading]  = useState(true);
     const [modal,    setModal]    = useState<CreateModal | null>(null);
     const [saving,   setSaving]   = useState(false);
     const [starting, setStarting] = useState<number | null>(null);
+    const [startingCustom, setStartingCustom] = useState<number | null>(null);
 
     useEffect(() => {
-        listPlans()
-            .then(r => setPlans(r.plans))
-            .catch(() => showToast('加载失败，请刷新', 'error'))
-            .finally(() => setLoading(false));
+        const loadAll = async () => {
+            const [planRes, customRes] = await Promise.allSettled([listPlans(), listCustomDecks()]);
+
+            if (planRes.status === 'fulfilled') {
+                setPlans(planRes.value.plans);
+            } else {
+                showToast(t.vocab.plans.msgLoadFail, 'error');
+            }
+
+            if (customRes.status === 'fulfilled') {
+                setCustomDecks(customRes.value.decks);
+            }
+
+            setLoading(false);
+        };
+
+        loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     /* ── create ── */
     const handleCreate = async () => {
         if (!modal) return;
-        const name = modal.name.trim();
-        if (!name) { showToast('请输入计划名称', 'error'); return; }
+
         if (modal.daily_count < 1 || modal.daily_count > 200) {
-            showToast('每日词数需在 1-200 之间', 'error'); return;
+            showToast(t.vocab.plans.msgDailyRange, 'error'); return;
         }
+
+        if (modal.entry_mode === 'custom') {
+            const customName = modal.name.trim();
+            if (!customName) { showToast(t.vocab.plans.msgNameRequired, 'error'); return; }
+
+            setSaving(true);
+            try {
+                const { deck } = await createCustomDeck(customName, '', modal.daily_count);
+                setCustomDecks(prev => [deck, ...prev]);
+                setModal(null);
+                showToast('已同步到后端', 'success');
+            } catch (e: unknown) {
+                const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || '同步失败，请稍后再试';
+                showToast(msg, 'error');
+            } finally {
+                setSaving(false);
+            }
+
+            return;
+        }
+
+        if (!user?.is_staff && plans.length >= MAX_PLANS) {
+            showToast(t.vocab.plans.maxPlansHint.replace('{n}', String(MAX_PLANS)), 'error');
+            return;
+        }
+
+        const planName = modal.name.trim() || buildDefaultPlanName();
+
         setSaving(true);
         try {
-            const { plan } = await createPlan(name, modal.daily_count);
+            const { plan } = await createPlan(planName, modal.daily_count);
             setPlans(prev => [...prev, plan]);
             setModal(null);
-            showToast('计划创建成功', 'success');
+            showToast(t.vocab.plans.msgCreateSuccess, 'success');
         } catch (e: unknown) {
-            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || '创建失败';
+            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t.vocab.plans.msgCreateFail;
             showToast(msg, 'error');
         } finally {
             setSaving(false);
         }
     };
 
+    const handleStartCustom = async (deck: CustomMemoryDeck, forceReview = false) => {
+        if (startingCustom) return;
+        if (deck.card_count === 0) {
+            showToast('请先添加卡片', 'error');
+            return;
+        }
+
+        const isReview = forceReview || shouldStartCustomReview(deck);
+        setStartingCustom(deck.id);
+        try {
+            const { deck: serverDeck, cards, stats } = await startCustomDeck(deck.id, isReview, true);
+            if (!cards.length) {
+                const msg = isReview
+                    ? '暂无到期复习卡'
+                    : stats.remaining_today === 0
+                        ? `今日学习额度已完成（目标 ${serverDeck.daily_count} 张）`
+                        : '当前没有可学习卡片';
+                showToast(msg, 'success');
+                return;
+            }
+
+            navigate('/vocabulary/custom-cards/study', {
+                state: {
+                    deckId: serverDeck.id,
+                    deckTitle: serverDeck.title,
+                    dailyCount: serverDeck.daily_count,
+                    cards,
+                },
+            });
+        } catch (e: unknown) {
+            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || '开始学习失败';
+            showToast(msg, 'error');
+        } finally {
+            setStartingCustom(null);
+        }
+    };
+
     /* ── delete ── */
     const handleDelete = async (e: React.MouseEvent, plan: LearningPlan) => {
         e.stopPropagation();
-        if (!confirm(`删除计划「${plan.name}」？此操作无法撤销。`)) return;
+        if (!confirm(t.vocab.plans.msgDeleteConfirm.replace('{name}', plan.name))) return;
         try {
             await deletePlan(plan.id);
             setPlans(prev => prev.filter(p => p.id !== plan.id));
-            showToast('计划已删除', 'success');
+            showToast(t.vocab.plans.msgDeleteSuccess, 'success');
         } catch {
-            showToast('删除失败', 'error');
+            showToast(t.vocab.plans.msgDeleteFail, 'error');
         }
     };
 
@@ -73,23 +186,23 @@ export default function LearningPlanListPage() {
     const handleStart = async (e: React.MouseEvent, plan: LearningPlan, forceReview = false) => {
         e.stopPropagation();
         if (starting) return;
-        if (plan.word_count === 0) { showToast('计划中没有单词，请先在编辑计划中添加', 'error'); return; }
+        if (plan.word_count === 0) { showToast(t.vocab.plans.msgEmptyWord, 'error'); return; }
 
-        const isReview = forceReview || plan.studied_today >= plan.daily_count;
+        const isReview = forceReview || shouldStartReview(plan);
         setStarting(plan.id);
         try {
             const result = await startPlan(plan.id, isReview ? 'review' : 'study');
             const { cards, stats } = result;
             if (cards.length === 0) {
                 const msg = isReview
-                    ? '今日还没有学习记录，无法复习'
+                    ? t.vocab.plans.msgNoReviewRecord
                     : stats.remaining_today === 0
-                        ? `今日已学习 ${stats.studied_today} 词，完成每日目标！`
-                        : '今日没有需要复习的单词';
+                        ? t.vocab.plans.msgDailyGoalReached.replace('{n}', String(stats.studied_today))
+                        : t.vocab.plans.msgNoDueReview;
                 showToast(msg, 'success');
                 return;
             }
-            const mode = (plan.default_mode || localStorage.getItem(`lp_study_mode_${plan.id}`) || 'flashcard') as 'flashcard' | 'choice' | 'write';
+            const mode = (plan.default_mode || localStorage.getItem(`lp_study_mode_${plan.id}`) || 'flashcard') as 'flashcard' | 'choice' | 'write' | 'copy';
             const rawTarget = plan.mastery_target !== undefined 
                 ? String(plan.mastery_target) 
                 : (localStorage.getItem(`lp_mastery_target_${plan.id}`) ?? '2');
@@ -99,11 +212,35 @@ export default function LearningPlanListPage() {
                     const n = Number(rawTarget);
                     return Number.isFinite(n) ? Math.min(5, Math.max(1, n)) : 2;
                 })();
+            const copyRepetitions = (() => {
+                const raw = plan.copy_repetitions !== undefined
+                    ? Number(plan.copy_repetitions)
+                    : Number(localStorage.getItem(`lp_copy_repetitions_${plan.id}`) ?? '3');
+                return Number.isFinite(raw) ? Math.min(20, Math.max(1, Math.floor(raw))) : 3;
+            })();
+            const copyReviewDays = (() => {
+                const raw = plan.copy_review_days !== undefined
+                    ? Number(plan.copy_review_days)
+                    : Number(localStorage.getItem(`lp_copy_review_days_${plan.id}`) ?? '2');
+                return Number.isFinite(raw) ? Math.min(365, Math.max(0, Math.floor(raw))) : 2;
+            })();
             navigate('/vocabulary/flashcard/doing', {
-                state: { cards, stats, planId: plan.id, planName: plan.name, planDailyCount: plan.daily_count, mode, masteryTarget, reviewOnly: isReview, forceNewSession: true },
+                state: {
+                    cards,
+                    stats,
+                    planId: plan.id,
+                    planName: plan.name,
+                    planDailyCount: plan.daily_count,
+                    mode,
+                    masteryTarget,
+                    copyRepetitions,
+                    copyReviewDays,
+                    reviewOnly: isReview,
+                    forceNewSession: mode !== 'copy',
+                },
             });
         } catch (e: unknown) {
-            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || '开始学习失败';
+            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t.vocab.plans.msgStartFail;
             showToast(msg, 'error');
         } finally {
             setStarting(null);
@@ -117,31 +254,31 @@ export default function LearningPlanListPage() {
             <div className="config-page-wrap" style={{ maxWidth: 760 }}>
                 {/* ── Header ── */}
                 <div className="practice-header" style={{ marginBottom: 0 }}>
-                    <Link to="/vocabulary" className="back-link">返回词汇学习</Link>
+                    <Link to="/vocabulary" className="back-link">{t.common.back}{t.vocab.hub.title}</Link>
                 </div>
                 <div className="lp-list-header">
                     <div className="lp-list-header-text">
-                        <h2>学习计划</h2>
-                        <p>FSRS 智能间隔复习 · 先复习到期词，再学新词</p>
+                        <h2>{t.vocab.plans.title}</h2>
+                        <p>{t.vocab.plans.subtitle}</p>
                     </div>
                     <button
                         className={`lp-new-btn${canCreate ? '' : ' disabled'}`}
-                        onClick={() => canCreate && setModal({ name: '', daily_count: 20 })}
+                        onClick={() => canCreate && setModal({ name: '', daily_count: 20, entry_mode: 'word' })}
                         disabled={!canCreate}
-                        title={!canCreate ? `最多 ${MAX_PLANS} 个计划` : '新建学习计划'}
+                        title={!canCreate ? t.vocab.plans.maxPlansHint.replace('{n}', String(MAX_PLANS)) : t.vocab.plans.newPlan}
                     >
-                        + 新建计划
+                        + {t.vocab.plans.newPlan}
                     </button>
                 </div>
 
                 {/* ── Plan list ── */}
                 {loading ? (
-                    <div className="lp-empty">加载中…</div>
+                    <div className="lp-empty">{t.common.loading}</div>
                 ) : plans.length === 0 ? (
                     <div className="lp-empty-state">
                         <div className="lp-empty-icon">🃏</div>
-                        <p className="lp-empty-title">还没有学习计划</p>
-                        <p className="lp-empty-sub">点击「新建计划」，添加单词后每天开始学习</p>
+                        <p className="lp-empty-title">{t.vocab.plans.emptyTitle}</p>
+                        <p className="lp-empty-sub">{t.vocab.plans.emptySub}</p>
                     </div>
                 ) : (
                     <div className="lp-plan-list">
@@ -157,7 +294,7 @@ export default function LearningPlanListPage() {
                                         <button
                                             className="lp-plan-del"
                                             onClick={(e) => handleDelete(e, plan)}
-                                            title="删除计划"
+                                            title="x"
                                         >
                                             ✕
                                         </button>
@@ -165,23 +302,19 @@ export default function LearningPlanListPage() {
                                     <div className="lp-plan-meta">
                                         <span className="lp-meta-item">
                                             <span className="lp-meta-dot" />
-                                            每日 <strong>{plan.daily_count}</strong> 词
+                                            <span dangerouslySetInnerHTML={{ __html: t.vocab.plans.cardDaily.replace('{n}', String(plan.daily_count)) }} />
                                         </span>
                                         <span className="lp-meta-sep">·</span>
-                                        <span className="lp-meta-item">
-                                            共 <strong>{plan.word_count}</strong> 词
-                                        </span>
+                                        <span className="lp-meta-item" dangerouslySetInnerHTML={{ __html: t.vocab.plans.cardTotal.replace('{n}', String(plan.word_count)) }} />
                                         <span className="lp-meta-sep">·</span>
-                                        <span className={`lp-meta-item ${plan.studied_today > 0 ? 'lp-today-badge' : ''}`}>
-                                            今日已学 <strong>{plan.studied_today}</strong> 词
-                                        </span>
+                                        <span className={`lp-meta-item ${plan.studied_today > 0 ? 'lp-today-badge' : ''}`} dangerouslySetInnerHTML={{ __html: t.vocab.plans.cardStudied.replace('{n}', String(plan.studied_today)) }} />
                                     </div>
                                     <div className="lp-plan-actions">
                                         <button
                                             className="lp-plan-btn secondary"
                                             onClick={() => navigate(`/vocabulary/plans/${plan.id}`)}
                                         >
-                                            编辑计划
+                                            {t.vocab.plans.editPlan}
                                         </button>
                                         <button
                                             className="lp-plan-btn primary"
@@ -189,10 +322,10 @@ export default function LearningPlanListPage() {
                                             disabled={starting === plan.id}
                                         >
                                             {starting === plan.id
-                                                ? '准备中…'
-                                                : plan.studied_today >= plan.daily_count
-                                                    ? '📖 开始复习'
-                                                    : '▶ 开始学习'}
+                                                ? t.vocab.plans.preparing
+                                                : shouldStartReview(plan)
+                                                    ? t.vocab.plans.startReview
+                                                    : t.vocab.plans.startStudy}
                                         </button>
                                     </div>
                                 </div>
@@ -201,12 +334,73 @@ export default function LearningPlanListPage() {
 
                         {/* Placeholder slots */}
                         {plans.length < MAX_PLANS && (
-                            <button className="lp-plan-add-slot" onClick={() => setModal({ name: '', daily_count: 20 })}>
+                            <button className="lp-plan-add-slot" onClick={() => setModal({ name: '', daily_count: 20, entry_mode: 'word' })}>
                                 <span className="lp-slot-plus">+</span>
-                                <span>新建计划</span>
+                                <span>{t.vocab.plans.newPlan}</span>
                                 <span className="lp-slot-hint">{plans.length} / {MAX_PLANS}</span>
                             </button>
                         )}
+                    </div>
+                )}
+
+                <div className="lp-list-header" style={{ marginTop: 28 }}>
+                    <div className="lp-list-header-text">
+                        <h2>自定义记忆卡</h2>
+                        <p>这里会显示你创建并同步到后端的自定义卡组。</p>
+                    </div>
+                </div>
+
+                {customDecks.length === 0 ? (
+                    <div className="lp-empty">暂无自定义记忆卡</div>
+                ) : (
+                    <div className="lp-plan-list">
+                        {customDecks.map((deck, idx) => (
+                            <div key={deck.id} className="lp-plan-card" data-idx={idx}>
+                                <div className="lp-plan-accent" />
+                                <div className="lp-plan-body">
+                                    <div className="lp-plan-top">
+                                        <span className="lp-plan-name">{deck.title}</span>
+                                    </div>
+                                    <div className="lp-plan-meta">
+                                        <span className="lp-meta-item">
+                                            <span className="lp-meta-dot" />
+                                            <span>每日学习 <strong>{deck.daily_count}</strong> 张</span>
+                                        </span>
+                                        <span className="lp-meta-sep">·</span>
+                                        <span className="lp-meta-item">卡片总数 <strong>{deck.card_count}</strong></span>
+                                        <span className="lp-meta-sep">·</span>
+                                        <span className={`lp-meta-item ${deck.studied_today > 0 ? 'lp-today-badge' : ''}`}>
+                                            今日学习计划 <strong>{deck.studied_today}</strong> / <strong>{getCustomTodayTarget(deck)}</strong>
+                                        </span>
+                                    </div>
+                                    <div className="lp-plan-actions">
+                                        <button
+                                            className="lp-plan-btn secondary"
+                                            onClick={() => navigate('/vocabulary/custom-cards', {
+                                                state: {
+                                                    prefillDeckId: deck.id,
+                                                    prefillTitle: deck.title,
+                                                    prefillDailyCount: deck.daily_count,
+                                                },
+                                            })}
+                                        >
+                                            添加卡片
+                                        </button>
+                                        <button
+                                            className="lp-plan-btn primary"
+                                            onClick={() => handleStartCustom(deck)}
+                                            disabled={startingCustom === deck.id}
+                                        >
+                                            {startingCustom === deck.id
+                                                ? t.vocab.plans.preparing
+                                                : shouldStartCustomReview(deck)
+                                                    ? t.vocab.plans.startReview
+                                                    : t.vocab.plans.startStudy}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
@@ -215,12 +409,44 @@ export default function LearningPlanListPage() {
             {modal && (
                 <div className="modal-overlay" onClick={() => setModal(null)}>
                     <div className="modal-box" onClick={e => e.stopPropagation()}>
-                        <h3>新建学习计划</h3>
+                        <h3>{t.vocab.plans.modalTitle}</h3>
+
                         <div>
-                            <label>计划名称</label>
+                            <label>创建入口</label>
+                            <div className="lp-entry-mode-group">
+                                <label className="lp-entry-mode-option">
+                                    <input
+                                        type="radio"
+                                        name="entry_mode"
+                                        checked={modal.entry_mode === 'word'}
+                                        onChange={() => setModal({ ...modal, entry_mode: 'word' })}
+                                    />
+                                    <div className="lp-entry-mode-content">
+                                        <div className="lp-entry-mode-title">背单词模式</div>
+                                        <div className="lp-entry-mode-sub">创建学习计划后，使用原有背单词流程</div>
+                                    </div>
+                                </label>
+
+                                <label className="lp-entry-mode-option">
+                                    <input
+                                        type="radio"
+                                        name="entry_mode"
+                                        checked={modal.entry_mode === 'custom'}
+                                        onChange={() => setModal({ ...modal, entry_mode: 'custom' })}
+                                    />
+                                    <div className="lp-entry-mode-content">
+                                        <div className="lp-entry-mode-title">自定义记忆卡模式</div>
+                                        <div className="lp-entry-mode-sub">创建后停留本页，并同步到后端</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label>{t.vocab.plans.planNameLabel}</label>
                             <input
                                 type="text"
-                                placeholder="例如：IELTS 核心词汇"
+                                placeholder={t.vocab.plans.planNamePlaceholder}
                                 maxLength={50}
                                 value={modal.name}
                                 onChange={e => setModal({ ...modal, name: e.target.value })}
@@ -228,8 +454,9 @@ export default function LearningPlanListPage() {
                                 autoFocus
                             />
                         </div>
+
                         <div>
-                            <label>每日学习词数（1-200）</label>
+                            <label>{t.vocab.plans.dailyCountLabel}</label>
                             <input
                                 type="number"
                                 min={1}
@@ -238,10 +465,15 @@ export default function LearningPlanListPage() {
                                 onChange={e => setModal({ ...modal, daily_count: Number(e.target.value) })}
                             />
                         </div>
+
                         <div className="modal-actions">
-                            <button onClick={() => setModal(null)}>取消</button>
+                            <button onClick={() => setModal(null)}>{t.common.cancel}</button>
                             <button className="btn-primary" onClick={handleCreate} disabled={saving}>
-                                {saving ? '创建中…' : '创建'}
+                                {modal.entry_mode === 'custom'
+                                    ? (saving ? t.vocab.plans.creatingBtn : t.vocab.plans.createBtn)
+                                    : saving
+                                        ? t.vocab.plans.creatingBtn
+                                        : t.vocab.plans.createBtn}
                             </button>
                         </div>
                     </div>

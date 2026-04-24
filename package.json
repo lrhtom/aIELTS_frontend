@@ -17,11 +17,14 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.13.1",
     "react-speech-recognition": "^4.0.1",
     "recordrtc": "^5.6.2",
     "regenerator-runtime": "^0.14.1",
+    "remark-gfm": "^4.0.1",
     "speak-tts": "^2.0.8",
+    "translate": "^3.0.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

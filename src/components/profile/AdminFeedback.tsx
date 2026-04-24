@@ -24,6 +24,7 @@ export default function AdminFeedback() {
     const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
+    const [jumpPageInput, setJumpPageInput] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchFeedbacks = useCallback(async (page: number) => {
@@ -75,7 +76,22 @@ export default function AdminFeedback() {
         }
     };
 
-    const totalPages = Math.ceil(totalCount / 10);
+    const totalPages = Math.max(1, Math.ceil(totalCount / 10));
+
+    const handleJumpToPage = () => {
+        const rawValue = jumpPageInput.trim();
+        if (!rawValue) {
+            toast.error('请输入页码');
+            return;
+        }
+        const parsed = Number(rawValue);
+        if (!Number.isInteger(parsed)) {
+            toast.error(`请输入 1 到 ${totalPages} 的整数页码`);
+            return;
+        }
+        setCurrentPage(Math.min(totalPages, Math.max(1, parsed)));
+        setJumpPageInput('');
+    };
 
     const renderPagination = () => {
         if (totalPages <= 1) return null;
@@ -120,6 +136,31 @@ export default function AdminFeedback() {
                 >
                     &raquo;
                 </button>
+                <div className="page-jump">
+                    <span>跳到</span>
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        value={jumpPageInput}
+                        onChange={e => {
+                            const next = e.target.value;
+                            if (next === '' || /^\d+$/.test(next)) {
+                                setJumpPageInput(next);
+                            }
+                        }}
+                        onKeyDown={e => { if (e.key === 'Enter') handleJumpToPage(); }}
+                        placeholder="页码"
+                        aria-label="跳转到指定页"
+                    />
+                    <button
+                        className="page-btn page-jump-btn"
+                        type="button"
+                        onClick={handleJumpToPage}
+                        disabled={!jumpPageInput.trim()}
+                    >
+                        GO
+                    </button>
+                </div>
             </div>
         );
     };
@@ -309,7 +350,33 @@ export default function AdminFeedback() {
                     justify-content: center;
                     align-items: center;
                     gap: 8px;
+                    flex-wrap: wrap;
                     margin-top: 30px;
+                }
+                .page-jump {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    color: var(--text-secondary);
+                    font-size: 0.85rem;
+                }
+                .page-jump input {
+                    width: 70px;
+                    height: 34px;
+                    border: 1px solid var(--border-color);
+                    border-radius: 6px;
+                    padding: 0 8px;
+                    text-align: center;
+                    background: var(--bg-secondary);
+                    color: var(--text-primary);
+                    outline: none;
+                }
+                .page-jump input:focus {
+                    border-color: var(--primary-color);
+                }
+                .page-jump-btn {
+                    min-width: 46px;
+                    padding: 8px 10px;
                 }
                 .page-btn {
                     padding: 8px 14px;
@@ -326,9 +393,15 @@ export default function AdminFeedback() {
                     color: var(--primary-color);
                 }
                 .page-btn.active {
-                    background: var(--primary-color);
-                    color: white;
-                    border-color: var(--primary-color);
+                    background: #0d9488;
+                    color: #ffffff !important;
+                    -webkit-text-fill-color: #ffffff;
+                    border-color: #0d9488;
+                    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.28);
+                }
+                .page-btn.active:hover:not(:disabled) {
+                    background: #0b8077;
+                    color: #ffffff !important;
                 }
                 .page-btn:disabled {
                     opacity: 0.5;
@@ -360,6 +433,10 @@ export default function AdminFeedback() {
                         border-top: 1px solid var(--border-color);
                         padding-left: 0;
                         padding-top: 15px;
+                    }
+                    .page-jump {
+                        width: 100%;
+                        justify-content: center;
                     }
                 }
             `}</style>

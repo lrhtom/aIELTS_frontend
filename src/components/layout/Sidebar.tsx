@@ -22,7 +22,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </div>
 
       {/* 导航项 */}
-      <div className="sidebar-nav-label">{t.nav.practice ? 'Navigation' : 'Navigation'}</div>
+      <div className="sidebar-nav-label">{t.nav.sidebarTitle}</div>
       <nav className="sidebar-content">
         <Link to="/" className={`sidebar-item ${location.pathname === '/' ? 'active' : ''}`}>
           <span className="sidebar-icon">🏠</span>
@@ -41,7 +41,19 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         {user && (
           <Link to="/vocabulary/plans" className={`sidebar-item ${location.pathname.startsWith('/vocabulary') ? 'active' : ''}`}>
             <span className="sidebar-icon">🃏</span>
-            <span className="sidebar-text">背单词</span>
+            <span className="sidebar-text">{t.nav.vocab}</span>
+          </Link>
+        )}
+        {user && (
+          <Link to="/store" className={`sidebar-item ${location.pathname.startsWith('/store') ? 'active' : ''}`}>
+            <span className="sidebar-icon">🛒</span>
+            <span className="sidebar-text">{t.nav.store}</span>
+          </Link>
+        )}
+        {user && (
+          <Link to="/creative-workshop" className={`sidebar-item ${location.pathname.startsWith('/creative-workshop') ? 'active' : ''}`}>
+            <span className="sidebar-icon">🎨</span>
+            <span className="sidebar-text">{t.nav.workshop}</span>
           </Link>
         )}
       </nav>

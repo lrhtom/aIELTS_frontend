@@ -122,6 +122,13 @@
     transition: all 0.3s ease;
 }
 
+.skill-entry-button {
+    border-width: 1.5px;
+    width: 100%;
+    cursor: pointer;
+    font: inherit;
+}
+
 .skill-entry:hover {
     transform: translateY(-3px);
 }
@@ -196,4 +203,92 @@
     .skill-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.vocab-mode-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.vocab-mode-modal-box {
+    width: min(560px, 92vw);
+    background: var(--color-surface);
+    border-radius: 16px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vocab-mode-modal-box h3 {
+    margin: 0;
+}
+
+.vocab-mode-modal-desc {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+}
+
+.vocab-mode-option {
+    border: 1.5px solid var(--color-border);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    cursor: pointer;
+}
+
+.vocab-mode-option:hover {
+    border-color: var(--color-primary);
+}
+
+.vocab-mode-option input[type="radio"] {
+    margin-top: 2px;
+}
+
+.vocab-mode-option-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vocab-mode-option-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.vocab-mode-option-sub {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    line-height: 1.45;
+}
+
+.vocab-mode-modal-box .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.vocab-mode-modal-box .modal-actions button {
+    border: 1.5px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    border-radius: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.vocab-mode-modal-box .modal-actions button.btn-primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
 }

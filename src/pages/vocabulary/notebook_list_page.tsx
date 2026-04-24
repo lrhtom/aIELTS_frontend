@@ -6,6 +6,7 @@ import {
     listNotebooks, createNotebook, updateNotebook, deleteNotebook,
     type Notebook,
 } from '../../api/notebook';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_notebook.css';
 
@@ -38,6 +39,7 @@ const DEFAULT_MODAL: ModalState = {
 };
 
 export default function NotebookListPage() {
+    const { translations: t } = useLang();
     const navigate = useNavigate();
 
     const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -48,9 +50,9 @@ export default function NotebookListPage() {
     useEffect(() => {
         listNotebooks()
             .then(r => setNotebooks(r.notebooks))
-            .catch(() => showToast('加载失败，请刷新', 'error'))
+            .catch(() => showToast(t.vocab.notebooks.msgFail, 'error'))
             .finally(() => setLoading(false));
-    }, []);
+    }, [t]);
 
     /* ── 打开新建弹窗 ── */
     const openCreate = () => setModal({ ...DEFAULT_MODAL });
@@ -71,20 +73,20 @@ export default function NotebookListPage() {
     /* ── 删除笔记本 ── */
     const handleDelete = async (e: React.MouseEvent, nb: Notebook) => {
         e.stopPropagation();
-        if (!confirm(`确认删除「${nb.title}」？该笔记本内所有单词记录将一并删除。`)) return;
+        if (!confirm(t.vocab.notebooks.msgDeleteConfirm.replace('{title}', nb.title))) return;
         try {
             await deleteNotebook(nb.id);
             setNotebooks(prev => prev.filter(n => n.id !== nb.id));
-            showToast('已删除', 'success');
+            showToast(t.vocab.notebooks.msgDeleteSuccess, 'success');
         } catch {
-            showToast('删除失败', 'error');
+            showToast(t.vocab.notebooks.msgFail, 'error');
         }
     };
 
     /* ── 提交弹窗 ── */
     const handleSubmit = async () => {
         if (!modal) return;
-        if (!modal.title.trim()) { showToast('标题不能为空', 'error'); return; }
+        if (!modal.title.trim()) { showToast(t.vocab.notebooks.msgTitleRequired, 'error'); return; }
         setSaving(true);
         try {
             if (modal.mode === 'create') {
@@ -95,7 +97,7 @@ export default function NotebookListPage() {
                     is_public:   modal.is_public,
                 });
                 setNotebooks(prev => [notebook, ...prev]);
-                showToast('笔记本已创建', 'success');
+                showToast(t.vocab.notebooks.msgCreateSuccess, 'success');
             } else {
                 const { notebook } = await updateNotebook(modal.id!, {
                     title:       modal.title.trim(),
@@ -104,11 +106,11 @@ export default function NotebookListPage() {
                     is_public:   modal.is_public,
                 });
                 setNotebooks(prev => prev.map(n => n.id === notebook.id ? notebook : n));
-                showToast('已保存', 'success');
+                showToast(t.vocab.notebooks.msgSaveSuccess, 'success');
             }
             setModal(null);
         } catch (err: any) {
-            const msg = err?.response?.data?.error || '操作失败，请重试';
+            const msg = err?.response?.data?.error || t.vocab.notebooks.msgFail;
             showToast(msg, 'error');
         } finally {
             setSaving(false);
@@ -119,9 +121,9 @@ export default function NotebookListPage() {
         <Layout>
             <div className="config-page-wrap">
                 <div className="practice-header">
-                    <Link to="/vocabulary" className="back-link">返回词汇学习</Link>
-                    <h1>我的笔记本</h1>
-                    <p>自建单词本，整理学习内容，用标签分类管理</p>
+                    <Link to="/vocabulary" className="back-link">{t.common.back}{t.vocab.hub.title}</Link>
+                    <h1>{t.vocab.notebooks.title}</h1>
+                    <p>{t.vocab.notebooks.desc}</p>
                 </div>
 
                 {/* 新建按钮 */}
@@ -131,11 +133,11 @@ export default function NotebookListPage() {
                         style={{ width: '100%' }}
                         onClick={openCreate}
                     >
-                        <span className="btn-icon">📓</span> 新建笔记本
+                        <span className="btn-icon">📓</span> {t.vocab.notebooks.btnCreate}
                     </button>
                     {notebooks.length >= 10 && (
                         <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-                            已达上限（每人最多 10 本）
+                            {t.vocab.notebooks.maxLimitHint}
                         </p>
                     )}
                 </div>
@@ -143,11 +145,11 @@ export default function NotebookListPage() {
                 {/* 笔记本网格 */}
                 <div className="config-card">
                     {loading ? (
-                        <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '20px 0' }}>加载中…</p>
+                        <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '20px 0' }}>{t.common.loading}</p>
                     ) : notebooks.length === 0 ? (
                         <div className="nb-empty">
                             <span className="nb-empty-icon">📭</span>
-                            还没有笔记本，点击上方「新建笔记本」开始吧
+                            {t.vocab.notebooks.emptyTitle}
                         </div>
                     ) : (
                         <div className="nb-grid">
@@ -166,8 +168,8 @@ export default function NotebookListPage() {
                                         <div className="nb-card-desc">{nb.description}</div>
                                     )}
                                     <div className="nb-card-meta">
-                                        <span className="nb-card-word-count">{nb.word_count} 词</span>
-                                        {nb.is_public && <span>公开</span>}
+                                        <span className="nb-card-word-count">{t.vocab.notebooks.cardWordCount.replace('{n}', String(nb.word_count))}</span>
+                                        {nb.is_public && <span>{t.vocab.notebooks.cardPublic}</span>}
                                     </div>
 
                                     <div className="nb-card-actions">
@@ -194,14 +196,14 @@ export default function NotebookListPage() {
                 <div className="modal-overlay" onClick={() => !saving && setModal(null)}>
                     <div className="modal-box" onClick={e => e.stopPropagation()}>
                         <div className="modal-title">
-                            {modal.mode === 'create' ? '新建笔记本' : '编辑笔记本'}
+                            {modal.mode === 'create' ? t.vocab.notebooks.modalCreateTitle : t.vocab.notebooks.modalEditTitle}
                         </div>
 
                         <div>
-                            <div className="modal-label">标题 *</div>
+                            <div className="modal-label">{t.vocab.notebooks.modalTitleLabel}</div>
                             <input
                                 className="modal-input"
-                                placeholder="笔记本名称"
+                                placeholder={t.vocab.notebooks.modalTitlePlaceholder}
                                 value={modal.title}
                                 maxLength={100}
                                 autoFocus
@@ -211,10 +213,10 @@ export default function NotebookListPage() {
                         </div>
 
                         <div>
-                            <div className="modal-label">描述（可选）</div>
+                            <div className="modal-label">{t.vocab.notebooks.modalDescLabel}</div>
                             <input
                                 className="modal-input"
-                                placeholder="简短描述该笔记本的内容"
+                                placeholder={t.vocab.notebooks.modalDescPlaceholder}
                                 value={modal.description}
                                 maxLength={200}
                                 onChange={e => setModal(m => m && ({ ...m, description: e.target.value }))}
@@ -222,7 +224,7 @@ export default function NotebookListPage() {
                         </div>
 
                         <div>
-                            <div className="modal-label">颜色</div>
+                            <div className="modal-label">{t.vocab.notebooks.modalColorLabel}</div>
                             <div className="nb-color-picker">
                                 {COLORS.map(c => (
                                     <div
@@ -237,9 +239,9 @@ export default function NotebookListPage() {
                         </div>
 
                         <div className="modal-actions">
-                            <button className="modal-btn" onClick={() => setModal(null)} disabled={saving}>取消</button>
+                            <button className="modal-btn" onClick={() => setModal(null)} disabled={saving}>{t.vocab.notebooks.btnCancel}</button>
                             <button className="modal-btn primary" onClick={handleSubmit} disabled={saving}>
-                                {saving ? '保存中…' : modal.mode === 'create' ? '创建' : '保存'}
+                                {saving ? t.common.saving : modal.mode === 'create' ? t.vocab.notebooks.btnCreate : t.vocab.notebooks.btnSave}
                             </button>
                         </div>
                     </div>

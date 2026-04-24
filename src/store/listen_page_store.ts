@@ -42,7 +42,58 @@ export interface MultipleChoiceListeningData {
     questions: MultipleChoiceQuestion[];
 }
 
-export type ListeningData = ArticleListeningData | SentenceListeningData | MultipleChoiceListeningData;
+// ─── 地图标注题类型 ─────────────────────────────────────────────────────────
+
+export interface MapLandmark {
+    id: string;
+    label: string;
+    x: number;
+    y: number;
+    shape: 'rect' | 'circle';
+    w?: number;
+    h?: number;
+    r?: number;
+    questionId?: number;
+}
+
+export interface MapPath {
+    points: [number, number][];
+    label?: string;
+}
+
+export interface MapDecoration {
+    type: 'tree' | 'lake' | 'garden' | 'parking' | 'fountain';
+    x: number;
+    y: number;
+    w?: number;
+    h?: number;
+}
+
+export interface MapData {
+    name: string;
+    width: number;
+    height: number;
+    landmarks: MapLandmark[];
+    paths: MapPath[];
+    decorations: MapDecoration[];
+}
+
+export interface MapQuestion {
+    id: number;
+    answer: string;
+    explanation: string;
+}
+
+export interface MapListeningData {
+    type: 'map';
+    title: string;
+    passage: string;
+    map: MapData;
+    options: string[];
+    questions: MapQuestion[];
+}
+
+export type ListeningData = ArticleListeningData | SentenceListeningData | MultipleChoiceListeningData | MapListeningData;
 
 // ─── Store 初始状态工厂 ────────────────────────────────────────────────────────
 
