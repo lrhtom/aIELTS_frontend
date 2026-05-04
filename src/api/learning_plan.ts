@@ -17,6 +17,7 @@ export interface LearningPlan {
     copy_review_days?: number;
     word_count:     number;
     studied_today:  number;
+    studied_total:  number;
     today_words:    TodayWord[];
     created_at:     string;
     updated_at:     string;

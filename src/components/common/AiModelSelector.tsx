@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLang } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../api/auth';
 
-type AIProvider = 'deepseek' | 'gemini' | 'gpt5';
+export type AIProvider = 'deepseek' | 'gemini' | 'gpt5_4' | 'gpt5_mini';
 
 interface AiModelSelectorProps {
     onModelChange?: (provider: AIProvider) => void;
@@ -20,17 +20,20 @@ export default function AiModelSelector({ onModelChange, label, description }: A
         return (user?.aiProvider as AIProvider) || (localStorage.getItem('ai_provider') as AIProvider) || 'deepseek';
     });
 
+    const onModelChangeRef = useRef(onModelChange);
+    onModelChangeRef.current = onModelChange;
+
+    // Sync from server → local only when the server value changes externally.
+    // provider is intentionally NOT a dependency — including it would cause the
+    // effect to revert user selections before the persist API call completes.
     useEffect(() => {
-        // 如果后端有强偏好下发并且与本地不一致，则跟随服务端
         if (user?.aiProvider && user.aiProvider !== provider) {
             const nextProvider = user.aiProvider as AIProvider;
             setProvider(nextProvider);
             localStorage.setItem('ai_provider', nextProvider);
-            if (onModelChange) {
-                onModelChange(nextProvider);
-            }
+            onModelChangeRef.current?.(nextProvider);
         }
-    }, [user?.aiProvider, provider, onModelChange]);
+    }, [user?.aiProvider]);
 
     const handleProviderChange = (p: AIProvider) => {
         setProvider(p);
@@ -38,9 +41,7 @@ export default function AiModelSelector({ onModelChange, label, description }: A
         if (user) {
             authApi.updateSettings({ ai_provider: p }).then(u => updateUser(u)).catch(console.error);
         }
-        if (onModelChange) {
-            onModelChange(p);
-        }
+        onModelChangeRef.current?.(p);
     };
 
     return (
@@ -64,9 +65,10 @@ export default function AiModelSelector({ onModelChange, label, description }: A
                 value={provider}
                 onChange={(e) => handleProviderChange(e.target.value as AIProvider)}
             >
-                <option value="deepseek">DeepSeek</option>
+                <option value="deepseek">DeepSeek v3.2</option>
                 <option value="gemini">Gemini 3.0 Flash</option>
-                <option value="gpt5">GPT-5.3 Chat</option>
+                <option value="gpt5_4">GPT-5.4</option>
+                <option value="gpt5_mini">GPT-5.4 Mini</option>
             </select>
         </div>
     );

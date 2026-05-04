@@ -221,6 +221,26 @@
     box-shadow: 0 4px 14px rgba(236, 72, 153, 0.08);
 }
 
+/* Full Test mode */
+.speaking-mode-card.mode-fulltest.selected {
+    border-color: #059669;
+    background: linear-gradient(150deg, #ecfdf5 0%, #d1fae5 100%);
+    box-shadow: 0 6px 20px rgba(5, 150, 105, 0.22);
+}
+
+.speaking-mode-card.mode-fulltest.selected .sm-check {
+    background: #059669;
+}
+
+.speaking-mode-card.mode-fulltest.selected .sm-title {
+    color: #059669;
+}
+
+.speaking-mode-card.mode-fulltest:hover:not(.selected) {
+    border-color: rgba(5, 150, 105, 0.4);
+    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.08);
+}
+
 /* Start button — purple gradient for speaking */
 .speaking-start-btn {
     background: linear-gradient(135deg, #7c3aed, #a855f7);
@@ -229,6 +249,78 @@
 
 .speaking-start-btn:hover {
     box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+}
+
+/* ── Scenario file attachment ── */
+.sp-attachment-area {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: flex-start;
+}
+
+.sp-attach-btn {
+    padding: 6px 14px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    background: transparent;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sp-attach-btn:hover {
+    border-color: #ec4899;
+    color: #ec4899;
+    background: #fdf2f8;
+}
+
+.sp-attach-hint {
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.sp-file-previews {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.sp-file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #334155;
+}
+
+.sp-file-chip-name {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sp-file-chip-remove {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+}
+
+.sp-file-chip-remove:hover {
+    color: #ef4444;
 }
 
 /* Responsive */

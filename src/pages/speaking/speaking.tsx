@@ -1,16 +1,17 @@
 import Layout from '../../components/layout/Layout';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { getInitialVocabInput } from '../../store/word_selection_store';
 import { speakingStore } from '../../store/speaking_page_store';
 import { useLang } from '../../i18n/LanguageContext';
 import { ATInterceptor } from '../../api/atInterceptor';
+import AiModelSelector from '../../components/common/AiModelSelector';
 import '../../styles/practice_page.css';
 import '../../styles/speaking_page.css';
 
 export type IeltsPart = 'part1' | 'part2' | 'part3';
-export type SpeakingMode = 'chat' | 'call' | 'exam' | 'scenario' | 'part1' | 'part2' | 'part3';
+export type SpeakingMode = 'chat' | 'call' | 'exam' | 'scenario' | 'fullTest' | 'part1' | 'part2' | 'part3';
 
 interface PartInfo {
     id: IeltsPart;
@@ -66,6 +67,13 @@ export default function Speaking() {
             desc: sc.modes.items.scenario.desc,
             color: 'mode-scenario',
         },
+        {
+            id: 'fullTest',
+            emoji: '📋',
+            title: sc.modes.items.fullTest.title,
+            desc: sc.modes.items.fullTest.desc,
+            color: 'mode-fulltest',
+        },
     ];
 
     const [vocabInput, setVocabInput] = useState(() => getInitialVocabInput());
@@ -74,9 +82,43 @@ export default function Speaking() {
     const [showSubtitles, setShowSubtitles] = useState(true);
     const [selectedMode, setSelectedMode] = useState<SpeakingMode>('chat');
     const [scenarioInput, setScenarioInput] = useState('');
+    const [scenarioFiles, setScenarioFiles] = useState<File[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isChecking, setIsChecking] = useState(false);
+    const [isGeneratingScenario, setIsGeneratingScenario] = useState(false);
 
     const navigate = useNavigate();
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selected = Array.from(e.target.files || []);
+        if (selected.length === 0) return;
+        const total = scenarioFiles.length + selected.length;
+        if (total > 3) {
+            alert('最多上传 3 个文件');
+            return;
+        }
+        const oversized = selected.filter(f => f.size > 5 * 1024 * 1024);
+        if (oversized.length > 0) {
+            alert('单个文件不能超过 5MB');
+            return;
+        }
+        setScenarioFiles(prev => [...prev, ...selected]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleRandomScenario = async () => {
+        try {
+            setIsGeneratingScenario(true);
+            const res = await ATInterceptor.generateRandomScenario();
+            if (res.data.scenario) {
+                setScenarioInput(res.data.scenario);
+            }
+        } catch (err: unknown) {
+            alert('生成随机场景失败: ' + (err as { message?: string }).message);
+        } finally {
+            setIsGeneratingScenario(false);
+        }
+    };
 
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
@@ -85,7 +127,8 @@ export default function Speaking() {
     const isExamPart1 = selectedMode === 'exam' && selectedPart === 'part1';
     const isExamPart2 = selectedMode === 'exam' && selectedPart === 'part2';
     const isExamPart3 = selectedMode === 'exam' && selectedPart === 'part3';
-    const isStartDisabled = isChecking;
+    const isFullTest = selectedMode === 'fullTest';
+    const isStartDisabled = isChecking || isGeneratingScenario;
 
     const handleStart = async () => {
         if (selectedMode === 'scenario' && !scenarioInput.trim()) {
@@ -102,8 +145,8 @@ export default function Speaking() {
                     setIsChecking(false);
                     return;
                 }
-            } catch (err: any) {
-                alert('安全性测算失败或余额不足: ' + err.message);
+            } catch (err: unknown) {
+                alert('安全性测算失败或余额不足: ' + (err as { message?: string }).message);
                 setIsChecking(false);
                 return;
             } finally {
@@ -119,60 +162,84 @@ export default function Speaking() {
                     mode: selectedMode,
                     showSubtitles,
                     part: selectedPart,
-                    scenarioInput: scenarioInput.trim()
+                    scenarioInput: scenarioInput.trim(),
+                    scenarioFiles: selectedMode === 'scenario' ? scenarioFiles : undefined,
                 },
             });
         } else if (isExamPart1) {
             try {
                 setIsChecking(true);
-                const res = await ATInterceptor.generatePart1();
+                const res = await ATInterceptor.bankGeneratePart1();
                 speakingStore.isChatAllowed = true;
                 navigate('/speaking/chat', {
                     state: {
                         mode: 'part1',
                         questions: res.data.questions,
                         showSubtitles,
-                        part: 'part1'
+                        part: 'part1',
+                        bankSource: res.data.source,
                     }
                 });
-            } catch (err: any) {
-                alert('获取Part1题目失败或余额不足: ' + err.message);
+            } catch (err: unknown) {
+                alert('获取Part1题目失败: ' + (err as { message?: string }).message);
             } finally {
                 setIsChecking(false);
             }
         } else if (isExamPart2) {
             try {
                 setIsChecking(true);
-                const res = await ATInterceptor.generatePart2();
+                const res = await ATInterceptor.bankGeneratePart2();
                 speakingStore.isChatAllowed = true;
                 navigate('/speaking/chat', {
                     state: {
                         mode: 'part2',
                         questions: res.data.questions,
                         showSubtitles,
-                        part: 'part2'
+                        part: 'part2',
+                        bankSource: res.data.source,
                     }
                 });
-            } catch (err: any) {
-                alert('获取Part2题目失败或余额不足: ' + err.message);
+            } catch (err: unknown) {
+                alert('获取Part2题目失败: ' + (err as { message?: string }).message);
             } finally {
                 setIsChecking(false);
             }
         } else if (isExamPart3) {
             try {
                 setIsChecking(true);
-                const res = await ATInterceptor.generatePart3();
+                const res = await ATInterceptor.bankGeneratePart3('');
                 speakingStore.isChatAllowed = true;
                 navigate('/speaking/chat', {
                     state: {
                         mode: 'part3',
                         questions: res.data.questions,
                         showSubtitles,
-                        part: 'part3'
+                        part: 'part3',
+                        bankSource: res.data.source,
                     }
                 });
-            } catch (err: any) {
-                alert('获取Part3题目失败或余额不足: ' + err.message);
+            } catch (err: unknown) {
+                alert('获取Part3题目失败: ' + (err as { message?: string }).message);
+            } finally {
+                setIsChecking(false);
+            }
+        } else if (isFullTest) {
+            // Full Test: start from Part 1 → will auto-continue to Part 2 → Part 3
+            try {
+                setIsChecking(true);
+                const res = await ATInterceptor.bankGeneratePart1();
+                speakingStore.isChatAllowed = true;
+                navigate('/speaking/chat', {
+                    state: {
+                        mode: 'fullTest',
+                        questions: res.data.questions,
+                        showSubtitles,
+                        part: 'part1',
+                        bankSource: res.data.source,
+                    }
+                });
+            } catch (err: unknown) {
+                alert('获取Full Test题目失败: ' + (err as { message?: string }).message);
             } finally {
                 setIsChecking(false);
             }
@@ -183,11 +250,16 @@ export default function Speaking() {
 
     return (
         <Layout>
-<div className=".*">
+            <div className="practice-container">
                 <div className="practice-header">
                     <Link to="/practice/ai" className="back-link">{sc.backToAI}</Link>
                     <h1>{sc.heading}</h1>
                     <p>{sc.subheading}</p>
+                </div>
+
+                {/* ── Board 0: AI Model ── */}
+                <div className="config-card">
+                    <AiModelSelector />
                 </div>
 
                 {/* ── Board 1: Vocabulary ── */}
@@ -222,8 +294,14 @@ export default function Speaking() {
                             <span className="sp-locked-hint">{sc.ieltsPart.lockedHint}</span>
                         )}
                     </div>
-                    <div className={`speaking-parts${selectedMode !== 'exam' ? ' parts-disabled' : ''}`}>
-                        {PARTS.map(p => (
+                    <div className={`speaking-parts${(selectedMode !== 'exam' && selectedMode !== 'fullTest') ? ' parts-disabled' : ''}`}>
+                        {selectedMode === 'fullTest' ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'linear-gradient(135deg, #f0fdf4, #ecfeff)', borderRadius: '10px', border: '1.5px solid #86efac' }}>
+                                <span style={{ fontSize: '20px' }}>📋</span>
+                                <span style={{ fontWeight: 600, color: '#166534' }}>Part 1 → Part 2 → Part 3 连续进行</span>
+                            </div>
+                        ) : (
+                        PARTS.map(p => (
                             <button
                                 key={p.id}
                                 className={`speaking-part-card${selectedPart === p.id && selectedMode === 'exam' ? ' selected' : ''}`}
@@ -234,7 +312,8 @@ export default function Speaking() {
                                 <span className="sp-title">{p.title}</span>
                                 <span className="sp-desc">{p.desc}</span>
                             </button>
-                        ))}
+                        ))
+                        )}
                     </div>
 
                     <div className="speaking-divider" />
@@ -279,9 +358,19 @@ export default function Speaking() {
                 {/* ── Board 4: Scenario Settings (Only for scenario mode) ── */}
                 {selectedMode === 'scenario' && (
                     <div className="config-card fadeIn">
-                        <div style={{ marginBottom: '12px' }}>
-                            <div className="label-text">{sc.scenarioSettings.title}</div>
-                            <div className="label-desc">{sc.scenarioSettings.desc}</div>
+                        <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <div className="label-text">{sc.scenarioSettings.title}</div>
+                                <div className="label-desc">{sc.scenarioSettings.desc}</div>
+                            </div>
+                            <button
+                                className="secondary-btn"
+                                onClick={handleRandomScenario}
+                                disabled={isGeneratingScenario}
+                                style={{ flexShrink: 0, marginLeft: '16px', fontSize: '0.9rem', padding: '6px 12px' }}
+                            >
+                                {isGeneratingScenario ? sc.scenarioSettings.generating : sc.scenarioSettings.randomBtn}
+                            </button>
                         </div>
                         <textarea
                             className="vocab-textarea"
@@ -291,6 +380,44 @@ export default function Speaking() {
                             onChange={e => setScenarioInput(e.target.value)}
                             style={{ width: '100%', resize: 'vertical' }}
                         />
+
+                        <div className="sp-attachment-area">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*,.pdf,.txt,.doc,.docx,.csv,.json,.md"
+                                multiple
+                                onChange={handleFileSelect}
+                                style={{ display: 'none' }}
+                            />
+                            <button
+                                className="sp-attach-btn"
+                                onClick={() => fileInputRef.current?.click()}
+                                type="button"
+                                title="上传图片或文件作为场景参考"
+                            >
+                                📎 上传参考文件/图片
+                            </button>
+                            <span className="sp-attach-hint">选做 — 可上传图片或文档帮助 AI 理解场景</span>
+                            {scenarioFiles.length > 0 && (
+                                <div className="sp-file-previews">
+                                    {scenarioFiles.map((f, i) => (
+                                        <div key={i} className="sp-file-chip">
+                                            <span className="sp-file-chip-name">
+                                                {f.type.startsWith('image/') ? '🖼️' : '📄'} {f.name}
+                                            </span>
+                                            <button
+                                                className="sp-file-chip-remove"
+                                                onClick={() => setScenarioFiles(prev => prev.filter((_, j) => j !== i))}
+                                                type="button"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 

@@ -81,12 +81,12 @@ export default function AdminFeedback() {
     const handleJumpToPage = () => {
         const rawValue = jumpPageInput.trim();
         if (!rawValue) {
-            toast.error('请输入页码');
+            toast.error(t.profile.admin.users.toastEnterPage);
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            toast.error(`请输入 1 到 ${totalPages} 的整数页码`);
+            toast.error(t.profile.admin.users.toastInvalidPage.replace('{n}', String(totalPages)));
             return;
         }
         setCurrentPage(Math.min(totalPages, Math.max(1, parsed)));
@@ -137,7 +137,7 @@ export default function AdminFeedback() {
                     &raquo;
                 </button>
                 <div className="page-jump">
-                    <span>跳到</span>
+                    <span>{t.profile.admin.pagination.jumpTo}</span>
                     <input
                         type="text"
                         inputMode="numeric"
@@ -149,8 +149,8 @@ export default function AdminFeedback() {
                             }
                         }}
                         onKeyDown={e => { if (e.key === 'Enter') handleJumpToPage(); }}
-                        placeholder="页码"
-                        aria-label="跳转到指定页"
+                        placeholder={t.profile.admin.pagination.pagePlaceholder}
+                        aria-label={t.profile.admin.pagination.jumpTo}
                     />
                     <button
                         className="page-btn page-jump-btn"
@@ -158,7 +158,7 @@ export default function AdminFeedback() {
                         onClick={handleJumpToPage}
                         disabled={!jumpPageInput.trim()}
                     >
-                        GO
+                        {t.profile.admin.pagination.goBtn}
                     </button>
                 </div>
             </div>

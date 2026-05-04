@@ -15,7 +15,7 @@ import {
 } from '../../api/custom_memory';
 import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
-import '../../styles/vocabulary_learning_plan.css';
+import '../../styles/vocabulary_learning_plan_list.css';
 
 const MAX_PLANS = 3;
 

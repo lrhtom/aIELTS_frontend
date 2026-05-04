@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { retryWithBackoff } from '../../utils/retry';
+import { speakWord } from '../../utils/speak';
+import { type StudyMode, type MasterySetting } from '../../utils/vocab_flashcard_utils';
 import { useLang } from '../../i18n/LanguageContext';
 import { listNotebooks, type Notebook } from '../../api/notebook';
 import {
@@ -11,20 +13,13 @@ import {
     listVocabBooks, listBookWords,
     type LearningPlan, type PlanEntry, type VocabBook, type BookWord,
 } from '../../api/learning_plan';
+import PlanWordRow from '../../components/vocabulary/PlanWordRow';
+import TodayStudiedSection from '../../components/vocabulary/TodayStudiedSection';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_learning_plan.css';
 
-const FSRS_STATE_LABEL: Record<number, string> = {
-    0: 'New', 1: 'Learning', 2: 'Review', 3: 'Relearning',
-};
-const FSRS_STATE_CLASS: Record<number, string> = {
-    0: 'state-new', 1: 'state-learning', 2: 'state-review', 3: 'state-relearning',
-};
-
 type AddTab = 'manual' | 'notebook' | 'book';
 type BookSubMode = 'all' | 'range' | 'select';
-type StudyMode = 'flashcard' | 'choice' | 'write' | 'copy';
-type MasterySetting = 'auto' | number;
 
 const STUDY_MODES: [StudyMode, string][] = [
     ['flashcard', '记忆卡'],
@@ -39,6 +34,37 @@ function clampCopyRepetitions(value: number): number {
 
 function clampCopyReviewDays(value: number): number {
     return Math.min(365, Math.max(0, Number.isFinite(value) ? Math.floor(value) : 2));
+}
+
+function formatUtcYmd(date: Date): string {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+/**
+ * 根据 fsrs_due 计算距今的真实剩余天数。
+ *
+ * 注意：fsrs_scheduled_days 是 FSRS 复习间隔（上次复习 → 下次到期），
+ * 不等于距今的剩余天数！随着时间推移两者会越来越不一致。
+ * 本函数从到期日期反算距今天数，确保和日期显示完全匹配。
+ */
+function computeRemainingDays(fsrsDue?: string | null): number {
+    if (!fsrsDue) return 0;
+    const due = new Date(fsrsDue);
+    if (Number.isNaN(due.getTime())) return 0;
+    const now = new Date();
+    const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const dueUtc = Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), due.getUTCDate());
+    return Math.max(0, Math.round((dueUtc - todayUtc) / (24 * 60 * 60 * 1000)));
+}
+
+function parseSearchDays(query: string): number | null {
+    const compact = query.trim().toLowerCase().replace(/\s+/g, '');
+    if (!compact) return null;
+
+    const match = compact.match(/^(\d+)(?:天|天后|d|day|days)?$/);
+    if (!match) return null;
+
+    const days = Number(match[1]);
+    return Number.isFinite(days) && days >= 0 ? days : null;
 }
 
 function getPlanTodayTarget(plan: LearningPlan): number {
@@ -477,6 +503,8 @@ export default function LearningPlanDetailPage() {
     const PAGE_SIZE = 50;
     const BOOK_PAGE_SIZE = 20;
     const normalizedSearch = search.trim().toLowerCase();
+    const hasSearchText = search.trim().length > 0;
+    const searchedDays = parseSearchDays(search);
     const filtered = normalizedSearch
         ? entries.filter(e =>
             e.word.toLowerCase().includes(normalizedSearch) ||
@@ -490,6 +518,8 @@ export default function LearningPlanDetailPage() {
             e.examples.some(ex =>
                 ex.en.toLowerCase().includes(normalizedSearch) ||
                 ex.zh.toLowerCase().includes(normalizedSearch)
+            ) || (
+                searchedDays !== null && computeRemainingDays(e.fsrs_due) === searchedDays
             )
         )
         : entries;
@@ -501,11 +531,11 @@ export default function LearningPlanDetailPage() {
             list.sort((a, b) => a.word.toLowerCase().localeCompare(b.word.toLowerCase()));
         } else if (sortBy === 'proficiency') {
             list.sort((a, b) => {
-                // Sort by FSRS state (lower number = less proficient), then by scheduled days
+                // Sort by FSRS state (lower number = less proficient), then by remaining days
                 if (a.fsrs_state !== b.fsrs_state) {
                     return a.fsrs_state - b.fsrs_state;
                 }
-                return a.fsrs_scheduled_days - b.fsrs_scheduled_days;
+                return computeRemainingDays(a.fsrs_due) - computeRemainingDays(b.fsrs_due);
             });
         }
         return sortAsc ? list : list.reverse();
@@ -991,10 +1021,15 @@ export default function LearningPlanDetailPage() {
                         <input
                             className="lp-search"
                             type="text"
-                            placeholder={t.vocab.details.listSearch}
+                            placeholder={`${t.vocab.details.listSearch}（如 7天）`}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
+                        {hasSearchText && (
+                            <div className="lp-search-result-count">
+                                搜索结果：{filtered.length} 词
+                            </div>
+                        )}
                     </div>
 
                     {loading ? (
@@ -1007,7 +1042,7 @@ export default function LearningPlanDetailPage() {
                         <>
                             <div className="lp-word-list">
                                 {paged.map(entry => (
-                                    <WordRow
+                                    <PlanWordRow
                                         key={entry.id}
                                         entry={entry}
                                         onZhChange={handleZhBlur}
@@ -1066,181 +1101,5 @@ export default function LearningPlanDetailPage() {
                 </div>
             </div>
         </Layout>
-    );
-}
-
-/* ── Word row sub-component ──────────────────────────────────────────────── */
-interface WordRowProps {
-    entry: PlanEntry;
-    onZhChange: (entry: PlanEntry, zh: string) => void;
-    onDueDays: (entry: PlanEntry, days: number) => void;
-    onRemove: (entry: PlanEntry) => void;
-}
-
-function WordRow({ entry, onZhChange, onDueDays, onRemove }: WordRowProps) {
-    const { translations: t } = useLang();
-    const [zh, setZh] = useState(entry.zh);
-    const [days, setDays] = useState(entry.fsrs_scheduled_days);
-    const [showExamples, setShowExamples] = useState(false);
-
-    // Sync when entry updates externally (e.g. after PATCH response)
-    useEffect(() => { setZh(entry.zh); }, [entry.zh]);
-    useEffect(() => { setDays(entry.fsrs_scheduled_days); }, [entry.fsrs_scheduled_days]);
-
-    const hasEnrichment = entry.grammar || entry.definitions.length > 0 || entry.examples.length > 0;
-
-    return (
-        <div className="lp-word-item">
-            {/* Row 1: word + zh input */}
-            <div className="lp-word-row1">
-                <div className="lp-word-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>{entry.word}</span>
-                    <button 
-                        onClick={() => {
-                            const u = new SpeechSynthesisUtterance(entry.word);
-                            u.lang = 'en-US';
-                            window.speechSynthesis.speak(u);
-                        }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: 0, color: 'var(--primary-color)' }}
-                        title="🔊 Play"
-                    >
-                        🔊
-                    </button>
-                    {entry.phonetic && (
-                        <span className="lp-word-phonetic">{entry.phonetic}</span>
-                    )}
-                </div>
-                <input
-                    className="lp-zh-input"
-                    value={zh}
-                    onChange={e => setZh(e.target.value)}
-                    onBlur={() => onZhChange(entry, zh)}
-                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    placeholder={t.vocab.details.manualZh}
-                />
-            </div>
-
-            {/* Row 2: state badge + due info + delete */}
-            <div className="lp-word-row2">
-                <span className={`lp-fsrs-badge ${FSRS_STATE_CLASS[entry.fsrs_state] ?? 'state-new'}`}>
-                    {FSRS_STATE_LABEL[entry.fsrs_state] ?? 'New'}
-                </span>
-
-                <div className="lp-word-actions">
-                    <div className="lp-due-wrap">
-                        <input
-                            className="lp-due-input"
-                            type="number"
-                            min={0}
-                            value={days}
-                            onChange={e => setDays(Number(e.target.value))}
-                            onBlur={() => onDueDays(entry, days)}
-                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                            title="设置几天后复习"
-                        />
-                        {t.vocab.intervals.daysUnit}
-                        <span className="lp-due-date" title="下次学习日期">
-                            {(() => {
-                                const today = new Date();
-                                if (days <= 0) {
-                                    return `(${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')})`;
-                                }
-
-                                if (entry.fsrs_due && days === entry.fsrs_scheduled_days) {
-                                    const d = new Date(entry.fsrs_due);
-                                    return `(${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')})`;
-                                }
-
-                                const d = new Date();
-                                d.setDate(d.getDate() + days);
-                                return `(${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')})`;
-                            })()}
-                        </span>
-                    </div>
-
-                    <button className="lp-del-btn" onClick={() => onRemove(entry)} title={t.vocab.plans.btnDelete}>
-                        ✕
-                    </button>
-                </div>
-            </div>
-
-            {hasEnrichment && (
-                <div className="lp-word-extra">
-                    {entry.grammar && (
-                        <span className="lp-grammar-badge">{entry.grammar}</span>
-                    )}
-                    {entry.definitions.length > 0 && (
-                        <div className="lp-def-list">
-                            {entry.definitions.map((d, i) => (
-                                <div key={i} className="lp-def-item">
-                                    {d.pos && <span className="lp-def-pos">{d.pos}</span>}
-                                    <span>{d.meaning}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {entry.examples.length > 0 && (
-                        <button
-                            className="lp-example-toggle"
-                            onClick={() => setShowExamples(v => !v)}
-                        >
-                            {showExamples ? t.vocab.details.btnCollapseEx : t.vocab.details.btnExpandEx.replace('{n}', String(entry.examples.length))}
-                        </button>
-                    )}
-                </div>
-            )}
-            {showExamples && entry.examples.length > 0 && (
-                <div className="lp-example-list">
-                    {entry.examples.map((ex, i) => (
-                        <div key={i}>
-                            <div className="lp-example-en">{ex.en}</div>
-                            {ex.zh && <div className="lp-example-zh">{ex.zh}</div>}
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
-
-/* ── Today studied section sub-component ─────────────────────────────────── */
-function TodayStudiedSection({ plan }: { plan: LearningPlan }) {
-    const { translations: t } = useLang();
-    const [expanded, setExpanded] = useState(false);
-    const todayTotal = getPlanTodayTarget(plan);
-    const pct = todayTotal > 0
-        ? Math.min(100, Math.round((plan.studied_today / todayTotal) * 100))
-        : 0;
-
-    return (
-        <div className="lp-today-section">
-            <div className="lp-today-header" onClick={() => setExpanded(v => !v)}>
-                <div className="lp-today-title">
-                    <span className="lp-today-icon">📋</span>
-                    <span dangerouslySetInnerHTML={{ __html: t.vocab.details.todayTitle.replace('{studied}', String(plan.studied_today)).replace('{total}', String(todayTotal)) }} />
-                    <span className="lp-today-pct">{pct}%</span>
-                </div>
-                <span className={`lp-today-toggle ${expanded ? 'open' : ''}`}>▾</span>
-            </div>
-            <div className="lp-today-progress">
-                <div className="lp-today-progress-fill" style={{ width: `${pct}%` }} />
-            </div>
-            {expanded && (
-                <div className="lp-today-list">
-                    {plan.today_words.map((tw, i) => (
-                        <div key={i} className="lp-today-word-row">
-                            <span className="lp-today-word">{tw.word}</span>
-                            {tw.phonetic && (
-                                <span className="lp-today-phonetic">{tw.phonetic}</span>
-                            )}
-                            <span className="lp-today-zh">{tw.zh}</span>
-                            <span className={`lp-fsrs-badge ${FSRS_STATE_CLASS[tw.state] ?? 'state-new'}`}>
-                                {FSRS_STATE_LABEL[tw.state] ?? 'New'}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
     );
 }

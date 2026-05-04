@@ -13,6 +13,9 @@ export const apiClient = axios.create({
 
 // Flag to prevent multiple concurrent refresh token requests
 let isRefreshing = false;
+// Prevent refresh storms — don't refresh more than once per cooldown window
+let lastRefreshTime = 0;
+const REFRESH_COOLDOWN_MS = 30_000;
 // Queue of failed requests during refresh
 let failedQueue: Array<{
     resolve: (value?: unknown) => void;
@@ -144,7 +147,8 @@ apiClient.interceptors.response.use(
             }
 
             if (isRefreshing) {
-                // If currently refreshing, put this request in a queue to retry later
+                // If currently refreshing, mark retried and queue to retry later
+                originalRequest._retry = true;
                 return new Promise(function (resolve, reject) {
                     failedQueue.push({ resolve, reject });
                 })
@@ -160,6 +164,13 @@ apiClient.interceptors.response.use(
             }
 
             originalRequest._retry = true;
+
+            // Rate-limit refreshes: don't refresh more than once per cooldown window
+            const now = Date.now();
+            if (now - lastRefreshTime < REFRESH_COOLDOWN_MS) {
+                return Promise.reject(error);
+            }
+            lastRefreshTime = now;
             isRefreshing = true;
 
             const refreshToken = localStorage.getItem('refresh_token');
@@ -191,8 +202,16 @@ apiClient.interceptors.response.use(
                     isRefreshing = false;
                 }
             } else {
+                isRefreshing = false;
                 return Promise.reject(error);
             }
+        }
+
+        // If a retried request still gets 401, the refresh token is dead — force logout
+        if (error.response?.status === 401 && originalRequest._retry) {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.dispatchEvent(new Event('auth:logout'));
         }
 
         return Promise.reject(error);

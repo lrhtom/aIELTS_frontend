@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import translate from 'translate';
+import { cancelSpeak, speakText as speakTextUtil, speakWord } from '../../utils/speak';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { apiClient, fetchStream } from '../../api/client';
@@ -582,7 +584,7 @@ const STEP_LABEL: Record<string, string> = {
 export default function GlobalAssistantBall() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { lang } = useLang();
+    const { lang, setLang } = useLang();
     const initialViewport = getViewportSize();
 
     const [viewport, setViewport] = useState(initialViewport);
@@ -621,6 +623,7 @@ export default function GlobalAssistantBall() {
     const [isAgentRunning, setIsAgentRunning] = useState(false);
     const [isAgentThinkingExpanded, setIsAgentThinkingExpanded] = useState(false);
     const [mcpCapabilities, setMcpCapabilities] = useState<AssistantMcpCapabilities | null>(null);
+    const [isCapturing, setIsCapturing] = useState(false);
 
     const rootRef = useRef<HTMLDivElement | null>(null);
     const dragRef = useRef<DragState | null>(null);
@@ -637,9 +640,7 @@ export default function GlobalAssistantBall() {
 
     useEffect(() => {
         return () => {
-            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-            }
+            cancelSpeak();
 
             const activeRecognition = speechRecognitionRef.current;
             if (activeRecognition) {
@@ -1018,17 +1019,14 @@ export default function GlobalAssistantBall() {
             return;
         }
 
-        if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-            showToast('当前浏览器不支持语音播放', 'error');
-            return;
+        const detectedLang = detectSpeechLangFromText(trimmed, lang);
+        if (detectedLang.startsWith('en')) {
+            // 英文走有道词典高质量发音
+            speakWord(trimmed);
+        } else {
+            // 中文/其他语言保持浏览器原生
+            speakTextUtil(trimmed, detectedLang);
         }
-
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(trimmed);
-        utterance.lang = detectSpeechLangFromText(trimmed, lang);
-        utterance.rate = 0.96;
-        utterance.pitch = 1;
-        window.speechSynthesis.speak(utterance);
     }, []);
 
     const handleSpeakSourceText = () => {
@@ -1404,6 +1402,85 @@ export default function GlobalAssistantBall() {
         }
     };
 
+    const handleScreenshot = useCallback(async () => {
+        if (isCapturing || !rootRef.current) return;
+
+        // Temporarily remove the assistant from layout so html2canvas skips it natively.
+        // display:none is more reliable than ignoreElements (which can cause internal
+        // createPattern errors on zero-size canvases).
+        const rootEl = rootRef.current;
+        const prevDisplay = rootEl.style.display;
+        rootEl.style.display = 'none';
+
+        // Wait two frames for the DOM to reflect the display change
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        // Wait two frames for the DOM to reflect the display change
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        try {
+            const { toBlob } = await import('html-to-image');
+            
+            const blob = await toBlob(document.body, {
+                backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#fdfdfc',
+                pixelRatio: 2,
+                filter: (node) => {
+                    // Ignore elements with display none or 0 dimensions if needed
+                    const el = node as HTMLElement;
+                    if (el.tagName === 'CANVAS' || el.tagName === 'SVG' || el.tagName === 'IFRAME' || el.tagName === 'IMG') {
+                        const rect = el.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            });
+
+            if (!blob) {
+                showToast('截图生成失败', 'error');
+                return;
+            }
+
+            const defaultName = `aielts-screenshot-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+
+            // Let user choose save location via File System Access API
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: defaultName,
+                        types: [{ description: 'PNG Image', accept: { 'image/png': ['.png'] } }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    showToast('截图已保存', 'success');
+                    return;
+                } catch (e) {
+                    // User cancelled the picker — silently return
+                    if ((e as DOMException)?.name === 'AbortError') return;
+                    // Fall through to fallback
+                }
+            }
+
+            // Fallback: auto-download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = defaultName;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('截图已保存', 'success');
+        } catch (e) {
+            console.error('Screenshot failed', e);
+            showToast('截图失败，请重试', 'error');
+        } finally {
+            // Restore assistant visibility
+            rootRef.current!.style.display = prevDisplay;
+        }
+    }, [isCapturing]);
+
     const shouldShowAgentPendingBubble =
         isAgentReplying
         && !isAgentRunning
@@ -1433,19 +1510,40 @@ export default function GlobalAssistantBall() {
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div className="assistant-panel-title">智能助手</div>
-                        <button
-                            type="button"
-                            className="assistant-panel-close-btn"
-                            title="收起助手"
-                            aria-label="收起助手"
-                            onClick={() => {
-                                setMenuOpen(false);
-                                setActiveAction(null);
-                                if (dockSide && !isHovering) setIsRevealed(false);
-                            }}
-                        >
-                            ×
-                        </button>
+                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                            <button
+                                type="button"
+                                className="assistant-panel-lang-btn"
+                                title={lang === 'zh' ? 'Switch to English' : '切换到中文'}
+                                aria-label={lang === 'zh' ? 'Switch to English' : '切换到中文'}
+                                onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+                            >
+                                {lang === 'zh' ? '🌐 EN' : '🌐 中文'}
+                            </button>
+                            <button
+                                type="button"
+                                className="assistant-panel-screenshot-btn"
+                                title="截取当前页面（不含助手）"
+                                aria-label="截取当前页面"
+                                disabled={isCapturing}
+                                onClick={handleScreenshot}
+                            >
+                                {isCapturing ? '⏳' : '📷'}
+                            </button>
+                            <button
+                                type="button"
+                                className="assistant-panel-close-btn"
+                                title="收起助手"
+                                aria-label="收起助手"
+                                onClick={() => {
+                                    setMenuOpen(false);
+                                    setActiveAction(null);
+                                    if (dockSide && !isHovering) setIsRevealed(false);
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
                     </div>
                     <div className="assistant-option-list">
                         <button

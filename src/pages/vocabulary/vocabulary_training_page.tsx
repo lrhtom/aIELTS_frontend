@@ -3,9 +3,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { showToast } from '../../components/common/Toast';
+import { type VocabMode } from '../../utils/vocab_training_utils';
 import '../../styles/practice_page.css';
-
-type VocabMode = 'mcq' | 'dictation' | 'complete';
 
 const MODE_OPTIONS: Array<{ id: VocabMode; icon: string; title: string; desc: string }> = [
     {

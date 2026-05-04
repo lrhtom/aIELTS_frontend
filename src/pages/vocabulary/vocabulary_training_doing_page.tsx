@@ -1,27 +1,18 @@
-import Layout from '../../components/layout/Layout';
+﻿import Layout from '../../components/layout/Layout';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
-import Speech from 'speak-tts';
+import { speakWord as playWord, cancelSpeak } from '../../utils/speak';
+import {
+    type VocabMode, type VocabEntry, type PracticeQuestion,
+    parseVocabInput, shuffle, buildMcqQuestions, buildDictationQuestions,
+    createMaskedWord, buildCompleteQuestions,
+} from '../../utils/vocab_training_utils';
 import '../../styles/practice_page.css';
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
-type VocabMode = 'mcq' | 'dictation' | 'complete';
 type DoingStep = 'loading' | 'doing' | 'result';
-
-interface VocabEntry {
-    en: string;
-    zh: string;
-}
-
-interface PracticeQuestion {
-    en: string;
-    zh: string;
-    options?: string[];
-    correctIndex?: number;
-    maskedWord?: string;
-}
 
 interface SessionCache {
     vocabInput: string;
@@ -56,119 +47,6 @@ function isReloadNavigation(): boolean {
     return navEntries[0]?.type === 'reload';
 }
 
-/* ─── Helpers ────────────────────────────────────────────────────────────── */
-
-function parseVocabInput(raw: string): VocabEntry[] {
-    return raw
-        .split('\n')
-        .map((line) => {
-            const trimmed = line.trim();
-            if (!trimmed) return null;
-
-            // 1. " - " separator (e.g. "word - 中文")
-            const dashSep = trimmed.indexOf(' - ');
-            if (dashSep !== -1) {
-                const en = trimmed.slice(0, dashSep).trim();
-                const zh = trimmed.slice(dashSep + 3).trim();
-                if (en && zh) return { en, zh };
-            }
-
-            // 2. ": " separator (e.g. "word: 中文")
-            const colonSep = trimmed.indexOf(': ');
-            if (colonSep !== -1) {
-                const en = trimmed.slice(0, colonSep).trim();
-                const zh = trimmed.slice(colonSep + 2).trim();
-                if (en && zh) return { en, zh };
-            }
-
-            // 3. Fallback: split at first CJK character (e.g. "word 中文" or "word中文")
-            const zhMatch = /[\u4e00-\u9fa5]/.exec(trimmed);
-            if (zhMatch && zhMatch.index !== undefined) {
-                const en = trimmed.slice(0, zhMatch.index).replace(/[-\s]+$/, '').trim();
-                const zh = trimmed.slice(zhMatch.index).trim();
-                if (en && zh) return { en, zh };
-            }
-
-            return null;
-        })
-        .filter(Boolean) as VocabEntry[];
-}
-
-function shuffle<T>(arr: T[]): T[] {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-}
-
-function buildMcqQuestions(entries: VocabEntry[], shuffleWordOrder: boolean): PracticeQuestion[] {
-    const orderedEntries = shuffleWordOrder ? shuffle(entries) : [...entries];
-    return orderedEntries.map((entry, _idx, arr) => {
-        const others = arr.filter((e) => e.en !== entry.en);
-        // repeat pool if fewer than 3 others (edge case: 4 words total)
-        const pool = others.length >= 3 ? others : [...others, ...others, ...others];
-        const distractors = shuffle(pool).slice(0, 3).map((e) => e.zh);
-        const rawOptions = shuffle([entry.zh, ...distractors]);
-        const correctIndex = rawOptions.indexOf(entry.zh);
-        return { en: entry.en, zh: entry.zh, options: rawOptions, correctIndex };
-    });
-}
-
-function buildDictationQuestions(entries: VocabEntry[], shuffleWordOrder: boolean): PracticeQuestion[] {
-    const orderedEntries = shuffleWordOrder ? shuffle(entries) : [...entries];
-    return orderedEntries.map((entry) => ({ en: entry.en, zh: entry.zh }));
-}
-
-function createMaskedWord(word: string): string {
-    const chars = word.split('');
-    const letterIndexes = chars
-        .map((ch, idx) => (/[a-zA-Z]/.test(ch) ? idx : -1))
-        .filter((idx) => idx !== -1);
-
-    if (letterIndexes.length === 0) return word;
-
-    // 提示模式（hint）：首字母必显 + 额外随机显示 10%~25% 字母
-    const firstLetterIndex = letterIndexes[0];
-    const otherLetterIndexes = letterIndexes.slice(1);
-
-    const minExtra = Math.ceil(letterIndexes.length * 0.1);
-    const maxExtra = Math.ceil(letterIndexes.length * 0.25);
-    const extraRevealCount = Math.min(
-        otherLetterIndexes.length,
-        Math.max(
-            0,
-            minExtra + Math.floor(Math.random() * (Math.max(1, maxExtra - minExtra + 1)))
-        )
-    );
-
-    const revealSet = new Set<number>([
-        firstLetterIndex,
-        ...shuffle(otherLetterIndexes).slice(0, extraRevealCount),
-    ]);
-
-    // 最高优先级：至少保留一个可填写空位
-    if (revealSet.size >= letterIndexes.length) {
-        const hideCandidatePool = otherLetterIndexes.length > 0 ? otherLetterIndexes : [firstLetterIndex];
-        const hideIndex = hideCandidatePool[Math.floor(Math.random() * hideCandidatePool.length)];
-        revealSet.delete(hideIndex);
-    }
-
-    return chars
-        .map((ch, idx) => (/[a-zA-Z]/.test(ch) ? (revealSet.has(idx) ? ch : '_') : ch))
-        .join('');
-}
-
-function buildCompleteQuestions(entries: VocabEntry[], shuffleWordOrder: boolean): PracticeQuestion[] {
-    const orderedEntries = shuffleWordOrder ? shuffle(entries) : [...entries];
-    return orderedEntries.map((entry) => ({
-        en: entry.en,
-        zh: entry.zh,
-        maskedWord: createMaskedWord(entry.en),
-    }));
-}
-
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export default function VocabularyTrainingDoingPage() {
@@ -196,50 +74,31 @@ export default function VocabularyTrainingDoingPage() {
     const [completeChecked, setCompleteChecked] = useState(false);
     const [showCompleteAnswer, setShowCompleteAnswer] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
-    const [speechReady, setSpeechReady] = useState(false);
     const speakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const speechRef = useRef<Speech | null>(null);
     const lastAutoSpokenIndexRef = useRef<number>(-1);
     const completeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
     const sessionKey = modeFromRoute ? getSessionKey(modeFromRoute) : '';
 
     const speakWord = useCallback((word: string) => {
-        if (!speechRef.current) return;
         if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
-
-        speechRef.current.cancel();
+        cancelSpeak();
         setIsSpeaking(true);
         speakTimerRef.current = setTimeout(() => setIsSpeaking(false), 4000);
-        speechRef.current.speak({
-            text: word,
-            queue: false,
-            listeners: {
-                onend: () => setIsSpeaking(false),
-                onerror: () => setIsSpeaking(false),
+        playWord(word, {
+            onEnd: () => {
+                if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
+                setIsSpeaking(false);
             },
-        }).catch(() => setIsSpeaking(false));
+            onError: () => {
+                if (speakTimerRef.current) clearTimeout(speakTimerRef.current);
+                setIsSpeaking(false);
+            },
+        });
     }, []);
 
     useEffect(() => {
-        const speech = new Speech();
-        speechRef.current = speech;
-        if (!speech.hasBrowserSupport()) return;
-
-        speech.init({
-            lang: 'en-US',
-            rate: 0.88,
-            pitch: 1,
-            splitSentences: false,
-        }).then(() => {
-            setSpeechReady(true);
-        }).catch(() => {
-            setSpeechReady(false);
-        });
-
-        return () => {
-            speech.cancel();
-        };
+        return () => { cancelSpeak(); };
     }, []);
 
     // ── Restore or init from route state ──────────────────────────────────
@@ -479,7 +338,7 @@ export default function VocabularyTrainingDoingPage() {
 
     // 完全听写：每道新题自动朗读一次
     useEffect(() => {
-        if (!speechReady || mode !== 'dictation' || step !== 'doing') return;
+        if (false || mode !== 'dictation' || step !== 'doing') return;
         if (questions.length === 0 || !questions[currentIndex]) return;
         if (dictationChecked) return;
         if (lastAutoSpokenIndexRef.current === currentIndex) return;
@@ -661,7 +520,7 @@ export default function VocabularyTrainingDoingPage() {
                             <button
                                 onClick={() => speakWord(q.en)}
                                 title="朗读单词"
-                                disabled={!speechReady}
+                                disabled={false}
                                 style={{
                                     width: '50px', height: '50px',
                                     padding: 0,
@@ -733,7 +592,7 @@ export default function VocabularyTrainingDoingPage() {
                             <button
                                 onClick={() => speakWord(q.en)}
                                 title="朗读单词"
-                                disabled={!speechReady}
+                                disabled={false}
                                 style={{
                                     width: '44px', height: '44px',
                                     padding: 0,

@@ -78,10 +78,10 @@ export default function MermaidChart({ chart }: MermaidChartProps) {
                     setSvgContent(svg);
                     setError('');
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Mermaid Render Error", err);
                 if (isMounted) {
-                    setError(err.message || 'Failed to render Flowchart SVG representation.');
+                    setError((err as { message?: string }).message || 'Failed to render Flowchart SVG representation.');
                 }
             }
         };

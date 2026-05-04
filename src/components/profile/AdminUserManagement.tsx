@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiClient } from '../../api/client';
+import { useLang } from '../../i18n/LanguageContext';
 import { toast } from 'react-hot-toast';
 
 type UserRow = {
@@ -24,6 +25,7 @@ type PaginatedResponse = {
 };
 
 export default function AdminUserManagement() {
+    const { translations: t } = useLang();
     const [users, setUsers] = useState<UserRow[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
@@ -40,7 +42,7 @@ export default function AdminUserManagement() {
             setTotalCount(response.data.count);
         } catch (error) {
             console.error('Failed to fetch users:', error);
-            toast.error('加载用户失败');
+            toast.error(t.profile.admin.users.toastLoadFail);
         } finally {
             setIsLoading(false);
         }
@@ -52,7 +54,7 @@ export default function AdminUserManagement() {
 
     const handleToggleBan = async (user: UserRow) => {
         if (user.is_staff || user.is_superuser) {
-            toast.error('管理员账号不可封禁/解封');
+            toast.error(t.profile.admin.users.toastAdminNoBan);
             return;
         }
 
@@ -61,24 +63,24 @@ export default function AdminUserManagement() {
             setUsers((prev) => prev.map((item) =>
                 item.id === user.id ? { ...item, is_banned: !item.is_banned } : item
             ));
-            toast.success(user.is_banned ? '已解封用户' : '已封禁用户');
+            toast.success(user.is_banned ? t.profile.admin.users.toastUnbanSuccess : t.profile.admin.users.toastBanSuccess);
         } catch (error: unknown) {
             console.error('Failed to toggle ban:', error);
-            toast.error('操作失败');
+            toast.error(t.profile.admin.users.toastOpFail);
         }
     };
 
     const handleDelete = async (user: UserRow) => {
         if (user.is_staff || user.is_superuser) {
-            toast.error('管理员账号不可删除');
+            toast.error(t.profile.admin.users.toastAdminNoDelete);
             return;
         }
 
-        if (!window.confirm(`确认删除用户 ${user.username} 吗？此操作不可恢复。`)) return;
+        if (!window.confirm(t.profile.admin.users.toastDeleteConfirm.replace('{name}', user.username))) return;
 
         try {
             await apiClient.delete(`/admin/users/${user.id}/delete`);
-            toast.success('用户已删除');
+            toast.success(t.profile.admin.users.toastDeleteSuccess);
             if (users.length === 1 && currentPage > 1) {
                 setCurrentPage((p) => p - 1);
             } else {
@@ -86,7 +88,39 @@ export default function AdminUserManagement() {
             }
         } catch (error) {
             console.error('Failed to delete user:', error);
-            toast.error('删除失败');
+            toast.error(t.profile.admin.users.toastDeleteFail);
+        }
+    };
+
+    const handleAdjustAT = async (user: UserRow) => {
+        const input = window.prompt(
+            `调整用户 ${user.username} 的 AT 币余额\n当前余额: ${user.atBalance.toLocaleString()} AT\n输入正数为增加，负数为减少（例：10000 或 -500）`,
+            ''
+        );
+        if (input === null) return;
+
+        const amount = parseInt(input.trim(), 10);
+        if (isNaN(amount) || amount === 0) {
+            toast.error(t.profile.admin.users.toastInvalidAmount);
+            return;
+        }
+
+        try {
+            const resp = await apiClient.patch<{ at_balance: number; delta: number }>(
+                `/admin/users/${user.id}/adjust-at`,
+                { amount }
+            );
+            setUsers((prev) => prev.map((item) =>
+                item.id === user.id ? { ...item, atBalance: resp.data.at_balance } : item
+            ));
+            const deltaStr = (resp.data.delta > 0 ? '+' : '') + resp.data.delta.toLocaleString();
+            toast.success(t.profile.admin.users.toastAdjustSuccess
+                .replace('{delta}', deltaStr)
+                .replace('{balance}', resp.data.at_balance.toLocaleString()));
+        } catch (error: unknown) {
+            console.error('Failed to adjust AT:', error);
+            const e = error as { response?: { data?: { error?: string } } };
+            toast.error(e.response?.data?.error || t.profile.admin.users.toastAdjustFail);
         }
     };
 
@@ -97,12 +131,12 @@ export default function AdminUserManagement() {
     const handleJumpToPage = () => {
         const rawValue = jumpPageInput.trim();
         if (!rawValue) {
-            toast.error('请输入页码');
+            toast.error(t.profile.admin.users.toastEnterPage);
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            toast.error(`请输入 1 到 ${totalPages} 的整数页码`);
+            toast.error(t.profile.admin.users.toastInvalidPage.replace('{n}', String(totalPages)));
             return;
         }
         setCurrentPage(Math.min(totalPages, Math.max(1, parsed)));
@@ -130,7 +164,7 @@ export default function AdminUserManagement() {
     }, [users, keyword, roleFilter]);
 
     const formatDateTime = (dateStr: string | null) => {
-        if (!dateStr) return '从未登录';
+        if (!dateStr) return t.profile.admin.users.neverLogin;
         return new Date(dateStr).toLocaleString();
     };
 
@@ -169,7 +203,7 @@ export default function AdminUserManagement() {
                     &raquo;
                 </button>
                 <div className="admin-users-page-jump">
-                    <span>跳到</span>
+                    <span>{t.profile.admin.pagination.jumpTo}</span>
                     <input
                         type="text"
                         inputMode="numeric"
@@ -181,8 +215,8 @@ export default function AdminUserManagement() {
                             }
                         }}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleJumpToPage(); }}
-                        placeholder="页码"
-                        aria-label="跳转到指定页"
+                        placeholder={t.profile.admin.pagination.pagePlaceholder}
+                        aria-label={t.profile.admin.pagination.jumpTo}
                     />
                     <button
                         className="admin-users-page-btn admin-users-page-jump-btn"
@@ -190,7 +224,7 @@ export default function AdminUserManagement() {
                         onClick={handleJumpToPage}
                         disabled={!jumpPageInput.trim()}
                     >
-                        GO
+                        {t.profile.admin.pagination.goBtn}
                     </button>
                 </div>
             </div>
@@ -201,15 +235,15 @@ export default function AdminUserManagement() {
         <div className="admin-users">
             <div className="admin-users-header">
                 <div className="admin-users-title-block">
-                    <h2>👥 用户管理</h2>
-                    <p>快速筛选、查看用户状态并执行封禁或删除操作</p>
+                    <h2>{t.profile.admin.users.title}</h2>
+                    <p>{t.profile.admin.users.subtitle}</p>
                 </div>
                 <div className="admin-users-stats">
-                    <span className="admin-users-stat-pill">总用户 {totalCount}</span>
-                    <span className="admin-users-stat-pill">本页 {users.length}</span>
-                    <span className="admin-users-stat-pill">筛选后 {filteredUsers.length}</span>
-                    <span className="admin-users-stat-pill">本页管理员 {pageAdminCount}</span>
-                    <span className="admin-users-stat-pill">本页封禁 {pageBannedCount}</span>
+                    <span className="admin-users-stat-pill">{t.profile.admin.users.totalUsers.replace('{n}', String(totalCount))}</span>
+                    <span className="admin-users-stat-pill">{t.profile.admin.users.pageUsers.replace('{n}', String(users.length))}</span>
+                    <span className="admin-users-stat-pill">{t.profile.admin.users.filtered.replace('{n}', String(filteredUsers.length))}</span>
+                    <span className="admin-users-stat-pill">{t.profile.admin.users.pageAdmins.replace('{n}', String(pageAdminCount))}</span>
+                    <span className="admin-users-stat-pill">{t.profile.admin.users.pageBanned.replace('{n}', String(pageBannedCount))}</span>
                 </div>
             </div>
 
@@ -219,7 +253,7 @@ export default function AdminUserManagement() {
                     <input
                         type="text"
                         className="admin-users-search"
-                        placeholder="按用户名 / 邮箱 / ID 搜索当前页"
+                        placeholder={t.profile.admin.users.searchPlaceholder}
                         value={keyword}
                         onChange={(e) => setKeyword(e.target.value)}
                     />
@@ -230,20 +264,20 @@ export default function AdminUserManagement() {
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value as 'all' | 'normal' | 'admin' | 'banned')}
                     >
-                        <option value="all">全部用户</option>
-                        <option value="normal">普通用户</option>
-                        <option value="admin">管理员</option>
-                        <option value="banned">仅封禁用户</option>
+                        <option value="all">{t.profile.admin.users.filterAll}</option>
+                        <option value="normal">{t.profile.admin.users.filterNormal}</option>
+                        <option value="admin">{t.profile.admin.users.filterAdmin}</option>
+                        <option value="banned">{t.profile.admin.users.filterBanned}</option>
                     </select>
                 </div>
             </div>
 
             {isLoading ? (
-                <div className="admin-users-state">加载中...</div>
+                <div className="admin-users-state">{t.profile.admin.users.loading}</div>
             ) : users.length === 0 ? (
-                <div className="admin-users-state">暂无用户</div>
+                <div className="admin-users-state">{t.profile.admin.users.empty}</div>
             ) : filteredUsers.length === 0 ? (
-                <div className="admin-users-state">当前筛选条件下无结果</div>
+                <div className="admin-users-state">{t.profile.admin.users.noMatch}</div>
             ) : (
                 <div className="admin-users-list">
                     {filteredUsers.map((user) => {
@@ -258,27 +292,27 @@ export default function AdminUserManagement() {
 
                                     <div className="admin-users-badges">
                                         <span className={`admin-users-badge ${user.is_banned ? 'is-banned' : 'is-normal'}`}>
-                                            {user.is_banned ? '已封禁' : '正常'}
+                                            {user.is_banned ? t.profile.admin.users.badgeBanned : t.profile.admin.users.badgeNormal}
                                         </span>
-                                        {isAdmin && <span className="admin-users-badge is-admin">管理员</span>}
-                                        {user.is_email_verified && <span className="admin-users-badge is-verified">邮箱已验证</span>}
+                                        {isAdmin && <span className="admin-users-badge is-admin">{t.profile.admin.users.badgeAdmin}</span>}
+                                        {user.is_email_verified && <span className="admin-users-badge is-verified">{t.profile.admin.users.badgeEmailVerified}</span>}
                                     </div>
 
                                     <div className="admin-users-grid">
                                         <div className="admin-users-item">
-                                            <span className="admin-users-label">邮箱</span>
-                                            <span className="admin-users-value">{user.email || '未填写'}</span>
+                                            <span className="admin-users-label">{t.profile.admin.users.labelEmail}</span>
+                                            <span className="admin-users-value">{user.email || t.profile.admin.users.labelNotProvided}</span>
                                         </div>
                                         <div className="admin-users-item">
-                                            <span className="admin-users-label">AT 余额</span>
+                                            <span className="admin-users-label">{t.profile.admin.users.labelAtBalance}</span>
                                             <span className="admin-users-value">{user.atBalance}</span>
                                         </div>
                                         <div className="admin-users-item">
-                                            <span className="admin-users-label">注册时间</span>
+                                            <span className="admin-users-label">{t.profile.admin.users.labelRegistered}</span>
                                             <span className="admin-users-value">{formatDateTime(user.date_joined)}</span>
                                         </div>
                                         <div className="admin-users-item">
-                                            <span className="admin-users-label">最近登录</span>
+                                            <span className="admin-users-label">{t.profile.admin.users.labelLastLogin}</span>
                                             <span className="admin-users-value">{formatDateTime(user.last_login)}</span>
                                         </div>
                                     </div>
@@ -290,14 +324,20 @@ export default function AdminUserManagement() {
                                         onClick={() => handleToggleBan(user)}
                                         disabled={isAdmin}
                                     >
-                                        {user.is_banned ? '解封' : '封禁'}
+                                        {user.is_banned ? t.profile.admin.users.btnUnban : t.profile.admin.users.btnBan}
+                                    </button>
+                                    <button
+                                        className="admin-users-btn adjust-btn"
+                                        onClick={() => handleAdjustAT(user)}
+                                    >
+                                        {t.profile.admin.users.btnAdjustAt}
                                     </button>
                                     <button
                                         className="admin-users-btn delete-btn"
                                         onClick={() => handleDelete(user)}
                                         disabled={isAdmin}
                                     >
-                                        删除
+                                        {t.profile.admin.users.btnDelete}
                                     </button>
                                 </div>
                             </div>
@@ -586,6 +626,16 @@ export default function AdminUserManagement() {
 
                 .admin-users-btn.ban-btn:hover:not(:disabled) {
                     background: rgba(13, 148, 136, 0.2);
+                }
+
+                .admin-users-btn.adjust-btn {
+                    color: #7c3aed;
+                    background: rgba(124, 58, 237, 0.08);
+                    border-color: rgba(124, 58, 237, 0.22);
+                }
+
+                .admin-users-btn.adjust-btn:hover:not(:disabled) {
+                    background: rgba(124, 58, 237, 0.16);
                 }
 
                 .admin-users-btn.delete-btn {

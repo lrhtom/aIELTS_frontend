@@ -10,11 +10,54 @@ export default function UserSettings() {
     const { lang, setLang, translations: t } = useLang();
     const [isDeleting, setIsDeleting] = useState(false);
     
+    // 修改用户名状态
+    const [newUsername, setNewUsername] = useState('');
+    const [isChangingUsername, setIsChangingUsername] = useState(false);
+    const [changeUsernameMsg, setChangeUsernameMsg] = useState('');
+    const [changeUsernameError, setChangeUsernameError] = useState('');
+
     // AI生成重试次数状态
     const [aiRetryCount, setAiRetryCount] = useState(user?.aiGenerationRetryCount ?? 0);
     const [isUpdatingRetryCount, setIsUpdatingRetryCount] = useState(false);
     const [updateRetryCountMessage, setUpdateRetryCountMessage] = useState('');
     const [updateRetryCountError, setUpdateRetryCountError] = useState('');
+
+    const handleChangeUsername = async () => {
+        const trimmed = newUsername.trim();
+        if (!trimmed || trimmed.length < 2) {
+            setChangeUsernameError(t.profile.rename.errors.tooShort);
+            return;
+        }
+        if (trimmed.length > 30) {
+            setChangeUsernameError(t.profile.rename.errors.tooLong);
+            return;
+        }
+        if (!/^[a-zA-Z0-9_\-一-鿿]+$/.test(trimmed)) {
+            setChangeUsernameError(t.profile.rename.errors.invalidChars);
+            return;
+        }
+        if (trimmed === user?.username) {
+            setChangeUsernameError(t.profile.rename.errors.sameName);
+            return;
+        }
+        if (!window.confirm(t.profile.rename.errors.confirmMsg.replace('{name}', trimmed))) return;
+
+        setIsChangingUsername(true);
+        setChangeUsernameMsg('');
+        setChangeUsernameError('');
+
+        try {
+            const res = await authApi.changeUsername(trimmed);
+            updateUser({ ...user!, username: res.username, atBalance: res.at_balance });
+            setChangeUsernameMsg(res.message);
+            setNewUsername('');
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { error?: string } } };
+            setChangeUsernameError(e.response?.data?.error || t.profile.rename.errors.fail);
+        } finally {
+            setIsChangingUsername(false);
+        }
+    };
 
     const handleDeleteAccount = async () => {
         if (!window.confirm(t.profile.account.confirmDelete)) {
@@ -197,6 +240,35 @@ export default function UserSettings() {
                 <div className="user-settings-section-description">
                     {t.profile.account.description}
                 </div>
+
+                {/* 修改用户名 */}
+                <div className="rename-section">
+                    <div className="rename-header">
+                        <span className="rename-label">{t.profile.rename.title}</span>
+                        <span className="rename-cost">{t.profile.rename.cost}</span>
+                    </div>
+                    <div className="rename-input-row">
+                        <input
+                            type="text"
+                            className="rename-input"
+                            placeholder={t.profile.rename.placeholder}
+                            value={newUsername}
+                            onChange={(e) => { setNewUsername(e.target.value); setChangeUsernameError(''); setChangeUsernameMsg(''); }}
+                            maxLength={30}
+                            disabled={isChangingUsername}
+                        />
+                        <button
+                            className="rename-btn"
+                            onClick={handleChangeUsername}
+                            disabled={isChangingUsername || !newUsername.trim()}
+                        >
+                            {isChangingUsername ? t.profile.rename.processing : t.profile.rename.confirmBtn}
+                        </button>
+                    </div>
+                    {changeUsernameMsg && <div className="rename-success">{changeUsernameMsg}</div>}
+                    {changeUsernameError && <div className="rename-error">{changeUsernameError}</div>}
+                </div>
+
                 <div className="account-actions">
                     <button
                         className="logout-button"

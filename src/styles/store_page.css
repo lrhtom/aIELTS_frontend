@@ -5,10 +5,10 @@
 }
 
 .store-card {
-  --card-bg: #ffffff;
-  --card-accent: #7c3aed;
-  --card-text: #1e293b;
-  --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  --card-bg: var(--color-surface);
+  --card-accent: var(--color-accent-purple);
+  --card-text: var(--color-text);
+  --card-shadow: var(--shadow-md);
 
   width: 100%;
   min-height: 254px;
@@ -310,7 +310,7 @@
 
 .store-cart-close:hover {
   background: #f3f4f6;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .store-cart-body {
@@ -343,13 +343,13 @@
 .store-cart-footer-total-value {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-text);
 }
 
 /* From Uiverse.io by Cksunandh */
 .receipt {
   width: 100%;
-  background: white;
+  background: var(--color-surface);
   border: 2px dashed #ccc;
   padding: 15px;
   border-radius: 8px;

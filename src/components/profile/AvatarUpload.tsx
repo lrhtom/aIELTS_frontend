@@ -57,9 +57,10 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
             onAvatarUpdate?.(response.user.avatar_url || null);
 
             showToast('头像上传成功', 'success');
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const e = error as { response?: { data?: { error?: string } } };
             console.error('头像上传失败:', error);
-            showToast(error.response?.data?.error || '头像上传失败，请重试', 'error');
+            showToast(e.response?.data?.error || '头像上传失败，请重试', 'error');
             setPreviewUrl(user?.avatar_url || null); // 恢复原来的头像
         } finally {
             setIsUploading(false);
@@ -87,9 +88,10 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
             setPreviewUrl(null);
 
             showToast('头像已删除', 'success');
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const e = error as { response?: { data?: { error?: string } } };
             console.error('删除头像失败:', error);
-            showToast(error.response?.data?.error || '删除头像失败，请重试', 'error');
+            showToast(e.response?.data?.error || '删除头像失败，请重试', 'error');
         } finally {
             setIsUploading(false);
         }

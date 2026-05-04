@@ -19,7 +19,7 @@
 .ss-header h1 {
     font-size: 2rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary, #7c3aed));
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent-purple));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.25rem;
@@ -31,7 +31,7 @@
 
 /* ── Hero card ───────────────────────────────────────────────── */
 .ss-hero-card {
-    background: var(--color-bg-card, #fff);
+    background: var(--color-surface);
     border-radius: 1.25rem;
     padding: 2rem;
     box-shadow: 0 4px 24px rgba(0,0,0,0.06);
@@ -65,7 +65,7 @@
     color: var(--color-text-muted);
 }
 .ss-primary { color: var(--color-primary); }
-.ss-secondary { color: var(--color-secondary, #7c3aed); }
+.ss-secondary { color: var(--color-accent-purple); }
 
 /* ── Score bars ───────────────────────────────────────────────── */
 .ss-bars {
@@ -128,7 +128,7 @@
 .ss-table {
     width: 100%;
     border-collapse: collapse;
-    background: var(--color-bg-card, #fff);
+    background: var(--color-surface);
     font-size: 0.9rem;
 }
 .ss-table th,
@@ -192,8 +192,8 @@
 }
 .ss-chip-used {
     background: rgba(124, 58, 237, 0.08);
-    color: var(--color-secondary, #7c3aed);
-    border-color: var(--color-secondary, #7c3aed);
+    color: var(--color-accent-purple);
+    border-color: var(--color-accent-purple);
 }
 .ss-chip-count {
     font-weight: 700;
@@ -223,11 +223,11 @@
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
 }
 .ss-back-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+    box-shadow: 0 6px 16px rgba(13, 148, 136, 0.35);
 }
 .ss-share-btn {
     display: inline-flex;

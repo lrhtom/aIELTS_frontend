@@ -52,11 +52,11 @@ export default function UserFeedback() {
                 </div>
                 <style>{`
                     .success-card {
-                        background: var(--bg-secondary);
+                        background: var(--color-surface);
                         padding: 60px 40px;
                         border-radius: 20px;
                         text-align: center;
-                        border: 1px solid var(--border-color);
+                        border: 1px solid var(--color-border);
                         animation: slideUp 0.5s ease-out;
                         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
                     }
@@ -124,15 +124,15 @@ export default function UserFeedback() {
                     margin-bottom: 30px;
                 }
                 .feedback-subtitle {
-                    color: var(--text-secondary);
+                    color: var(--color-text-secondary);
                     font-size: 0.9rem;
                     margin-top: 5px;
                 }
                 .feedback-form {
-                    background: var(--bg-secondary);
+                    background: var(--color-surface);
                     padding: 30px;
                     border-radius: 12px;
-                    border: 1px solid var(--border-color);
+                    border: 1px solid var(--color-border);
                 }
                 .form-group {
                     margin-bottom: 20px;
@@ -140,8 +140,9 @@ export default function UserFeedback() {
                 .form-group label {
                     display: block;
                     margin-bottom: 8px;
-                    font-weight: 500;
-                    color: var(--text-primary);
+                    font-weight: 600;
+                    color: var(--color-text);
+                    font-size: 0.9rem;
                 }
                 .required {
                     color: #ff4d4f;
@@ -149,33 +150,41 @@ export default function UserFeedback() {
                 .form-group input,
                 .form-group textarea {
                     width: 100%;
-                    padding: 12px;
-                    border-radius: 8px;
-                    border: 1px solid var(--border-color);
-                    background: var(--bg-primary);
-                    color: var(--text-primary);
+                    padding: 14px 16px;
+                    border-radius: 10px;
+                    border: 2px solid var(--color-border);
+                    background: var(--color-bg);
+                    color: var(--color-text);
                     font-size: 0.95rem;
-                    transition: border-color 0.2s;
+                    transition: border-color 0.2s, box-shadow 0.2s;
+                    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+                    font-family: inherit;
+                }
+                .form-group input::placeholder,
+                .form-group textarea::placeholder {
+                    color: #94a3b8;
                 }
                 .form-group input:focus,
                 .form-group textarea:focus {
                     outline: none;
-                    border-color: var(--primary-color);
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12), inset 0 1px 3px rgba(0,0,0,0.06);
                 }
                 .submit-button {
-                    background: var(--primary-color, #007bff);
+                    background: var(--color-primary);
                     color: white;
                     border: none;
-                    padding: 12px 24px;
-                    border-radius: 8px;
+                    padding: 14px 24px;
+                    border-radius: 10px;
                     font-weight: 600;
+                    font-size: 1rem;
                     cursor: pointer;
-                    transition: opacity 0.2s;
+                    transition: background 0.2s;
                     width: 100%;
                     margin-top: 10px;
                 }
                 .submit-button:hover {
-                    opacity: 0.9;
+                    background: var(--color-primary-hover);
                 }
                 .submit-button:disabled {
                     opacity: 0.6;
@@ -183,8 +192,8 @@ export default function UserFeedback() {
                 }
                 .secondary-button {
                     background: transparent;
-                    color: var(--primary-color, #007bff);
-                    border: 1px solid var(--primary-color, #007bff);
+                    color: var(--color-primary);
+                    border: 1px solid var(--color-primary);
                     padding: 10px 20px;
                     border-radius: 8px;
                     font-weight: 500;
@@ -192,7 +201,7 @@ export default function UserFeedback() {
                     transition: all 0.2s;
                 }
                 .secondary-button:hover {
-                    background: rgba(0, 123, 255, 0.05);
+                    background: rgba(13, 148, 136, 0.08);
                 }
             `}</style>
         </div>

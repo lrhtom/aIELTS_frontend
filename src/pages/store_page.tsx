@@ -25,7 +25,7 @@ export default function StorePage() {
                 setProducts(prodRes.products);
                 setCart(cartRes);
             })
-            .catch(() => showToast('获取商店信息失败', 'error'))
+            .catch(() => showToast(t.store.fetchFail, 'error'))
             .finally(() => setLoading(false));
     }, []);
 
@@ -43,11 +43,11 @@ export default function StorePage() {
         setActionId(product.id);
         try {
             await addToCart(product.id, 1);
-            showToast('已加入购物车', 'success');
+            showToast(t.store.addSuccess, 'success');
             await fetchCart();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            showToast(err.response?.data?.error || '添加失败', 'error');
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { error?: string } } };
+            showToast(e.response?.data?.error || t.store.addFail, 'error');
         } finally {
             setActionId(null);
         }
@@ -61,9 +61,9 @@ export default function StorePage() {
                 await removeFromCart(productId, 1, false);
             }
             await fetchCart();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            showToast(err.response?.data?.error || '操作失败', 'error');
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { error?: string } } };
+            showToast(e.response?.data?.error || t.store.opFail, 'error');
         }
     };
 
@@ -71,9 +71,9 @@ export default function StorePage() {
         try {
             await removeFromCart(productId, 1, true);
             await fetchCart();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            showToast(err.response?.data?.error || '删除失败', 'error');
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { error?: string } } };
+            showToast(e.response?.data?.error || t.store.deleteFail, 'error');
         }
     };
 
@@ -81,15 +81,15 @@ export default function StorePage() {
         if (cart.items.length === 0) return;
         try {
             const res = await checkoutCart();
-            showToast(res.message || '结账成功', 'success');
+            showToast(res.message || t.store.checkoutSuccess, 'success');
             if (res.new_balance !== undefined && user) {
                 updateUser({ ...user, atBalance: res.new_balance });
             }
             setIsCartOpen(false);
             await fetchCart(); // Will be empty now
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            showToast(err.response?.data?.error || '结账失败', 'error');
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { error?: string } } };
+            showToast(e.response?.data?.error || t.store.checkoutFail, 'error');
         }
     };
 
@@ -104,7 +104,7 @@ export default function StorePage() {
                     
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                         <div style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: '20px', fontWeight: 600 }}>
-                            <span style={{ color: 'var(--text-secondary)', marginRight: '8px' }}>当前余额:</span>
+                            <span style={{ color: 'var(--text-secondary)', marginRight: '8px' }}>{t.store.balance}</span>
                             <span style={{ color: 'var(--primary-color)' }}>{user?.atBalance || 0} AT</span>
                         </div>
                         
@@ -114,13 +114,13 @@ export default function StorePage() {
                             onClick={() => setIsCartOpen(true)}
                         >
                             <span style={{ fontSize: '1.2rem' }}>🛍️</span>
-                            购物车 ({cart.total_items})
+                            {t.store.cart} ({cart.total_items})
                         </button>
                     </div>
                 </div>
                 
                 {loading ? (
-                    <div className="practice-loading">加载中...</div>
+                    <div className="practice-loading">{t.store.loading}</div>
                 ) : (
                     <div className="store-product-grid">
                         {products.map(p => (
@@ -151,8 +151,8 @@ export default function StorePage() {
                                             className="store-card__button"
                                             onClick={() => handleAddToCart(p)}
                                             disabled={actionId !== null}
-                                            title={actionId === p.id ? '添加中...' : '加入购物车'}
-                                            aria-label={actionId === p.id ? '添加中...' : `加入购物车：${p.name}`}
+                                            title={actionId === p.id ? t.store.adding : t.store.addToCart}
+                                            aria-label={actionId === p.id ? t.store.adding : `${t.store.addToCart}: ${p.name}`}
                                         >
                                             {actionId === p.id ? (
                                                 <span className="store-card__button-loading">...</span>
@@ -190,26 +190,26 @@ export default function StorePage() {
                     <div className="store-cart-modal receipt receipt--cart-shell" onClick={e => e.stopPropagation()}>
                         
                         <div className="store-cart-header">
-                            <h2 className="store-cart-title">🛍️ 购物车</h2>
+                            <h2 className="store-cart-title">{t.store.cartTitle}</h2>
                             <button className="store-cart-close" onClick={() => setIsCartOpen(false)}>✕</button>
                         </div>
-                        
+
                         <div className="store-cart-body">
-                            <div className="shop-name">aIELTS STORE</div>
-                            <div className="info">{new Date().toLocaleDateString('zh-CN')} · 购物车 {cart.total_items} 件商品</div>
+                            <div className="shop-name">{t.store.storeName}</div>
+                            <div className="info">{new Date().toLocaleDateString('zh-CN')} · {t.store.cartInfo.replace('{n}', String(cart.total_items))}</div>
 
                             {cart.items.length === 0 ? (
-                                <div className="store-cart-empty">购物车空空如也</div>
+                                <div className="store-cart-empty">{t.store.cartEmpty}</div>
                             ) : (
                                 <>
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>商品</th>
-                                                <th>数量</th>
-                                                <th>单价</th>
-                                                <th>小计</th>
-                                                <th>操作</th>
+                                                <th>{t.store.colProduct}</th>
+                                                <th>{t.store.colQuantity}</th>
+                                                <th>{t.store.colPrice}</th>
+                                                <th>{t.store.colSubtotal}</th>
+                                                <th>{t.store.colAction}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -223,7 +223,7 @@ export default function StorePage() {
                                                                 <button
                                                                     className="receipt-qty-btn"
                                                                     onClick={() => handleUpdateQuantity(item.product_id, -1)}
-                                                                    title="减少"
+                                                                    title={t.store.btnDecrease}
                                                                 >
                                                                     −
                                                                 </button>
@@ -231,7 +231,7 @@ export default function StorePage() {
                                                                 <button
                                                                     className="receipt-qty-btn"
                                                                     onClick={() => handleUpdateQuantity(item.product_id, 1)}
-                                                                    title="增加"
+                                                                    title={t.store.btnIncrease}
                                                                 >
                                                                     +
                                                                 </button>
@@ -243,9 +243,9 @@ export default function StorePage() {
                                                             <button
                                                                 className="receipt-delete-btn"
                                                                 onClick={() => handleRemoveAll(item.product_id)}
-                                                                title="移除该项"
+                                                                title={t.store.btnRemoveItem}
                                                             >
-                                                                删除
+                                                                {t.store.btnDelete}
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -255,7 +255,7 @@ export default function StorePage() {
                                     </table>
 
                                     <div className="total">
-                                        <span>总计</span>
+                                        <span>{t.store.total}</span>
                                         <span>¥ {cart.total_cny}</span>
                                     </div>
 
@@ -263,23 +263,23 @@ export default function StorePage() {
                                         <div className="barcode-lines" />
                                     </div>
 
-                                    <div className="thanks">Thank you for shopping at aIELTS</div>
+                                    <div className="thanks">{t.store.thanks}</div>
                                 </>
                             )}
                         </div>
                         
                         <div className="store-cart-footer">
                             <div>
-                                <span className="store-cart-footer-total-label">总计:</span>
+                                <span className="store-cart-footer-total-label">{t.store.totalLabel}</span>
                                 <span className="store-cart-footer-total-value">¥ {cart.total_cny}</span>
                             </div>
-                            <button 
+                            <button
                                 className="practice-btn"
                                 style={{ margin: 0, minWidth: '150px', background: 'var(--primary-color)' }}
                                 onClick={handleCheckout}
                                 disabled={cart.items.length === 0}
                             >
-                                {user?.is_staff ? '结算 (全单免费)' : '去支付'}
+                                {user?.is_staff ? t.store.checkoutFree : t.store.checkoutPay}
                             </button>
                         </div>
                         

@@ -73,7 +73,17 @@ export const authApi = {
         await apiClient.delete('/auth/delete-account');
     },
 
-    updateSettings: async (settings: { 
+    resetPassword: async (identifier: string, newPassword: string): Promise<{ message: string }> => {
+        const response = await apiClient.post('/auth/reset-password', { identifier, new_password: newPassword });
+        return response.data;
+    },
+
+    changeUsername: async (newUsername: string): Promise<{ message: string; username: string; at_balance: number }> => {
+        const response = await apiClient.post('/auth/change-username', { new_username: newUsername });
+        return response.data;
+    },
+
+    updateSettings: async (settings: {
         ai_generation_retry_count?: number;
         target_vocab_name?: string;
         language_preference?: string;

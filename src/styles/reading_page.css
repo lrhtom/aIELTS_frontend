@@ -24,23 +24,24 @@
     margin-top: 20px;
 }
 
-textarea {
+.reading-container textarea {
     width: 100%;
     height: 300px;
     padding: 15px;
     font-size: 16px;
     line-height: 1.6;
-    border: 1px solid #dcdde1;
-    border-radius: 8px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius);
     resize: vertical;
     transition: border-color 0.3s, box-shadow 0.3s;
     box-sizing: border-box;
+    background: var(--color-surface);
 }
 
-textarea:focus {
-    border-color: #3498db;
+.reading-container textarea:focus {
+    border-color: var(--color-primary);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
 }
 
 /* Toolbar Fixed at Top */
@@ -48,10 +49,10 @@ textarea:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
+    background: var(--color-surface);
     padding: 12px 20px;
     border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
     margin-bottom: 15px;
     flex-shrink: 0;
     z-index: 100;
@@ -209,7 +210,7 @@ textarea:focus {
 .reading-sidebar {
     width: 0;
     padding: 0;
-    background: #f8f9fa;
+    background: var(--color-bg-alt);
     overflow-y: auto;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
     white-space: nowrap;
@@ -231,7 +232,7 @@ textarea:focus {
     line-height: 1.8;
     font-size: 17px;
     overflow-y: auto;
-    color: #2c3e50;
+    color: var(--color-text);
 }
 
 /* Custom Scrollbars for reading areas */
@@ -321,8 +322,8 @@ textarea:focus {
 
 #vocabSearch:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
 }
 
 /* Highlighting & Underlining */
@@ -411,7 +412,7 @@ textarea:focus {
 .question-text {
     font-weight: 600;
     margin-bottom: 15px;
-    color: #2c3e50;
+    color: var(--color-text);
     line-height: 1.5;
 }
 
@@ -432,14 +433,14 @@ textarea:focus {
 }
 
 .option-label:has(input:checked) {
-    background: #ebf5fb;
-    border: 1px solid #a9cce3;
-    color: #2980b9;
+    background: rgba(13, 148, 136, 0.06);
+    border: 1px solid rgba(13, 148, 136, 0.25);
+    color: var(--color-primary);
 }
 
 .option-label input[type="radio"] {
     flex-shrink: 0;
-    accent-color: #3498db;
+    accent-color: var(--color-primary);
     transform: scale(1.1);
 }
 
@@ -473,7 +474,7 @@ textarea:focus {
 .results-header h1 {
     font-size: 22px;
     margin: 0;
-    color: #2c3e50;
+    color: var(--color-text);
 }
 
 .results-header-left {
@@ -569,7 +570,7 @@ textarea:focus {
 
 .passage-sidebar h4 {
     font-size: 17px;
-    color: #2c3e50;
+    color: var(--color-text);
     margin-bottom: 16px;
     line-height: 1.4;
 }
@@ -577,7 +578,7 @@ textarea:focus {
 .passage-text {
     font-size: 15px;
     line-height: 1.8;
-    color: #34495e;
+    color: var(--color-text);
 }
 
 .passage-text p {
@@ -644,11 +645,11 @@ textarea:focus {
 .explanation {
     margin-top: 15px;
     padding: 15px;
-    background: #f8f9fa;
-    border-left: 4px solid #3498db;
+    background: var(--color-bg-alt);
+    border-left: 4px solid var(--color-primary);
     border-radius: 0 6px 6px 0;
     line-height: 1.6;
-    color: #34495e;
+    color: var(--color-text);
 }
 
 /* Loader */
@@ -657,7 +658,7 @@ textarea:focus {
     margin-top: 50px;
     font-size: 18px;
     font-weight: 500;
-    color: #3498db;
+    color: var(--color-primary);
     animation: pulse 1.5s infinite ease-in-out;
 }
 

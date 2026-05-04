@@ -1,0 +1,45 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   记忆卡配置页样式
+   依赖 practice_page.css 中的 .config-page-wrap / .config-card / .toggle-row 等
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 统计徽章 ──────────────────────────────────────────────────── */
+.fc-stats-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.fc-stat-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.fc-stat-badge.badge-due     { border-color: #fbbf24; background: #fffbeb; color: #b45309; }
+.fc-stat-badge.badge-new     { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
+.fc-stat-badge.badge-total   { border-color: var(--color-border); background: var(--color-bg); }
+
+/* ── 进度条 ──────────────────────────────────────────────────────── */
+.fc-progress-bar {
+    height: 5px;
+    background: var(--color-border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.fc-progress-fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 99px;
+    transition: width 0.35s ease;
+}

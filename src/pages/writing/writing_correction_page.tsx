@@ -1,30 +1,17 @@
 import Layout from '../../components/layout/Layout';
 import { useState, useMemo, useRef, type ChangeEvent, type DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AiModelSelector from '../../components/common/AiModelSelector';
+import AiModelSelector, { type AIProvider } from '../../components/common/AiModelSelector';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
-
-type AIProvider = 'deepseek' | 'gemini' | 'gpt5';
+import { type WritingTaskType, type CorrectionResponse } from '../../types/writing_page';
 
 const TASK1_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const TASK1_IMAGE_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
-
-interface CorrectionResponse {
-    Task_Response: number;
-    Coherence_Cohesion: number;
-    Lexical_Resource: number;
-    Grammatical_Range: number;
-    Overall_Band: number;
-    word_count?: number;
-    Feedback?: string;
-    feedback?: string;
-    Model_Essay?: string;
-}
 
 export default function WritingCorrectionPage() {
     const navigate = useNavigate();
@@ -33,7 +20,7 @@ export default function WritingCorrectionPage() {
 
     const [text, setText] = useState('');
     const [promptText, setPromptText] = useState('');
-    const [taskType, setTaskType] = useState<'task1' | 'task2'>('task2');
+    const [taskType, setTaskType] = useState<WritingTaskType>('task2');
     const [isEvaluating, setIsEvaluating] = useState(false);
     const [result, setResult] = useState<CorrectionResponse | null>(null);
     const [copied, setCopied] = useState(false);
@@ -47,7 +34,7 @@ export default function WritingCorrectionPage() {
     const task1ImageInputRef = useRef<HTMLInputElement | null>(null);
 
     const minWords = taskType === 'task1' ? 150 : 250;
-    const supportsTask1ImageRecognition = provider === 'gpt5';
+    const supportsTask1ImageRecognition = provider.startsWith('gpt5');
     const showTask1ImageUpload = taskType === 'task1' && supportsTask1ImageRecognition;
 
     const wordCount = useMemo(() => {

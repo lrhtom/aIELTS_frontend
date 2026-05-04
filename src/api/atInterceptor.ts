@@ -87,11 +87,48 @@ export class ATInterceptor {
         );
     }
 
+    static async generateRandomScenario(params?: Record<string, number>) {
+        return this.intercept('speaking', () =>
+            apiClient.post<{ scenario: string, atConsumed?: number }>('/speaking/scenario/random'),
+            params
+        );
+    }
+
     static async scenarioChat(scenario: string, messages: Array<Record<string, unknown>>, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
             apiClient.post<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number, is_continue: number, atConsumed?: number }>('/speaking/scenario-chat', { scenario, messages }),
             params
         );
+    }
+
+    static async scenarioChatWithFiles(scenario: string, messages: Array<Record<string, unknown>>, files: File[], params?: Record<string, number>) {
+        return this.intercept('speaking', () => {
+            const formData = new FormData();
+            formData.append('scenario', scenario);
+            formData.append('messages', JSON.stringify(messages));
+            files.forEach(f => formData.append('files', f));
+            return apiClient.post<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number, is_continue: number, corrected_text: string, atConsumed?: number }>(
+                '/speaking/scenario-chat',
+                formData,
+                { headers: { 'Content-Type': undefined as unknown as string } }
+            );
+        }, params);
+    }
+
+    static async scenarioOpening(scenario: string, files: File[], params?: Record<string, number>) {
+        return this.intercept('speaking', () => {
+            if (files.length === 0) {
+                return apiClient.post<{ opening: string, atConsumed?: number }>('/speaking/scenario-opening', { scenario });
+            }
+            const formData = new FormData();
+            formData.append('scenario', scenario);
+            files.forEach(f => formData.append('files', f));
+            return apiClient.post<{ opening: string, atConsumed?: number }>(
+                '/speaking/scenario-opening',
+                formData,
+                { headers: { 'Content-Type': undefined as unknown as string } }
+            );
+        }, params);
     }
 
     static async generatePart1(params?: Record<string, number>) {
@@ -101,9 +138,9 @@ export class ATInterceptor {
         );
     }
 
-    static async evaluatePart1(question: string, user_answer: string, duration_seconds: number, params?: Record<string, number>) {
+    static async evaluatePart1(question: string, user_answer: string, duration_seconds: number, next_question_plan?: {topic: string, question: string}, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
-            apiClient.post<{ grammar_score: number, vocab_score: number, relevance_score: number, are_a_score: number, are_r_score: number, are_e_score: number, are_feedback: string, corrected_text: string, length_feedback: string, word_count: number, duration_seconds: number, weighted_total_score: number, final_multiplier: number, atConsumed?: number }>('/speaking/part1/evaluate', { question, user_answer, duration_seconds }),
+            apiClient.post<{ grammar_score: number, vocab_score: number, relevance_score: number, are_a_score: number, are_r_score: number, are_e_score: number, are_feedback: string, corrected_text: string, length_feedback: string, word_count: number, duration_seconds: number, weighted_total_score: number, final_multiplier: number, next_question_dynamic?: string, atConsumed?: number }>('/speaking/part1/evaluate', { question, user_answer, duration_seconds, next_question_plan }),
             params
         );
     }
@@ -150,9 +187,9 @@ export class ATInterceptor {
         );
     }
 
-    static async generatePart3(params?: Record<string, number>) {
+    static async generatePart3(part2_topic?: string, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
-            apiClient.post<{ questions: Array<{topic: string, question: string}>, atConsumed?: number }>('/speaking/part3/generate'),
+            apiClient.post<{ questions: Array<{topic: string, question: string}>, atConsumed?: number }>('/speaking/part3/generate', { part2_topic }),
             params
         );
     }
@@ -181,6 +218,28 @@ export class ATInterceptor {
     static async summaryPart3(history: Array<any>, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
             apiClient.post<{ overall_band_estimate: number, strengths: string, weaknesses: string, analysis: string, advice: string, atConsumed?: number }>('/speaking/part3/summary', { history }),
+            params
+        );
+    }
+
+    // ── Question-bank endpoints (zero AT cost) ──
+    static async bankGeneratePart1(params?: Record<string, number>) {
+        return this.intercept('speaking_bank', () =>
+            apiClient.post<{ questions: Array<{topic: string, question: string}>, bank_topics: string[], source: string }>('/speaking/bank/part1/generate'),
+            params
+        );
+    }
+
+    static async bankGeneratePart2(params?: Record<string, number>) {
+        return this.intercept('speaking_bank', () =>
+            apiClient.post<{ questions: Array<{topic: string, question: string}>, bank_topic: string, source: string }>('/speaking/bank/part2/generate'),
+            params
+        );
+    }
+
+    static async bankGeneratePart3(part2_topic: string, params?: Record<string, number>) {
+        return this.intercept('speaking_bank', () =>
+            apiClient.post<{ questions: Array<{topic: string, question: string}>, bank_topic: string, source: string }>('/speaking/bank/part3/generate', { part2_topic }),
             params
         );
     }

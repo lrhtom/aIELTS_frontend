@@ -5,7 +5,7 @@ import VocabInput from '../../components/VocabInput';
 import { showToast } from '../../components/common/Toast';
 import { syncVocab, type VocabCard, type VocabStats } from '../../api/vocab';
 import '../../styles/practice_page.css';
-import '../../styles/vocabulary_flashcard.css';
+import '../../styles/vocabulary_flashcard_config.css';
 
 /* ── 解析输入 ─────────────────────────────────────────────────────────────── */
 interface VocabEntry { en: string; zh: string }

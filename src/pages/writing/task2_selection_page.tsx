@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
+import { clearTask2Session } from '../../utils/writing_session';
 import '../../styles/practice_page.css';
 
 type Task2TopicCategory =
@@ -27,18 +28,6 @@ export default function Task2SelectionPage() {
 
     const [selectedType, setSelectedType] = useState<string | null>(null);
     const [selectedTopicCategory, setSelectedTopicCategory] = useState<Task2TopicCategory>('all');
-
-    const clearTask2Session = (taskType: string) => {
-        const prefix = `writing_task2_session_${taskType}`;
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < sessionStorage.length; i += 1) {
-            const key = sessionStorage.key(i);
-            if (key && key.startsWith(prefix)) {
-                keysToRemove.push(key);
-            }
-        }
-        keysToRemove.forEach(key => sessionStorage.removeItem(key));
-    };
 
     const taskTypes = [
         { id: 'opinion', nameZh: t.task2Selection.types.opinion.title, nameEn: t.task2Selection.types.opinion.nameEn, icon: '⚖️', desc: t.task2Selection.types.opinion.desc },

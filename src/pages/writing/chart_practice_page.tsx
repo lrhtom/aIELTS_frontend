@@ -5,11 +5,10 @@ import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
+import { type WritingStep } from '../../types/writing_page';
 import MermaidChart from '../../components/MermaidChart';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
-
-type Step = 'loading' | 'answering' | 'settlement' | 'evaluating' | 'result';
 
 interface ChartData {
     imageUrl: string | null;
@@ -57,7 +56,7 @@ export default function ChartPracticePage() {
     const isMapType = type === 'map';
     const cacheKey = `writing_task1_chart_session_${type}`;
 
-    const [step, setStep] = useState<Step>('loading');
+    const [step, setStep] = useState<WritingStep>('loading');
     const [chartData, setChartData] = useState<ChartData | null>(null);
     const [userAnswer, setUserAnswer] = useState('');
     const [result, setResult] = useState<EvaluationResult | null>(null);
@@ -74,7 +73,7 @@ export default function ChartPracticePage() {
 
         try {
             const parsed = JSON.parse(cached) as {
-                step: Step;
+                step: WritingStep;
                 chartData: ChartData | null;
                 userAnswer: string;
                 result: EvaluationResult | null;
@@ -107,7 +106,7 @@ export default function ChartPracticePage() {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
             try {
-                const parsed = JSON.parse(cached) as { step: Step; chartData: ChartData | null };
+                const parsed = JSON.parse(cached) as { step: WritingStep; chartData: ChartData | null };
                 if (parsed.chartData && parsed.step !== 'loading') {
                     return;
                 }

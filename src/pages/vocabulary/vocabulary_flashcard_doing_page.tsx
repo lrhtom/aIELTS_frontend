@@ -1,4 +1,6 @@
 import Layout from '../../components/layout/Layout';
+import '../../styles/practice_page.css';
+import '../../styles/vocabulary_flashcard.css';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { submitReview, type VocabCard } from '../../api/vocab';
@@ -12,134 +14,28 @@ import {
 import { useLang } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { showToast } from '../../components/common/Toast';
-import '../../styles/practice_page.css';
-import '../../styles/vocabulary_flashcard.css';
-
-/* ── Types ───────────────────────────────────────────────────────────────── */
-
-type Step = 'doing' | 'result';
-type StudyMode = 'flashcard' | 'choice' | 'write' | 'copy';
-type MasterySetting = 'auto' | number;
-
-interface CopyPendingAction {
-    cardIndex: number;
-    remainingAfterSubmit: number;
-    completed: boolean;
-    dueAt: string;
-    scheduledDays: number;
-}
-
-interface ReviewResult {
-    word:          string;
-    zh:            string;
-    rating:        number;
-    newDue:        string;
-    scheduledDays: number;
-}
-
-/* ── 工具函数 ─────────────────────────────────────────────────────────────── */
-
-/* ── 组件 ─────────────────────────────────────────────────────────────────── */
-
-function speak(word: string) {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(word);
-    u.lang = 'en-US';
-    window.speechSynthesis.speak(u);
-}
-
-/* ── 组件 ─────────────────────────────────────────────────────────────────── */
-
-const SESSION_KEY = 'vocab_flashcard_session';
-const SESSION_KEY_PREFIX = 'vocab_flashcard_session_plan_';
-const SESSION_KEY_USER_PREFIX = `${SESSION_KEY}_user_`;
-const LIUHONGBO_BOOK_KEYWORDS = ['刘洪波', '雅思真经', 'liuhongbo', 'zhenjing'];
-const LEARNING_TIMER_PENDING_KEY = 'vocab_learning_timer_pending_seconds';
-
-function normalizeSessionScope(value?: string | null): string | null {
-    const raw = String(value ?? '').trim();
-    if (!raw) return null;
-    return raw.replace(/[^a-zA-Z0-9_-]/g, '_');
-}
-
-function getSessionKeyByPlanId(planId?: number | null, userScope?: string | null): string {
-    const normalizedUser = normalizeSessionScope(userScope);
-    if (typeof planId === 'number' && planId > 0) {
-        const base = `${SESSION_KEY_PREFIX}${planId}`;
-        return normalizedUser ? `${base}_user_${normalizedUser}` : base;
-    }
-    if (normalizedUser) {
-        return `${SESSION_KEY_USER_PREFIX}${normalizedUser}`;
-    }
-    return SESSION_KEY;
-}
-
-function getSessionKeyCandidates(planId?: number | null, userScope?: string | null): string[] {
-    const keys: string[] = [getSessionKeyByPlanId(planId, userScope)];
-    if (typeof planId === 'number' && planId > 0) {
-        keys.push(`${SESSION_KEY_PREFIX}${planId}`);
-        keys.push(SESSION_KEY);
-    } else {
-        keys.push(SESSION_KEY);
-    }
-    return Array.from(new Set(keys));
-}
-
-function clampCopyRepetitions(value: number): number {
-    return Math.min(20, Math.max(1, Number.isFinite(value) ? Math.floor(value) : 3));
-}
-
-function clampCopyReviewDays(value: number): number {
-    return Math.min(365, Math.max(0, Number.isFinite(value) ? Math.floor(value) : 2));
-}
-
-function readPendingLearningSeconds(): number {
-    try {
-        const raw = localStorage.getItem(LEARNING_TIMER_PENDING_KEY);
-        if (!raw) return 0;
-        const parsed = parseInt(raw, 10);
-        return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-    } catch {
-        return 0;
-    }
-}
-
-function writePendingLearningSeconds(seconds: number): void {
-    const safeSeconds = Math.max(0, Math.floor(seconds));
-    if (safeSeconds <= 0) return;
-    const current = readPendingLearningSeconds();
-    localStorage.setItem(LEARNING_TIMER_PENDING_KEY, String(current + safeSeconds));
-}
-
-function clearPendingLearningSeconds(): void {
-    localStorage.removeItem(LEARNING_TIMER_PENDING_KEY);
-}
-
-function shuffleArray<T>(arr: T[]): T[] {
-    const next = [...arr];
-    for (let i = next.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [next[i], next[j]] = [next[j], next[i]];
-    }
-    return next;
-}
-
-function pickUniqueZh(
-    source: string[],
-    exclude: Set<string>,
-    count: number,
-): string[] {
-    if (count <= 0) return [];
-    const pool = Array.from(
-        new Set(
-            source
-                .map((item) => item.trim())
-                .filter((item) => !!item && !exclude.has(item)),
-        ),
-    );
-    return shuffleArray(pool).slice(0, count);
-}
+import FlashcardMode from '../../components/vocabulary/FlashcardMode';
+import ChoiceMode from '../../components/vocabulary/ChoiceMode';
+import WriteMode from '../../components/vocabulary/WriteMode';
+import CopyMode from '../../components/vocabulary/CopyMode';
+import {
+    type Step,
+    type StudyMode,
+    type MasterySetting,
+    type CopyPendingAction,
+    type ReviewResult,
+    type CompletionDueHint,
+    LIUHONGBO_BOOK_KEYWORDS,
+    getSessionKeyCandidates,
+    clampCopyRepetitions,
+    clampCopyReviewDays,
+    readPendingLearningSeconds,
+    writePendingLearningSeconds,
+    clearPendingLearningSeconds,
+    shuffleArray,
+    pickUniqueZh,
+} from '../../utils/vocab_flashcard_utils';
+import { speakWord } from '../../utils/speak';
 
 export default function VocabularyFlashcardDoingPage() {
     const { translations: t } = useLang();
@@ -148,13 +44,6 @@ export default function VocabularyFlashcardDoingPage() {
     const navigate  = useNavigate();
     const userSessionScope = user?.id ?? null;
     
-    const RATING_INFO = useMemo(() => [
-        { id: 1, label: t.vocab.ratings.again, cls: 'btn-again', key: '1' },
-        { id: 2, label: t.vocab.ratings.hard,  cls: 'btn-hard',  key: '2' },
-        { id: 3, label: t.vocab.ratings.good,  cls: 'btn-good',  key: '3' },
-        { id: 4, label: t.vocab.ratings.easy,  cls: 'btn-easy',  key: '4' },
-    ], [t]);
-
     const STATE_LABELS: Record<number, string> = useMemo(() => ({
         0: t.vocab.status.new, 
         1: t.vocab.status.learning, 
@@ -201,6 +90,39 @@ export default function VocabularyFlashcardDoingPage() {
         return t.vocab.intervals.daysAfter.replace('{n}', days.toString());
     }, [t]);
 
+    const formatDueDate = useCallback((isoStr: string): string => {
+        if (!isoStr) return t.vocab.intervals.toSync;
+        const date = new Date(isoStr);
+        if (Number.isNaN(date.getTime())) return t.vocab.intervals.toSync;
+        return date.toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        });
+    }, [t]);
+
+    const predictDueAtFromRating = useCallback((card: VocabCard, rating: number): string => {
+        const now = new Date();
+        const next = new Date(now);
+        const s = Number(card.stability || 0);
+
+        if (card.state === 0 || card.state === 1 || card.state === 3) {
+            const days = rating <= 3 ? 1 : Math.max(1, Math.round(s || 4));
+            next.setDate(next.getDate() + days);
+            return next.toISOString();
+        }
+
+        if (rating === 1) {
+            next.setMinutes(next.getMinutes() + 5);
+            return next.toISOString();
+        }
+
+        const factor = rating === 2 ? 0.6 : rating === 3 ? 1.0 : 1.5;
+        const days = Math.max(1, Math.round((s || 1) * factor));
+        next.setDate(next.getDate() + days);
+        return next.toISOString();
+    }, []);
+
     const nextMastery = useCallback((current: number, correct: boolean, target: number): number => {
         if (!correct) return 0;
         return Math.min(target, current + 1);
@@ -241,8 +163,32 @@ export default function VocabularyFlashcardDoingPage() {
     const [copyInput, setCopyInput] = useState('');
     const [copySubmitted, setCopySubmitted] = useState(false);
     const [copyPendingAction, setCopyPendingAction] = useState<CopyPendingAction | null>(null);
+    const [completionDueHint, setCompletionDueHint] = useState<CompletionDueHint | null>(null);
+    const [copyReviewDaysTemp, setCopyReviewDaysTemp] = useState<number[]>([]);  // 每个单词的临时天数修改
+    const [copyWordHidden, setCopyWordHidden] = useState(false);  // 用户的隐藏偏好（全局）
+    const [copyWordVisible, setCopyWordVisible] = useState(true);  // 当前单词是否显示
+    const [isPeeking, setIsPeeking] = useState(false);
     const [leaving,      setLeaving]      = useState(false);
     const [reviewOnly,   setReviewOnly]   = useState(false); // 复习模式：不提交 FSRS
+    const [autoSpeakEnabled, setAutoSpeakEnabled] = useState(() => {
+        try {
+            const cached = localStorage.getItem('vocab_auto_pronounce_enabled');
+            if (cached !== null) {
+                return cached === 'true';
+            }
+        } catch {}
+        return true;
+    });
+
+    const toggleAutoSpeak = useCallback(() => {
+        setAutoSpeakEnabled(prev => {
+            const next = !prev;
+            try {
+                localStorage.setItem('vocab_auto_pronounce_enabled', String(next));
+            } catch {}
+            return next;
+        });
+    }, []);
 
     // 4选1
     const [choices,        setChoices]        = useState<Array<{ zh: string; correct: boolean }>>([]);
@@ -378,9 +324,12 @@ export default function VocabularyFlashcardDoingPage() {
         setCopyRepetitions(fallbackCopyRepetitions);
         setCopyReviewDays(fallbackCopyReviewDays);
         setCopyRemaining(new Array(n).fill(fallbackCopyRepetitions));
+        setCopyReviewDaysTemp(new Array(n).fill(fallbackCopyReviewDays));  // 初始化每个单词的临时天数
         setCopyInput('');
         setCopySubmitted(false);
         setCopyPendingAction(null);
+        setCopyWordHidden(false);  // 初始化隐藏偏好为显示
+        setCopyWordVisible(true);  // 初始化单词可见性为显示
         setGraduatedCount(0);
         if (state.planId)   setPlanId(state.planId);
         if (state.planName) setPlanName(state.planName);
@@ -500,16 +449,18 @@ export default function VocabularyFlashcardDoingPage() {
         setCopyInput('');
         setCopySubmitted(false);
         setCopyPendingAction(null);
+        setCompletionDueHint(null);
+        setCopyWordVisible(!copyWordHidden);  // 根据隐藏偏好重置显示状态
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visitKey]);
 
     /* 每张新卡自动播放一次单词读音（所有模式）
      * setTimeout 解决 Chrome cancel/speak 竞争：cancel() 后立即 speak() 会被吞掉 */
     useEffect(() => {
-        if (!initialized || queue.length === 0) return;
+        if (!initialized || queue.length === 0 || !autoSpeakEnabled) return;
         const word = cards[queue[0]]?.word;
         if (!word) return;
-        const timer = setTimeout(() => speak(word), 150);
+        const timer = setTimeout(() => speakWord(word), 150);
         return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visitKey]);
@@ -674,6 +625,10 @@ export default function VocabularyFlashcardDoingPage() {
                 scheduledDays: updatedCard.scheduled_days,
             }]);
             setGraduatedCount(g => g + 1);
+            setCompletionDueHint({
+                word: updatedCard.word,
+                dueAt: updatedCard.due,
+            });
         }
 
         setSessionMastery(prev => { const a = [...prev]; a[ci] = newMastery; return a; });
@@ -824,7 +779,27 @@ export default function VocabularyFlashcardDoingPage() {
         setChoiceSelected(idx);
         setChoiceCorrect(opt.correct);
         setLastRating(opt.correct ? 3 : 1);
-    }, [choiceSelected, submitting]);
+
+        // 仅在“本次作答已达到毕业条件”时显示下次学习提示
+        if (opt.correct && currentCard && currentCardIdx >= 0) {
+            const curMastery = sessionMastery[currentCardIdx] ?? 0;
+            const outcome = buildAutoOutcome(true, curMastery, currentCardIdx, 'choice');
+            if (outcome.graduate) {
+                setCompletionDueHint({
+                    word: currentCard.word,
+                    dueAt: predictDueAtFromRating(currentCard, outcome.fsrsRating),
+                });
+            }
+        }
+    }, [
+        choiceSelected,
+        submitting,
+        currentCard,
+        currentCardIdx,
+        sessionMastery,
+        buildAutoOutcome,
+        predictDueAtFromRating,
+    ]);
 
     /* 4选1 点击"不会" */
     const handleChoiceUnknown = useCallback(() => {
@@ -864,10 +839,33 @@ export default function VocabularyFlashcardDoingPage() {
             setWriteCorrect(false);
             setWriteSubmitted(true);
         } else {
-            setWriteCorrect(input === target);
+            const isCorrect = input === target;
+            setWriteCorrect(isCorrect);
             setWriteSubmitted(true);
+
+            // 仅在“本次提交已达到毕业条件”时显示下次学习提示
+            if (isCorrect && currentCardIdx >= 0) {
+                const curMastery = sessionMastery[currentCardIdx] ?? 0;
+                const outcome = buildAutoOutcome(true, curMastery, currentCardIdx, 'write');
+                if (outcome.graduate) {
+                    setCompletionDueHint({
+                        word: currentCard.word,
+                        dueAt: predictDueAtFromRating(currentCard, outcome.fsrsRating),
+                    });
+                }
+            }
         }
-    }, [writeSubmitted, submitting, writeInput, currentCard, unknownMode]);
+    }, [
+        writeSubmitted,
+        submitting,
+        writeInput,
+        currentCard,
+        unknownMode,
+        currentCardIdx,
+        sessionMastery,
+        buildAutoOutcome,
+        predictDueAtFromRating,
+    ]);
 
     const handleWriteNext = useCallback(async () => {
         if (!writeSubmitted || submitting || writeCorrect === null) return;
@@ -886,7 +884,7 @@ export default function VocabularyFlashcardDoingPage() {
 
     /* 快速自评 */
     const handleQuickAssess = useCallback((correct: boolean) => {
-        if (writeSubmitted || submitting) return;
+        if (writeSubmitted || submitting || !currentCard) return;
         if (!correct) {
             // 不会：展示单词，进入抄写流程
             setUnknownMode(true);
@@ -895,8 +893,12 @@ export default function VocabularyFlashcardDoingPage() {
             setQuickProficient(true);
             setWriteCorrect(true);
             setWriteSubmitted(true);
+            setCompletionDueHint({
+                word: currentCard.word,
+                dueAt: predictDueAtFromRating(currentCard, 4),
+            });
         }
-    }, [writeSubmitted, submitting]);
+    }, [writeSubmitted, submitting, currentCard, predictDueAtFromRating]);
 
     /* 撤销：回到初始写题状态（不会/熟练选择页） */
     const handleWriteUndo = useCallback(() => {
@@ -936,6 +938,9 @@ export default function VocabularyFlashcardDoingPage() {
         const remainingAfterSubmit = Math.max(0, currentRemaining - 1);
         let dueAt = currentCard.due;
         let scheduledDays = currentCard.scheduled_days ?? 0;
+        
+        // 获取用户为这个单词修改的天数（如果没改就用全局默认值）
+        const reviewDaysForThisWord = copyReviewDaysTemp[currentCardIdx] ?? copyReviewDays;
 
         if (remainingAfterSubmit === 0) {
             if (!planId || !currentCard.entry_id) {
@@ -945,9 +950,9 @@ export default function VocabularyFlashcardDoingPage() {
 
             setSubmitting(true);
             try {
-                const expectedScheduledDays = Math.max(0, Number(currentCard.scheduled_days ?? 0)) + copyReviewDays;
+                const expectedScheduledDays = reviewDaysForThisWord;
                 const { entry } = await updatePlanWord(planId, currentCard.entry_id, {
-                    increment_review_days: copyReviewDays,
+                    next_review_days: reviewDaysForThisWord,
                     mark_reviewed: true,
                 });
                 dueAt = entry.fsrs_due ?? buildDueAtFromDays(expectedScheduledDays);
@@ -984,6 +989,19 @@ export default function VocabularyFlashcardDoingPage() {
             dueAt,
             scheduledDays,
         });
+
+        // 抄写模式在“本词完成”瞬间即显示下次学习提示
+        if (remainingAfterSubmit === 0) {
+            setCompletionDueHint({
+                word: currentCard.word,
+                dueAt,
+            });
+        }
+
+        // 如果单词处于隐藏状态，提交后临时显示
+        if (copyWordHidden) {
+            setCopyWordVisible(true);
+        }
         setCopySubmitted(true);
     }, [
         submitting,
@@ -995,6 +1013,8 @@ export default function VocabularyFlashcardDoingPage() {
         copyRepetitions,
         planId,
         copyReviewDays,
+        copyReviewDaysTemp,
+        copyWordHidden,
         buildDueAtFromDays,
     ]);
 
@@ -1022,6 +1042,10 @@ export default function VocabularyFlashcardDoingPage() {
                         scheduledDays,
                     },
                 ]);
+                setCompletionDueHint({
+                    word: card.word,
+                    dueAt,
+                });
             }
             setGraduatedCount((g) => g + 1);
         }
@@ -1038,6 +1062,15 @@ export default function VocabularyFlashcardDoingPage() {
         setVisitKey((k) => k + 1);
     }, [submitting, copySubmitted, copyPendingAction, cards, reinsertAfterGap]);
 
+    const toggleCopyWordHiddenPreference = useCallback(() => {
+        const newHidden = !copyWordHidden;
+        setCopyWordHidden(newHidden);
+        // 提交后可能处于“临时显示”状态，这里不覆盖它。
+        if (!copySubmitted) {
+            setCopyWordVisible(!newHidden);
+        }
+    }, [copyWordHidden, copySubmitted]);
+
     /* 键盘快捷键（仅记忆卡模式） */
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -1047,7 +1080,9 @@ export default function VocabularyFlashcardDoingPage() {
             switch (e.code) {
                 case 'Space':
                     e.preventDefault();
+                    setIsFlipping(true);
                     setIsFlipped(f => !f);
+                    setTimeout(() => setIsFlipping(false), 350);
                     break;
                 case 'Digit1': case 'Numpad1': if (isFlipped) handleFlashcardRating(1); break;
                 case 'Digit2': case 'Numpad2': if (isFlipped) handleFlashcardRating(2); break;
@@ -1077,6 +1112,8 @@ export default function VocabularyFlashcardDoingPage() {
         return () => window.removeEventListener('keydown', handler);
     }, [step, submitting, mode, writeSubmitted, unknownMode, writeInput, handleQuickAssess]);
 
+
+
     /* 再来一轮 */
     const handleRetry = () => {
         const n = cards.length;
@@ -1084,9 +1121,11 @@ export default function VocabularyFlashcardDoingPage() {
         setSessionMastery(new Array(n).fill(0));
         setSessionForgot(new Array(n).fill(false));
         setCopyRemaining(new Array(n).fill(copyRepetitions));
+        setCopyReviewDaysTemp(new Array(n).fill(copyReviewDays));  // 重置临时天数
         setCopyInput('');
         setCopySubmitted(false);
         setCopyPendingAction(null);
+        setCopyWordVisible(!copyWordHidden);  // 根据隐藏偏好重置显示状态
         setGraduatedCount(0);
         setStep('doing');
         setResults([]);
@@ -1252,6 +1291,19 @@ export default function VocabularyFlashcardDoingPage() {
                         </span>
                     </span>
                     <div className="fc-header-right">
+                        <button
+                            onClick={toggleAutoSpeak}
+                            title={autoSpeakEnabled ? "点击关闭自动发音" : "点击开启自动发音"}
+                            style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                fontSize: '13px', padding: '2px 6px',
+                                display: 'flex', alignItems: 'center', gap: '4px',
+                                color: 'var(--color-text-secondary)',
+                                borderRadius: '6px'
+                            }}
+                        >
+                            {autoSpeakEnabled ? '🔊 自动发音开' : '🔇 自动发音关'}
+                        </button>
                         <span className="fc-learning-timer" title="今日学习时长（跨计划共享）">
                             今日时长 {todayLearningDuration}
                         </span>
@@ -1266,459 +1318,101 @@ export default function VocabularyFlashcardDoingPage() {
                     <div className="fc-progress-fill" style={{ width: `${progress}%` }} />
                 </div>
 
+
                 {/* ══ 记忆卡模式 ══ */}
                 {mode === 'flashcard' && (
-                    <>
-                        <div
-                            className="fc-scene"
-                            onClick={() => !submitting && setIsFlipped(f => !f)}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={e => {
-                                if (e.code === 'Space') { e.preventDefault(); setIsFlipped(f => !f); }
-                            }}
-                            aria-label={isFlipped ? '点击翻回正面' : '点击翻转查看释义'}
-                        >
-                            <div
-                                className={`fc-card ${isFlipped ? 'is-flipped' : ''} ${isFlipping ? 'is-flipping' : ''} ${statusCls}`}
-                                onTransitionStart={(e) => { if (e.propertyName === 'transform') setIsFlipping(true); }}
-                                onTransitionEnd={(e) => { if (e.propertyName === 'transform') setIsFlipping(false); }}
-                            >
-                                {/* 正面 */}
-                                <div className="fc-face">
-                                    <button
-                                        className="fc-speak-btn"
-                                        onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                                        title="朗读"
-                                    >🔊</button>
-                                    <div className="fc-word">{currentCard.word}</div>
-                                    {currentCard.phonetic && (
-                                        <div className="fc-phonetic" style={{ marginTop: 6 }}>
-                                            {currentCard.phonetic}
-                                        </div>
-                                    )}
-                                    {currentCard.reps > 0 && (
-                                        <div className="fc-reps-badge">
-                                            {t.vocab.repsDone.replace('{n}', currentCard.reps.toString())}
-                                            {currentCard.lapses > 0 && ` · ${t.vocab.lapsesCount.replace('{n}', currentCard.lapses.toString())}`}
-                                        </div>
-                                    )}
-                                    <div className="fc-tap-hint">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                                            <path d="M12 5v14M5 12l7 7 7-7" />
-                                        </svg>
-                                        {t.vocab.tapToFlip}
-                                    </div>
-                                </div>
-
-                                {/* 背面 */}
-                                <div className="fc-face fc-face--back">
-                                    <div className="fc-back-word">
-                                        {currentCard.word}
-                                        <button
-                                            className="fc-speak-btn fc-speak-btn--inline"
-                                            onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                                            title="朗读"
-                                        >🔊</button>
-                                    </div>
-                                    {currentCard.phonetic && (
-                                        <div className="fc-phonetic">{currentCard.phonetic}</div>
-                                    )}
-                                    <div className="fc-meaning">{currentCard.zh}</div>
-                                    {currentCard.grammar && (
-                                        <div className="fc-grammar">{currentCard.grammar}</div>
-                                    )}
-                                    {currentCard.definitions && currentCard.definitions.length > 0 && (
-                                        <div className="fc-definitions">
-                                            {currentCard.definitions.map((d, i) => (
-                                                <div key={i} className="fc-def-item">
-                                                    {d.pos && <span className="fc-def-pos">{d.pos}</span>}
-                                                    <span className="fc-def-meaning">{d.meaning}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {currentCard.examples && currentCard.examples.length > 0 && (
-                                        <div className="fc-examples">
-                                            {currentCard.examples.map((ex, i) => (
-                                                <div key={i} className="fc-example-item">
-                                                    <div className="fc-example-en">{ex.en}</div>
-                                                    {ex.zh && <div className="fc-example-zh">{ex.zh}</div>}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                    <div className="fc-state-label">
-                                        {STATE_LABELS[currentCard.state]}
-                                        {currentCard.stability > 0 && ` · ${t.vocab.stability} ${currentCard.stability.toFixed(1)}`}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 评分按钮：只有 rating=4（容易）才推进熟练度；1/2/3 均重入队 */}
-                        <div className={`fc-rating-row${!isFlipped ? ' locked' : ''}`}>
-                            {RATING_INFO.map(info => (
-                                <button
-                                    key={info.id}
-                                    className={`fc-btn ${info.cls}`}
-                                    onClick={() => handleFlashcardRating(info.id)}
-                                    disabled={!isFlipped || submitting}
-                                >
-                                    <span className="btn-label">{info.label}</span>
-                                    <span className="btn-key">[{info.key}]</span>
-                                    <span className="btn-interval">{estimateInterval(currentCard, info.id)}</span>
-                                </button>
-                            ))}
-                        </div>
-                        <div className="fc-kb-hint">
-                            {t.vocab.ratingHint}
-                        </div>
-                    </>
+                    <FlashcardMode
+                        currentCard={currentCard}
+                        isFlipped={isFlipped}
+                        isFlipping={isFlipping}
+                        statusCls={statusCls}
+                        submitting={submitting}
+                        onFlip={() => {
+                            setIsFlipping(true);
+                            setIsFlipped(f => !f);
+                            setTimeout(() => setIsFlipping(false), 350);
+                        }}
+                        onRating={handleFlashcardRating}
+                        estimateInterval={estimateInterval}
+                    />
                 )}
 
                 {/* ══ 4选1模式 ══ */}
                 {mode === 'choice' && (
-                    <>
-                        <div className="fc-scene" style={{ cursor: 'default' }}>
-                            <div className={`fc-card ${statusCls}`} style={{ minHeight: 180 }}>
-                                <div className="fc-face">
-                                    <button
-                                        className="fc-speak-btn"
-                                        onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                                        title="朗读"
-                                    >🔊</button>
-                                    <div className="fc-word">{currentCard.word}</div>
-                                    {currentCard.phonetic && (
-                                        <div className="fc-phonetic" style={{ marginTop: 6 }}>
-                                            {currentCard.phonetic}
-                                        </div>
-                                    )}
-                                    {choiceSelected !== null && (
-                                        <div className="fc-choice-face-meaning">
-                                            {currentCard.zh}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 如果还未展开题目，显示"会/不会"选择 */}
-                        {!choiceRevealed && (
-                            <div className="fc-choice-reveal-actions">
-                                <button
-                                    className="fc-choice-know-btn"
-                                    onClick={handleChoiceKnow}
-                                    disabled={submitting}
-                                >
-                                    {t.vocab.know}
-                                </button>
-                                <button
-                                    className="fc-choice-unknown-btn"
-                                    onClick={handleChoiceUnknown}
-                                    disabled={submitting}
-                                >
-                                    {t.vocab.dontKnow}
-                                </button>
-                            </div>
-                        )}
-
-                        {/* 如果已展开题目，显示4个选项 */}
-                        {choiceRevealed && (
-                            <>
-                                <div className="fc-choices">
-                                    {choices.map((opt, idx) => {
-                                        let cls = 'fc-choice-opt';
-                                        if (choiceSelected !== null) {
-                                            if (opt.correct)                 cls += ' correct';
-                                            else if (choiceSelected === idx)  cls += ' wrong';
-                                            else                             cls += ' dimmed';
-                                        }
-                                        return (
-                                            <button
-                                                key={idx}
-                                                className={cls}
-                                                onClick={() => handleChoice(opt, idx)}
-                                                disabled={choiceSelected !== null || submitting}
-                                            >
-                                                {opt.zh}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <div className={`fc-choice-actions${choiceSelected !== null ? ' fc-choice-actions--answered' : ''}`}>
-                                    {choiceSelected === null && (
-                                        <button
-                                            className="fc-choice-hide-btn"
-                                            onClick={handleChoiceHideQuestion}
-                                            disabled={submitting}
-                                        >
-                                            {t.vocab.hide}
-                                        </button>
-                                    )}
-                                    {choiceSelected === null && (
-                                        <button
-                                            className="fc-choice-unknown"
-                                            onClick={handleChoiceUnknown}
-                                            disabled={submitting}
-                                        >
-                                            {t.vocab.dontKnow}
-                                        </button>
-                                    )}
-                                    {choiceSelected !== null && (
-                                        <>
-                                            <div className={`fc-choice-feedback ${choiceCorrect ? 'correct' : 'wrong'}`}>
-                                                {choiceCorrect ? '✅ 回答正确' : '❌ 回答错误'}
-                                            </div>
-                                            <button
-                                                className="fc-write-next"
-                                                onClick={handleChoiceNext}
-                                                disabled={submitting}
-                                            >
-                                                {t.vocab.next}
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </>
+                    <ChoiceMode
+                        currentCard={currentCard}
+                        statusCls={statusCls}
+                        submitting={submitting}
+                        choices={choices}
+                        choiceSelected={choiceSelected}
+                        choiceCorrect={choiceCorrect}
+                        choiceRevealed={choiceRevealed}
+                        completionDueHint={completionDueHint}
+                        onChoiceKnow={handleChoiceKnow}
+                        onChoiceUnknown={handleChoiceUnknown}
+                        onChoice={handleChoice}
+                        onChoiceHideQuestion={handleChoiceHideQuestion}
+                        onChoiceNext={handleChoiceNext}
+                        formatDueDate={formatDueDate}
+                    />
                 )}
 
                 {/* ══ 看中文写英文模式 ══ */}
                 {mode === 'write' && (
-                    <>
-                        <div className="fc-scene" style={{ cursor: 'default' }}>
-                            <div className={`fc-card ${statusCls}`} style={{ minHeight: 160 }}>
-                                <div className="fc-face">
-                                    <div className="fc-meaning" style={{ textAlign: 'center' }}>
-                                        {currentCard.zh}
-                                    </div>
-                                    {currentCard.grammar && (
-                                        <div className="fc-grammar" style={{ marginTop: 12 }}>
-                                            {currentCard.grammar}
-                                        </div>
-                                    )}
-                                    {/* 提示区域由掌握度控制：第一遍(0)显示全拼，第二遍(>0)显示首字母提示 */}
-                                    {!unknownMode && (sessionMastery[currentCardIdx] ?? 0) === 0 && (
-                                        <div className="fc-write-hint">
-                                            <span className="fc-write-copy-chars">
-                                                {currentCard.word}
-                                            </span>
-                                            <span className="fc-write-hint-len" style={{ marginLeft: 8 }}>
-                                                {t.vocab.charsCount.replace('{n}', currentCard.word.length.toString())}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {!unknownMode && (sessionMastery[currentCardIdx] ?? 0) > 0 && (
-                                        <div className="fc-write-hint">
-                                            <span className="fc-write-hint-chars">
-                                                {currentCard.word[0]}
-                                                {'_'.repeat(currentCard.word.length - 1)}
-                                            </span>
-                                            <span className="fc-write-hint-len" style={{ marginLeft: 8 }}>
-                                                {t.vocab.charsCount.replace('{n}', currentCard.word.length.toString())}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {/* 抄写模式：卡片内展示单词供参考 */}
-                                    {unknownMode && !writeSubmitted && (
-                                        <div className="fc-unknown-reveal">
-                                            <span className="fc-unknown-word">{currentCard.word}</span>
-                                            {currentCard.phonetic && (
-                                                <span className="fc-phonetic" style={{ marginLeft: 10 }}>
-                                                    {currentCard.phonetic}
-                                                </span>
-                                            )}
-                                            <button
-                                                className="fc-speak-btn fc-speak-btn--inline"
-                                                onClick={() => speak(currentCard.word)}
-                                                title="朗读"
-                                            >🔊</button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="fc-write-area">
-                            <div className="fc-write-input-row">
-                                <input
-                                    type="text"
-                                    className={`fc-write-input${
-                                        writeSubmitted
-                                            ? writeCorrect ? ' write-correct' : ' write-wrong'
-                                            : ''
-                                    }`}
-                                    placeholder={unknownMode ? t.vocab.copyPlaceholder : t.vocab.writePlaceholder}
-                                    value={writeInput}
-                                    onChange={e => setWriteInput(e.target.value)}
-                                    onKeyDown={e => {
-                                        // 方向键在快速自评可用时交给全局 handler，阻止浏览器 autocomplete 默认行为
-                                        if (!writeSubmitted && !unknownMode && !writeInput.trim() &&
-                                            (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-                                            e.preventDefault();
-                                            return;
-                                        }
-                                        if (e.key === 'Enter') {
-                                            if (!writeSubmitted) handleWriteSubmit();
-                                            else handleWriteNext();
-                                        }
-                                    }}
-                                    autoComplete="new-password"
-                                    readOnly={writeSubmitted}
-                                    // eslint-disable-next-line jsx-a11y/no-autofocus
-                                    autoFocus
-                                />
-                                <button
-                                    className="fc-write-submit"
-                                    onClick={handleWriteSubmit}
-                                    disabled={writeSubmitted || !writeInput.trim() || submitting}
-                                >
-                                    {t.vocab.submit} <span className="fc-qa-key">[键盘↵]</span>
-                                </button>
-                                {/* 朗读按钮始终可点击 */}
-                                <button
-                                    className="fc-speak-btn fc-speak-btn--standalone"
-                                    onClick={() => speak(currentCard.word)}
-                                    title="朗读单词"
-                                >🔊</button>
-                            </div>
-                            {/* 快速自评按钮（未提交、非抄写模式、且输入框为空时显示） */}
-                            {!writeSubmitted && !unknownMode && !writeInput.trim() && (
-                                <div className="fc-quick-assess">
-                                    <button
-                                        className="fc-qa-btn fc-qa-unknown"
-                                        onClick={() => handleQuickAssess(false)}
-                                        disabled={submitting}
-                                    >不会 <span className="fc-qa-key">[键盘↓]</span></button>
-                                    <button
-                                        className="fc-qa-btn fc-qa-proficient"
-                                        onClick={() => handleQuickAssess(true)}
-                                        disabled={submitting}
-                                    >熟练 <span className="fc-qa-key">[键盘↑]</span></button>
-                                </div>
-                            )}
-                            {/* 抄写模式下的撤销入口 */}
-                            {unknownMode && !writeSubmitted && (
-                                <button className="fc-write-undo" onClick={handleWriteUndo}>
-                                    ↩ {t.vocab.undo}
-                                </button>
-                            )}
-                            {writeSubmitted && (
-                                <div className={`fc-write-result ${writeCorrect ? 'correct' : 'wrong'}`}>
-                                    <span>
-                                        {unknownMode
-                                            ? `✓ ${t.vocab.copiedLabel}：${currentCard.word}`
-                                            : writeCorrect
-                                                ? `✓ ${t.vocab.correctLabel}：${currentCard.word}`
-                                                : `✗ ${t.vocab.wrongLabel}：${currentCard.word}`}
-                                    </span>
-                                    <button
-                                        className="fc-write-next"
-                                        onClick={handleWriteNext}
-                                        disabled={submitting}
-                                    >
-                                        {t.vocab.next} → <span className="fc-qa-key">[键盘↵]</span>
-                                    </button>
-                                    <button
-                                        className="fc-write-undo"
-                                        onClick={handleWriteUndo}
-                                        disabled={submitting}
-                                    >
-                                        ↩ {t.vocab.undo}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </>
+                    <WriteMode
+                        currentCard={currentCard}
+                        currentCardIdx={currentCardIdx}
+                        statusCls={statusCls}
+                        submitting={submitting}
+                        writeInput={writeInput}
+                        writeSubmitted={writeSubmitted}
+                        writeCorrect={writeCorrect}
+                        unknownMode={unknownMode}
+                        quickProficient={quickProficient}
+                        sessionMastery={sessionMastery}
+                        completionDueHint={completionDueHint}
+                        onWriteInput={setWriteInput}
+                        onWriteSubmit={handleWriteSubmit}
+                        onWriteNext={handleWriteNext}
+                        onQuickAssess={handleQuickAssess}
+                        onWriteUndo={handleWriteUndo}
+                        formatDueDate={formatDueDate}
+                    />
                 )}
 
                 {/* ══ 抄写模式 ══ */}
                 {mode === 'copy' && (
-                    <>
-                        <div className="fc-scene" style={{ cursor: 'default' }}>
-                            <div className={`fc-card ${statusCls}`} style={{ minHeight: 190 }}>
-                                <div className="fc-face">
-                                    <button
-                                        className="fc-speak-btn"
-                                        onClick={(e) => { e.stopPropagation(); speak(currentCard.word); }}
-                                        title="朗读"
-                                    >🔊</button>
-                                    <div className="fc-word">{currentCard.word}</div>
-                                    {currentCard.phonetic && (
-                                        <div className="fc-phonetic" style={{ marginTop: 6 }}>
-                                            {currentCard.phonetic}
-                                        </div>
-                                    )}
-                                    <div className="fc-copy-meaning">{currentCard.zh}</div>
-                                    <div className="fc-copy-remaining">
-                                        本词剩余抄写：{Math.max(0, copyRemaining[currentCardIdx] ?? copyRepetitions)} / {copyRepetitions}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="fc-write-area">
-                            <div className="fc-write-input-row">
-                                <input
-                                    type="text"
-                                    className={`fc-write-input${copySubmitted ? ' write-correct' : ''}`}
-                                    placeholder={t.vocab.copyPlaceholder}
-                                    value={copyInput}
-                                    onChange={(e) => setCopyInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            if (!copySubmitted) {
-                                                void handleCopySubmit();
-                                            } else {
-                                                handleCopyNext();
-                                            }
-                                        }
-                                    }}
-                                    autoComplete="new-password"
-                                    readOnly={copySubmitted}
-                                    // eslint-disable-next-line jsx-a11y/no-autofocus
-                                    autoFocus
-                                />
-                                <button
-                                    className="fc-write-submit"
-                                    onClick={() => { void handleCopySubmit(); }}
-                                    disabled={
-                                        copySubmitted
-                                        || submitting
-                                        || !copyInput.trim()
-                                        || copyInput.trim().toLowerCase() !== currentCard.word.trim().toLowerCase()
-                                    }
-                                >
-                                    提交
-                                </button>
-                            </div>
-
-                            {!copySubmitted && (
-                                <div className="fc-copy-hint">
-                                    输入必须与单词完全一致，提交后需要手动点击“下一题”。中途退出时，未完成的本词抄写次数不会保留。
-                                </div>
-                            )}
-
-                            {copySubmitted && (
-                                <div className="fc-write-result correct">
-                                    <span>
-                                        {copyPendingAction?.completed
-                                            ? `✓ 本词已完成：在原间隔基础上 +${copyReviewDays} 天（当前下次复习间隔 ${copyPendingAction?.scheduledDays ?? copyReviewDays} 天）`
-                                            : `✓ 抄写成功，剩余 ${copyPendingAction?.remainingAfterSubmit ?? 0} 遍`}
-                                    </span>
-                                    <button
-                                        className="fc-write-next"
-                                        onClick={handleCopyNext}
-                                        disabled={submitting}
-                                    >
-                                        {t.vocab.next} →
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </>
+                    <CopyMode
+                        currentCard={currentCard}
+                        currentCardIdx={currentCardIdx}
+                        statusCls={statusCls}
+                        submitting={submitting}
+                        copyInput={copyInput}
+                        copySubmitted={copySubmitted}
+                        copyRepetitions={copyRepetitions}
+                        copyRemaining={copyRemaining}
+                        copyReviewDays={copyReviewDays}
+                        copyReviewDaysTemp={copyReviewDaysTemp}
+                        copyWordHidden={copyWordHidden}
+                        copyWordVisible={copyWordVisible}
+                        isPeeking={isPeeking}
+                        copyPendingAction={copyPendingAction}
+                        completionDueHint={completionDueHint}
+                        onCopyInput={setCopyInput}
+                        onCopySubmit={() => { void handleCopySubmit(); }}
+                        onCopyNext={handleCopyNext}
+                        onCopyReviewDaysChange={(cardIdx, val) => {
+                            setCopyReviewDaysTemp((prev) => {
+                                const next = [...prev];
+                                next[cardIdx] = val;
+                                return next;
+                            });
+                        }}
+                        onToggleHidden={toggleCopyWordHiddenPreference}
+                        onPeekStart={() => setIsPeeking(true)}
+                        onPeekEnd={() => setIsPeeking(false)}
+                        formatDueDate={formatDueDate}
+                    />
                 )}
             </div>
         </Layout>

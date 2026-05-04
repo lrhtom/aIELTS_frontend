@@ -1,4 +1,4 @@
-﻿// Translations for zh (Chinese) and en (English)
+// Translations for zh (Chinese) and en (English)
 // Usage: t.nav.home, t.home.hero.title, etc.
 
 export type Lang = 'zh' | 'en';
@@ -61,19 +61,43 @@ export interface Translations {
         manualTitle: string;
         manualSearch: string;
         manualEmpty: string;
+        resetPasswordTitle: string;
+        resetPasswordDesc: string;
+        resetIdentifier: string;
+        resetIdentifierPlaceholder: string;
+        resetNewPassword: string;
+        resetNewPasswordPlaceholder: string;
+        resetSubmitBtn: string;
+        resetSubmitting: string;
+        resetSuccess: string;
+        resetNotFound: string;
+        resetTooShort: string;
+        forgotPassword: string;
+        backToLogin: string;
     };
     home: {
         hero: {
             title: string;
             subtitle: string;
+            subsubtitle: string;
             startPractice: string;
             vocab: string;
+        };
+        skills: {
+            heading: string;
+            items: { title: string; desc: string; link: string }[];
+        };
+        howItWorks: {
+            heading: string;
+            steps: { title: string; desc: string }[];
         };
         announcements: {
             heading: string;
             items: { date: string; tag: string; content: string }[];
         };
         footer: string;
+        footerFeedback: string;
+        footerManual: string;
     };
     practiceHub: {
         backToHome: string;
@@ -179,12 +203,15 @@ export interface Translations {
                 call: { title: string; desc: string };
                 exam: { title: string; desc: string };
                 scenario: { title: string; desc: string };
+                fullTest: { title: string; desc: string };
             };
         };
         scenarioSettings: {
             title: string;
             desc: string;
             placeholder: string;
+            randomBtn: string;
+            generating: string;
         };
         scenarioSummary: {
             title: string;
@@ -278,6 +305,7 @@ export interface Translations {
             bar: { title: string; nameEn: string };
             horizontal: { title: string; nameEn: string };
             table: { title: string; nameEn: string };
+            mixed: { title: string; nameEn: string };
             random: { title: string; nameEn: string };
         };
         startBtn: string;
@@ -553,6 +581,52 @@ export interface Translations {
             warning: string;
             confirmDelete: string;
         };
+        home: {
+            vocabTotal: string;
+            calendar: {
+                yearSummary: string;
+                cumulativeDays: string;
+                consecutive: string;
+                pastYear: string;
+                months: string[];
+                dayLabels: string[];
+                tooltip: {
+                    noActivity: string;
+                    studied: string;
+                    vocab: string;
+                    reading: string;
+                    listening: string;
+                    speaking: string;
+                    writing: string;
+                };
+                legend: {
+                    labels: string[];
+                };
+            };
+            plans: {
+                empty: string;
+                createFirst: string;
+                today: string;
+                studied: string;
+                words: string;
+                viewAll: string;
+            };
+        };
+        rename: {
+            title: string;
+            cost: string;
+            placeholder: string;
+            confirmBtn: string;
+            processing: string;
+            errors: {
+                tooShort: string;
+                tooLong: string;
+                invalidChars: string;
+                sameName: string;
+                confirmMsg: string;
+                fail: string;
+            };
+        };
         backpack: {
             empty: string;
             emptyHint: string;
@@ -612,6 +686,56 @@ export interface Translations {
                 delete: string;
                 noData: string;
                 total: string;
+            };
+            users: {
+                title: string;
+                subtitle: string;
+                totalUsers: string;
+                pageUsers: string;
+                filtered: string;
+                pageAdmins: string;
+                pageBanned: string;
+                searchPlaceholder: string;
+                filterAll: string;
+                filterNormal: string;
+                filterAdmin: string;
+                filterBanned: string;
+                loading: string;
+                empty: string;
+                noMatch: string;
+                badgeBanned: string;
+                badgeNormal: string;
+                badgeAdmin: string;
+                badgeEmailVerified: string;
+                labelEmail: string;
+                labelAtBalance: string;
+                labelRegistered: string;
+                labelLastLogin: string;
+                labelNotProvided: string;
+                neverLogin: string;
+                btnBan: string;
+                btnUnban: string;
+                btnAdjustAt: string;
+                btnDelete: string;
+                toastLoadFail: string;
+                toastAdminNoBan: string;
+                toastBanSuccess: string;
+                toastUnbanSuccess: string;
+                toastOpFail: string;
+                toastAdminNoDelete: string;
+                toastDeleteConfirm: string;
+                toastDeleteSuccess: string;
+                toastDeleteFail: string;
+                toastInvalidAmount: string;
+                toastAdjustSuccess: string;
+                toastAdjustFail: string;
+                toastInvalidPage: string;
+                toastEnterPage: string;
+            };
+            pagination: {
+                jumpTo: string;
+                pagePlaceholder: string;
+                goBtn: string;
             };
         };
     };
@@ -727,6 +851,38 @@ export interface Translations {
         deleteConfirm: string;
         deleteSuccess: string;
         deleteFail: string;
+    };
+    store: {
+        fetchFail: string;
+        addSuccess: string;
+        addFail: string;
+        opFail: string;
+        deleteFail: string;
+        checkoutSuccess: string;
+        checkoutFail: string;
+        balance: string;
+        cart: string;
+        loading: string;
+        addToCart: string;
+        adding: string;
+        cartTitle: string;
+        storeName: string;
+        cartInfo: string;
+        cartEmpty: string;
+        colProduct: string;
+        colQuantity: string;
+        colPrice: string;
+        colSubtotal: string;
+        colAction: string;
+        btnDecrease: string;
+        btnIncrease: string;
+        btnRemoveItem: string;
+        btnDelete: string;
+        total: string;
+        thanks: string;
+        totalLabel: string;
+        checkoutFree: string;
+        checkoutPay: string;
     };
     vocab: {
         modes: {

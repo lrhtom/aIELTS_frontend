@@ -1,36 +1,81 @@
-.assistant-panel-close-btn {
+.assistant-panel-close-btn,
+.assistant-panel-screenshot-btn,
+.assistant-panel-lang-btn {
   border: none;
   background: transparent;
   color: #64748b;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.2rem;
   cursor: pointer;
   line-height: 1;
-  padding: 0 4px;
-  margin-left: 8px;
-  transition: color 0.18s;
+  padding: 2px 4px;
+  transition: color 0.18s, transform 0.18s;
+  border-radius: 6px;
 }
-.assistant-panel-close-btn:hover {
+.assistant-panel-close-btn:hover,
+.assistant-panel-screenshot-btn:hover:not(:disabled),
+.assistant-panel-lang-btn:hover {
   color: #0d9488;
+  transform: scale(1.15);
 }
+.assistant-panel-screenshot-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.assistant-panel-lang-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 6px;
+}
+.assistant-panel-close-btn {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-left: 0;
+}
+
+/* Hide ball + panel during screenshot */
+.assistant-root.is-capturing {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: none !important;
+}
+
 .assistant-root {
   position: fixed;
   z-index: 12000;
-  transition: left 0.22s ease, top 0.22s ease;
+  transition: left 0.22s ease, top 0.22s ease, opacity 0.15s ease, visibility 0.15s ease;
 }
 
 .assistant-root.is-dragging {
   transition: none;
 }
 
+@keyframes assistantBallGlow {
+  0%, 100% {
+    box-shadow: 0 8px 28px rgba(15, 118, 110, 0.32), 0 0 0 0 rgba(13, 148, 136, 0.4);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(15, 118, 110, 0.42), 0 0 0 8px rgba(13, 148, 136, 0);
+  }
+}
+
+@keyframes assistantBallFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
 .assistant-ball {
   width: 56px;
   height: 56px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  background: radial-gradient(circle at 28% 20%, #34d399, #0d9488 62%, #0f766e);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  background: radial-gradient(circle at 30% 22%, #5eead4 0%, #14b8a6 18%, #0d9488 58%, #0f766e 100%);
   color: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.35);
+  box-shadow: 0 8px 28px rgba(15, 118, 110, 0.32);
   cursor: grab;
   display: inline-flex;
   align-items: center;
@@ -40,14 +85,27 @@
   letter-spacing: 0.04em;
   user-select: none;
   touch-action: none;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  animation: assistantBallGlow 3s ease-in-out infinite;
 }
-
+.assistant-ball:hover {
+  transform: scale(1.1);
+  box-shadow: 0 14px 36px rgba(15, 118, 110, 0.48), 0 0 0 4px rgba(13, 148, 136, 0.18);
+  border-color: rgba(255, 255, 255, 0.7);
+  animation: none;
+}
 .assistant-ball:active {
   cursor: grabbing;
+  transform: scale(0.96);
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .assistant-ball-icon {
   transform: translateY(0.5px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
 }
 
 @keyframes panelPopupFade {

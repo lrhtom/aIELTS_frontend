@@ -63,8 +63,8 @@ export default function PromptPage() {
             setCurrentPage(res.current_page);
             setTotalPages(res.total_pages);
             setTotalCount(res.total_count);
-        } catch (error: any) {
-            showToast(error.message || '获取提示词失败', 'error');
+        } catch (error: unknown) {
+            showToast((error as { message?: string }).message || '获取提示词失败', 'error');
         } finally {
             setIsLoading(false);
         }

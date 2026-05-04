@@ -15,13 +15,14 @@ export default function ChartSelectionPage() {
         { id: 'bar', icon: '📊', nameZh: t.chartSelection.types.bar.title, nameEn: t.chartSelection.types.bar.nameEn },
         { id: 'horizontal', icon: '🛶', nameZh: t.chartSelection.types.horizontal.title, nameEn: t.chartSelection.types.horizontal.nameEn },
         { id: 'table', icon: '🧮', nameZh: t.chartSelection.types.table.title, nameEn: t.chartSelection.types.table.nameEn },
+        { id: 'mixed', icon: '🔀', nameZh: t.chartSelection.types.mixed.title, nameEn: t.chartSelection.types.mixed.nameEn },
         { id: 'random', icon: '🎲', nameZh: t.chartSelection.types.random.title, nameEn: t.chartSelection.types.random.nameEn }
     ];
 
     const handleStart = () => {
         let type = selectedChart;
         if (selectedChart === 'random') {
-            const chartPool = ['line', 'pie', 'bar', 'horizontal', 'table'];
+            const chartPool = ['line', 'pie', 'bar', 'horizontal', 'table', 'mixed'];
             type = chartPool[Math.floor(Math.random() * chartPool.length)];
         }
         sessionStorage.removeItem(`writing_task1_chart_session_${type}`);

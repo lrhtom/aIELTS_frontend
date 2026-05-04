@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import ProtectedRoute from './components/guards/ProtectedRoute';
 import ToastContainer from './components/common/Toast';
 import GlobalAssistantBall from './components/common/GlobalAssistantBall';
@@ -6,7 +7,7 @@ import ChromeOnlyGuard from './components/guards/ChromeOnlyGuard';
 import ATBalanceMonitor from './components/billing/ATBalanceMonitor';
 import { useAuth } from './contexts/AuthContext';
 
-// 通用页面 
+// 通用页面
 import HomePage from './pages/home_page';
 import PracticeHub from './pages/practice_hub';
 import AIPractice from './pages/ai_practice';
@@ -32,7 +33,6 @@ import ListeningPage from './pages/listening/listening_page';
 
 // 口语
 import Speaking from './pages/speaking/speaking';
-import SpeakingChatPage from './pages/speaking/speaking_chat';
 import SpeakingSummaryPage from './pages/speaking/speaking_summary';
 
 // 写作
@@ -51,17 +51,24 @@ import ChartPracticePage from './pages/writing/chart_practice_page';
 // 词汇
 import VocabularyPracticePage from './pages/vocabulary/vocabulary_practice_page';
 import VocabularyTrainingPage from './pages/vocabulary/vocabulary_training_page';
-import VocabularyTrainingDoingPage from './pages/vocabulary/vocabulary_training_doing_page';
-import VocabularyFlashcardDoingPage from './pages/vocabulary/vocabulary_flashcard_doing_page';
 import CustomMemoryCreatePage from './pages/vocabulary/custom_memory_create_page';
 import CustomMemoryStudyPage from './pages/vocabulary/custom_memory_study_page';
 import CustomMemoryResultPage from './pages/vocabulary/custom_memory_result_page';
 import NotebookListPage from './pages/vocabulary/notebook_list_page';
-import NotebookDetailPage from './pages/vocabulary/notebook_detail_page';
 import LearningPlanListPage from './pages/vocabulary/learning_plan_list_page';
-import LearningPlanDetailPage from './pages/vocabulary/learning_plan_detail_page';
 import VocabBookListPage from './pages/vocabulary/vocab_book_list_page';
 import VocabBookDetailPage from './pages/vocabulary/vocab_book_detail_page';
+
+// Code-split large pages (>800 lines)
+const SpeakingChatPage = lazy(() => import('./pages/speaking/speaking_chat'));
+const VocabularyTrainingDoingPage = lazy(() => import('./pages/vocabulary/vocabulary_training_doing_page'));
+const VocabularyFlashcardDoingPage = lazy(() => import('./pages/vocabulary/vocabulary_flashcard_doing_page'));
+const NotebookDetailPage = lazy(() => import('./pages/vocabulary/notebook_detail_page'));
+const LearningPlanDetailPage = lazy(() => import('./pages/vocabulary/learning_plan_detail_page'));
+
+function PageFallback() {
+  return <div className="page-loading" />;
+}
 
 export default function App() {
   const { user, isLoading } = useAuth();
@@ -77,16 +84,16 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/vocabulary" element={<ProtectedRoute><VocabularyPracticePage /></ProtectedRoute>} />
         <Route path="/vocabulary/practice" element={<ProtectedRoute><VocabularyTrainingPage /></ProtectedRoute>} />
-        <Route path="/vocabulary/practice/:mode/doing" element={<ProtectedRoute><VocabularyTrainingDoingPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/practice/:mode/doing" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><VocabularyTrainingDoingPage /></Suspense></ProtectedRoute>} />
         <Route path="/vocabulary/custom-cards" element={<ProtectedRoute><CustomMemoryCreatePage /></ProtectedRoute>} />
         <Route path="/vocabulary/custom-cards/study" element={<ProtectedRoute><CustomMemoryStudyPage /></ProtectedRoute>} />
         <Route path="/vocabulary/custom-cards/result" element={<ProtectedRoute><CustomMemoryResultPage /></ProtectedRoute>} />
         <Route path="/vocabulary/flashcard" element={<Navigate to="/vocabulary/plans" replace />} />
-        <Route path="/vocabulary/flashcard/doing" element={<ProtectedRoute><VocabularyFlashcardDoingPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/flashcard/doing" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><VocabularyFlashcardDoingPage /></Suspense></ProtectedRoute>} />
         <Route path="/vocabulary/notebook" element={<ProtectedRoute><NotebookListPage /></ProtectedRoute>} />
-        <Route path="/vocabulary/notebook/:id" element={<ProtectedRoute><NotebookDetailPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/notebook/:id" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><NotebookDetailPage /></Suspense></ProtectedRoute>} />
         <Route path="/vocabulary/plans" element={<ProtectedRoute><LearningPlanListPage /></ProtectedRoute>} />
-        <Route path="/vocabulary/plans/:id" element={<ProtectedRoute><LearningPlanDetailPage /></ProtectedRoute>} />
+        <Route path="/vocabulary/plans/:id" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><LearningPlanDetailPage /></Suspense></ProtectedRoute>} />
         <Route path="/vocabulary/books" element={<ProtectedRoute><VocabBookListPage /></ProtectedRoute>} />
         <Route path="/vocabulary/books/:id" element={<ProtectedRoute><VocabBookDetailPage /></ProtectedRoute>} />
 
@@ -98,7 +105,7 @@ export default function App() {
         <Route path="/reading" element={<ProtectedRoute><Reading_page /></ProtectedRoute>} />
         <Route path="/listening" element={<ProtectedRoute><ListeningPage /></ProtectedRoute>} />
         <Route path="/speaking" element={<ProtectedRoute><Speaking /></ProtectedRoute>} />
-        <Route path="/speaking/chat" element={<ProtectedRoute><SpeakingChatPage /></ProtectedRoute>} />
+        <Route path="/speaking/chat" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><SpeakingChatPage /></Suspense></ProtectedRoute>} />
         <Route path="/speaking/summary" element={<ProtectedRoute><SpeakingSummaryPage /></ProtectedRoute>} />
         <Route path="/writing" element={<ProtectedRoute><Writing_page /></ProtectedRoute>} />
         <Route path="/writing/correction" element={<ProtectedRoute><WritingCorrectionPage /></ProtectedRoute>} />

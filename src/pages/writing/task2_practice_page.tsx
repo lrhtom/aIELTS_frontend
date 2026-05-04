@@ -7,10 +7,9 @@ import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
+import { type WritingStep } from '../../types/writing_page';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
-
-type Step = 'loading' | 'answering' | 'settlement' | 'evaluating' | 'result';
 
 interface Task2Data {
     prompt: string;
@@ -49,7 +48,7 @@ export default function Task2PracticePage() {
     const topicCategory = (searchParams.get('topic') || 'all').trim().toLowerCase() || 'all';
     const cacheKey = `writing_task2_session_${type}_${topicCategory}`;
 
-    const [step, setStep] = useState<Step>('loading');
+    const [step, setStep] = useState<WritingStep>('loading');
     const [taskData, setTaskData] = useState<Task2Data | null>(null);
     const [userAnswer, setUserAnswer] = useState('');
     const [result, setResult] = useState<EvaluationResult | null>(null);
@@ -63,7 +62,7 @@ export default function Task2PracticePage() {
 
         try {
             const parsed = JSON.parse(cached) as {
-                step: Step;
+                step: WritingStep;
                 taskData: Task2Data | null;
                 userAnswer: string;
                 result: EvaluationResult | null;
@@ -96,7 +95,7 @@ export default function Task2PracticePage() {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
             try {
-                const parsed = JSON.parse(cached) as { step: Step; taskData: Task2Data | null };
+                const parsed = JSON.parse(cached) as { step: WritingStep; taskData: Task2Data | null };
                 if (parsed.taskData && parsed.step !== 'loading') {
                     return;
                 }

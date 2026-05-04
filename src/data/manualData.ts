@@ -20,204 +20,402 @@ export interface ManualData {
 export const manualData: ManualData = {
     zh: [
         {
-            id: 'auth',
+            id: 'account',
             title: '账户系统',
             icon: '🔐',
             subsections: [
                 {
                     id: 'register',
-                    title: '快速注册与邮箱验证',
-                    content: '本站采用强制邮箱验证机制。注册时需填写用户名、邮箱及密码，并点击“获取验证码”。您将在邮箱中收到 6 位数字验证码，输入后即可完成注册。',
-                    keywords: ['注册', '邮箱', '验证', '收不到']
+                    title: '注册与邮箱验证',
+                    content: '注册时需填写用户名、邮箱和密码，点击"获取验证码"后会向您的邮箱发送 6 位数字验证码，输入验证码即可完成注册。注册成功后自动登录。',
+                    keywords: ['注册', '邮箱', '验证', '验证码', 'signup']
                 },
                 {
                     id: 'login',
-                    title: '登录与安全性',
-                    content: '使用用户名和密码登录。若账号被管理员封禁，登录时将提示“账号异常”，请联系管理员处理。',
-                    keywords: ['登录', '密码', '错误', '安全']
+                    title: '登录与密码重置',
+                    content: '使用用户名和密码登录。忘记密码时，在登录页点击"忘记密码？"，输入用户名或邮箱并设置新密码（至少 6 位）即可重置。若账号被管理员封禁，登录时会提示账号异常。',
+                    keywords: ['登录', '密码', '重置', '忘记', 'signin']
                 },
                 {
-                    id: 'ban',
-                    title: '账号状态说明',
-                    content: '如果用户违反社区规则或涉及违规操作，账号可能会被永久或临时封禁。封禁后无法访问任何 AI 练习功能。',
-                    keywords: ['封号', '封禁', '异常', '禁言']
-                }
-            ]
-        },
-        {
-            id: 'practice',
-            title: '雅思练习模块',
-            icon: '📚',
-            subsections: [
-                {
-                    id: 'reading',
-                    title: 'AI 智能阅读',
-                    content: '根据您的目标分数 and 词汇量，AI 会实时生成一篇雅思风格的阅读文章，并配套选择题或填空题。支持划词翻译和背景高亮。',
-                    keywords: ['阅读', '生成', '翻译', '划词', '题目']
+                    id: 'username',
+                    title: '修改用户名',
+                    content: '在"设置"页面的账号管理区域，可以修改用户名。每次改名消耗 10,000 AT 币，新用户名需 2-30 个字符，支持字母、数字、下划线、连字符和中文，不可与已有用户名重复。',
+                    keywords: ['改名', '用户名', 'AT', '消耗', '修改']
                 },
                 {
-                    id: 'listening',
-                    title: '听力训练',
-                    content: '提供文章填空、句子填空和多项选择。AI 生成听力原文并配合高仿真语音播放。您可以设置每空的单词数限制。',
-                    keywords: ['听力', '音频', '播放', '填空', '字数']
+                    id: 'avatar',
+                    title: '头像上传',
+                    content: '在设置页面点击头像即可上传新头像。支持 JPG/PNG/GIF/WEBP 格式，文件最大 5MB。上传后自动裁剪为 400×400 尺寸。也可删除头像恢复默认。',
+                    keywords: ['头像', '上传', '图片', 'avatar']
                 },
                 {
-                    id: 'speaking',
-                    title: '模拟口语',
-                    content: '与 AI 进行 1:1 模拟对话，还原真实雅思口语考试环境。AI 会对您的发音、语法和逻辑进行实时评分。',
-                    keywords: ['口语', '模拟', '评分', '发音', '对话']
-                },
-                {
-                    id: 'writing',
-                    title: '写作批改',
-                    content: '上传您的作文，AI 将从词汇丰富度、语法多样性、连贯性与衔接、任务完成度四个维度给出专业反馈和改进建议。',
-                    keywords: ['写作', '批改', '作文', '反馈', '评分']
+                    id: 'delete',
+                    title: '注销账户',
+                    content: '在设置页面的账号管理区域可申请注销账户。注销后账户立即停用，30 天内可联系管理员恢复，超过 30 天将永久删除。',
+                    keywords: ['注销', '删除', '账户', '恢复']
                 }
             ]
         },
         {
             id: 'profile',
-            title: '个人中心与工具',
-            icon: '👤',
+            title: '个人主页',
+            icon: '🏠',
             subsections: [
                 {
-                    id: 'backpack',
-                    title: '我的背包',
-                    content: '查看您获得的资源包或特殊奖励。未来将支持道具消耗以开启特殊功能。',
-                    keywords: ['背包', '道具', '奖励', '资源']
+                    id: 'dashboard',
+                    title: '学习仪表盘',
+                    content: '个人主页顶部展示四项核心数据：今日学习时长、AT 币余额、学习计划数量和词汇总量。一目了然掌握当前学习状态。',
+                    keywords: ['仪表盘', '统计', '主页', 'dashboard']
                 },
                 {
-                    id: 'style',
-                    title: '背景与样式自定义',
-                    content: '在“网站样式”中，您可以自定义纯色背景或上传背景图片，并根据需要调整背景模糊度。这些设置会随账号跟随，登录后自动生效。',
-                    keywords: ['背景', '样式', '自定义', '图片', '模糊', '🎨']
+                    id: 'calendar',
+                    title: '学习日历（热力图）',
+                    content: '日历以 53 周 × 7 天的热力图展示过去一年的学习记录。颜色越深表示当天学习时间越长（<5 分钟/5-10 分钟/10-30 分钟/≥30 分钟）。顶部显示累计学习总时长、累计提交天数和连续提交天数。悬停可查看当天具体数据。',
+                    keywords: ['日历', '热力图', '统计', '连续', '提交']
                 },
                 {
-                    id: 'feedback',
-                    title: 'Bug 反馈',
-                    content: '如果您在使用过程中发现任何技术问题，可以通过“Bug 反馈”板块提交。管理员会在后台查看并处理。',
-                    keywords: ['反馈', 'Bug', '报错', '故障', '修复']
+                    id: 'plans-overview',
+                    title: '计划速览',
+                    content: '个人主页下方展示您的学习计划列表，每个计划显示今日进度条（今日已学/今日目标）和总进度条（已学/总词数）。点击可进入计划详情。',
+                    keywords: ['计划', '进度', '目标', '速览']
+                },
+                {
+                    id: 'info',
+                    title: '个人资料',
+                    content: '右侧展示您的用户名、邮箱、注册时间和最近登录时间。所有信息与账户绑定，修改用户名后自动更新。',
+                    keywords: ['资料', '信息', '邮箱', '注册']
                 }
             ]
         },
         {
-            id: 'ai-at',
-            title: 'AI 引擎与 AT 币',
-            icon: '🤖',
+            id: 'practice',
+            title: 'AI 练习模块',
+            icon: '📚',
             subsections: [
                 {
-                    id: 'models',
-                    title: 'AI 模型选择',
-                    content: '您可以在设置中切换 AI 引擎（如 DeepSeek、GPT 等），不同引擎会带来不同的出题风格和回复速度。',
-                    keywords: ['模型', '引擎', 'DeepSeek', 'GPT', 'Gemini']
+                    id: 'reading',
+                    title: 'AI 智能阅读',
+                    content: 'AI 根据目标分数和词汇量生成雅思风格阅读文章，支持选择题（A/B/C/D）和判断题（T/F 或 T/F/NG）。开启荒唐模式后 AI 会生成幽默文章。支持划词翻译、词典查询和目标词汇高亮。提交答案后查看详细解析。',
+                    keywords: ['阅读', '选择题', '判断题', '荒唐', '翻译']
                 },
                 {
-                    id: 'at-balance',
-                    title: 'AT 币计费',
-                    content: 'AT 币用于消耗 AI 资源。生成题目或批改作文会扣除相应额度。当余额为负时，将无法发起的练习。',
-                    keywords: ['AT', '余额', '计费', '充值', '消耗', '💰']
+                    id: 'listening',
+                    title: 'AI 智能听力',
+                    content: '提供四种练习模式：文章填空、句子填空、多项选择和地图标注。AI 生成听力原文并配合语音播放。可设置每空字数限制（min/max），开启荒唐模式生成趣味内容。',
+                    keywords: ['听力', '填空', '选择', '地图', '音频']
+                },
+                {
+                    id: 'speaking',
+                    title: 'AI 模拟口语',
+                    content: '支持五种练习模式：聊天（文字对话）、通话（语音对话）、全真模拟（1v1 考官计时）、场景对话（角色扮演）和全套考试（Part 1→2→3 连续）。覆盖雅思口语 Part 1-3 全部题型。练习结束后生成总结报告。',
+                    keywords: ['口语', '对话', '模拟', '语音', '考试']
+                },
+                {
+                    id: 'writing',
+                    title: '写作批改与训练',
+                    content: '写作大厅提供三种入口：AI 写作批改（粘贴作文获取四项评分）、Task 1 特训（图表题/地图题/流程图）、Task 2 特训（观点题/报告文/混合文/AI 创新题）。Task 1 支持上传图表图片让 AI 识别。批改从任务完成度、连贯与衔接、词汇资源和语法多样性四个维度评分。另有点子练习题板块，一轮生成多道观点题逐题作答并总结。',
+                    keywords: ['写作', '批改', 'Task1', 'Task2', '图表', '作文', '评分']
+                }
+            ]
+        },
+        {
+            id: 'vocabulary',
+            title: '词汇学习系统',
+            icon: '📖',
+            subsections: [
+                {
+                    id: 'plans',
+                    title: '学习计划（FSRS 间隔重复）',
+                    content: '创建学习计划，设定每日学习词数（1-200），从手动输入、笔记本或官方词书添加单词。系统使用 FSRS-4.5 科学记忆算法安排复习，优先复习到期单词再学新词。每个计划最多 3 个。支持编辑计划名称、每日词数和单词列表。',
+                    keywords: ['计划', 'FSRS', '间隔', '复习', '记忆', '每日']
+                },
+                {
+                    id: 'flashcard',
+                    title: '记忆卡训练',
+                    content: '提供四种训练模式：记忆卡（3D 翻转卡片）、4 选 1（选择题）、看中文写英文和抄写模式。翻牌后按 1-4 评分（忘了/困难/一般/容易），系统根据 FSRS 算法自动计算下次复习时间。支持快捷键操作：空格翻转，翻牌后按 1/2/3/4 评分。',
+                    keywords: ['记忆卡', '闪卡', '翻转', '训练', '评分', '快捷键']
+                },
+                {
+                    id: 'notebook',
+                    title: '我的笔记本',
+                    content: '创建个人单词本（最多 10 本），自定义标题、描述和封面颜色。添加单词时支持手动输入或从官方词书批量导入。每个单词可设置自定义中文释义、音标、词性、标签（回车添加）和掌握度星级（0-5），还可添加个人笔记。支持搜索和标签过滤。',
+                    keywords: ['笔记本', '单词', '标签', '导入', '释义']
+                },
+                {
+                    id: 'books',
+                    title: '官方词书',
+                    content: '浏览官方 IELTS 词汇书，查看单词释义和例句。可将词书中的单词导入笔记本或学习计划。支持分页浏览和搜索。',
+                    keywords: ['词书', '官方', 'IELTS', '浏览', '导入']
+                }
+            ]
+        },
+        {
+            id: 'store',
+            title: '商店与 AT 币',
+            icon: '🛒',
+            subsections: [
+                {
+                    id: 'store-shop',
+                    title: 'AT 币充值商店',
+                    content: '商店页面展示可供购买的 AT 币套餐。点击"加入购物车"将商品添加到购物车，在购物车中可以调整数量或删除商品。确认无误后点击"去支付"完成购买。管理员免单。',
+                    keywords: ['商店', '充值', '购买', '购物车', '支付']
+                },
+                {
+                    id: 'at-usage',
+                    title: 'AT 币计费说明',
+                    content: 'AT 币是平台虚拟货币，用于消耗 AI 算力资源。每次 AI 生成题目或批改作文都会扣除相应额度。余额不足时无法发起新练习。可在个人主页查看余额，在商店充值。AI 操作失败时会自动退还 AT 币。',
+                    keywords: ['AT', '余额', '计费', '消耗', '退款', '充值']
+                },
+                {
+                    id: 'ai-settings',
+                    title: 'AI 设置与重试',
+                    content: '在设置页面可选择 AI 引擎（DeepSeek/GPT 等）和设置 AI 生成重试次数（0-10 次）。更多重试次数可获得更稳定的生成结果，但会消耗更多 AT 币。建议免费用户设为 0-2 次，付费用户 3-5 次。',
+                    keywords: ['AI', '模型', '引擎', '重试', '设置', 'DeepSeek', 'GPT']
+                }
+            ]
+        },
+        {
+            id: 'workshop',
+            title: '创意工坊',
+            icon: '🎨',
+            subsections: [
+                {
+                    id: 'workshop-create',
+                    title: 'AI 生成学习网页',
+                    content: '在创意工坊中输入您的学习方法描述，AI 会立即生成一个专属学习网页。可以描述您想要的功能分区、练习方式等。每个用户只能访问自己生成的页面。',
+                    keywords: ['创意', '生成', '网页', 'AI', '学习']
+                },
+                {
+                    id: 'workshop-manage',
+                    title: '管理创意页面',
+                    content: '您可以收藏喜欢的页面，在"我的收藏"中统一管理。不需要的页面可以删除。所有页面均为您专属，其他用户无法查看。',
+                    keywords: ['收藏', '删除', '管理', '页面']
+                }
+            ]
+        },
+        {
+            id: 'settings',
+            title: '个性化设置',
+            icon: '⚙️',
+            subsections: [
+                {
+                    id: 'lang',
+                    title: '语言切换',
+                    content: '平台支持简体中文和 English 两种界面语言。在设置页面或导航栏可随时切换，所有界面文字即时生效。',
+                    keywords: ['语言', '中文', 'English', '切换', 'i18n']
+                },
+                {
+                    id: 'background',
+                    title: '背景自定义',
+                    content: '在"背景自定义"页面可以设置纯色或渐变色背景，或上传背景图片。支持调整背景模糊度（0 为清晰）。设置跟随账号，登录后自动应用，退出后自动清除。',
+                    keywords: ['背景', '颜色', '图片', '模糊', '自定义']
+                },
+                {
+                    id: 'admin',
+                    title: '管理员功能',
+                    content: '管理员账户在个人主页可访问"管理后台"。包括：用户管理（搜索、筛选、封禁/解封、删除、调整 AT 余额）和反馈管理（查看、标记已解决、删除反馈）。仅限 staff/superuser 权限账户使用。',
+                    keywords: ['管理员', '后台', '封禁', '用户', 'admin']
                 }
             ]
         }
     ],
     en: [
         {
-            id: 'auth',
+            id: 'account',
             title: 'Account System',
             icon: '🔐',
             subsections: [
                 {
                     id: 'register',
                     title: 'Registration & Verification',
-                    content: 'Mandatory email verification. Enter username, email, and password, then click "Send Code". Enter the 6-digit code received in your inbox to complete registration.',
+                    content: 'Register with a username, email, and password. Click "Send Code" to receive a 6-digit verification code in your inbox. Enter the code to complete registration. You will be automatically logged in afterwards.',
                     keywords: ['register', 'email', 'verification', 'code', 'signup']
                 },
                 {
                     id: 'login',
-                    title: 'Login & Security',
-                    content: 'Log in with username and password. If your account is banned, you will see a suspension notice. Contact the administrator for assistance.',
-                    keywords: ['login', 'password', 'security', 'error', 'signin']
+                    title: 'Login & Password Reset',
+                    content: 'Log in with your username and password. Forgot your password? Click "Forgot password?" on the login page, enter your username or email, and set a new password (minimum 6 characters). Banned accounts will see a suspension notice.',
+                    keywords: ['login', 'password', 'reset', 'forgot', 'signin']
                 },
                 {
-                    id: 'ban',
-                    title: 'Account Status',
-                    content: 'Violating community rules may lead to temporary or permanent bans. Banned users cannot access AI practice features.',
-                    keywords: ['ban', 'suspended', 'banned', 'blocked', 'status']
-                }
-            ]
-        },
-        {
-            id: 'practice',
-            title: 'IELTS Practice',
-            icon: '📚',
-            subsections: [
-                {
-                    id: 'reading',
-                    title: 'AI Reading',
-                    content: 'AI generates IELTS-style reading passages based on your target score. Includes multiple choice or fill-in-the-blank questions with word translation support.',
-                    keywords: ['reading', 'generate', 'translation', 'vocabulary', 'questions']
+                    id: 'username',
+                    title: 'Change Username',
+                    content: 'You can change your username in the Settings page under Account Management. Each change costs 10,000 AT coins. New username must be 2-30 characters, supporting letters, numbers, underscores, hyphens, and Chinese characters. Must be unique.',
+                    keywords: ['change', 'username', 'rename', 'AT', 'cost']
                 },
                 {
-                    id: 'listening',
-                    title: 'Listening Training',
-                    content: 'Includes Article, Sentence, and MC modes. AI generates scripts and audio. You can configure word count limits for blank-filling.',
-                    keywords: ['listening', 'audio', 'play', 'fill', 'word count']
+                    id: 'avatar',
+                    title: 'Avatar Upload',
+                    content: 'Click your avatar in Settings to upload a new profile picture. Supports JPG/PNG/GIF/WEBP, up to 5MB. Images are automatically cropped to 400×400. You can also delete your avatar to restore the default.',
+                    keywords: ['avatar', 'upload', 'image', 'photo', 'profile']
                 },
                 {
-                    id: 'speaking',
-                    title: 'Mock Speaking',
-                    content: 'Simulated 1:1 conversation with AI. Get real-time scores for pronunciation, grammar, and logic.',
-                    keywords: ['speaking', 'mock', 'score', 'pronunciation', 'dialogue']
-                },
-                {
-                    id: 'writing',
-                    title: 'Writing Correction',
-                    content: 'Upload your essay and receive professional feedback across four IELTS criteria: Vocabulary, Grammar, Coherence, and Task Achievement.',
-                    keywords: ['writing', 'correction', 'essay', 'feedback', 'grading']
+                    id: 'delete',
+                    title: 'Delete Account',
+                    content: 'In Settings under Account Management, you can request account deletion. Your account will be immediately deactivated with a 30-day recovery window. After 30 days, it will be permanently deleted.',
+                    keywords: ['delete', 'deactivate', 'account', 'recover']
                 }
             ]
         },
         {
             id: 'profile',
-            title: 'Profile & Tools',
-            icon: '👤',
+            title: 'Profile Page',
+            icon: '🏠',
             subsections: [
                 {
-                    id: 'backpack',
-                    title: 'My Backpack',
-                    content: 'View your earned resource packs or rewards. Future updates will allow using items to unlock special features.',
-                    keywords: ['backpack', 'items', 'rewards', 'resources']
+                    id: 'dashboard',
+                    title: 'Dashboard',
+                    content: 'The top of your Profile page shows four key metrics: today\'s study time, AT coin balance, number of learning plans, and total vocabulary words. Get a quick overview of your learning status.',
+                    keywords: ['dashboard', 'stats', 'profile', 'overview']
                 },
                 {
-                    id: 'style',
-                    title: 'Custom Styles',
-                    content: 'Customize your background with solid colors or uploaded images in the "Site Style" section. Settings are saved to your account.',
-                    keywords: ['background', 'style', 'custom', 'image', 'blur', '🎨']
+                    id: 'calendar',
+                    title: 'Learning Calendar (Heatmap)',
+                    content: 'The calendar displays a 53-week × 7-day heatmap of your past year\'s learning activity. Darker colors indicate longer study sessions (<5min / 5-10min / 10-30min / ≥30min). The top bar shows total study time, cumulative active days, and consecutive streak. Hover over any cell for detailed daily data.',
+                    keywords: ['calendar', 'heatmap', 'streak', 'stats', 'activity']
                 },
                 {
-                    id: 'feedback',
-                    title: 'Bug Feedback',
-                    content: 'Report technical issues through the "Bug Feedback" section. Administrators review and resolve reports regularly.',
-                    keywords: ['feedback', 'bug', 'report', 'issue', 'technical']
+                    id: 'plans-overview',
+                    title: 'Plan Overview',
+                    content: 'Below the dashboard, your learning plans are listed with two progress bars each: today\'s progress (studied/target) and total progress (studied/total words). Click any plan to view its details.',
+                    keywords: ['plan', 'progress', 'target', 'overview']
+                },
+                {
+                    id: 'info',
+                    title: 'Personal Info',
+                    content: 'The right column shows your username, email, registration date, and last login time. All information is linked to your account and updates automatically.',
+                    keywords: ['info', 'profile', 'email', 'registration']
                 }
             ]
         },
         {
-            id: 'ai-at',
-            title: 'AI & AT Coins',
-            icon: '🤖',
+            id: 'practice',
+            title: 'AI Practice Modules',
+            icon: '📚',
             subsections: [
                 {
-                    id: 'models',
-                    title: 'AI Models',
-                    content: 'Switch between AI engines (e.g., DeepSeek, GPT) in settings. Different models offer various generation styles and speeds.',
-                    keywords: ['model', 'engine', 'DeepSeek', 'GPT', 'Gemini']
+                    id: 'reading',
+                    title: 'AI Reading',
+                    content: 'AI generates IELTS-style reading passages based on your target score and vocabulary. Supports Multiple Choice (A/B/C/D) and True/False/Not Given questions. Enable Absurd Mode for humorous passages. Features word translation, dictionary lookup, and target vocabulary highlighting. Review detailed explanations after submission.',
+                    keywords: ['reading', 'multiple choice', 'true false', 'absurd', 'translation']
                 },
                 {
-                    id: 'at-balance',
+                    id: 'listening',
+                    title: 'AI Listening',
+                    content: 'Four practice modes: Article Gap-fill, Sentence Completion, Multiple Choice, and Map Labelling. AI generates scripts with audio playback. Configure word limits per blank (min/max). Enable Absurd Mode for fun content.',
+                    keywords: ['listening', 'gap-fill', 'multiple choice', 'map', 'audio']
+                },
+                {
+                    id: 'speaking',
+                    title: 'AI Speaking',
+                    content: 'Five practice modes: Chat (text), Call (voice), Mock Exam (timed 1-on-1), Scenario (role-play), and Full Test (Part 1→2→3). Covers all IELTS Speaking parts. A summary report is generated after each session.',
+                    keywords: ['speaking', 'mock', 'voice', 'exam', 'scenario']
+                },
+                {
+                    id: 'writing',
+                    title: 'Writing Correction & Training',
+                    content: 'The Writing Hall offers three paths: AI Correction (paste essay, get four-criterion scores), Task 1 Training (charts/maps/flowcharts with image upload support), and Task 2 Training (opinion/report/mixed/innovative essays). Correction covers Task Achievement, Coherence & Cohesion, Lexical Resource, and Grammatical Range. The Opinion Drill generates a set of questions for sequential practice.',
+                    keywords: ['writing', 'correction', 'Task 1', 'Task 2', 'chart', 'essay', 'scoring']
+                }
+            ]
+        },
+        {
+            id: 'vocabulary',
+            title: 'Vocabulary System',
+            icon: '📖',
+            subsections: [
+                {
+                    id: 'plans',
+                    title: 'Learning Plans (FSRS Spaced Repetition)',
+                    content: 'Create up to 3 learning plans with a daily word target (1-200). Add words manually, from notebooks, or from official vocab books. The FSRS-4.5 algorithm schedules reviews scientifically — due words are reviewed first, then new words are introduced. Edit plan names, daily targets, and word lists anytime.',
+                    keywords: ['plan', 'FSRS', 'spaced', 'repetition', 'memory', 'daily']
+                },
+                {
+                    id: 'flashcard',
+                    title: 'Flashcard Training',
+                    content: 'Four training modes: Flashcard (3D flip cards), Multiple Choice (4 options), Writing (type English from Chinese), and Copy Mode. Rate each card after flipping (Again/Hard/Good/Easy) — the FSRS algorithm calculates your next review automatically. Keyboard shortcuts: Space to flip, then 1/2/3/4 to rate.',
+                    keywords: ['flashcard', 'flip', 'training', 'rating', 'shortcut', '3D']
+                },
+                {
+                    id: 'notebook',
+                    title: 'My Notebooks',
+                    content: 'Create personal word notebooks (up to 10) with custom titles, descriptions, and cover colors. Add words manually or import from official vocab books. For each word, set a custom Chinese meaning, phonetic notation, part of speech, tags (press Enter to add), mastery rating (0-5 stars), and personal notes. Search and filter by tags.',
+                    keywords: ['notebook', 'word', 'tag', 'import', 'definition']
+                },
+                {
+                    id: 'books',
+                    title: 'Official Vocab Books',
+                    content: 'Browse official IELTS vocabulary books with definitions and examples. Import words directly into your notebooks or learning plans. Supports paginated browsing and search.',
+                    keywords: ['vocab', 'book', 'official', 'IELTS', 'browse']
+                }
+            ]
+        },
+        {
+            id: 'store',
+            title: 'Store & AT Coins',
+            icon: '🛒',
+            subsections: [
+                {
+                    id: 'store-shop',
+                    title: 'AT Coin Store',
+                    content: 'Browse and purchase AT coin packages in the Store page. Click "Add to Cart" to add items, adjust quantities or remove items in the cart, then click "Pay" to complete your purchase. Staff accounts get free checkout.',
+                    keywords: ['store', 'shop', 'recharge', 'cart', 'payment']
+                },
+                {
+                    id: 'at-usage',
                     title: 'AT Coin Billing',
-                    content: 'AT coins are consumed for AI resources. Generation and correction costs AT. You cannot start new sessions if your balance is negative.',
-                    keywords: ['AT', 'balance', 'billing', 'recharge', 'coins', '💰']
+                    content: 'AT coins are the platform\'s virtual currency for AI computing resources. Each AI generation or essay correction consumes AT coins. You cannot start new sessions with insufficient balance. View your balance on the Profile page and recharge in the Store. Failed AI operations automatically refund AT coins.',
+                    keywords: ['AT', 'coins', 'balance', 'billing', 'refund', 'recharge']
+                },
+                {
+                    id: 'ai-settings',
+                    title: 'AI Settings & Retries',
+                    content: 'In Settings, choose your AI engine (DeepSeek/GPT, etc.) and set the retry count (0-10). More retries mean more reliable generation but higher AT coin consumption. Recommended: 0-2 for free users, 3-5 for paid users.',
+                    keywords: ['AI', 'model', 'engine', 'retry', 'settings', 'DeepSeek', 'GPT']
+                }
+            ]
+        },
+        {
+            id: 'workshop',
+            title: 'Creative Workshop',
+            icon: '🎨',
+            subsections: [
+                {
+                    id: 'workshop-create',
+                    title: 'AI-Generated Learning Pages',
+                    content: 'Describe your ideal learning method in the Creative Workshop and AI will generate a dedicated study webpage for you. Specify desired features, layouts, and practice formats. Each user can only access their own generated pages.',
+                    keywords: ['creative', 'generate', 'webpage', 'AI', 'learning']
+                },
+                {
+                    id: 'workshop-manage',
+                    title: 'Managing Your Pages',
+                    content: 'Favorite pages you like and manage them in "My Favorites". Delete pages you no longer need. All pages are private — other users cannot access them.',
+                    keywords: ['favorite', 'delete', 'manage', 'pages']
+                }
+            ]
+        },
+        {
+            id: 'settings',
+            title: 'Personalization',
+            icon: '⚙️',
+            subsections: [
+                {
+                    id: 'lang',
+                    title: 'Language Switching',
+                    content: 'The platform supports both Simplified Chinese and English. Switch anytime in Settings or the navbar — all UI text updates instantly.',
+                    keywords: ['language', 'Chinese', 'English', 'switch', 'i18n']
+                },
+                {
+                    id: 'background',
+                    title: 'Background Customization',
+                    content: 'In the Background page, set a solid or gradient color background, or upload a background image. Adjust blur intensity (0 for sharp). Settings follow your account — applied on login, cleared on logout.',
+                    keywords: ['background', 'color', 'image', 'blur', 'customize']
+                },
+                {
+                    id: 'admin',
+                    title: 'Admin Panel',
+                    content: 'Staff and superuser accounts can access the Admin Panel from the Profile page. Features include: User Management (search, filter, ban/unban, delete, adjust AT balance) and Feedback Management (view, mark resolved, delete).',
+                    keywords: ['admin', 'panel', 'ban', 'users', 'management']
                 }
             ]
         }

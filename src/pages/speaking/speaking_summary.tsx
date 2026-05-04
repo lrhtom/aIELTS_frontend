@@ -113,6 +113,7 @@ export default function SpeakingSummaryPage() {
     const isPart1 = mode === 'part1';
     const isPart2 = mode === 'part2';
     const isPart3 = mode === 'part3';
+    const isFullTest = mode === 'fullTest';
 
     let activeDims: any[] = [...DIMS];
     if (isPart1) {
@@ -128,14 +129,26 @@ export default function SpeakingSummaryPage() {
             { key: 'coherence', label: '🧭 连贯度', azure: false, color: '#22c55e' },
             { key: 'depth', label: '🧠 深度', azure: false, color: '#ef4444' },
         ];
+    } else if (isFullTest) {
+        // Full Test: include all possible dimensions
+        activeDims = [
+            ...DIMS,
+            { key: 'are_a', label: '🇦 Answer', azure: false, color: '#f43f5e' },
+            { key: 'are_r', label: '🇷 Reason', azure: false, color: '#f97316' },
+            { key: 'are_e', label: '🇪 Example', azure: false, color: '#eab308' },
+            { key: 'coherence', label: '🧭 连贯度', azure: false, color: '#22c55e' },
+            { key: 'depth', label: '🧠 深度', azure: false, color: '#ef4444' },
+        ];
     }
 
-    // Extract rounds with scores
+    // Extract rounds with scores — always pull all possible dimensions
+    // so that fullTest mode (which shows are_a/r/e + coherence/depth together)
+    // never leaks undefined into the averages.
     const rounds = chatHistory
         .filter(m => m.role === 'assistant' && m.scores)
         .map((m, i) => {
             const sc = m.scores!;
-            const vals: any = {
+            const vals: Record<string, number> = {
                 accuracy:      azureTo9(sc.accuracy),
                 pronunciation: azureTo9(sc.pronunciation),
                 fluency:       azureTo9(sc.fluency),
@@ -145,12 +158,10 @@ export default function SpeakingSummaryPage() {
                 relevance:     sc.relevance ?? 0,
                 coherence:     sc.coherence ?? 0,
                 depth:         sc.depth ?? 0,
+                are_a:         sc.are_a ?? 0,
+                are_r:         sc.are_r ?? 0,
+                are_e:         sc.are_e ?? 0,
             };
-            if (isPart1) {
-                vals.are_a = sc.are_a ?? 0;
-                vals.are_r = sc.are_r ?? 0;
-                vals.are_e = sc.are_e ?? 0;
-            }
             return { round: i + 1, ...vals };
         });
 
@@ -176,8 +187,8 @@ export default function SpeakingSummaryPage() {
         <Layout>
             <div className="ss-root" ref={captureRef}>
                 <header className="ss-header">
-                    <h1>{s.title}</h1>
-                    <p>{s.subtitle}</p>
+                    <h1>{isFullTest ? '📋 全套口语考试报告' : s.title}</h1>
+                    <p>{isFullTest ? 'Part 1 → Part 2 → Part 3 完整模拟评估' : s.subtitle}</p>
                 </header>
 
                 {/* Hero scores */}

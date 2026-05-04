@@ -124,19 +124,23 @@ function SpeakingChatPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const { translations: t } = useLang();
-    const state = location.state as { 
-        vocabInput?: string, 
-        mode?: SpeakingMode, 
+    const state = location.state as {
+        vocabInput?: string,
+        mode?: SpeakingMode,
         scenarioInput?: string,
         part?: IeltsPart,
-        questions?: ExamQuestion[]
+        questions?: ExamQuestion[],
+        bankSource?: string,
+        scenarioFiles?: File[],
     };
+    const bankSource = state?.bankSource ?? '';
     const vocabRaw: string = state?.vocabInput ?? '';
     const initialMode: SpeakingMode = state?.mode ?? 'chat';
     const scenarioPrompt: string = state?.scenarioInput ?? '';
     const [activeMode, setActiveMode] = useState<SpeakingMode>(initialMode);
     const [activeExamQuestions, setActiveExamQuestions] = useState<ExamQuestion[]>(state?.questions ?? []);
-    const isExamMode = activeMode === 'part1' || activeMode === 'part2' || activeMode === 'part3';
+    const isFullTestMode = initialMode === 'fullTest';
+    const isExamMode = activeMode === 'part1' || activeMode === 'part2' || activeMode === 'part3' || isFullTestMode;
 
     // ── 路由守卫：防止刷新或直接跳转进来 ────────────────────────────────────
     useEffect(() => {
@@ -168,6 +172,33 @@ function SpeakingChatPage() {
     const [showTimer, setShowTimer] = useState(false);
     const [showPart3ContinuePrompt, setShowPart3ContinuePrompt] = useState(false);
     const [loadingPart3, setLoadingPart3] = useState(false);
+    // Full Test: track which part we're currently in
+    const [fullTestPhase, setFullTestPhase] = useState<'part1' | 'part2' | 'part3'>('part1');
+    const [loadingNextPart, setLoadingNextPart] = useState(false);
+    const [prepTimeLeft, setPrepTimeLeft] = useState(0);
+
+    // Initial effect for part 2 prep timer
+    useEffect(() => {
+        if (initialMode === 'part2') {
+            setPrepTimeLeft(60);
+        }
+    }, [initialMode]);
+
+    // Timer effect
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout>;
+        if (prepTimeLeft > 0) {
+            timer = setTimeout(() => setPrepTimeLeft(prev => prev - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [prepTimeLeft]);
+
+    // Manual input states
+    const [textInput, setTextInput] = useState('');
+    const [showTextInput, setShowTextInput] = useState(false);
+    const [isMicUnusable, setIsMicUnusable] = useState(false);
+    // Files from scenario config (passed via nav state, used in scenario mode only)
+    const pendingScenarioFilesRef = useRef<File[]>(state?.scenarioFiles ?? []);
 
     // ── Refs (never stale inside callbacks) ──
     const wordsRef = useRef<Word[]>(parseWords(vocabRaw));
@@ -207,31 +238,26 @@ function SpeakingChatPage() {
         setAudioLevel(0);
         setRecordingTime(0);
         pendingRef.current = false;
+        setTextInput('');
+        setShowTextInput(false);
+        setIsMicUnusable(false);
 
-        // 【修复】兼容性判断，防止getUserMedia为undefined时报错
-        if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    // 成功授权后，立刻释放掉这些轨道，免得浏览器右上角一直有个红点（真正用的时候会再次请求）
-                    stream.getTracks().forEach(track => track.stop());
-                })
-                .catch(err => {
-                    console.warn('初次请求麦克风权限被拒或出错:', err);
-                    // 此时并不强行报错中断流程（因为用户点按钮时还会再次申请并抛错）
-                });
-        } else {
-            setRecError('当前浏览器不支持麦克风权限获取（getUserMedia）。请使用最新版Chrome、Edge或Firefox，并确保使用HTTPS访问。');
-            console.warn('navigator.mediaDevices.getUserMedia 不可用，浏览器不支持或非安全上下文。');
-        }
+        // 不做预请求——新版 Chrome 要求 getUserMedia 必须由用户手势触发，
+        // useEffect 中调用会被拦截并返回 NotFoundError。
+        // 麦克风权限在实际点击录音按钮时（toggleRecording）申请。
 
         const wordList = wordsRef.current.map(w => w.en).join(', ');
         let systemPrompt = '';
         let welcomeMsg = '';
 
         if (activeMode === 'scenario') {
-            // 场景模式：系统提示词主要由后端接口 handle，这里仅做前端展示同步
             systemPrompt = `Role-play Scenario: ${scenarioPrompt}\nTarget vocabulary: [${wordList}]`;
+            // Fallback welcome — will be replaced by AI-generated opening below
             welcomeMsg = `Acting for scenario: "${scenarioPrompt}". I am ready to start. What would you like to say first?`;
+        } else if (isFullTestMode && activeExamQuestions.length > 0) {
+            // Full Test mode: start with Part 1
+            systemPrompt = `You are taking IELTS Speaking Full Test. Starting with Part 1. Topic: ${activeExamQuestions[0].topic}`;
+            welcomeMsg = `Welcome to the IELTS Full Speaking Test. We will go through Part 1, Part 2, and Part 3 consecutively. Let's begin with Part 1. Our first topic is ${activeExamQuestions[0].topic}. ${activeExamQuestions[0].question}`;
         } else if (isExamMode && activeExamQuestions.length > 0) {
             const partLabel = activeMode === 'part1' ? 'Part 1' : activeMode === 'part2' ? 'Part 2' : 'Part 3';
             systemPrompt = `You are taking IELTS Speaking ${partLabel}. Topic: ${activeExamQuestions[0].topic}`;
@@ -256,6 +282,22 @@ Rules:
 
         (async () => {
             try {
+                let finalWelcome = welcomeMsg;
+
+                // For scenario mode, replace hardcoded welcome with AI-generated opening
+                if (activeMode === 'scenario') {
+                    try {
+                        const filesForOpening = [...pendingScenarioFilesRef.current];
+                        const openingRes = await ATInterceptor.scenarioOpening(scenarioPrompt, filesForOpening);
+                        if (openingRes.data.opening && !isUnmounted) {
+                            finalWelcome = openingRes.data.opening;
+                            setChatHistory([{ role: 'assistant', content: finalWelcome }]);
+                        }
+                    } catch {
+                        // Fallback to default welcomeMsg (already in chat history)
+                    }
+                }
+
                 // Initial TTS welcome
                 const token = localStorage.getItem('access_token') || '';
                 const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
@@ -266,7 +308,7 @@ Rules:
                         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                     },
                     body: JSON.stringify({
-                        text: welcomeMsg,
+                        text: finalWelcome,
                         voice: 'en-US-AriaNeural'
                     })
                 });
@@ -291,8 +333,9 @@ Rules:
                     console.log("Welcome TTS aborted", e);
                     if (!isUnmounted) setStatusSync('idle');
                 });
-            } catch (err: any) {
-                if (err.name !== 'AbortError') {
+            } catch (err: unknown) {
+                const e = err as { name?: string };
+                if (e.name !== 'AbortError') {
                     console.error("Welcome TTS error:", err);
                     if (!isUnmounted) setStatusSync('idle');
                 }
@@ -349,6 +392,11 @@ Rules:
         setAudioLevel(0);
         micStreamRef.current?.getTracks().forEach(t => t.stop());
         micStreamRef.current = null;
+        if (audioCtxRef.current) {
+            audioCtxRef.current.close().catch(() => {});
+            audioCtxRef.current = null;
+        }
+        analyserRef.current = null;
     };
 
     // ── Recording timer ───────────────────────────────────────────────────
@@ -399,12 +447,13 @@ Rules:
             setLiveTranscript('');
             liveTranscriptRef.current = '';
 
-            // Setup Frontend SR
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const SR = getSRConstructor() as any;
             if (!SR) {
                 setRecError('浏览器不支持语音识别，请使用 Chrome 浏览器或 Edge');
                 setStatusSync('idle');
+                setIsMicUnusable(true);
+                setShowTextInput(true);
                 return;
             }
             const sr = new SR();
@@ -490,8 +539,12 @@ Rules:
                     setRecError('语音识别需要网络，请检查连接');
                 } else if (e.error === 'not-allowed') {
                     setRecError('麦克风权限被拒绝，请允许后刷新');
+                    setIsMicUnusable(true);
+                    setShowTextInput(true);
                 } else {
                     setRecError(`识别错误: ${e.error}`);
+                    setIsMicUnusable(true);
+                    setShowTextInput(true);
                 }
                 setStatusSync('idle');
 
@@ -531,8 +584,22 @@ Rules:
                 };
 
                 sr.start();
-            } catch {
-                setRecError('麦克风权限被拒绝或无法启动，请检查浏览器设置');
+            } catch (e: unknown) {
+                const err = e as DOMException | Error;
+                const name = (err as DOMException).name || '';
+                if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+                    setRecError('麦克风权限已被禁止。请在浏览器地址栏左侧点击锁图标 → 将麦克风权限改为"允许"，然后刷新页面。');
+                } else if (name === 'NotFoundError') {
+                    setRecError('未检测到麦克风设备，请确认麦克风已正确连接。');
+                } else if (name === 'NotReadableError') {
+                    setRecError('麦克风被其他应用占用，请关闭其他使用麦克风的程序后重试。');
+                } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    setRecError('当前环境不支持麦克风。请使用 HTTPS 或 localhost 访问，并使用 Chrome/Edge/Firefox 浏览器。');
+                } else {
+                    setRecError('麦克风启动失败，请检查浏览器设置后刷新重试。');
+                }
+                setIsMicUnusable(true);
+                setShowTextInput(true);
                 setStatusSync('idle');
             }
 
@@ -590,8 +657,9 @@ Rules:
             };
 
             await a.play();
-        } catch (err: any) {
-            if (err.name !== 'AbortError') {
+        } catch (err: unknown) {
+            const e = err as { name?: string };
+            if (e.name !== 'AbortError') {
                 console.error("TTS error:", err);
                 setStatusSync(isFinished ? 'finished' : 'idle');
                 pendingRef.current = false;
@@ -605,6 +673,10 @@ Rules:
         // Prevent concurrent requests (e.g. double onend firing)
         if (pendingRef.current) return;
         pendingRef.current = true;
+
+        // Capture and clear pending scenario files for this send (one-shot)
+        const filesToSend = [...pendingScenarioFilesRef.current];
+        pendingScenarioFilesRef.current = [];
 
         const userMsg: ChatMessage = { role: 'user', content: text };
         setChatHistory(h => [...h, userMsg]);
@@ -623,6 +695,8 @@ Rules:
         try {
             let chatPromise;
             let currentExamQ = '';
+            // Determine which evaluator to use: for fullTest, use fullTestPhase
+            const effectiveMode = isFullTestMode ? fullTestPhase : activeMode;
             const currentExamItem = isExamMode ? activeExamQuestions[currentQuestionIndex] : null;
             if (isExamMode && !currentExamItem) {
                 pendingRef.current = false;
@@ -631,26 +705,41 @@ Rules:
                 return;
             }
             if (activeMode === 'scenario') {
-                chatPromise = ATInterceptor.scenarioChat(
-                    scenarioPrompt,
-                    messages as unknown as Array<Record<string, unknown>>,
-                    { conversationLength: 1 }
-                );
-            } else if (activeMode === 'part1') {
+                if (filesToSend.length > 0) {
+                    chatPromise = ATInterceptor.scenarioChatWithFiles(
+                        scenarioPrompt,
+                        messages as unknown as Array<Record<string, unknown>>,
+                        filesToSend,
+                        { conversationLength: 1 }
+                    );
+                } else {
+                    chatPromise = ATInterceptor.scenarioChat(
+                        scenarioPrompt,
+                        messages as unknown as Array<Record<string, unknown>>,
+                        { conversationLength: 1 }
+                    );
+                }
+            } else if (effectiveMode === 'part1') {
                 currentExamQ = currentExamItem!.question;
+                const nextIndex = currentQuestionIndex + 1;
+                let nextPlan = undefined;
+                if (nextIndex < activeExamQuestions.length) {
+                    nextPlan = activeExamQuestions[nextIndex];
+                }
                 chatPromise = ATInterceptor.evaluatePart1(
                     currentExamQ,
                     text,
-                    lastRecordingTimeRef.current
+                    lastRecordingTimeRef.current,
+                    nextPlan
                 );
-            } else if (activeMode === 'part2') {
+            } else if (effectiveMode === 'part2') {
                 currentExamQ = currentExamItem!.question;
                 chatPromise = ATInterceptor.evaluatePart2(
                     currentExamQ,
                     text,
                     lastRecordingTimeRef.current
                 );
-            } else if (activeMode === 'part3') {
+            } else if (effectiveMode === 'part3') {
                 currentExamQ = currentExamItem!.question;
                 chatPromise = ATInterceptor.evaluatePart3(
                     currentExamQ,
@@ -675,6 +764,7 @@ Rules:
 
             if (isExamMode) {
                 const nextIndex = currentQuestionIndex + 1;
+                const effectiveMode = isFullTestMode ? fullTestPhase : activeMode;
                 
                 // Add to history for summary
                 setExamHistory(h => {
@@ -682,7 +772,43 @@ Rules:
                     return newH;
                 });
 
-                if (activeMode === 'part2') {
+                if (isFullTestMode) {
+                    // Full Test mode: auto-transition between Parts
+                    setCurrentQuestionIndex(nextIndex);
+                    if (nextIndex < activeExamQuestions.length) {
+                        // More questions in current Part
+                        const nextQ = activeExamQuestions[nextIndex];
+                        const isTopicChange = nextQ.topic !== activeExamQuestions[currentQuestionIndex].topic;
+                        
+                        if (effectiveMode === 'part1' && chatRes.next_question_dynamic) {
+                            nextReply = chatRes.next_question_dynamic;
+                            setActiveExamQuestions(prev => {
+                                const newArr = [...prev];
+                                newArr[nextIndex] = { ...newArr[nextIndex], question: chatRes.next_question_dynamic };
+                                return newArr;
+                            });
+                        } else if (isTopicChange) {
+                            nextReply = `Let's move on to the topic of ${nextQ.topic}. ${nextQ.question}`;
+                        } else {
+                            nextReply = nextQ.question;
+                        }
+                    } else {
+                        // Current Part finished → auto-load next Part
+                        if (fullTestPhase === 'part1') {
+                            nextReply = 'Excellent. That is the end of Part 1. Now we will move on to Part 2. Please wait while I prepare your topic card...';
+                            isContinue = 0;
+                            // Schedule Part 2 auto-load
+                            setTimeout(() => handleFullTestTransition('part2'), 100);
+                        } else if (fullTestPhase === 'part2') {
+                            nextReply = 'Thank you. That is the end of Part 2. Let me prepare the Part 3 discussion questions...';
+                            isContinue = 0;
+                            setTimeout(() => handleFullTestTransition('part3'), 100);
+                        } else {
+                            nextReply = 'That is the end of Part 3 and the end of the full speaking test. Excellent work! I will now process your complete results.';
+                            isContinue = 0;
+                        }
+                    }
+                } else if (effectiveMode === 'part2') {
                     // 连续联动：Part2 固定只问 1 个大问题，然后弹出是否进入 Part3。
                     setCurrentQuestionIndex(nextIndex);
                     nextReply = 'That is the end of Part 2. Would you like to continue with Part 3 practice?';
@@ -692,14 +818,22 @@ Rules:
                     setCurrentQuestionIndex(nextIndex);
                     if (nextIndex < activeExamQuestions.length) {
                         const nextQ = activeExamQuestions[nextIndex];
-                        const isTopicChange = activeExamQuestions[nextIndex].topic !== activeExamQuestions[currentQuestionIndex].topic;
-                        if (isTopicChange) {
+                        const isTopicChange = nextQ.topic !== activeExamQuestions[currentQuestionIndex].topic;
+                        
+                        if (effectiveMode === 'part1' && chatRes.next_question_dynamic) {
+                            nextReply = chatRes.next_question_dynamic;
+                            setActiveExamQuestions(prev => {
+                                const newArr = [...prev];
+                                newArr[nextIndex] = { ...newArr[nextIndex], question: chatRes.next_question_dynamic };
+                                return newArr;
+                            });
+                        } else if (isTopicChange) {
                             nextReply = `Let's move on to the topic of ${nextQ.topic}. ${nextQ.question}`;
                         } else {
                             nextReply = nextQ.question;
                         }
                     } else {
-                        const partLabel = activeMode === 'part1' ? 'Part 1' : 'Part 3';
+                        const partLabel = effectiveMode === 'part1' ? 'Part 1' : 'Part 3';
                         nextReply = `That is the end of ${partLabel}. I will now process your overall results. Good job!`;
                         isContinue = 0;
                     }
@@ -735,9 +869,15 @@ Rules:
             setChatHistory(h => {
                 const newHistory = [...h, aiMsg];
                 if (isContinue === 0) {
-                    if (isExamMode) {
-                        const partLabel = activeMode === 'part1' ? 'Part 1' : activeMode === 'part2' ? 'Part 2' : 'Part 3';
-                        if (activeMode === 'part2') {
+                    if (isFullTestMode) {
+                        if (fullTestPhase === 'part3' && currentQuestionIndex + 1 >= activeExamQuestions.length) {
+                            newHistory.push({ role: 'system', content: '🏁 全套口语考试已完成！点击下方按钮查看完整评估报告。' });
+                        }
+                        // For part1→part2 and part2→part3 transitions, the loading message is added by handleFullTestTransition
+                    } else if (isExamMode) {
+                        const effectiveMode = isFullTestMode ? fullTestPhase : activeMode;
+                        const partLabel = effectiveMode === 'part1' ? 'Part 1' : effectiveMode === 'part2' ? 'Part 2' : 'Part 3';
+                        if (effectiveMode === 'part2') {
                             newHistory.push({ role: 'system', content: '🏁 Part 2 练习已完成。你可以继续 Part 3，或直接查看当前总结报告。' });
                         } else {
                             newHistory.push({ role: 'system', content: `🏁 ${partLabel} 练习已完成，点击下方按钮查看最终评估报告。` });
@@ -810,7 +950,7 @@ Rules:
         `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
     const BAR_COUNT = 12;
-    const isDisabled = status === 'loading' || status === 'mic_loading' || status === 'processing' || status === 'speaking' || status === 'finished';
+    const isDisabled = status === 'loading' || status === 'mic_loading' || status === 'processing' || status === 'speaking' || status === 'finished' || prepTimeLeft > 0;
 
     const handleGoSummary = () => {
         navigate('/speaking/summary', {
@@ -818,9 +958,52 @@ Rules:
                 chatHistory,
                 scenarioPrompt,
                 words,
-                mode: activeMode,
+                mode: isFullTestMode ? 'fullTest' : activeMode,
             }
         });
+    };
+
+    // ── Full Test: auto-transition to next Part ──────────────────────────
+    const handleFullTestTransition = async (nextPhase: 'part2' | 'part3') => {
+        setLoadingNextPart(true);
+        setStatusSync('processing');
+        try {
+            const res = nextPhase === 'part2'
+                ? await ATInterceptor.bankGeneratePart2()
+                : await ATInterceptor.bankGeneratePart3(activeExamQuestions[0]?.topic || '');
+            const nextQuestions = (res.data?.questions ?? []) as ExamQuestion[];
+            if (!nextQuestions.length) {
+                throw new Error(`未获取到 ${nextPhase === 'part2' ? 'Part 2' : 'Part 3'} 题目`);
+            }
+
+            const first = nextQuestions[0];
+            const partNum = nextPhase === 'part2' ? '2' : '3';
+            const transitionMsg = `Great. Let's continue with IELTS Speaking Part ${partNum}. Topic: ${first.topic}. ${first.question}`;
+
+            setFullTestPhase(nextPhase);
+            setActiveExamQuestions(nextQuestions);
+            setCurrentQuestionIndex(0);
+            if (nextPhase === 'part2') {
+                setPrepTimeLeft(60);
+            }
+            
+            setChatHistory(h => [
+                ...h,
+                { role: 'system', content: `📍 进入 Part ${partNum}` },
+                { role: 'assistant', content: transitionMsg }
+            ]);
+            contextRef.current = [...contextRef.current, { role: 'assistant', content: transitionMsg }];
+
+            // Play TTS for the transition message
+            playTTS(transitionMsg, false);
+        } catch (error: unknown) {
+            const msg = (error as { message?: string })?.message || '加载下一部分失败';
+            showToast(msg, 'error');
+            setChatHistory(h => [...h, { role: 'system', content: `⚠️ ${msg}，请点击下方按钮查看已完成部分的报告。` }]);
+            setStatusSync('finished');
+        } finally {
+            setLoadingNextPart(false);
+        }
     };
 
     const handleContinueToPart3 = async () => {
@@ -829,7 +1012,7 @@ Rules:
         setLoadingPart3(true);
         setStatusSync('processing');
         try {
-            const res = await ATInterceptor.generatePart3();
+            const res = await ATInterceptor.bankGeneratePart3(activeExamQuestions[0]?.topic || '');
             const nextQuestions = (res.data?.questions ?? []) as ExamQuestion[];
             if (!nextQuestions.length) {
                 throw new Error('未获取到 Part 3 题目，请稍后重试。');
@@ -846,8 +1029,8 @@ Rules:
             contextRef.current = [...contextRef.current, { role: 'assistant', content: part3Welcome }];
             setStatusSync('idle');
             showToast('已继续进入 Part 3 练习。', 'success');
-        } catch (error: any) {
-            const msg = error?.message || '进入 Part 3 失败，请稍后重试。';
+        } catch (error: unknown) {
+            const msg = (error as { message?: string })?.message || '进入 Part 3 失败，请稍后重试。';
             showToast(msg, 'error');
             setStatusSync('finished');
         } finally {
@@ -1057,6 +1240,7 @@ Rules:
                             <span>{STATUS_LABEL[status]} {status === 'listening' && showTimer ? `(${formatTime(recordingTime)})` : ''}</span>
                         </div>
 
+
                         {/* Waveform during recording */}
                         {status === 'listening' && (
                             <div className="sc-waveform">
@@ -1082,6 +1266,17 @@ Rules:
                     </div>
 
                     <div className="sc-controls">
+                        {prepTimeLeft > 0 && (
+                            <div className="sc-prep-timer" style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                                    ⏱️ 准备时间：{prepTimeLeft}s
+                                </div>
+                                <button className="sc-skip-btn" onClick={() => setPrepTimeLeft(0)} style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--color-border)', background: 'transparent', cursor: 'pointer', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                                    跳过准备
+                                </button>
+                            </div>
+                        )}
+
                         {/* [New] 结束时的总结按钮 */}
                         {status === 'finished' && (
                             <div className="sc-finish-overlay">
@@ -1126,6 +1321,50 @@ Rules:
                         >
                             {MIC_LABEL[status]}
                         </button>
+
+                        {/* Text Input Toggle & Area */}
+                        {(activeMode === 'chat' || isMicUnusable) && (
+                            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                                {!showTextInput ? (
+                                    <button 
+                                        className="sc-back-btn" 
+                                        onClick={() => setShowTextInput(true)}
+                                        title="使用键盘输入"
+                                    >
+                                        ⌨️ 使用键盘输入
+                                    </button>
+                                ) : (
+                                    <div className="sc-manual-input" style={{ width: '100%', maxWidth: '400px' }}>
+                                        <input
+                                            className="sc-text-input"
+                                            type="text"
+                                            value={textInput}
+                                            onChange={e => setTextInput(e.target.value)}
+                                            placeholder="输入回复内容..."
+                                            disabled={isDisabled}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter' && textInput.trim() && !isDisabled) {
+                                                    handleSend(textInput.trim());
+                                                    setTextInput('');
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            className="sc-send-btn"
+                                            onClick={() => {
+                                                if (textInput.trim() && !isDisabled) {
+                                                    handleSend(textInput.trim());
+                                                    setTextInput('');
+                                                }
+                                            }}
+                                            disabled={!textInput.trim() || isDisabled}
+                                        >
+                                            发送
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </footer>
             </main>

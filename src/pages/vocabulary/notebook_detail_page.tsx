@@ -12,6 +12,7 @@ import {
     type VocabBook, type BookWord,
 } from '../../api/learning_plan';
 import { useLang } from '../../i18n/LanguageContext';
+import TagInput from '../../components/vocabulary/TagInput';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_notebook.css';
 import '../../styles/vocabulary_learning_plan.css';
@@ -39,55 +40,6 @@ const EMPTY_FORM: WordForm = {
     phonetic:      '',
     grammar:       '',
 };
-
-/* ── 标签输入组件（行内） ─────────────────────────────────────────────────── */
-
-function TagInputField({
-    tags, tagInput, onChange, onTagsChange,
-}: {
-    tags:         string[];
-    tagInput:     string;
-    onChange:     (v: string) => void;
-    onTagsChange: (tags: string[]) => void;
-}) {
-    const commitTag = (val: string) => {
-        const trimmed = val.trim().toLowerCase();
-        if (trimmed && !tags.includes(trimmed)) {
-            onTagsChange([...tags, trimmed]);
-        }
-        onChange('');
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' || e.key === ',') {
-            e.preventDefault();
-            commitTag(tagInput);
-        } else if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
-            onTagsChange(tags.slice(0, -1));
-        }
-    };
-
-    const removeTag = (t: string) => onTagsChange(tags.filter(x => x !== t));
-
-    return (
-        <div className="wf-tag-input-wrap" onClick={() => (document.querySelector('.wf-tag-raw-input') as HTMLElement)?.focus()}>
-            {tags.map(t => (
-                <span key={t} className="tag-chip active">
-                    #{t}
-                    <span className="tag-chip-remove" onClick={() => removeTag(t)}>×</span>
-                </span>
-            ))}
-            <input
-                className="wf-tag-raw-input"
-                value={tagInput}
-                placeholder={tags.length === 0 ? '输入标签，回车确认…' : ''}
-                onChange={e => onChange(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onBlur={() => { if (tagInput.trim()) commitTag(tagInput); }}
-            />
-        </div>
-    );
-}
 
 /* ── 单词表单（新增/编辑） ────────────────────────────────────────────────── */
 
@@ -164,7 +116,7 @@ function WordFormPanel({
 
             <div className="wf-field">
                 <div className="wf-label">{t.vocab.notebookDetail.tagLabel}</div>
-                <TagInputField
+                <TagInput
                     tags={form.tags}
                     tagInput={form.tagInput}
                     onChange={set('tagInput')}
@@ -407,9 +359,10 @@ export default function NotebookDetailPage() {
             setAllEntries(prev => [entry, ...prev]);
             setShowAddForm(false);
             showToast(`「${entry.word}」已添加`, 'success');
-        } catch (err: any) {
-            const msg = err?.response?.data?.error || '添加失败';
-            if (err?.response?.status === 409) {
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { error?: string }; status?: number } };
+            const msg = e.response?.data?.error || '添加失败';
+            if (e.response?.status === 409) {
                 showToast('该单词已在笔记本中', 'error');
             } else {
                 showToast(msg, 'error');

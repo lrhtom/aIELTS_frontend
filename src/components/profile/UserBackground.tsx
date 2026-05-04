@@ -88,8 +88,9 @@ export default function UserBackground() {
             // 已自动写入数据库，直接更新本地用户状态
             updateUser(resp.data.user);
             setUploadMsg(`✅ ${t.profile.background.uploadSuccess}`);
-        } catch (err: any) {
-            const msg = err?.response?.data?.error || t.common.error;
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { error?: string } } };
+            const msg = e.response?.data?.error || t.common.error;
             setUploadMsg(`❌ ${msg}`);
         } finally {
             setUploading(false);

@@ -9,13 +9,8 @@ import {
     toggleCreativeWorkshopFavorite,
     type CreativeWorkshopProject,
 } from '../../api/creative_workshop';
+import { formatTime } from '../../utils/format';
 import '../../styles/creative_workshop.css';
-
-function formatTime(iso: string): string {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return iso;
-    return date.toLocaleString('zh-CN', { hour12: false });
-}
 
 export default function CreativeWorkshopFavoritesPage() {
     const { translations: t } = useLang();

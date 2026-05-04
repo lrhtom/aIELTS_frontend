@@ -109,8 +109,9 @@ export default function NotebookListPage() {
                 showToast(t.vocab.notebooks.msgSaveSuccess, 'success');
             }
             setModal(null);
-        } catch (err: any) {
-            const msg = err?.response?.data?.error || t.vocab.notebooks.msgFail;
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { error?: string } } };
+            const msg = e.response?.data?.error || t.vocab.notebooks.msgFail;
             showToast(msg, 'error');
         } finally {
             setSaving(false);

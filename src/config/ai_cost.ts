@@ -43,6 +43,11 @@ export const aiCostConfig: Record<string, AIServiceCost> = {
             feedbackDetail: 1,
         }
     },
+    speaking_bank: {
+        service: 'speaking_bank',
+        baseCost: 0,
+        description: '口语题库 (真题，不消耗AT币)',
+    },
     prompt: {
         service: 'prompt',
         baseCost: 3,
