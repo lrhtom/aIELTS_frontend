@@ -1,11 +1,14 @@
 import Layout from '../../components/layout/Layout';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { getInitialVocabInput } from '../../store/word_selection_store';
 import { speakingStore } from '../../store/speaking_page_store';
 import { useLang } from '../../i18n/LanguageContext';
+import { translations } from '../../i18n/translations';
+import { listPlans, getPlanDetail, type LearningPlan } from '../../api/learning_plan';
 import { ATInterceptor } from '../../api/atInterceptor';
+import { showToast } from '../../components/common/Toast';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import '../../styles/practice_page.css';
 import '../../styles/speaking_page.css';
@@ -29,8 +32,8 @@ interface ModeInfo {
 }
 
 export default function Speaking() {
-    const { translations: t } = useLang();
-    const sc = t.speakingConfig;
+    const { lang } = useLang();
+    const sc = translations[lang].speakingConfig;
 
     const PARTS: PartInfo[] = [
         { id: 'part1', emoji: '💬', title: sc.ieltsPart.parts.part1.title, desc: sc.ieltsPart.parts.part1.desc },
@@ -86,6 +89,18 @@ export default function Speaking() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isChecking, setIsChecking] = useState(false);
     const [isGeneratingScenario, setIsGeneratingScenario] = useState(false);
+    
+    // Plan Import State
+    const [plans, setPlans] = useState<LearningPlan[]>([]);
+    const [importPlanId, setImportPlanId] = useState(0);
+    const [importingPlan, setImportingPlan] = useState(false);
+
+    useEffect(() => {
+        listPlans().then(({ plans: ps }) => {
+            setPlans(ps);
+            if (ps.length > 0) setImportPlanId(ps[0].id);
+        }).catch(() => {});
+    }, []);
 
     const navigate = useNavigate();
 
@@ -122,6 +137,32 @@ export default function Speaking() {
 
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
+    };
+
+    const handleImportPlan = async () => {
+        if (!importPlanId) return;
+        setImportingPlan(true);
+        try {
+            const { plan: detail } = await getPlanDetail(importPlanId);
+            const todayWords = detail.today_words || [];
+            if (todayWords.length === 0) {
+                showToast('该计划今日暂无待学单词', 'error');
+                return;
+            }
+            const validWords = todayWords.filter(w => w.zh && w.zh.trim());
+            const skipped = todayWords.length - validWords.length;
+            const lines = validWords.map(w => `${w.word} - ${w.zh}`).join('\n');
+            handleVocabChange(lines);
+            if (skipped > 0) {
+                showToast(`已导入 ${validWords.length} 个单词，${skipped} 个因缺少中文释义被跳过`, 'error');
+            } else {
+                showToast(`已导入 ${validWords.length} 个单词`, 'success');
+            }
+        } catch {
+            showToast('导入失败', 'error');
+        } finally {
+            setImportingPlan(false);
+        }
     };
 
     const isExamPart1 = selectedMode === 'exam' && selectedPart === 'part1';
@@ -279,10 +320,32 @@ export default function Speaking() {
                         </label>
                     </div>
                     {useCustomVocab && (
-                        <VocabInput
-                            value={vocabInput}
-                            onChange={handleVocabChange}
-                        />
+                        <>
+                            {plans.length > 0 && (
+                                <div className="plan-import-row">
+                                    <select
+                                        className="plan-import-select"
+                                        value={importPlanId}
+                                        onChange={e => setImportPlanId(Number(e.target.value))}
+                                    >
+                                        {plans.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        className="plan-import-btn"
+                                        onClick={handleImportPlan}
+                                        disabled={importingPlan}
+                                    >
+                                        {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
+                                    </button>
+                                </div>
+                            )}
+                            <VocabInput
+                                value={vocabInput}
+                                onChange={handleVocabChange}
+                            />
+                        </>
                     )}
                 </div>
 

@@ -679,6 +679,10 @@
     background: #0d9488;
 }
 
+.lc-dot.lc-checked {
+    box-shadow: 0 0 0 1px #00eeff;
+}
+
 /* ── Top X-axis month labels (absolute-positioned inside relative wrapper) ── */
 .lc-cal-xaxis {
     position: relative;
@@ -749,6 +753,80 @@
     font-size: 11px;
     color: var(--color-text-secondary);
     display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Skeleton loading placeholders
+   ═══════════════════════════════════════════════════════════════ */
+
+.lc-skeleton {
+    background: linear-gradient(90deg, var(--color-border) 25%, rgba(0,0,0,0.04) 37%, var(--color-border) 63%);
+    background-size: 400% 100%;
+    animation: lcShimmer 1.4s ease infinite;
+    border-radius: 6px;
+}
+
+@keyframes lcShimmer {
+    0%   { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.lc-skeleton-text {
+    display: inline-block;
+    height: 14px;
+    vertical-align: middle;
+}
+
+.lc-skeleton-chip {
+    display: inline-block;
+    width: 80px;
+    height: 14px;
+}
+
+.lc-skeleton-bar {
+    background: linear-gradient(90deg, var(--color-border) 25%, rgba(0,0,0,0.04) 37%, var(--color-border) 63%) !important;
+    background-size: 400% 100% !important;
+    animation: lcShimmer 1.4s ease infinite !important;
+    border-radius: 6px !important;
+    overflow: hidden;
+}
+
+.lc-skeleton-bar::after { display: none; }
+
+/* Calendar dot skeleton */
+.lc-dot-skeleton {
+    background: linear-gradient(135deg, var(--color-border) 25%, rgba(0,0,0,0.04) 37%, var(--color-border) 63%) !important;
+    background-size: 400% 100% !important;
+    animation: lcShimmer 1.4s ease infinite !important;
+    opacity: 0.5;
+}
+
+.lc-dot-skeleton.lc-lvl-0,
+.lc-dot-skeleton.lc-lvl-1,
+.lc-dot-skeleton.lc-lvl-2,
+.lc-dot-skeleton.lc-lvl-3,
+.lc-dot-skeleton.lc-lvl-4 {
+    background: linear-gradient(135deg, var(--color-border) 25%, rgba(0,0,0,0.04) 37%, var(--color-border) 63%) !important;
+    background-size: 400% 100% !important;
+    animation: lcShimmer 1.4s ease infinite !important;
+}
+
+/* Plan item skeleton */
+.plan-item-skeleton {
+    padding: 12px 16px;
+}
+
+.plan-item-skeleton .plan-item-top,
+.plan-item-skeleton .plan-item-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.plan-item-skeleton .plan-progress-bar {
+    height: 6px;
+    margin: 6px 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════

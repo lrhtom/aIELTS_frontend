@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
+import AiModelSelector from '../../components/common/AiModelSelector';
 import {
     deleteCreativeWorkshopProject,
     generateCreativeWorkshopProject,
@@ -136,6 +137,9 @@ export default function CreativeWorkshopPage() {
                                 placeholder={t.creativeWorkshop.methodPlaceholder}
                             />
                         </label>
+                        <div className="cw-field" style={{ marginTop: '4px' }}>
+                            <AiModelSelector description="" />
+                        </div>
                     </div>
                     <div className="cw-editor-footer">
                         <div className="cw-counter">
@@ -165,6 +169,14 @@ export default function CreativeWorkshopPage() {
                                     <div className="cw-item-top">
                                         <h3>{project.title}</h3>
                                         <div className="cw-item-top-actions">
+                                            <button
+                                                className="cw-delete-btn"
+                                                style={{ color: '#0369a1', borderColor: '#0ea5e9', background: '#e0f2fe' }}
+                                                onClick={() => navigate(`/creative-workshop/edit/${project.id}`)}
+                                                title="AI Edit"
+                                            >
+                                                📝
+                                            </button>
                                             <button
                                                 className={`cw-star ${project.is_favorited ? 'active' : ''}`}
                                                 onClick={() => handleToggleFavorite(project)}

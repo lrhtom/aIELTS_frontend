@@ -110,8 +110,8 @@ export default function CustomMemoryStudyPage() {
 
             setCurrentIndex((prev) => prev + 1);
             setIsFlipped(false);
-        } catch (e: any) {
-            const msg = e?.response?.data?.error || '评分提交失败，请稍后再试';
+        } catch (e: unknown) {
+            const msg = (e as any)?.response?.data?.error || '评分提交失败，请稍后再试'; // eslint-disable-line @typescript-eslint/no-explicit-any
             showToast(msg, 'error');
         } finally {
             setSubmitting(false);

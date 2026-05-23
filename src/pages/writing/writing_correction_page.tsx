@@ -357,6 +357,70 @@ export default function WritingCorrectionPage() {
                                 </div>
                             </div>
 
+                            {/* Actionable Advice */}
+                            {result.Actionable_Advice && result.Actionable_Advice.length > 0 && (
+                                <div className="wc-feedback-box" style={{ marginTop: '24px', backgroundColor: 'rgba(var(--color-primary-rgb), 0.05)', borderColor: 'rgba(var(--color-primary-rgb), 0.2)' }}>
+                                    <h3>🚀 {lang === 'zh' ? '下一步提升建议' : 'Actionable Advice'}</h3>
+                                    <div className="wc-feedback-content">
+                                        <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {result.Actionable_Advice.map((advice, idx) => (
+                                                <li key={idx} style={{ lineHeight: 1.6 }}>{advice}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Sentence Corrections */}
+                            {result.Sentence_Corrections && result.Sentence_Corrections.length > 0 && (
+                                <div className="wc-feedback-box" style={{ marginTop: '24px' }}>
+                                    <h3>✍️ {lang === 'zh' ? '逐句精批' : 'Sentence Corrections'}</h3>
+                                    <div className="wc-feedback-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {result.Sentence_Corrections.map((corr, idx) => (
+                                            <div key={idx} style={{ padding: '16px', borderRadius: '12px', backgroundColor: 'var(--color-surface-hover)', border: '1px solid var(--color-border)' }}>
+                                                <div style={{ marginBottom: '8px' }}>
+                                                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#ef4444', fontWeight: 600, marginRight: '8px' }}>
+                                                        {lang === 'zh' ? '原句' : 'Original'}
+                                                    </span>
+                                                    <span style={{ textDecoration: 'line-through', color: 'var(--color-text-dim)' }}>{corr.original}</span>
+                                                </div>
+                                                <div style={{ marginBottom: '12px' }}>
+                                                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#d1fae5', color: '#10b981', fontWeight: 600, marginRight: '8px' }}>
+                                                        {lang === 'zh' ? '修改' : 'Improved'}
+                                                    </span>
+                                                    <span style={{ color: 'var(--color-text)', fontWeight: 500 }}>{corr.improved}</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.9rem', color: 'var(--color-text-dim)', borderTop: '1px dashed var(--color-border)', paddingTop: '12px' }}>
+                                                    <span style={{ fontWeight: 600, color: 'var(--color-primary)', marginRight: '6px' }}>[{corr.error_type}]</span>
+                                                    {corr.explanation}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Vocabulary Upgrades */}
+                            {result.Vocabulary_Upgrades && result.Vocabulary_Upgrades.length > 0 && (
+                                <div className="wc-feedback-box" style={{ marginTop: '24px' }}>
+                                    <h3>✨ {lang === 'zh' ? '词汇升级' : 'Vocabulary Upgrades'}</h3>
+                                    <div className="wc-feedback-content" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                                        {result.Vocabulary_Upgrades.map((vocab, idx) => (
+                                            <div key={idx} style={{ flex: '1 1 300px', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'var(--color-surface-hover)', border: '1px solid var(--color-border)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                                    <span style={{ color: '#ef4444', textDecoration: 'line-through', fontWeight: 500 }}>{vocab.original}</span>
+                                                    <span>➡️</span>
+                                                    <span style={{ color: '#10b981', fontWeight: 600 }}>{vocab.upgrades.join(' / ')}</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-dim)', fontStyle: 'italic' }}>
+                                                    "{vocab.context}"
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Model essay */}
                             {result.Model_Essay && (
                                 <div className="wc-model-essay-box">

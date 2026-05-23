@@ -9,7 +9,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
     children: [
         {
             name: 'auth',
-            attributes: { count: '10', module: '鉴权与用户' },
+            attributes: { count: '10', module: 'routeVis.moduleNames.auth' },
             children: [
                 { name: 'POST /register', attributes: { handler: 'UserRegistrationView' } },
                 { name: 'POST /send-code', attributes: { handler: 'SendVerificationCodeView' } },
@@ -25,7 +25,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'balance',
-            attributes: { count: '4', module: 'AT币管理' },
+            attributes: { count: '4', module: 'routeVis.moduleNames.balance' },
             children: [
                 { name: 'GET /', attributes: { handler: 'get_balance' } },
                 { name: 'POST /check', attributes: { handler: 'check_balance' } },
@@ -35,7 +35,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'store',
-            attributes: { count: '6', module: '商店' },
+            attributes: { count: '6', module: 'routeVis.moduleNames.store' },
             children: [
                 { name: 'GET /products', attributes: { handler: 'list_products' } },
                 { name: 'POST /purchase', attributes: { handler: 'purchase_product' } },
@@ -47,14 +47,14 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'reading',
-            attributes: { count: '1', module: '阅读' },
+            attributes: { count: '1', module: 'routeVis.moduleNames.reading' },
             children: [
                 { name: 'POST /generate', attributes: { handler: 'generate_reading' } },
             ],
         },
         {
             name: 'listening',
-            attributes: { count: '2', module: '听力' },
+            attributes: { count: '2', module: 'routeVis.moduleNames.listening' },
             children: [
                 { name: 'POST /generate', attributes: { handler: 'generate_listening' } },
                 { name: 'POST /audio', attributes: { handler: 'generate_listening_audio' } },
@@ -62,7 +62,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'speaking',
-            attributes: { count: '14', module: '口语' },
+            attributes: { count: '14', module: 'routeVis.moduleNames.speaking' },
             children: [
                 { name: 'POST /chat', attributes: { handler: 'speaking_chat' } },
                 { name: 'POST /transcribe', attributes: { handler: 'speaking_transcribe' } },
@@ -82,7 +82,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'writing',
-            attributes: { count: '7', module: '写作' },
+            attributes: { count: '7', module: 'routeVis.moduleNames.writing' },
             children: [
                 { name: 'POST /generate', attributes: { handler: 'generate_writing' } },
                 { name: 'POST /chart/generate', attributes: { handler: 'generate_chart' } },
@@ -95,7 +95,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'vocab',
-            attributes: { count: '7', module: '词汇FSRS' },
+            attributes: { count: '7', module: 'routeVis.moduleNames.fsrs' },
             children: [
                 { name: 'POST /sync', attributes: { handler: 'VocabSyncView' } },
                 { name: 'GET /cards', attributes: { handler: 'VocabCardsView' } },
@@ -108,7 +108,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'notebooks',
-            attributes: { count: '4', module: '笔记本' },
+            attributes: { count: '4', module: 'routeVis.moduleNames.notebooks' },
             children: [
                 { name: 'GET|POST /', attributes: { handler: 'NotebookListView' } },
                 { name: 'GET|PUT /:pk/', attributes: { handler: 'NotebookDetailView' } },
@@ -118,7 +118,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'plans',
-            attributes: { count: '8', module: '学习计划' },
+            attributes: { count: '8', module: 'routeVis.moduleNames.plans' },
             children: [
                 { name: 'GET|POST /', attributes: { handler: 'PlanListView' } },
                 { name: 'GET|PUT|DELETE /:pk/', attributes: { handler: 'PlanDetailView' } },
@@ -132,7 +132,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'prompts',
-            attributes: { count: '3', module: 'Prompt广场' },
+            attributes: { count: '3', module: 'routeVis.moduleNames.prompts' },
             children: [
                 { name: 'GET /', attributes: { handler: 'prompt_list' } },
                 { name: 'POST /:pk/like/', attributes: { handler: 'prompt_like' } },
@@ -141,7 +141,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'creative-workshop',
-            attributes: { count: '4', module: '创意工坊' },
+            attributes: { count: '4', module: 'routeVis.moduleNames.creative' },
             children: [
                 { name: 'GET /projects/', attributes: { handler: 'CreativeWorkshopProjectListView' } },
                 { name: 'POST /projects/generate/', attributes: { handler: 'CreativeWorkshopProjectGenerateView' } },
@@ -151,7 +151,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'assistant',
-            attributes: { count: '5', module: '全局助手' },
+            attributes: { count: '5', module: 'routeVis.moduleNames.assistant' },
             children: [
                 { name: 'POST /personal-chat', attributes: { handler: 'personal_agent_chat' } },
                 { name: 'GET /mcp/capabilities', attributes: { handler: 'assistant_mcp_capabilities' } },
@@ -162,7 +162,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'admin',
-            attributes: { count: '6', module: '管理后台' },
+            attributes: { count: '6', module: 'routeVis.moduleNames.admin' },
             children: [
                 { name: 'GET /feedback', attributes: { handler: 'AdminFeedbackListView' } },
                 { name: 'PATCH /feedback/:pk', attributes: { handler: 'AdminFeedbackUpdateView' } },
@@ -174,7 +174,7 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'feedback',
-            attributes: { count: '1', module: '用户反馈' },
+            attributes: { count: '1', module: 'routeVis.moduleNames.feedback' },
             children: [
                 { name: 'POST /submit', attributes: { handler: 'FeedbackCreateView' } },
             ],

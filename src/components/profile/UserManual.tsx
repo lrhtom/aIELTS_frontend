@@ -20,6 +20,7 @@ const UserManual: React.FC = () => {
     // Initialize first item on first load
     useEffect(() => {
         if (data.length > 0 && !activeSubsectionId) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setExpandedSections([data[0].id]);
             setActiveSectionId(data[0].id);
             setActiveSubsectionId(data[0].subsections[0].id);
@@ -48,6 +49,7 @@ const UserManual: React.FC = () => {
     // Auto-expand sections when searching to show matched results
     useEffect(() => {
         if (searchQuery.trim()) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setExpandedSections(filteredData.map(s => s.id));
         }
     }, [filteredData, searchQuery]);

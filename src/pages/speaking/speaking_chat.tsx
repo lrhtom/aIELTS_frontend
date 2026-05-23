@@ -133,7 +133,6 @@ function SpeakingChatPage() {
         bankSource?: string,
         scenarioFiles?: File[],
     };
-    const bankSource = state?.bankSource ?? '';
     const vocabRaw: string = state?.vocabInput ?? '';
     const initialMode: SpeakingMode = state?.mode ?? 'chat';
     const scenarioPrompt: string = state?.scenarioInput ?? '';
@@ -168,13 +167,13 @@ function SpeakingChatPage() {
     const [recordingTime, setRecordingTime] = useState(0);
     // Exam states
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [, setExamHistory] = useState<Array<any>>([]);
+    const [, setExamHistory] = useState<Array<any>>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
     const [showTimer, setShowTimer] = useState(false);
     const [showPart3ContinuePrompt, setShowPart3ContinuePrompt] = useState(false);
     const [loadingPart3, setLoadingPart3] = useState(false);
+    const [_loadingNextPart, setLoadingNextPart] = useState(false);
     // Full Test: track which part we're currently in
     const [fullTestPhase, setFullTestPhase] = useState<'part1' | 'part2' | 'part3'>('part1');
-    const [loadingNextPart, setLoadingNextPart] = useState(false);
     const [prepTimeLeft, setPrepTimeLeft] = useState(0);
 
     // Initial effect for part 2 prep timer
@@ -246,35 +245,23 @@ function SpeakingChatPage() {
         // useEffect 中调用会被拦截并返回 NotFoundError。
         // 麦克风权限在实际点击录音按钮时（toggleRecording）申请。
 
-        const wordList = wordsRef.current.map(w => w.en).join(', ');
-        let systemPrompt = '';
+        // 后端各端点已通过 skills.py 注入正确的 system prompt，前端不再硬编码
         let welcomeMsg = '';
 
         if (activeMode === 'scenario') {
-            systemPrompt = `Role-play Scenario: ${scenarioPrompt}\nTarget vocabulary: [${wordList}]`;
             // Fallback welcome — will be replaced by AI-generated opening below
             welcomeMsg = `Acting for scenario: "${scenarioPrompt}". I am ready to start. What would you like to say first?`;
         } else if (isFullTestMode && activeExamQuestions.length > 0) {
             // Full Test mode: start with Part 1
-            systemPrompt = `You are taking IELTS Speaking Full Test. Starting with Part 1. Topic: ${activeExamQuestions[0].topic}`;
             welcomeMsg = `Welcome to the IELTS Full Speaking Test. We will go through Part 1, Part 2, and Part 3 consecutively. Let's begin with Part 1. Our first topic is ${activeExamQuestions[0].topic}. ${activeExamQuestions[0].question}`;
         } else if (isExamMode && activeExamQuestions.length > 0) {
             const partLabel = activeMode === 'part1' ? 'Part 1' : activeMode === 'part2' ? 'Part 2' : 'Part 3';
-            systemPrompt = `You are taking IELTS Speaking ${partLabel}. Topic: ${activeExamQuestions[0].topic}`;
             welcomeMsg = `Welcome to IELTS Speaking ${partLabel}. Our first topic is ${activeExamQuestions[0].topic}. ${activeExamQuestions[0].question}`;
         } else {
-            systemPrompt = `You are an IELTS speaking practice AI examiner.
-Target vocabulary: [${wordList}].
-Rules:
-1. Always reply in English only.
-2. Use the target vocabulary naturally in your responses.
-3. Keep replies concise (1-3 sentences).
-4. Always format your reply using valid Markdown (GFM).
-5. Encourage the user to use the target words.`;
             welcomeMsg = "Welcome to IELTS speaking practice. Tell me when you are ready.";
         }
 
-        contextRef.current = [{ role: 'system', content: systemPrompt }];
+        contextRef.current = [];
         setChatHistory([{ role: 'assistant', content: welcomeMsg }]);
 
         let isUnmounted = false;
@@ -342,6 +329,8 @@ Rules:
             }
         })();
 
+        const currentTtsTimer = ttsTimerRef.current;
+
         return () => {
             isUnmounted = true;
             controller.abort();
@@ -355,9 +344,10 @@ Rules:
             }
             micStreamRef.current?.getTracks().forEach(t => t.stop());
             if (recTimerRef.current) clearInterval(recTimerRef.current);
-            if (ttsTimerRef.current) clearTimeout(ttsTimerRef.current);
+            if (currentTtsTimer) clearTimeout(currentTtsTimer);
         };
 
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -757,7 +747,7 @@ Rules:
 
             const [chatResponse, audioScores] = await Promise.all([chatPromise, uploadPromise]);
 
-            const chatRes = chatResponse.data as any;
+            const chatRes = chatResponse.data as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
             let isContinue = 1;
             let nextReply = chatRes.reply || '';
@@ -1081,7 +1071,11 @@ Rules:
                                             className="sc-toggle-text-btn"
                                             onClick={() => setExpandedMsgs(prev => {
                                                 const next = new Set(prev);
-                                                next.has(i) ? next.delete(i) : next.add(i);
+                                                if (next.has(i)) {
+                                                    next.delete(i);
+                                                } else {
+                                                    next.add(i);
+                                                }
                                                 return next;
                                             })}
                                         >

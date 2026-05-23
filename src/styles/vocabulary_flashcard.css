@@ -1342,3 +1342,10 @@
     .choice-feedback-result { flex-direction: column; align-items: stretch; }
     .choice-btn-next { width: 100%; text-align: center; justify-content: center; }
 }
+
+/* ── Blink flash animation (CopyMode 闪烁模式) ──────────────────────────── */
+@keyframes blink-flash {
+    0%   { opacity: 0; transform: scale(0.95); }
+    20%  { opacity: 1; transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1); }
+}

@@ -80,6 +80,26 @@ export class ATInterceptor {
         );
     }
 
+    static async writingChat(messages: Array<Record<string, unknown>>, params?: Record<string, number>) {
+        return this.intercept('writing', () =>
+            apiClient.post<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number, corrected_text: string, atConsumed?: number }>('/writing/chat', { messages }),
+            params
+        );
+    }
+
+    static async writingChatWithFiles(messages: Array<Record<string, unknown>>, files: File[], params?: Record<string, number>) {
+        return this.intercept('writing', () => {
+            const formData = new FormData();
+            formData.append('messages', JSON.stringify(messages));
+            files.forEach(f => formData.append('files', f));
+            return apiClient.post<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number, corrected_text: string, atConsumed?: number }>(
+                '/writing/chat',
+                formData,
+                { headers: { 'Content-Type': undefined as unknown as string } }
+            );
+        }, params);
+    }
+
     static async checkScenario(scenario: string, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
             apiClient.post<{ valid: boolean, reason: string, atConsumed?: number }>('/speaking/check-scenario', { scenario }),
@@ -145,6 +165,7 @@ export class ATInterceptor {
         );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static async summaryPart1(history: Array<any>, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
             apiClient.post<{ overall_band_estimate: number, strengths: string, weaknesses: string, are_analysis: string, advice: string, atConsumed?: number }>('/speaking/part1/summary', { history }),
@@ -180,6 +201,7 @@ export class ATInterceptor {
         );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static async summaryPart2(history: Array<any>, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
             apiClient.post<{ overall_band_estimate: number, strengths: string, weaknesses: string, analysis: string, advice: string, atConsumed?: number }>('/speaking/part2/summary', { history }),
@@ -215,6 +237,7 @@ export class ATInterceptor {
         );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static async summaryPart3(history: Array<any>, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
             apiClient.post<{ overall_band_estimate: number, strengths: string, weaknesses: string, analysis: string, advice: string, atConsumed?: number }>('/speaking/part3/summary', { history }),

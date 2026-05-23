@@ -317,7 +317,7 @@ export async function fetchStream(path: string, options: RequestOptions = {}): P
         try {
             const data = await response.json();
             msg = data.error || data.message || msg;
-        } catch {}
+        } catch { /* ignore */ }
         const err = new Error(msg) as ApiError;
         err.status = response.status;
         throw err;

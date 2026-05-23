@@ -15,9 +15,12 @@ import ProfilePage from './pages/profile_page';
 import PromptPage from './pages/prompt_page';
 import SettingsPage from './pages/settings_page';
 import StorePage from './pages/store_page';
+import FeedbackPage from './pages/feedback_page';
+import MarkdownNotesPage from './pages/markdown_notes_page';
 import CreativeWorkshopPage from './pages/creative_workshop/creative_workshop_page';
 import CreativeWorkshopFavoritesPage from './pages/creative_workshop/creative_workshop_favorites_page';
 import CreativeWorkshopPreviewPage from './pages/creative_workshop/creative_workshop_preview_page';
+import CreativeWorkshopEditPage from './pages/creative_workshop/creative_workshop_edit_page';
 
 // 认证
 import LoginPage from './pages/auth/LoginPage';
@@ -37,6 +40,7 @@ import SpeakingSummaryPage from './pages/speaking/speaking_summary';
 
 // 写作
 import Writing_page from './pages/writing/writing_page';
+import WritingChatConfigPage from './pages/writing/writing_chat_config_page';
 import WritingCorrectionPage from './pages/writing/writing_correction_page';
 import Task1SelectionPage from './pages/writing/task1_selection_page';
 import Task2SelectionPage from './pages/writing/task2_selection_page';
@@ -61,6 +65,7 @@ import VocabBookDetailPage from './pages/vocabulary/vocab_book_detail_page';
 
 // Code-split large pages (>800 lines)
 const SpeakingChatPage = lazy(() => import('./pages/speaking/speaking_chat'));
+const WritingChatPage = lazy(() => import('./pages/writing/writing_chat_page'));
 const VocabularyTrainingDoingPage = lazy(() => import('./pages/vocabulary/vocabulary_training_doing_page'));
 const VocabularyFlashcardDoingPage = lazy(() => import('./pages/vocabulary/vocabulary_flashcard_doing_page'));
 const NotebookDetailPage = lazy(() => import('./pages/vocabulary/notebook_detail_page'));
@@ -108,6 +113,8 @@ export default function App() {
         <Route path="/speaking/chat" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><SpeakingChatPage /></Suspense></ProtectedRoute>} />
         <Route path="/speaking/summary" element={<ProtectedRoute><SpeakingSummaryPage /></ProtectedRoute>} />
         <Route path="/writing" element={<ProtectedRoute><Writing_page /></ProtectedRoute>} />
+        <Route path="/writing/chat-config" element={<ProtectedRoute><WritingChatConfigPage /></ProtectedRoute>} />
+        <Route path="/writing/chat" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><WritingChatPage /></Suspense></ProtectedRoute>} />
         <Route path="/writing/correction" element={<ProtectedRoute><WritingCorrectionPage /></ProtectedRoute>} />
         <Route path="/writing/task1" element={<ProtectedRoute><Task1SelectionPage /></ProtectedRoute>} />
         <Route path="/writing/task2" element={<ProtectedRoute><Task2SelectionPage /></ProtectedRoute>} />
@@ -122,9 +129,12 @@ export default function App() {
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/prompts" element={<ProtectedRoute><PromptPage /></ProtectedRoute>} />
         <Route path="/store" element={<ProtectedRoute><StorePage /></ProtectedRoute>} />
+        <Route path="/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
+        <Route path="/markdown-notes" element={<ProtectedRoute><MarkdownNotesPage /></ProtectedRoute>} />
         <Route path="/creative-workshop" element={<ProtectedRoute><CreativeWorkshopPage /></ProtectedRoute>} />
         <Route path="/creative-workshop/favorites" element={<ProtectedRoute><CreativeWorkshopFavoritesPage /></ProtectedRoute>} />
         <Route path="/creative-workshop/pages/:id" element={<ProtectedRoute><CreativeWorkshopPreviewPage /></ProtectedRoute>} />
+        <Route path="/creative-workshop/edit/:id" element={<ProtectedRoute><CreativeWorkshopEditPage /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

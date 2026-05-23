@@ -27,7 +27,7 @@ export default function StorePage() {
             })
             .catch(() => showToast(t.store.fetchFail, 'error'))
             .finally(() => setLoading(false));
-    }, []);
+    }, [t.store.fetchFail]);
 
     const fetchCart = async () => {
         try {
@@ -95,25 +95,21 @@ export default function StorePage() {
 
     return (
         <Layout>
-            <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: 600 }}>
-                        <span style={{ marginRight: '8px' }}>🛒</span>
+            <div className="store-page">
+                <div className="store-header">
+                    <h1>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                         {t.nav.store}
                     </h1>
-                    
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                        <div style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: '20px', fontWeight: 600 }}>
-                            <span style={{ color: 'var(--text-secondary)', marginRight: '8px' }}>{t.store.balance}</span>
-                            <span style={{ color: 'var(--primary-color)' }}>{user?.atBalance || 0} AT</span>
+
+                    <div className="store-header-actions">
+                        <div className="store-balance-badge">
+                            <span>{t.store.balance}</span>
+                            <strong>{user?.atBalance || 0} AT</strong>
                         </div>
-                        
-                        <button 
-                            className="practice-btn" 
-                            style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}
-                            onClick={() => setIsCartOpen(true)}
-                        >
-                            <span style={{ fontSize: '1.2rem' }}>🛍️</span>
+
+                        <button className="store-cart-trigger" onClick={() => setIsCartOpen(true)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                             {t.store.cart} ({cart.total_items})
                         </button>
                     </div>
@@ -125,9 +121,6 @@ export default function StorePage() {
                     <div className="store-product-grid">
                         {products.map(p => (
                             <article key={p.id} className="store-card" aria-label={p.name}>
-                                <div className="store-card__shine" />
-                                <div className="store-card__glow" />
-
                                 <div className="store-card__content">
                                     <span className="store-card__badge">
                                         +{p.reward_amount}
@@ -183,11 +176,8 @@ export default function StorePage() {
 
             {/* Shopping Cart Modal */}
             {isCartOpen && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-                    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center'
-                }} onClick={() => setIsCartOpen(false)}>
-                    <div className="store-cart-modal receipt receipt--cart-shell" onClick={e => e.stopPropagation()}>
+                <div className="store-modal-overlay" onClick={() => setIsCartOpen(false)}>
+                    <div className="store-cart-modal" onClick={e => e.stopPropagation()}>
                         
                         <div className="store-cart-header">
                             <h2 className="store-cart-title">{t.store.cartTitle}</h2>
@@ -259,10 +249,6 @@ export default function StorePage() {
                                         <span>¥ {cart.total_cny}</span>
                                     </div>
 
-                                    <div className="barcode" aria-hidden="true">
-                                        <div className="barcode-lines" />
-                                    </div>
-
                                     <div className="thanks">{t.store.thanks}</div>
                                 </>
                             )}
@@ -275,7 +261,7 @@ export default function StorePage() {
                             </div>
                             <button
                                 className="practice-btn"
-                                style={{ margin: 0, minWidth: '150px', background: 'var(--primary-color)' }}
+                                style={{ margin: 0, minWidth: '150px' }}
                                 onClick={handleCheckout}
                                 disabled={cart.items.length === 0}
                             >

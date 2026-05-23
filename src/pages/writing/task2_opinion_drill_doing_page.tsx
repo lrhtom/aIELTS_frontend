@@ -151,6 +151,7 @@ export default function Task2OpinionDrillDoingPage() {
             : [];
 
         if (routeQuestions.length > 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setQuestions(routeQuestions);
             setCurrentIndex(0);
             setCurrentAnswer('');
@@ -168,6 +169,7 @@ export default function Task2OpinionDrillDoingPage() {
             const safeStep = saved.step === 'evaluating' && !saved.pendingEvaluation
                 ? 'answering'
                 : saved.step;
+
 
             setQuestions(saved.questions);
             setCurrentIndex(safeIndex);

@@ -46,7 +46,9 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
     const [days, setDays] = useState(remainingDays);
     const [showExamples, setShowExamples] = useState(false);
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { setZh(entry.zh); }, [entry.zh]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { setDays(computeRemainingDays(entry.fsrs_due)); }, [entry.fsrs_due]);
 
     const displayDueDate = useMemo(() => {

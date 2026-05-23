@@ -11,6 +11,7 @@ import AdminFeedback from '../components/profile/AdminFeedback';
 import AdminUserManagement from '../components/profile/AdminUserManagement';
 import UserBackground from '../components/profile/UserBackground';
 import UserManual from '../components/profile/UserManual';
+import UserAnalytics from '../components/profile/UserAnalytics';
 import RouteVisualization from '../components/admin/RouteVisualization';
 import { formatATBalance } from '../utils/format';
 import {
@@ -29,10 +30,11 @@ import {
   ArrowLeft,
   Coins,
   GitBranch,
+  BarChart3,
 } from 'lucide-react';
 import '../styles/profile_page.css';
 
-type Tab = 'home' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'manual';
+type Tab = 'home' | 'analytics' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'manual';
 
 /** Shown when a non-admin tries to access an admin tab via DevTools state manipulation */
 function AccessDenied() {
@@ -62,6 +64,7 @@ export default function ProfilePage() {
     const renderContent = () => {
         switch (activeTab) {
             case 'home': return <UserHome />;
+            case 'analytics': return <UserAnalytics />;
             case 'settings': return <UserSettings />;
             case 'backpack': return <UserBackpack onBack={() => setActiveTab('home')} />;
             case 'feedback': return <UserFeedback />;
@@ -80,6 +83,7 @@ export default function ProfilePage() {
 
     const menuItems: { tab: Tab; Icon: typeof LayoutDashboard; label: string }[] = [
         { tab: 'home', Icon: LayoutDashboard, label: t.profile.menu.home },
+        { tab: 'analytics', Icon: BarChart3, label: t.profile.menu.analytics },
         { tab: 'backpack', Icon: Backpack, label: t.profile.menu.backpack },
         { tab: 'settings', Icon: Settings, label: t.profile.menu.settings },
         { tab: 'feedback', Icon: MessageSquareText, label: t.profile.feedback.title },

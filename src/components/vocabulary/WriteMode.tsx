@@ -16,7 +16,6 @@ interface Props {
     writeSubmitted: boolean;
     writeCorrect: boolean | null;
     unknownMode: boolean;
-    quickProficient: boolean;
     sessionMastery: number[];
     completionDueHint: CompletionDueHint | null;
     onWriteInput: (val: string) => void;
@@ -36,7 +35,6 @@ export default function WriteMode({
     writeSubmitted,
     writeCorrect,
     unknownMode,
-    quickProficient,
     sessionMastery,
     completionDueHint,
     onWriteInput,
@@ -132,7 +130,6 @@ export default function WriteMode({
                         }}
                         autoComplete="new-password"
                         readOnly={writeSubmitted}
-                        // eslint-disable-next-line jsx-a11y/no-autofocus
                         autoFocus
                     />
                     <button

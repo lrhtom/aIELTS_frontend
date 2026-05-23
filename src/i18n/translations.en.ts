@@ -11,6 +11,8 @@ export const en: Translations = {
         sidebarTitle: 'Navigation',
         store: 'Store',
         workshop: 'Creative Workshop',
+        feedback: 'Feedback',
+        notebook: 'Notes',
     },
     common: {
         back: 'Back',
@@ -317,6 +319,7 @@ export const en: Translations = {
         subheading: 'Your personal dashboard for tracking progress and achievements',
         menu: {
             home: 'Overview',
+            analytics: 'Analytics',
             settings: 'Settings',
             backpack: 'Backpack',
             style: 'Site Style',
@@ -369,6 +372,7 @@ export const en: Translations = {
                 tooltip: {
                     noActivity: 'No activity',
                     studied: 'Studied {time}',
+                    checkedIn: '✅ Checked in',
                     vocab: 'Vocab: {n}',
                     reading: 'Reading: {n}',
                     listening: 'Listening: {n}',
@@ -599,6 +603,10 @@ export const en: Translations = {
         opinionDrill: {
             title: '🧠 Opinion Drill Board',
             desc: 'Generate a full set of opinion questions in one round and get grammar, relevance, and vocabulary scoring summaries question by question.'
+        },
+        typingChat: {
+            title: '💬 Typing Chat Mode',
+            desc: 'Chat with AI via pure text, apply your target vocabulary in real scenarios to improve writing expression.'
         }
     },
     task1Selection: {
@@ -1145,5 +1153,82 @@ export const en: Translations = {
             nextPage: 'Next',
         },
     },
+    writingChatConfig: {
+        backToWriting: '← Back to Writing',
+        heading: 'Typing Chat Mode',
+        subheading: 'Interact with AI in real-time through typing and flexibly practice target vocabulary.',
+        vocabSettings: {
+            title: 'Use Target Vocabulary',
+            desc: 'If enabled, your vocabulary usage will be tracked in real-time.',
+        },
+        startBtn: 'Start Chatting',
+    },
+    writingChat: {
+        backToConfig: 'Back to Config',
+        targetVocab: 'Target Vocab',
+        typePlaceholder: 'Type your reply...',
+        sendBtn: 'Send',
+        grammarScore: 'Grammar',
+        vocabScore: 'Vocabulary',
+        relevanceScore: 'Relevance',
+        generating: 'AI is typing...',
+        correctedVersion: 'Corrected version',
+        clearChat: 'Clear Chat',
+        endSummary: 'End & Summary',
+        summaryTitle: 'Session Summary',
+        summarizing: 'Generating summary...',
+        searchVocab: 'Search words...',
+    },
+    analytics: {
+        title: 'Learning Analytics',
+        subtitle: 'Track your vocabulary progress and memory retention',
+        comingSoon: 'Coming Soon',
+        selectBook: 'Select word book',
+        wordsUnit: 'words',
+        totalWords: 'Total Words',
+        studiedWords: 'Studied',
+        studyRate: 'Study Rate',
+        noData: 'No data yet. Start learning some words!',
+        forgettingCurve: 'Forgetting Curve',
+        forgettingCurveDay: 'Day {n}',
+        scheduledDist: 'Review Schedule',
+        masteryDist: 'Mastery Distribution',
+        vocabTab: 'Vocab',
+        listeningTab: 'Listening',
+        speakingTab: 'Speaking',
+        readingTab: 'Reading',
+        writingTab: 'Writing',
+        today: 'Today',
+        days: 'd',
+        overdue: 'overdue',
+        daysLater: 'd later',
+        states: {
+            new: 'New',
+            learning: 'Learning',
+            review: 'Review',
+            relearning: 'Relearning',
+        },
+    },
+    markdownNotes: {
+        title: 'Markdown Notes',
+        newNote: 'New Note',
+        searchPlaceholder: 'Search notes...',
+        emptyList: 'No matching notes',
+        noNotesYet: 'No notes yet, create one above',
+        unsaved: 'Unsaved changes',
+        sidebarCount: 'notes',
+        titlePlaceholder: 'Note title...',
+        saveToCloud: 'Save to Cloud',
+        saving: 'Saving...',
+        deleteNote: 'Delete Note',
+        deleteConfirm: 'Delete "{title}"? This cannot be undone.',
+        deleteSuccess: 'Note deleted',
+        deleteFail: 'Delete failed',
+        createFail: 'Create failed',
+        loadFail: 'Load failed',
+        saveFail: 'Save failed',
+        savedToCloud: 'Saved to cloud',
+        selectNote: 'Select a note from the sidebar to start editing',
+    }
 };
 

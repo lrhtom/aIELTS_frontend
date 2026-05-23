@@ -426,7 +426,7 @@ export default function ListeningPage() {
             if (st.listeningData?.type !== 'multiple_choice') return null;
             return (
                 <div className="listening-mc-mode" key={`tick-${renderTick}`}>
-                    {st.listeningData.questions.map((q: any) => (
+                    {st.listeningData.questions.map((q: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
                         <div key={q.id} className="mc-q-block" style={{ marginBottom: '24px' }}>
                             <div className="q-number" style={{ fontWeight: 'bold', marginBottom: '8px' }}>
                                 {q.id}. {removeMarkdown(q.question)}
@@ -630,7 +630,7 @@ export default function ListeningPage() {
         const isMultipleChoiceMode = st.listeningData.type === 'multiple_choice';
         const isMapMode = st.listeningData.type === 'map';
 
-        st.listeningData.questions.forEach((q: any) => {
+        st.listeningData.questions.forEach((q: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
             const userAns = userAnswersRef.current[q.id] || '';
             if (isMapMode || isMultipleChoiceMode) {
                 if (userAns.trim().toUpperCase() === q.answer?.trim().toUpperCase()) score++;
@@ -691,7 +691,7 @@ export default function ListeningPage() {
 
                     {/* Analysis Content */}
                     <div className="results-content">
-                        {st.listeningData.questions.map((q: any) => {
+                        {st.listeningData.questions.map((q: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
                             const userAns = userAnswersRef.current[q.id] || 'None';
                             let isCorrect = false;
 

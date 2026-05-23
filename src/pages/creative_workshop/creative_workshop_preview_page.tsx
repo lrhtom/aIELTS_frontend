@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
 import {
@@ -79,47 +78,42 @@ export default function CreativeWorkshopPreviewPage() {
     };
 
     return (
-        <Layout>
-            <div className="cw-page-wrap">
-                <header className="cw-page-header">
-                    <div>
-                        <h1>{project?.title || t.creativeWorkshop.previewTitle}</h1>
-                        <p>{t.creativeWorkshop.previewSubtitle}</p>
-                    </div>
-                    <div className="cw-preview-actions">
-                        <button className="cw-favorites-entry" onClick={() => navigate('/creative-workshop')}>
-                            {t.creativeWorkshop.backToHome}
-                        </button>
-                        <button
-                            className={`cw-favorites-entry alt ${project?.is_favorited ? 'active' : ''}`}
-                            onClick={handleToggleFavorite}
-                            disabled={!project}
-                        >
-                            {project?.is_favorited ? t.creativeWorkshop.unfavoriteBtn : t.creativeWorkshop.favoriteBtn}
-                        </button>
-                        <button
-                            className="cw-favorites-entry danger"
-                            onClick={handleDelete}
-                            disabled={!project || deleting}
-                        >
-                            {deleting ? t.common.loading : t.creativeWorkshop.deleteBtn}
-                        </button>
-                    </div>
-                </header>
+        <div className="cw-fullscreen-wrap">
+            <header className="cw-fullscreen-header">
+                <div className="cw-fullscreen-title">
+                    <h1>{project?.title || t.creativeWorkshop.previewTitle}</h1>
+                </div>
+                <div className="cw-preview-actions">
+                    <button className="cw-favorites-entry" onClick={() => navigate('/creative-workshop')}>
+                        {t.creativeWorkshop.backToHome}
+                    </button>
+                    <button
+                        className={`cw-favorites-entry alt ${project?.is_favorited ? 'active' : ''}`}
+                        onClick={handleToggleFavorite}
+                        disabled={!project}
+                    >
+                        {project?.is_favorited ? t.creativeWorkshop.unfavoriteBtn : t.creativeWorkshop.favoriteBtn}
+                    </button>
+                    <button
+                        className="cw-favorites-entry danger"
+                        onClick={handleDelete}
+                        disabled={!project || deleting}
+                    >
+                        {deleting ? t.common.loading : t.creativeWorkshop.deleteBtn}
+                    </button>
+                </div>
+            </header>
 
-                <section className="cw-preview-card">
-                    {loading ? (
-                        <div className="cw-empty">{t.common.loading}</div>
-                    ) : (
-                        <iframe
-                            title={project?.title || 'creative-workshop-preview'}
-                            className="cw-preview-frame"
-                            srcDoc={project?.generated_html || ''}
-                            sandbox="allow-scripts allow-forms allow-modals allow-popups"
-                        />
-                    )}
-                </section>
-            </div>
-        </Layout>
+            {loading ? (
+                <div className="cw-empty" style={{ alignSelf: 'center', margin: 'auto' }}>{t.common.loading}</div>
+            ) : (
+                <iframe
+                    title={project?.title || 'creative-workshop-preview'}
+                    className="cw-fullscreen-frame"
+                    srcDoc={project?.generated_html || ''}
+                    sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
+                />
+            )}
+        </div>
     );
 }

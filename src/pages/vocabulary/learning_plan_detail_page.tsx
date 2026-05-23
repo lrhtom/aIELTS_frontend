@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { retryWithBackoff } from '../../utils/retry';
-import { speakWord } from '../../utils/speak';
 import { type StudyMode, type MasterySetting } from '../../utils/vocab_flashcard_utils';
 import { useLang } from '../../i18n/LanguageContext';
 import { listNotebooks, type Notebook } from '../../api/notebook';
@@ -36,9 +35,6 @@ function clampCopyReviewDays(value: number): number {
     return Math.min(365, Math.max(0, Number.isFinite(value) ? Math.floor(value) : 2));
 }
 
-function formatUtcYmd(date: Date): string {
-    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
-}
 /**
  * 根据 fsrs_due 计算距今的真实剩余天数。
  *
@@ -195,6 +191,7 @@ export default function LearningPlanDetailPage() {
             })
             .catch(() => showToast(t.vocab.details.msgLoadFail, 'error'))
             .finally(() => setLoading(false));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [planId]);
 
     // Load plan name/daily_count from entries summary (we don't have a separate GET yet, use startPlan response? no)
@@ -266,6 +263,7 @@ export default function LearningPlanDetailPage() {
             showToast(t.vocab.details.msgSaveFail, 'error');
             setPlanName(plan.name);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [planName, plan, planId]);
 
     const saveDaily = useCallback(async () => {
@@ -287,6 +285,7 @@ export default function LearningPlanDetailPage() {
             showToast(t.vocab.details.msgSaveFail, 'error');
             setDailyCount(plan.daily_count);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dailyCount, plan, planId]);
 
     const saveCopyConfig = useCallback(async () => {
@@ -377,7 +376,7 @@ export default function LearningPlanDetailPage() {
                 },
             });
         } catch (e: unknown) {
-            const error = e as any;
+            const error = e as { response?: { status?: number, data?: { error?: string } } };
             const status = error?.response?.status;
             const errorMsg = error?.response?.data?.error;
 
@@ -401,7 +400,7 @@ export default function LearningPlanDetailPage() {
             } else if (status === 409 || status === 422) {
                 msg = t.vocab.details.msgPlanConflict;
             } else if (
-                [408, 429, 500, 502, 503, 504].includes(status) ||
+                [408, 429, 500, 502, 503, 504].includes(status as number) ||
                 String(errorMsg).includes('timeout') ||
                 String(errorMsg).includes('network')
             ) {
@@ -602,7 +601,11 @@ export default function LearningPlanDetailPage() {
     const toggleSelectWord = (wordId: number) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
-            next.has(wordId) ? next.delete(wordId) : next.add(wordId);
+            if (next.has(wordId)) {
+                next.delete(wordId);
+            } else {
+                next.add(wordId);
+            }
             return next;
         });
     };

@@ -52,6 +52,22 @@ export default function HomePage() {
         }
     };
 
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+        const elements = document.querySelectorAll('.scroll-animate');
+        elements.forEach(el => observer.observe(el));
+
+        return () => observer.disconnect();
+    }, [user]);
+
     return (
         <Layout>
             {/* Hero */}
@@ -68,7 +84,7 @@ export default function HomePage() {
 
             {/* Daily Check-in */}
             {user && (
-                <section className="checkin-section">
+                <section className="checkin-section scroll-animate">
                     <div className="checkin-card">
                         <div className="checkin-header">
                             <Gift size={24} />
@@ -127,13 +143,13 @@ export default function HomePage() {
             )}
 
             {/* Skills */}
-            <section className="skills">
+            <section className="skills scroll-animate">
                 <h2>{t.home.skills.heading}</h2>
                 <div className="skills-grid">
                     {t.home.skills.items.map((item, i) => {
                         const Icon = skillIcons[i];
                         return (
-                            <Link to={item.link} key={item.title} className="skill-card">
+                            <Link to={item.link} key={item.title} className="skill-card" style={{ '--si': i } as React.CSSProperties}>
                                 <div className="skill-icon"><Icon size={28} /></div>
                                 <h3>{item.title}</h3>
                                 <p>{item.desc}</p>
@@ -145,13 +161,13 @@ export default function HomePage() {
             </section>
 
             {/* How it works */}
-            <section className="how-it-works">
+            <section className="how-it-works scroll-animate">
                 <h2>{t.home.howItWorks.heading}</h2>
                 <div className="steps-row">
                     {t.home.howItWorks.steps.map((step, i) => {
                         const Icon = stepIcons[i];
                         return (
-                            <div key={step.title} className="step-item">
+                            <div key={step.title} className="step-item" style={{ '--si': i } as React.CSSProperties}>
                                 <div className="step-number">{i + 1}</div>
                                 <div className="step-icon"><Icon size={24} /></div>
                                 <h3>{step.title}</h3>
@@ -163,11 +179,11 @@ export default function HomePage() {
             </section>
 
             {/* Announcements */}
-            <section className="announcements">
+            <section className="announcements scroll-animate">
                 <h2>{t.home.announcements.heading}</h2>
                 <div className="announcement-list">
                     {t.home.announcements.items.map((item, i) => (
-                        <div key={i} className="announcement-item">
+                        <div key={i} className="announcement-item" style={{ '--si': i } as React.CSSProperties}>
                             <span className="announcement-date">{item.date}</span>
                             <div className="announcement-content">
                                 <span className={`announcement-tag ${item.tag === '新功能' || item.tag === 'New' ? 'new' : item.tag === '优化' || item.tag === 'Optimization' ? 'update' : 'community'}`}>{item.tag}</span>
@@ -182,7 +198,7 @@ export default function HomePage() {
             <footer className="footer">
                 <span>{t.home.footer}</span>
                 <div className="footer-links">
-                    <Link to="/profile">{t.home.footerFeedback}</Link>
+                    <Link to="/feedback">{t.home.footerFeedback}</Link>
                     <span className="footer-sep">·</span>
                     <Link to="/profile">{t.home.footerManual}</Link>
                 </div>

@@ -1,0 +1,336 @@
+/* ═══════════════════════════════════════════════════════
+   Analytics Page — Clean Dashboard
+   ═══════════════════════════════════════════════════════ */
+
+.analytics-page {
+    padding: 2rem;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+/* ── Header ── */
+.analytics-header {
+    margin-bottom: 1.5rem;
+}
+
+.analytics-header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 4px;
+    letter-spacing: -0.3px;
+}
+
+.analytics-header p {
+    font-size: 0.88rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* ── Skill tabs ── */
+.analytics-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.analytics-tab {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.analytics-tab:hover:not(:disabled) {
+    background: rgba(13, 148, 136, 0.06);
+    color: var(--color-text);
+}
+
+.analytics-tab--active {
+    background: rgba(13, 148, 136, 0.1);
+    color: var(--color-primary);
+}
+
+.analytics-tab:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.analytics-tab-badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+/* ── Selector bar ── */
+.analytics-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+}
+
+.analytics-select-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+}
+
+.analytics-select {
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    min-width: 200px;
+}
+
+.analytics-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+/* ── Stats cards ── */
+.analytics-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 1.5rem;
+}
+
+.analytics-stat-card {
+    background: var(--color-surface);
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.03),
+        0 2px 8px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.analytics-stat-num {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+}
+
+.analytics-stat-label {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+}
+
+/* ── Charts area ── */
+.analytics-charts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+.analytics-chart-card {
+    background: var(--color-surface);
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.03),
+        0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.analytics-chart-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+    letter-spacing: -0.2px;
+}
+
+.analytics-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.analytics-chart-toggle {
+    display: flex;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.analytics-toggle-btn {
+    width: 30px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    transition: all 0.15s ease;
+}
+
+.analytics-toggle-btn.active {
+    background: var(--color-surface);
+    color: var(--color-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.analytics-toggle-btn:hover:not(.active) {
+    color: var(--color-text);
+}
+
+/* ── SVG charts ── */
+.analytics-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.analytics-axis-label {
+    font-size: 10px;
+    fill: var(--color-text-secondary);
+    font-family: inherit;
+}
+
+.analytics-bar-label {
+    font-size: 10px;
+    fill: var(--color-text);
+    font-weight: 700;
+    font-family: inherit;
+}
+
+/* ── Loading skeletons ── */
+.analytics-loading {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+.analytics-skeleton-chart {
+    height: 240px;
+    border-radius: 14px;
+    background: linear-gradient(90deg, var(--color-border) 25%, rgba(0,0,0,0.04) 37%, var(--color-border) 63%);
+    background-size: 400% 100%;
+    animation: analyticsShimmer 1.4s ease infinite;
+}
+
+@keyframes analyticsShimmer {
+    0%   { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* ── Empty state ── */
+.analytics-empty {
+    text-align: center;
+    padding: 3rem 0;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+/* ── Chart tooltip (matches .lc-tooltip from profile_page.css) ── */
+.analytics-chart-tooltip {
+    position: fixed;
+    transform: translate(-50%, calc(-100% - 6px));
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    white-space: nowrap;
+    min-width: 110px;
+}
+
+.analytics-tooltip-main {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 3px;
+    display: block;
+}
+
+.analytics-tooltip-sub {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    display: block;
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+    .analytics-page {
+        padding: 1.25rem;
+    }
+
+    .analytics-stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .analytics-stat-card {
+        padding: 14px 16px;
+    }
+
+    .analytics-stat-num {
+        font-size: 1.3rem;
+    }
+
+    .analytics-tabs {
+        gap: 4px;
+    }
+
+    .analytics-tab {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .analytics-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .analytics-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .analytics-select {
+        width: 100%;
+    }
+}

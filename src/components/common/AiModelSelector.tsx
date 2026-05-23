@@ -21,7 +21,9 @@ export default function AiModelSelector({ onModelChange, label, description }: A
     });
 
     const onModelChangeRef = useRef(onModelChange);
-    onModelChangeRef.current = onModelChange;
+    useEffect(() => {
+        onModelChangeRef.current = onModelChange;
+    }, [onModelChange]);
 
     // Sync from server → local only when the server value changes externally.
     // provider is intentionally NOT a dependency — including it would cause the
@@ -33,6 +35,7 @@ export default function AiModelSelector({ onModelChange, label, description }: A
             localStorage.setItem('ai_provider', nextProvider);
             onModelChangeRef.current?.(nextProvider);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.aiProvider]);
 
     const handleProviderChange = (p: AIProvider) => {

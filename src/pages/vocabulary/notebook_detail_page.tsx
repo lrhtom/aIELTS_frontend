@@ -55,7 +55,7 @@ function WordFormPanel({
 }) {
     const { translations: t } = useLang();
     const [form, setForm] = useState<WordForm>({ ...EMPTY_FORM, ...initial });
-    const set = (k: keyof WordForm) => (v: any) => setForm(f => ({ ...f, [k]: v }));
+    const set = <K extends keyof WordForm>(k: K) => (v: WordForm[K]) => setForm(f => ({ ...f, [k]: v }));
 
     const isDuplicate = submitLabel === '添加' && !!existingWords && form.word.trim() !== ''
         && existingWords.has(form.word.trim().toLowerCase());
@@ -252,7 +252,6 @@ export default function NotebookDetailPage() {
         ])
             .catch(() => { showToast(t.common.error, 'error'); })
             .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nbId, navigate, t.common.error]);
 
     /* 切换 tag 过滤 */
@@ -315,7 +314,11 @@ export default function NotebookDetailPage() {
     const toggleSelectWord = (wordId: number) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
-            next.has(wordId) ? next.delete(wordId) : next.add(wordId);
+            if (next.has(wordId)) {
+                next.delete(wordId);
+            } else {
+                next.add(wordId);
+            }
             return next;
         });
     };
@@ -736,7 +739,11 @@ export default function NotebookDetailPage() {
                                                             e.stopPropagation();
                                                             setExpandedExamples(prev => {
                                                                 const s = new Set(prev);
-                                                                s.has(entry.id) ? s.delete(entry.id) : s.add(entry.id);
+                                                                if (s.has(entry.id)) {
+                                                                    s.delete(entry.id);
+                                                                } else {
+                                                                    s.add(entry.id);
+                                                                }
                                                                 return s;
                                                             });
                                                         }}

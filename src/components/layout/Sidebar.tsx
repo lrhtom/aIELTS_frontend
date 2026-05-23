@@ -51,6 +51,18 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           </Link>
         )}
         {user && (
+          <Link to="/feedback" className={`sidebar-item ${location.pathname === '/feedback' ? 'active' : ''}`}>
+            <span className="sidebar-icon">🐛</span>
+            <span className="sidebar-text">{t.nav.feedback}</span>
+          </Link>
+        )}
+        {user && (
+          <Link to="/markdown-notes" className={`sidebar-item ${location.pathname.startsWith('/markdown-notes') ? 'active' : ''}`}>
+            <span className="sidebar-icon">📝</span>
+            <span className="sidebar-text">{t.nav.notebook}</span>
+          </Link>
+        )}
+        {user && (
           <Link to="/creative-workshop" className={`sidebar-item ${location.pathname.startsWith('/creative-workshop') ? 'active' : ''}`}>
             <span className="sidebar-icon">🎨</span>
             <span className="sidebar-text">{t.nav.workshop}</span>

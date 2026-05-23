@@ -115,7 +115,7 @@ export default function SpeakingSummaryPage() {
     const isPart3 = mode === 'part3';
     const isFullTest = mode === 'fullTest';
 
-    let activeDims: any[] = [...DIMS];
+    let activeDims: Array<{ key: string, label: string, azure: boolean, color: string }> = [...DIMS];
     if (isPart1) {
         activeDims = [
             ...DIMS,
@@ -169,7 +169,7 @@ export default function SpeakingSummaryPage() {
     const count = rounds.length || 1;
     const avgs: Record<DimKey, number> = {};
     for (const dim of activeDims) {
-        avgs[dim.key] = to05(rounds.reduce((a, r) => a + r[dim.key], 0) / count);
+        avgs[dim.key] = to05(rounds.reduce((a, r) => a + (r as any)[dim.key], 0) / count);
     }
 
     // Overall = average of all dimensions
@@ -235,11 +235,11 @@ export default function SpeakingSummaryPage() {
                                 </thead>
                                 <tbody>
                                     {rounds.map(r => {
-                                        const roundAvg = to05(activeDims.reduce((a, d) => a + r[d.key], 0) / activeDims.length);
+                                        const roundAvg = to05(activeDims.reduce((a, d) => a + (r as any)[d.key], 0) / activeDims.length);
                                         return (
                                             <tr key={r.round}>
                                                 <td className="ss-td-round">R{r.round}</td>
-                                                {activeDims.map(d => <td key={d.key}>{r[d.key]}</td>)}
+                                                {activeDims.map(d => <td key={d.key}>{(r as any)[d.key]}</td>)}
                                                 <td className="ss-td-avg">{roundAvg}</td>
                                             </tr>
                                         );

@@ -11,6 +11,8 @@ export const zh: Translations = {
         sidebarTitle: '导航',
         store: '商店',
         workshop: '创意工坊',
+        feedback: '报告反馈',
+        notebook: '笔记',
     },
     common: {
         back: '返回',
@@ -289,6 +291,10 @@ export const zh: Translations = {
         opinionDrill: {
             title: '🧠 观点练习题板块',
             desc: '一轮生成多道观点题，按进度逐题作答并获得语法、切题度与词汇评分总结。'
+        },
+        typingChat: {
+            title: '💬 打字聊天模式',
+            desc: '通过纯文本与 AI 对话，在实战中运用目标词汇，提升写作表达能力。'
         }
     },
     task1Selection: {
@@ -470,6 +476,7 @@ export const zh: Translations = {
         subheading: '您的个人仪表盘，记录学习点滴与成就',
         menu: {
             home: '概览',
+            analytics: '学习分析',
             settings: '设置',
             backpack: '背包',
             style: '网站样式',
@@ -522,6 +529,7 @@ export const zh: Translations = {
                 tooltip: {
                     noActivity: '无学习记录',
                     studied: '学习 {time}',
+                    checkedIn: '✅ 已打卡',
                     vocab: '单词 {n} 个',
                     reading: '阅读 {n} 题',
                     listening: '听力 {n} 题',
@@ -1157,5 +1165,82 @@ export const zh: Translations = {
             nextPage: '下一页',
         },
     },
+    writingChatConfig: {
+        backToWriting: '← 返回写作大厅',
+        heading: '打字聊天模式',
+        subheading: '通过打字与 AI 进行实时互动，灵活练习目标词汇。',
+        vocabSettings: {
+            title: '使用目标词汇',
+            desc: '开启后，你输入的词汇情况将被实时统计。',
+        },
+        startBtn: '开始聊天',
+    },
+    writingChat: {
+        backToConfig: '返回配置',
+        targetVocab: '目标词汇',
+        typePlaceholder: '输入你的回复...',
+        sendBtn: '发送',
+        grammarScore: '语法',
+        vocabScore: '词汇',
+        relevanceScore: '相关度',
+        generating: 'AI 正在输入...',
+        correctedVersion: '修正版本',
+        clearChat: '清除对话',
+        endSummary: '结束并总结',
+        summaryTitle: '练习总结',
+        summarizing: '正在生成总结...',
+        searchVocab: '搜索单词...',
+    },
+    analytics: {
+        title: '学习分析',
+        subtitle: '追踪你的词汇学习进度和记忆效果',
+        comingSoon: '即将上线',
+        selectBook: '选择词书',
+        wordsUnit: '词',
+        totalWords: '总词汇量',
+        studiedWords: '已学习',
+        studyRate: '学习率',
+        noData: '暂无学习数据，去背几个单词吧！',
+        forgettingCurve: '遗忘曲线分布',
+        forgettingCurveDay: '第{n}天',
+        scheduledDist: '计划复习分布',
+        masteryDist: '掌握程度分布',
+        vocabTab: '词汇',
+        listeningTab: '听力',
+        speakingTab: '口语',
+        readingTab: '阅读',
+        writingTab: '写作',
+        today: '今天',
+        days: '天',
+        overdue: '逾期',
+        daysLater: '天后',
+        states: {
+            new: '新学',
+            learning: '学习中',
+            review: '复习',
+            relearning: '重学',
+        },
+    },
+    markdownNotes: {
+        title: 'Markdown 笔记',
+        newNote: '新建笔记',
+        searchPlaceholder: '搜索笔记...',
+        emptyList: '没有匹配的笔记',
+        noNotesYet: '还没有笔记，点击上方按钮创建',
+        unsaved: '未保存的更改',
+        sidebarCount: '条笔记',
+        titlePlaceholder: '笔记标题...',
+        saveToCloud: '保存到云端',
+        saving: '保存中...',
+        deleteNote: '删除笔记',
+        deleteConfirm: '确定要删除「{title}」吗？此操作不可撤销。',
+        deleteSuccess: '笔记已删除',
+        deleteFail: '删除失败',
+        createFail: '创建失败',
+        loadFail: '加载失败',
+        saveFail: '保存失败',
+        savedToCloud: '已保存到云端',
+        selectNote: '从左侧选择一条笔记开始编辑',
+    }
 };
 

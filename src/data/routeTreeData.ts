@@ -9,19 +9,19 @@ export const frontendRouteTree: RouteTreeNode = {
     children: [
         {
             name: '/',
-            attributes: { component: 'HomePage', guard: '公开' },
+            attributes: { component: 'HomePage', guard: 'routeVis.guards.public' },
         },
         {
             name: '/login',
-            attributes: { component: 'LoginPage', guard: '公开' },
+            attributes: { component: 'LoginPage', guard: 'routeVis.guards.public' },
         },
         {
             name: '/register',
-            attributes: { component: 'RegisterPage', guard: '公开' },
+            attributes: { component: 'RegisterPage', guard: 'routeVis.guards.public' },
         },
         {
             name: 'vocabulary',
-            attributes: { module: '词汇学习' },
+            attributes: { module: 'routeVis.moduleNames.vocabulary' },
             children: [
                 { name: '/vocabulary', attributes: { component: 'VocabularyPracticePage', guard: 'Protected' } },
                 { name: '/vocabulary/practice', attributes: { component: 'VocabularyTrainingPage', guard: 'Protected' } },
@@ -41,7 +41,7 @@ export const frontendRouteTree: RouteTreeNode = {
         },
         {
             name: 'practice',
-            attributes: { module: '练习中心' },
+            attributes: { module: 'routeVis.moduleNames.practice' },
             children: [
                 { name: '/practice', attributes: { component: 'PracticeHub', guard: 'Protected' } },
                 { name: '/practice/ai', attributes: { component: 'AIPractice', guard: 'Protected' } },
@@ -51,7 +51,7 @@ export const frontendRouteTree: RouteTreeNode = {
         },
         {
             name: 'speaking',
-            attributes: { module: '口语' },
+            attributes: { module: 'routeVis.moduleNames.speaking' },
             children: [
                 { name: '/speaking', attributes: { component: 'Speaking', guard: 'Protected' } },
                 { name: '/speaking/chat', attributes: { component: 'SpeakingChatPage', guard: 'Protected', lazy: 'true' } },
@@ -60,9 +60,11 @@ export const frontendRouteTree: RouteTreeNode = {
         },
         {
             name: 'writing',
-            attributes: { module: '写作' },
+            attributes: { module: 'routeVis.moduleNames.writing' },
             children: [
                 { name: '/writing', attributes: { component: 'Writing_page', guard: 'Protected' } },
+                { name: '/writing/chat-config', attributes: { component: 'WritingChatConfigPage', guard: 'Protected' } },
+                { name: '/writing/chat', attributes: { component: 'WritingChatPage', guard: 'Protected', lazy: 'true' } },
                 { name: '/writing/correction', attributes: { component: 'WritingCorrectionPage', guard: 'Protected' } },
                 { name: '/writing/task1', attributes: { component: 'Task1SelectionPage', guard: 'Protected' } },
                 { name: '/writing/task2', attributes: { component: 'Task2SelectionPage', guard: 'Protected' } },
@@ -77,7 +79,7 @@ export const frontendRouteTree: RouteTreeNode = {
         },
         {
             name: 'creative-workshop',
-            attributes: { module: '创意工坊' },
+            attributes: { module: 'routeVis.moduleNames.creative' },
             children: [
                 { name: '/creative-workshop', attributes: { component: 'CreativeWorkshopPage', guard: 'Protected' } },
                 { name: '/creative-workshop/favorites', attributes: { component: 'CreativeWorkshopFavoritesPage', guard: 'Protected' } },

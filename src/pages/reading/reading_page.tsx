@@ -166,6 +166,7 @@ export default function Reading_page() {
             set('elapsedSeconds', Math.floor((Date.now() - st.startTime) / 1000));
         }, 1000);
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [st.step, st.isLoading, st.startTime]);
 
     // Resizer Logic
@@ -401,9 +402,9 @@ export default function Reading_page() {
                 <div id="reading-page-container" className="page">
                     <div className="toolbar-area">
                         <div>
-                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (leftSidebarRef.current) { leftSidebarRef.current.classList.remove('no-transition'); leftSidebarRef.current.style.width = ''; } set('isLeftOpen', !st.isLeftOpen); }}>☰ {t.readingDetails.dictionary}</button>
+                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (leftSidebarRef.current) { leftSidebarRef.current.classList.remove('no-transition'); leftSidebarRef.current.style.width = ''; } set('isLeftOpen', !st.isLeftOpen); }}>☰ {t.readingDetails.dictionary}</button> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
                             <span style={{ margin: '0 5px' }}></span>
-                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (rightSidebarRef.current) { rightSidebarRef.current.classList.remove('no-transition'); rightSidebarRef.current.style.width = ''; } set('isRightOpen', !st.isRightOpen); }}>✎ {t.readingDetails.questions}</button>
+                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (rightSidebarRef.current) { rightSidebarRef.current.classList.remove('no-transition'); rightSidebarRef.current.style.width = ''; } set('isRightOpen', !st.isRightOpen); }}>✎ {t.readingDetails.questions}</button> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
                         </div>
                         <div className="reading-timer">
                             <span className="timer-icon">🕐</span>

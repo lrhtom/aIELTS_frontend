@@ -41,7 +41,7 @@ export default function UserBackground() {
 
     // ── 本地预览颜色（不保存）──
     const previewColor = (value: string) => {
-        applyUserBackground({ ...user, bg_color: value, bg_image_url: null } as any);
+        applyUserBackground({ ...user, bg_color: value, bg_image_url: null } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
         setBgColor(value);
         setBgImageUrl('');
         setImageUrlInput('');
@@ -50,7 +50,7 @@ export default function UserBackground() {
     // ── 本地预览 URL 图片（不保存）──
     const previewImageUrl = (url: string) => {
         if (!url) return;
-        applyUserBackground({ ...user, bg_color: null, bg_image_url: url, bg_blur: bgBlur } as any);
+        applyUserBackground({ ...user, bg_color: null, bg_image_url: url, bg_blur: bgBlur } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
         setBgImageUrl(url);
         setBgColor('');
     };

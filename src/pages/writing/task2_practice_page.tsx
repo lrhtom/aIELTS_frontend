@@ -137,7 +137,7 @@ export default function Task2PracticePage() {
         fetchPrompt();
 
         return () => { isMounted = false; hasFetchedRef.current = null; };
-    }, [type, topicCategory, navigate, cacheKey]);
+    }, [type, topicCategory, navigate, cacheKey, t.practiceSandbox.toastFailGenTask2]);
 
     // Word count calculation
     const wordCount = useMemo(() => {

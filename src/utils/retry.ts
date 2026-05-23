@@ -24,7 +24,7 @@ export interface RetryOptions {
  */
 function isTransientError(error: unknown): boolean {
   try {
-    const axiosError = error as any;
+    const axiosError = error as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     const status = axiosError?.response?.status;
     
     // HTTP 状态码判断
@@ -41,7 +41,7 @@ function isTransientError(error: unknown): boolean {
     }
     
     // 检查错误消息中的网络关键词
-    const message = String((error as any)?.message || '').toLowerCase();
+    const message = String((error as any)?.message || '').toLowerCase(); // eslint-disable-line @typescript-eslint/no-explicit-any
     return message.includes('timeout') || 
            message.includes('network') || 
            message.includes('connection') ||
@@ -63,7 +63,7 @@ function isTransientError(error: unknown): boolean {
  */
 function isNonTransientError(error: unknown): boolean {
   try {
-    const axiosError = error as any;
+    const axiosError = error as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     const status = axiosError?.response?.status;
     return status && [400, 401, 402, 403, 404, 409, 422].includes(status);
   } catch {
@@ -90,7 +90,7 @@ export async function retryWithBackoff<T>(
     onRetry,
   } = options;
 
-  let lastError: any;
+  let lastError: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -114,8 +114,8 @@ export async function retryWithBackoff<T>(
       // 检查是否是永久错误
       if (isNonTransientError(error)) {
         console.error(`[重试] 永久错误 (不重试):`, {
-          status: (error as any)?.response?.status,
-          message: (error as any)?.response?.data?.error || String(error),
+          status: (error as any)?.response?.status, // eslint-disable-line @typescript-eslint/no-explicit-any
+          message: (error as any)?.response?.data?.error || String(error), // eslint-disable-line @typescript-eslint/no-explicit-any
         });
         throw error;
       }

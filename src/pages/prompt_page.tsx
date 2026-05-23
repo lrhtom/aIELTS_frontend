@@ -1,4 +1,4 @@
-﻿import Layout from '../components/layout/Layout';
+import Layout from '../components/layout/Layout';
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,7 +53,7 @@ export default function PromptPage() {
 
     useEffect(() => {
         fetchPrompts(currentPage, sortMode);
-    }, [currentPage]);
+    }, [currentPage, sortMode]);
 
     const fetchPrompts = async (page: number, sort: SortMode) => {
         setIsLoading(true);
@@ -160,7 +160,7 @@ export default function PromptPage() {
                     <div className="prompt-header-content">
                         <Link to="/practice" className="prompt-back-link">AI Practice</Link>
                         <div className="prompt-hub-title-row">
-                            <h1>💡 Prompt Hub</h1>
+                            <h1>Prompt Hub</h1>
                             <p>分享与查找最绝赞的 AI IELTS 高分提示词密码，助力你征服考场</p>
                         </div>
                         <div className="prompt-header-badges">
@@ -181,13 +181,13 @@ export default function PromptPage() {
                             className={`prompt-tab ${activeTab === 'community' ? 'active' : ''}`}
                             onClick={() => setActiveTab('community')}
                         >
-                            <span className="tab-icon">🏆</span>社区提示词
+                            <span className="tab-icon">—</span>社区提示词
                         </button>
                         <button
                             className={`prompt-tab ${activeTab === 'create' ? 'active' : ''}`}
                             onClick={() => setActiveTab('create')}
                         >
-                            <span className="tab-icon">✍️</span>发布提示词
+                            <span className="tab-icon">—</span>发布提示词
                         </button>
                     </div>
                 </div>
@@ -217,7 +217,7 @@ export default function PromptPage() {
                             </div>
                         ) : prompts.length === 0 ? (
                             <div className="prompt-empty">
-                                <div className="empty-icon">💭</div>
+                                <div className="empty-icon"></div>
                                 <p>暂无提示词，快来做第一个发布者吧！</p>
                             </div>
                         ) : (
@@ -232,7 +232,11 @@ export default function PromptPage() {
                                                     onClick={() => handleCopy(p.id, p.prompt_content)}
                                                     title="复制提示词内容"
                                                 >
-                                                    {copiedId === p.id ? '已复制' : '复制'}
+                                                    {copiedId === p.id ? (
+                                                        <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 已复制</>
+                                                    ) : (
+                                                        <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> 复制</>
+                                                    )}
                                                 </button>
                                             </div>
                                             <div className="prompt-content-body">
@@ -308,7 +312,7 @@ export default function PromptPage() {
                     <div className="prompt-create-panel">
                         <div className="create-card">
                             <div className="create-card-header">
-                                <h2>✍️ 贡献你的灵感</h2>
+                                <h2>贡献你的灵感</h2>
                                 <p>将你摸索出的高效 IELTS 提示词分享给社区，帮助更多人取得高分！</p>
                             </div>
                             <form onSubmit={handlePublish} className="create-form">
@@ -341,7 +345,7 @@ export default function PromptPage() {
                                     <button type="submit" className="publish-btn" disabled={isSubmitting}>
                                         {isSubmitting ? (
                                             <><span className="btn-spinner"></span>发布中...</>
-                                        ) : '🚀 发布提示词'}
+                                        ) : '发布提示词'}
                                     </button>
                                 </div>
                             </form>

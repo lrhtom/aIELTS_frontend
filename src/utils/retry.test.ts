@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { retryWithBackoff, retryWithUserFeedback, type RetryOptions } from './retry';
+import { retryWithBackoff, retryWithUserFeedback } from './retry';
 
 function createAxiosError(status: number, message?: string) {
   return { response: { status, data: { error: message } }, message };

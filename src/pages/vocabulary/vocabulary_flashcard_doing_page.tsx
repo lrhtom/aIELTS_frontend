@@ -176,7 +176,9 @@ export default function VocabularyFlashcardDoingPage() {
             if (cached !== null) {
                 return cached === 'true';
             }
-        } catch {}
+        } catch {
+            // ignore
+        }
         return true;
     });
 
@@ -185,7 +187,9 @@ export default function VocabularyFlashcardDoingPage() {
             const next = !prev;
             try {
                 localStorage.setItem('vocab_auto_pronounce_enabled', String(next));
-            } catch {}
+            } catch {
+                // ignore
+            }
             return next;
         });
     }, []);
@@ -498,8 +502,6 @@ export default function VocabularyFlashcardDoingPage() {
         ]);
 
         setChoices(opts);
-    // visitKey 驱动重新生成
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visitKey, mode, cards, queue, liuhongboZhPool]);
 
     /* 4选1补充干扰项：优先从“刘洪波雅思真经”加载中文释义池 */
@@ -595,7 +597,10 @@ export default function VocabularyFlashcardDoingPage() {
         let updatedCard: VocabCard = card;
 
         // 复习模式：跳过 FSRS 提交，纯浏览不影响间隔调度
-        if (!reviewOnly) {
+        // 默写模式：只在毕业时提交 FSRS，中间进度不提交（退出即丢弃）
+        const shouldSubmitFsrs = !reviewOnly && !(mode === 'write' && !graduate);
+
+        if (shouldSubmitFsrs) {
             try {
                 const { card: nextCard } = await submitReviewWithRetry(
                     card.word,
@@ -644,7 +649,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         setVisitKey(k => k + 1);
         setSubmitting(false);
-    }, [submitReviewWithRetry, reinsertAfterGap, reviewOnly]);
+    }, [submitReviewWithRetry, reinsertAfterGap, reviewOnly, mode, t.vocab.toastSyncFail]);
 
     /**
      * 记忆卡手动评分
@@ -683,12 +688,10 @@ export default function VocabularyFlashcardDoingPage() {
         const curMastery    = sessionMastery[ci] ?? 0; // 当前连续正确次数
         const forgotNow     = !isCorrect;
 
-        let newMastery: number;
-        let graduate: boolean;
         const target = resolveAutoMasteryTarget(ci, mode);
 
-        newMastery = nextMastery(curMastery, isCorrect, target);
-        graduate = newMastery >= target;
+        const newMastery = nextMastery(curMastery, isCorrect, target);
+        const graduate = newMastery >= target;
 
         // 新评分策略：真实反映用户记忆状态
         // 答对未毕业→Good(3)  答错未毕业→Again(1)
@@ -700,7 +703,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         setLastRating(uiRating);
         await submitAndAdvance(ci, currentCard, fsrsRating, newMastery, graduate, forgotNow);
-    }, [submitting, currentCard, currentCardIdx, sessionMastery, mode, resolveAutoMasteryTarget, submitAndAdvance]);
+    }, [submitting, currentCard, currentCardIdx, sessionMastery, mode, resolveAutoMasteryTarget, submitAndAdvance, nextMastery]);
 
     const buildAutoOutcome = useCallback((
         isCorrect: boolean,
@@ -717,7 +720,7 @@ export default function VocabularyFlashcardDoingPage() {
             ? (isCorrect ? 4 : 2)
             : (isCorrect ? 3 : 1);
         return { fsrsRating, newMastery, graduate, forgotNow };
-    }, [resolveAutoMasteryTarget]);
+    }, [resolveAutoMasteryTarget, nextMastery]);
 
     const syncCurrentAnsweredBeforeExit = useCallback(async () => {
         if (!currentCard || currentCardIdx < 0) return;
@@ -727,14 +730,8 @@ export default function VocabularyFlashcardDoingPage() {
         if (mode === 'choice' && choiceSelected !== null && choiceCorrect !== null) {
             const curMastery = sessionMastery[currentCardIdx] ?? 0;
             outcome = buildAutoOutcome(choiceCorrect, curMastery, currentCardIdx, 'choice');
-        } else if (mode === 'write' && writeSubmitted && writeCorrect !== null) {
-            if (quickProficient) {
-                outcome = { fsrsRating: 4, newMastery: 4, graduate: true, forgotNow: false };
-            } else {
-                const curMastery = sessionMastery[currentCardIdx] ?? 0;
-                outcome = buildAutoOutcome(writeCorrect, curMastery, currentCardIdx, 'write');
-            }
         }
+        // write 模式中途退出不补交，未完成的进度直接丢弃
 
         if (!outcome) return;
 
@@ -756,9 +753,6 @@ export default function VocabularyFlashcardDoingPage() {
         mode,
         choiceSelected,
         choiceCorrect,
-        writeSubmitted,
-        writeCorrect,
-        quickProficient,
         sessionMastery,
         buildAutoOutcome,
         submitReviewWithRetry,
@@ -925,17 +919,20 @@ export default function VocabularyFlashcardDoingPage() {
             showToast('请先输入抄写内容', 'error');
             return;
         }
-        if (normalizedInput !== normalizedAnswer) {
-            showToast('抄写不正确，需与单词完全一致后才能提交', 'error');
-            return;
-        }
-
         const currentRemaining = Math.max(0, copyRemaining[currentCardIdx] ?? copyRepetitions);
         if (currentRemaining <= 0) {
             return;
         }
 
-        const remainingAfterSubmit = Math.max(0, currentRemaining - 1);
+        const typedWords = normalizedInput.split(/[\s,，\n]+/).map(w => w.trim());
+        const correctCount = typedWords.filter(w => w === normalizedAnswer).length;
+
+        if (correctCount < currentRemaining) {
+            showToast(`抄写次数不足，需完整抄写 ${currentRemaining} 次`, 'error');
+            return;
+        }
+
+        const remainingAfterSubmit = 0;
         let dueAt = currentCard.due;
         let scheduledDays = currentCard.scheduled_days ?? 0;
         
@@ -1174,7 +1171,7 @@ export default function VocabularyFlashcardDoingPage() {
         };
 
         // 2. pagehide：用户关闭标签页时（比beforeunload更可靠）
-        const handlePageHide = (_e: PageTransitionEvent) => {
+        const handlePageHide = () => {
             if (!initialized) {
                 console.log('[词汇学习] 页面即将隐藏，跳过处理（未初始化）');
                 return;
@@ -1222,10 +1219,14 @@ export default function VocabularyFlashcardDoingPage() {
     const progress       = dailyTotal > 0 ? Math.min(100, Math.round((dailyDone / dailyTotal) * 100)) : 0;
     const todayLearningTotalSeconds = todayLearningBaseSeconds + sessionLearningSeconds;
     const todayLearningDuration = formatLearningDuration(todayLearningTotalSeconds);
-    const statusCls  = lastRating == null ? '' :
-        lastRating === 1 ? 'status-again' :
-        lastRating === 2 ? 'status-hard'  :
-        lastRating === 3 ? 'status-good'  : 'status-easy';
+    const statusCls  = mode === 'write'
+        ? (writeSubmitted
+            ? (writeCorrect ? 'status-good' : 'status-again')
+            : (unknownMode ? 'status-again' : ''))
+        : lastRating == null ? '' :
+            lastRating === 1 ? 'status-again' :
+            lastRating === 2 ? 'status-hard'  :
+            lastRating === 3 ? 'status-good'  : 'status-easy';
 
     /* ══ 结果页 ══════════════════════════════════════════════════════════════ */
     if (step === 'result') {
@@ -1368,7 +1369,6 @@ export default function VocabularyFlashcardDoingPage() {
                         writeSubmitted={writeSubmitted}
                         writeCorrect={writeCorrect}
                         unknownMode={unknownMode}
-                        quickProficient={quickProficient}
                         sessionMastery={sessionMastery}
                         completionDueHint={completionDueHint}
                         onWriteInput={setWriteInput}

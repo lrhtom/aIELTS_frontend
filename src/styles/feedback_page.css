@@ -1,0 +1,5 @@
+/* Feedback Page — override inline styles for standalone page layout */
+.feedback-page .user-feedback {
+    padding: 0;
+    max-width: none;
+}

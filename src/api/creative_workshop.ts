@@ -32,6 +32,22 @@ export async function generateCreativeWorkshopProject(methodPrompt: string, titl
     };
 }
 
+export async function editCreativeWorkshopProject(projectId: number, instruction: string, aiProvider?: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const config: any = {};
+    if (aiProvider) {
+        config.headers = { 'X-AI-Provider': aiProvider };
+    }
+    const resp = await apiClient.post(`/creative-workshop/projects/${projectId}/edit/`, {
+        instruction,
+    }, config);
+
+    return resp.data as {
+        project: CreativeWorkshopProject;
+        atConsumed?: number;
+    };
+}
+
 export async function getCreativeWorkshopProject(projectId: number) {
     const resp = await apiClient.get(`/creative-workshop/projects/${projectId}/`);
     return resp.data as {

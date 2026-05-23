@@ -29,6 +29,7 @@ function removeBgLayer() {
 }
 
 // ── 背景工具函数 ──────────────────────────────────────────
+// eslint-disable-next-line react-refresh/only-export-components
 export function applyUserBackground(user: User | null) {
     if (user?.bg_image_url) {
         // 图片模式：通过独立 div 层展示，带模糊
@@ -50,6 +51,7 @@ export function applyUserBackground(user: User | null) {
     }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function resetBackground() {
     removeBgLayer();
     document.body.style.background = '';
@@ -132,7 +134,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             window.removeEventListener('auth:logout', handleLogout);
             window.removeEventListener('at-consumed', handleATConsumed);
         };
-    }, []);
+    }, [lang, setLang, user]);
 
     const login = (tokens: { access: string; refresh: string }, userData: User) => {
         localStorage.setItem('access_token', tokens.access);

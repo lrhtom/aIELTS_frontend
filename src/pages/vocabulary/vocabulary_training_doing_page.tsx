@@ -1,11 +1,11 @@
-﻿import Layout from '../../components/layout/Layout';
+import Layout from '../../components/layout/Layout';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { speakWord as playWord, cancelSpeak } from '../../utils/speak';
 import {
     type VocabMode, type VocabEntry, type PracticeQuestion,
-    parseVocabInput, shuffle, buildMcqQuestions, buildDictationQuestions,
+    parseVocabInput, buildMcqQuestions, buildDictationQuestions,
     createMaskedWord, buildCompleteQuestions,
 } from '../../utils/vocab_training_utils';
 import '../../styles/practice_page.css';
@@ -338,14 +338,14 @@ export default function VocabularyTrainingDoingPage() {
 
     // 完全听写：每道新题自动朗读一次
     useEffect(() => {
-        if (false || mode !== 'dictation' || step !== 'doing') return;
+        if (mode !== 'dictation' || step !== 'doing') return;
         if (questions.length === 0 || !questions[currentIndex]) return;
         if (dictationChecked) return;
         if (lastAutoSpokenIndexRef.current === currentIndex) return;
 
         lastAutoSpokenIndexRef.current = currentIndex;
         speakWord(questions[currentIndex].en);
-    }, [speechReady, mode, step, questions, currentIndex, dictationChecked, speakWord]);
+    }, [mode, step, questions, currentIndex, dictationChecked, speakWord]);
 
     const handleRestart = () => {
         sessionStorage.removeItem(getSessionKey(mode));

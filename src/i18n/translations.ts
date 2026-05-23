@@ -14,6 +14,8 @@ export interface Translations {
         sidebarTitle: string;
         store: string;
         workshop: string;
+        feedback: string;
+        notebook: string;
     };
     common: {
         back: string;
@@ -280,6 +282,10 @@ export interface Translations {
             title: string;
             desc: string;
         };
+        typingChat: {
+            title: string;
+            desc: string;
+        };
     };
     task1Selection: {
         backToWriting: string;
@@ -541,6 +547,7 @@ export interface Translations {
         subheading: string;
         menu: {
             home: string;
+            analytics: string;
             settings: string;
             backpack: string;
             style: string;
@@ -593,6 +600,7 @@ export interface Translations {
                 tooltip: {
                     noActivity: string;
                     studied: string;
+                    checkedIn: string;
                     vocab: string;
                     reading: string;
                     listening: string;
@@ -1134,6 +1142,83 @@ export interface Translations {
             prevPage: string;
             nextPage: string;
         };
+    };
+    writingChatConfig: {
+        backToWriting: string;
+        heading: string;
+        subheading: string;
+        vocabSettings: {
+            title: string;
+            desc: string;
+        };
+        startBtn: string;
+    };
+    writingChat: {
+        backToConfig: string;
+        targetVocab: string;
+        typePlaceholder: string;
+        sendBtn: string;
+        grammarScore: string;
+        vocabScore: string;
+        relevanceScore: string;
+        generating: string;
+        correctedVersion: string;
+        clearChat: string;
+        endSummary: string;
+        summaryTitle: string;
+        summarizing: string;
+        searchVocab: string;
+    };
+    analytics: {
+        title: string;
+        subtitle: string;
+        comingSoon: string;
+        selectBook: string;
+        wordsUnit: string;
+        totalWords: string;
+        studiedWords: string;
+        studyRate: string;
+        noData: string;
+        forgettingCurve: string;
+        forgettingCurveDay: string;
+        scheduledDist: string;
+        masteryDist: string;
+        vocabTab: string;
+        listeningTab: string;
+        speakingTab: string;
+        readingTab: string;
+        writingTab: string;
+        today: string;
+        days: string;
+        overdue: string;
+        daysLater: string;
+        states: {
+            new: string;
+            learning: string;
+            review: string;
+            relearning: string;
+        };
+    };
+    markdownNotes: {
+        title: string;
+        newNote: string;
+        searchPlaceholder: string;
+        emptyList: string;
+        noNotesYet: string;
+        unsaved: string;
+        sidebarCount: string;
+        titlePlaceholder: string;
+        saveToCloud: string;
+        saving: string;
+        deleteNote: string;
+        deleteConfirm: string;
+        deleteSuccess: string;
+        deleteFail: string;
+        createFail: string;
+        loadFail: string;
+        saveFail: string;
+        savedToCloud: string;
+        selectNote: string;
     };
 }
 

@@ -11,4 +11,16 @@ export interface CorrectionResponse {
     Feedback?: string;
     feedback?: string;
     Model_Essay?: string;
+    Actionable_Advice?: string[];
+    Sentence_Corrections?: {
+        original: string;
+        improved: string;
+        error_type: string;
+        explanation: string;
+    }[];
+    Vocabulary_Upgrades?: {
+        original: string;
+        upgrades: string[];
+        context: string;
+    }[];
 }

@@ -84,8 +84,8 @@ export default function CustomMemoryResultPage() {
                     cards,
                 },
             });
-        } catch (e: any) {
-            const msg = e?.response?.data?.error || '重新开始失败，请稍后重试';
+        } catch (e: unknown) {
+            const msg = (e as any)?.response?.data?.error || '重新开始失败，请稍后重试'; // eslint-disable-line @typescript-eslint/no-explicit-any
             showToast(msg, 'error');
         } finally {
             setRestarting(false);

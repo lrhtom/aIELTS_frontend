@@ -1,5 +1,6 @@
 import Layout from '../../components/layout/Layout';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
@@ -13,27 +14,12 @@ import '../../styles/writing_correction.css';
 interface ChartData {
     imageUrl: string | null;
     mermaidCode?: string | null;
-    mapSvg?: string | null;
-    mapViewport?: {
-        width: number;
-        height: number;
-    } | null;
-    mapIconPlacements?: MapIconPlacement[] | null;
-    mapIconAssets?: Record<string, string> | null;
-    mapIconDataUrls?: Record<string, string> | null;
+    htmlContent?: string | null;
     prompt: string;
     pythonCode: string;
 }
 
-interface MapIconPlacement {
-    iconKey: string;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    rotation?: number;
-    label?: string;
-}
+
 
 interface EvaluationResult {
     scores: {
@@ -61,7 +47,8 @@ export default function ChartPracticePage() {
     const [userAnswer, setUserAnswer] = useState('');
     const [result, setResult] = useState<EvaluationResult | null>(null);
     const [previewImageSrc, setPreviewImageSrc] = useState<string | null>(null);
-    const [previewMode, setPreviewMode] = useState<'image' | 'map'>('image');
+    const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+    const [previewMode, setPreviewMode] = useState<'image' | 'html'>('image');
     const [isEvaluating, setIsEvaluating] = useState(false);
     // Guard against React StrictMode double-invocation and rapid re-mount
     const hasFetchedRef = useRef<string | null>(null);
@@ -145,7 +132,7 @@ export default function ChartPracticePage() {
         fetchChart();
 
         return () => { isMounted = false; hasFetchedRef.current = null; };
-    }, [type, navigate, cacheKey]);
+    }, [type, navigate, cacheKey, t.practiceSandbox.toastFailGenChart]);
 
     // Word count calculation
     const wordCount = useMemo(() => {
@@ -163,74 +150,12 @@ export default function ChartPracticePage() {
             : `${import.meta.env.VITE_API_BASE}${chartData.imageUrl}`;
     }, [chartData?.imageUrl]);
 
-    const mapSvgDataUrl = useMemo(() => {
-        if (!chartData?.mapSvg) return null;
-        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(chartData.mapSvg)}`;
-    }, [chartData?.mapSvg]);
-
-    const mapViewport = useMemo(() => {
-        if (chartData?.mapViewport?.width && chartData?.mapViewport?.height) {
-            return chartData.mapViewport;
-        }
-        if (!chartData?.mapSvg) return null;
-        const matched = chartData.mapSvg.match(/viewBox\s*=\s*["']\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+([\d.]+)\s*["']/i);
-        if (!matched) return { width: 1000, height: 620 };
-        const width = Number(matched[1]) || 1000;
-        const height = Number(matched[2]) || 620;
-        return { width, height };
-    }, [chartData?.mapViewport, chartData?.mapSvg]);
-
-    const resolvedMapIconAssets = useMemo(() => {
-        const rawAssets = chartData?.mapIconAssets || {};
-        const inlineDataUrls = chartData?.mapIconDataUrls || {};
-        const assetEntries = Object.entries(rawAssets);
-        const inlineEntries = Object.entries(inlineDataUrls);
-        if (!assetEntries.length && !inlineEntries.length) return {} as Record<string, string>;
-
-        const resolved: Record<string, string> = {};
-        for (const [key, value] of assetEntries) {
-            if (!value) continue;
-            resolved[key] = value.startsWith('data:') || value.startsWith('http')
-                ? value
-                : `${import.meta.env.VITE_API_BASE}${value}`;
-        }
-
-        for (const [key, value] of inlineEntries) {
-            if (!value) continue;
-            resolved[key] = value.startsWith('data:') || value.startsWith('http')
-                ? value
-                : `${import.meta.env.VITE_API_BASE}${value}`;
-        }
-
-        return resolved;
-    }, [chartData?.mapIconAssets, chartData?.mapIconDataUrls]);
-
-    const normalizedMapPlacements = useMemo(() => {
-        if (!mapViewport) return [] as MapIconPlacement[];
-        const viewW = mapViewport.width || 1000;
-        const viewH = mapViewport.height || 620;
-        const placements = chartData?.mapIconPlacements || [];
-        if (!Array.isArray(placements)) return [] as MapIconPlacement[];
-
-        return placements
-            .filter((item): item is MapIconPlacement => !!item && typeof item.iconKey === 'string')
-            .map((item) => {
-                const w = Math.max(12, Math.min(Number(item.w) || 60, viewW));
-                const h = Math.max(12, Math.min(Number(item.h) || 60, viewH));
-                const x = Math.max(0, Math.min(Number(item.x) || 0, viewW - w));
-                const y = Math.max(0, Math.min(Number(item.y) || 0, viewH - h));
-                const rotation = Number(item.rotation) || 0;
-                return {
-                    ...item,
-                    x,
-                    y,
-                    w,
-                    h,
-                    rotation,
-                    label: (item.label || '').trim(),
-                };
-            });
-    }, [chartData?.mapIconPlacements, mapViewport]);
+    const sanitizedHtmlContent = useMemo(() => {
+        if (!chartData?.htmlContent) return null;
+        return DOMPurify.sanitize(chartData.htmlContent, {
+            USE_PROFILES: { html: true, svg: true },
+        });
+    }, [chartData?.htmlContent]);
 
     const openImagePreview = (src: string) => {
         setPreviewMode('image');
@@ -238,41 +163,16 @@ export default function ChartPracticePage() {
     };
 
     const openMapPreview = () => {
-        if (!mapSvgDataUrl) return;
-        setPreviewMode('map');
-        setPreviewImageSrc(mapSvgDataUrl);
+        if (!sanitizedHtmlContent) return;
+        setPreviewMode('html');
+        setPreviewHtml(sanitizedHtmlContent);
     };
 
     const closePreview = () => {
         setPreviewImageSrc(null);
+        setPreviewHtml(null);
         setPreviewMode('image');
     };
-
-    const renderMapOverlay = (viewW: number, viewH: number) => (
-        <div className="wp-map-overlay-layer">
-            {normalizedMapPlacements.map((item, idx) => {
-                const iconSrc = resolvedMapIconAssets[item.iconKey];
-                if (!iconSrc) return null;
-
-                return (
-                    <div
-                        key={`${item.iconKey}-${idx}`}
-                        className="wp-map-icon-node"
-                        style={{
-                            left: `${(item.x / viewW) * 100}%`,
-                            top: `${(item.y / viewH) * 100}%`,
-                            width: `${(item.w / viewW) * 100}%`,
-                            height: `${(item.h / viewH) * 100}%`,
-                            transform: `rotate(${item.rotation || 0}deg)`,
-                        }}
-                    >
-                        <img src={iconSrc} alt={item.label || item.iconKey} loading="lazy" />
-                        {item.label ? <span className="wp-map-icon-label">{item.label}</span> : null}
-                    </div>
-                );
-            })}
-        </div>
-    );
 
     const handleSubmitAnser = () => {
         if (!userAnswer.trim()) {
@@ -334,29 +234,23 @@ export default function ChartPracticePage() {
     );
 
     const renderMapScene = () => {
-        if (!isMapType || !mapSvgDataUrl || !mapViewport) return null;
-        const viewW = mapViewport.width || 1000;
-        const viewH = mapViewport.height || 620;
+        if (!isMapType || !sanitizedHtmlContent) return null;
 
         return (
-            <div className="wp-map-scene" style={{ aspectRatio: `${viewW} / ${viewH}` }}>
-                <img
-                    src={mapSvgDataUrl}
-                    alt="Generated map"
-                    className="wp-map-base-svg"
-                    onClick={openMapPreview}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            openMapPreview();
-                        }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Open map preview"
-                />
-                {renderMapOverlay(viewW, viewH)}
-            </div>
+            <div 
+                className="wp-map-scene" 
+                style={{ 
+                    width: '100%', 
+                    overflowX: 'auto', 
+                    background: 'white', 
+                    padding: '16px', 
+                    borderRadius: '8px',
+                    border: '1px solid var(--color-border)',
+                    cursor: 'zoom-in'
+                }}
+                dangerouslySetInnerHTML={{ __html: sanitizedHtmlContent }}
+                onClick={openMapPreview}
+            />
         );
     };
 
@@ -371,7 +265,7 @@ export default function ChartPracticePage() {
                     <div className="wp-prompt-block">
                         {chartData?.prompt}
                     </div>
-                    {isMapType && mapSvgDataUrl ? (
+                    {isMapType && sanitizedHtmlContent ? (
                         renderMapScene()
                     ) : chartData?.mermaidCode ? (
                         <MermaidChart chart={chartData.mermaidCode} />
@@ -461,7 +355,7 @@ export default function ChartPracticePage() {
                     <div className="wp-prompt-block wp-prompt-block--compact">
                         {chartData?.prompt}
                     </div>
-                    {isMapType && mapSvgDataUrl ? (
+                    {isMapType && sanitizedHtmlContent ? (
                         <div style={{ marginBottom: '12px' }}>{renderMapScene()}</div>
                     ) : chartData?.mermaidCode ? (
                         <MermaidChart chart={chartData.mermaidCode} />
@@ -589,24 +483,20 @@ export default function ChartPracticePage() {
                         cursor: 'zoom-out',
                     }}
                 >
-                    {previewMode === 'map' && isMapType && mapSvgDataUrl && mapViewport ? (
+                    {previewMode === 'html' && isMapType && previewHtml ? (
                         <div
                             onClick={(e) => e.stopPropagation()}
                             style={{
                                 width: 'min(94vw, 1400px)',
                                 maxHeight: '88vh',
+                                overflow: 'auto',
+                                background: 'white',
+                                padding: '24px',
+                                borderRadius: '12px',
                                 cursor: 'default',
                             }}
-                        >
-                            <div className="wp-map-scene wp-map-scene--modal" style={{ aspectRatio: `${mapViewport.width || 1000} / ${mapViewport.height || 620}` }}>
-                                <img
-                                    src={mapSvgDataUrl}
-                                    alt="Full preview map"
-                                    className="wp-map-base-svg"
-                                />
-                                {renderMapOverlay(mapViewport.width || 1000, mapViewport.height || 620)}
-                            </div>
-                        </div>
+                            dangerouslySetInnerHTML={{ __html: previewHtml }}
+                        />
                     ) : (
                         <img
                             src={previewImageSrc}

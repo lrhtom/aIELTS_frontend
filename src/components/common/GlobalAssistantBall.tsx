@@ -7,11 +7,12 @@ import { cancelSpeak, speakText as speakTextUtil, speakWord } from '../../utils/
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { apiClient, fetchStream } from '../../api/client';
+import { checkinApi } from '../../api/checkin';
 import { useLang } from '../../i18n/LanguageContext';
 
 async function readSseStream(
     response: Response,
-    onMessage: (data: any) => void
+    onMessage: (data: any) => void // eslint-disable-line @typescript-eslint/no-explicit-any
 ) {
     if (!response.body) return;
     const reader = response.body.getReader();
@@ -40,7 +41,7 @@ async function readSseStream(
             return;
         }
 
-        let parsed: any;
+        let parsed: any; // eslint-disable-line @typescript-eslint/no-explicit-any
         try {
             parsed = JSON.parse(payload);
         } catch (e) {
@@ -320,30 +321,6 @@ function mapSpeechRecognitionError(errorCode: string) {
     return '语音识别失败，请稍后重试。';
 }
 
-function buildPersonalAgentSystemPrompt(profile: PersonalAgentProfile) {
-    const normalized = {
-        name: profile.name.trim() || '我的个人 AI Agent',
-        role: profile.role.trim() || '你是一位可靠、耐心、结果导向的学习教练。',
-        goal: profile.goal.trim() || '帮助我拆解任务并给出可执行建议。',
-        style: profile.style.trim() || '先结论，再步骤，使用简洁清晰的中文。',
-    };
-
-    return [
-        `你是 ${normalized.name}。`,
-        '## 核心身份',
-        normalized.role,
-        '## 目标',
-        normalized.goal,
-        '## 回复风格',
-        normalized.style,
-        '## 执行规则',
-        '1. 如果信息不完整，先列出你需要的最少补充信息。',
-        '2. 优先给出可直接执行的方案和示例。',
-        '3. 回答使用 Markdown，关键步骤使用编号列表。',
-        '4. 若有风险或不确定项，明确写出假设与备选方案。',
-    ].join('\n\n');
-}
-
 function trimCompactText(value: string, maxLen: number) {
     return value.replace(/\s+/g, ' ').trim().slice(0, maxLen);
 }
@@ -534,6 +511,13 @@ function isNavigationQuery(input: string) {
         && navObject.some(token => text.includes(token));
 }
 
+function isCheckinQuery(input: string) {
+    const text = input.trim().toLowerCase();
+    if (!text) return false;
+    const keywords = ['签到', '打卡', 'check in', 'checkin', 'daily check', 'daily sign'];
+    return keywords.some(k => text.includes(k));
+}
+
 function normalizeAssistantRouteMode(rawMode: unknown, fallbackMode: AssistantRouteMode): AssistantRouteMode {
     const normalized = String(rawMode || '').trim().toLowerCase();
     if (normalized === 'direct' || normalized === 'open_pages' || normalized === 'react_agent') {
@@ -623,7 +607,10 @@ export default function GlobalAssistantBall() {
     const [isAgentRunning, setIsAgentRunning] = useState(false);
     const [isAgentThinkingExpanded, setIsAgentThinkingExpanded] = useState(false);
     const [mcpCapabilities, setMcpCapabilities] = useState<AssistantMcpCapabilities | null>(null);
-    const [isCapturing, setIsCapturing] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [isCapturing, _setIsCapturing] = useState(false);
+    const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
+    const [isCheckingIn, setIsCheckingIn] = useState(false);
 
     const rootRef = useRef<HTMLDivElement | null>(null);
     const dragRef = useRef<DragState | null>(null);
@@ -721,6 +708,25 @@ export default function GlobalAssistantBall() {
                 console.warn('MCP capabilities fetch failed, continue with local fallback', error);
             });
     }, [activeAction, menuOpen]);
+
+    useEffect(() => {
+        if (!menuOpen) {
+            return;
+        }
+
+        let cancelled = false;
+        checkinApi.getStatus()
+            .then((status) => {
+                if (!cancelled) {
+                    setHasCheckedInToday(status.today_checked ?? false);
+                }
+            })
+            .catch(() => {
+                // fail silently — button stays enabled
+            });
+
+        return () => { cancelled = true; };
+    }, [menuOpen]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -1081,6 +1087,32 @@ export default function GlobalAssistantBall() {
         showToast('已清空对话', 'success');
     };
 
+    const handleQuickCheckin = useCallback(async () => {
+        if (isCheckingIn || replyLockRef.current || hasCheckedInToday) return;
+        setIsCheckingIn(true);
+        try {
+            const result = await checkinApi.doCheckin();
+            if (result.ok) {
+                setHasCheckedInToday(true);
+            }
+            const embed = `**${result.message}**\n\n` +
+                (result.ok
+                    ? `${lang === 'zh' ? '当前余额' : 'Current balance'}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
+                      `${lang === 'zh' ? '累计签到' : 'Total check-ins'}: ${result.checkin_count ?? 0} ${lang === 'zh' ? '天' : 'days'}`
+                    : `${lang === 'zh' ? '明天再来吧！' : 'Come back tomorrow!'}`);
+            const assistantMessage: AgentChatMessage = {
+                id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
+                role: 'assistant',
+                content: embed,
+            };
+            setAgentMessages(prev => [...prev, assistantMessage]);
+        } catch {
+            showToast(lang === 'zh' ? '签到失败，请稍后重试' : 'Check-in failed, please try again later', 'error');
+        } finally {
+            setIsCheckingIn(false);
+        }
+    }, [isCheckingIn, hasCheckedInToday, lang]);
+
     const handleSendAgentMessage = useCallback(async () => {
         if (replyLockRef.current || isAgentReplying) {
             return;
@@ -1117,6 +1149,34 @@ export default function GlobalAssistantBall() {
             const mcpRouteEnabled = mcpCapabilities?.route?.enabled !== false;
             const mcpOpenPagesEnabled = mcpCapabilities?.open_pages?.enabled !== false;
             const mcpReactAgentEnabled = mcpCapabilities?.react_agent?.enabled !== false;
+
+            // Quick daily check-in — handle before MCP routing
+            if (isCheckinQuery(trimmed)) {
+                try {
+                    const result = await checkinApi.doCheckin();
+                    const embed = `**${result.message}**\n\n` +
+                        (result.ok
+                            ? `${lang === 'zh' ? '当前余额' : 'Current balance'}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
+                              `${lang === 'zh' ? '累计签到' : 'Total check-ins'}: ${result.checkin_count ?? 0} ${lang === 'zh' ? '天' : 'days'}`
+                            : `${lang === 'zh' ? '明天再来吧！' : 'Come back tomorrow!'}`);
+                    const assistantMessage: AgentChatMessage = {
+                        id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
+                        role: 'assistant',
+                        content: embed,
+                    };
+                    setAgentMessages(prev => [...prev, assistantMessage]);
+                } catch {
+                    const failMessage: AgentChatMessage = {
+                        id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
+                        role: 'assistant',
+                        content: lang === 'zh' ? '签到失败，请稍后重试' : 'Check-in failed, please try again later',
+                    };
+                    setAgentMessages(prev => [...prev, failMessage]);
+                }
+                setIsAgentReplying(false);
+                replyLockRef.current = false;
+                return;
+            }
 
             let mcpHandled = false;
             let routeMode: AssistantRouteMode = applyMcpCapabilitiesToRouteMode(
@@ -1206,7 +1266,7 @@ export default function GlobalAssistantBall() {
                             created = true;
                         };
 
-                        await readSseStream(response, (data: any) => {
+                        await readSseStream(response, (data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
                             const serverRequestId = String(data?.mcp?.request_id || '').trim();
                             if (serverRequestId && serverRequestId !== mcpRequestId) {
                                 // 多用户并发防护：仅消费当前请求 ID 对应的 SSE 事件。
@@ -1335,7 +1395,6 @@ export default function GlobalAssistantBall() {
                 }]);
             }
 
-            const systemPrompt = buildPersonalAgentSystemPrompt(agentProfile);
             const assistId = `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`;
 
             const response = await fetchStream('/assistant/personal-chat', {
@@ -1345,12 +1404,12 @@ export default function GlobalAssistantBall() {
                     ui_lang: lang,
                     dom_context: domContext,
                     agent_profile: agentProfile,
-                    system_prompt: systemPrompt,
+                    // system_prompt 由后端通过 skills.py 的 assistant_build_system_prompt 构建
                 }
             });
 
             let receivedReply = false;
-            await readSseStream(response, (data: any) => {
+            await readSseStream(response, (data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
                 if (data.error) {
                     throw new Error(data.error);
                 }
@@ -1447,7 +1506,7 @@ export default function GlobalAssistantBall() {
             // Let user choose save location via File System Access API
             if ('showSaveFilePicker' in window) {
                 try {
-                    const handle = await window.showSaveFilePicker({
+                    const handle = await (window as any).showSaveFilePicker({
                         suggestedName: defaultName,
                         types: [{ description: 'PNG Image', accept: { 'image/png': ['.png'] } }],
                     });
@@ -1565,6 +1624,14 @@ export default function GlobalAssistantBall() {
                         </button>
                         <button type="button" className="assistant-option-btn" disabled>
                             总结（即将上线）
+                        </button>
+                        <button
+                            type="button"
+                            className="assistant-option-btn is-checkin-btn"
+                            onClick={handleQuickCheckin}
+                            disabled={isCheckingIn || hasCheckedInToday}
+                        >
+                            {isCheckingIn ? '签到中...' : hasCheckedInToday ? '✅ 今日已签到' : '📅 每日签到'}
                         </button>
                     </div>
 

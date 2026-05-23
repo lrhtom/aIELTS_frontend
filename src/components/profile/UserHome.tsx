@@ -19,6 +19,7 @@ export default function UserHome() {
     const [calendarData, setCalendarData] = useState<CalendarEntry[]>([]);
     const [registeredDate, setRegisteredDate] = useState<string>('');
     const [totalYearSeconds, setTotalYearSeconds] = useState<number>(0);
+    const [loading, setLoading] = useState(true);
 
     // Tooltip state (viewport-fixed coordinates)
     const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
@@ -85,7 +86,7 @@ export default function UserHome() {
             } catch { /* ignore */ }
         };
 
-        void loadData();
+        void loadData().finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
     }, []);
 
@@ -226,106 +227,166 @@ export default function UserHome() {
             </div>
 
             {/* Learning Calendar */}
-            {calData && (
-                <div className="lc-calendar-card">
-                    {/* ── Top info bar ── */}
-                    <div className="lc-cal-topbar">
-                        <span className="lc-cal-topbar-title">{t.profile.home.calendar.yearSummary.replace('{time}', formatSecondsLong(totalYearSeconds))}</span>
-                        <div className="lc-cal-topbar-right">
-                            <span className="lc-cal-topbar-stat">{t.profile.home.calendar.cumulativeDays.replace('{n}', String(calData.cumulativeDays))}</span>
-                            <span className="lc-cal-topbar-divider" />
-                            <span className="lc-cal-topbar-stat">{t.profile.home.calendar.consecutive.replace('{n}', String(calData.consecutive))}</span>
-                            <span className="lc-cal-topbar-divider" />
-                            <span className="lc-cal-topbar-select">
-                                {t.profile.home.calendar.pastYear} <span className="lc-cal-topbar-arrow">▼</span>
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* ── 53×7 heatmap grid ── */}
-                    <div className="lc-cal-body">
-                        <div className="lc-cal-graph">
-                            {/* ── Top X-axis month labels (absolute-positioned) ── */}
-                            <div className="lc-cal-xaxis">
-                                {calData.monthMarks.map((m, i) => (
-                                    <span
-                                        key={i}
-                                        className="lc-cal-xlabel"
-                                        style={{ left: `${m.pct}%` }}
-                                    >
-                                        {m.label}
-                                    </span>
-                                ))}
+            <div className="lc-calendar-card">
+                {loading || !calData ? (
+                    /* ── Skeleton loader ── */
+                    <>
+                        <div className="lc-cal-topbar">
+                            <span className="lc-skeleton lc-skeleton-text" style={{ width: '220px' }} />
+                            <div className="lc-cal-topbar-right">
+                                <span className="lc-skeleton lc-skeleton-chip" />
+                                <span className="lc-cal-topbar-divider" />
+                                <span className="lc-skeleton lc-skeleton-chip" />
+                                <span className="lc-cal-topbar-divider" />
+                                <span className="lc-skeleton lc-skeleton-chip" style={{ width: '90px' }} />
                             </div>
-
-                            {/* Grid: row labels + cells */}
-                            <div className="lc-cal-grid">
-                                <div className="lc-cal-rows">
-                                    {t.profile.home.calendar.dayLabels.map((l, i) => (
-                                        <span key={i}>{l}</span>
+                        </div>
+                        <div className="lc-cal-body">
+                            <div className="lc-cal-graph">
+                                <div className="lc-cal-xaxis">
+                                    {t.profile.home.calendar.months.map((m, i) => (
+                                        <span key={i} className="lc-cal-xlabel" style={{ left: `${(i / 11) * 100}%` }}>
+                                            {m}
+                                        </span>
                                     ))}
                                 </div>
-                                <div
-                                    className="lc-cal-cells"
-                                    style={{ gridTemplateColumns: `repeat(${calData.weeks.length}, 1fr)` }}
-                                    onMouseLeave={() => setTooltip(null)}
-                                >
-                                    {[0, 1, 2, 3, 4, 5, 6].map(row =>
-                                        calData.weeks.map((week, col) => {
-                                            const cell = week[row];
-                                            if (!cell || !cell.inRange) {
-                                                return <div key={`${col}-${row}`} className="lc-dot lc-empty" />;
-                                            }
-                                            const e = cell.entry;
-                                            const buildTooltip = () => {
-                                                const secs = e?.learning_seconds ?? 0;
-                                                const tt = t.profile.home.calendar.tooltip;
-                                                if (secs === 0) return `${cell.date}\n${tt.noActivity}`;
-                                                const parts: string[] = [cell.date, tt.studied.replace('{time}', formatSecondsMid(secs))];
-                                                if (e?.vocab)     parts.push(tt.vocab.replace('{n}', String(e.vocab)));
-                                                if (e?.reading)   parts.push(tt.reading.replace('{n}', String(e.reading)));
-                                                if (e?.listening) parts.push(tt.listening.replace('{n}', String(e.listening)));
-                                                if (e?.speaking)  parts.push(tt.speaking.replace('{n}', String(e.speaking)));
-                                                if (e?.writing)   parts.push(tt.writing.replace('{n}', String(e.writing)));
-                                                return parts.join('\n');
-                                            };
-                                            return (
-                                                <div
-                                                    key={`${col}-${row}`}
-                                                    className={`lc-dot lc-lvl-${cell.level}`}
-                                                    onMouseEnter={(ev) => {
-                                                        const rect = (ev.target as HTMLElement).getBoundingClientRect();
-                                                        setTooltip({
-                                                            x: rect.left + rect.width / 2,
-                                                            y: rect.top - 8,
-                                                            content: buildTooltip(),
-                                                        });
-                                                    }}
-                                                />
-                                            );
-                                        })
-                                    )}
+                                <div className="lc-cal-grid">
+                                    <div className="lc-cal-rows">
+                                        {t.profile.home.calendar.dayLabels.map((l, i) => (
+                                            <span key={i}>{l}</span>
+                                        ))}
+                                    </div>
+                                    <div
+                                        className="lc-cal-cells"
+                                        style={{ gridTemplateColumns: 'repeat(53, 1fr)' }}
+                                    >
+                                        {Array.from({ length: 53 * 7 }).map((_, i) => (
+                                            <div key={i} className="lc-dot lc-dot-skeleton" />
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="lc-cal-legend">
+                                    <span>{t.profile.home.calendar.legend.labels[0]}</span>
+                                    <div className="lc-dot lc-lvl-0 lc-dot-skeleton" />
+                                    <span>{t.profile.home.calendar.legend.labels[1]}</span>
+                                    <div className="lc-dot lc-lvl-1 lc-dot-skeleton" />
+                                    <span>{t.profile.home.calendar.legend.labels[2]}</span>
+                                    <div className="lc-dot lc-lvl-2 lc-dot-skeleton" />
+                                    <span>{t.profile.home.calendar.legend.labels[3]}</span>
+                                    <div className="lc-dot lc-lvl-3 lc-dot-skeleton" />
+                                    <div className="lc-dot lc-lvl-4 lc-dot-skeleton" />
+                                    <span>{t.profile.home.calendar.legend.labels[4]}</span>
                                 </div>
                             </div>
-
-                            {/* ── Legend ── */}
-                            <div className="lc-cal-legend">
-                                <span>{t.profile.home.calendar.legend.labels[0]}</span>
-                                <div className="lc-dot lc-lvl-0" />
-                                <span>{t.profile.home.calendar.legend.labels[1]}</span>
-                                <div className="lc-dot lc-lvl-1" />
-                                <span>{t.profile.home.calendar.legend.labels[2]}</span>
-                                <div className="lc-dot lc-lvl-2" />
-                                <span>{t.profile.home.calendar.legend.labels[3]}</span>
-                                <div className="lc-dot lc-lvl-3" />
-                                <div className="lc-dot lc-lvl-4" />
-                                <span>{t.profile.home.calendar.legend.labels[4]}</span>
+                        </div>
+                    </>
+                ) : (
+                    /* ── Real calendar ── */
+                    <>
+                        <div className="lc-cal-topbar">
+                            <span className="lc-cal-topbar-title">{t.profile.home.calendar.yearSummary.replace('{time}', formatSecondsLong(totalYearSeconds))}</span>
+                            <div className="lc-cal-topbar-right">
+                                <span className="lc-cal-topbar-stat">{t.profile.home.calendar.cumulativeDays.replace('{n}', String(calData.cumulativeDays))}</span>
+                                <span className="lc-cal-topbar-divider" />
+                                <span className="lc-cal-topbar-stat">{t.profile.home.calendar.consecutive.replace('{n}', String(calData.consecutive))}</span>
+                                <span className="lc-cal-topbar-divider" />
+                                <span className="lc-cal-topbar-select">
+                                    {t.profile.home.calendar.pastYear} <span className="lc-cal-topbar-arrow">▼</span>
+                                </span>
                             </div>
                         </div>
-
-                    </div>
-                </div>
-            )}
+                        <div className="lc-cal-body">
+                            <div className="lc-cal-graph">
+                                <div className="lc-cal-xaxis">
+                                    {calData.monthMarks.map((m, i) => (
+                                        <span
+                                            key={i}
+                                            className="lc-cal-xlabel"
+                                            style={{ left: `${m.pct}%` }}
+                                        >
+                                            {m.label}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="lc-cal-grid">
+                                    <div className="lc-cal-rows">
+                                        {t.profile.home.calendar.dayLabels.map((l, i) => (
+                                            <span key={i}>{l}</span>
+                                        ))}
+                                    </div>
+                                    <div
+                                        className="lc-cal-cells"
+                                        style={{ gridTemplateColumns: `repeat(${calData.weeks.length}, 1fr)` }}
+                                        onMouseMove={(ev) => {
+                                            if (!tooltip) return;
+                                            const bodyRect = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+                                            const cx = ev.clientX;
+                                            const cy = ev.clientY;
+                                            const clampedX = Math.min(Math.max(cx, bodyRect.left), bodyRect.right);
+                                            const clampedY = Math.min(Math.max(cy, bodyRect.top), bodyRect.bottom);
+                                            setTooltip(prev => prev ? { ...prev, x: clampedX, y: clampedY } : null);
+                                        }}
+                                        onMouseLeave={() => setTooltip(null)}
+                                    >
+                                        {[0, 1, 2, 3, 4, 5, 6].map(row =>
+                                            calData.weeks.map((week, col) => {
+                                                const cell = week[row];
+                                                if (!cell || !cell.inRange) {
+                                                    return <div key={`${col}-${row}`} className="lc-dot lc-empty" />;
+                                                }
+                                                const e = cell.entry;
+                                                const buildTooltip = () => {
+                                                    const secs = e?.learning_seconds ?? 0;
+                                                    const tt = t.profile.home.calendar.tooltip;
+                                                    if (secs === 0) {
+                                                        const parts = [cell.date, tt.noActivity];
+                                                        if (e?.checked) parts.push(tt.checkedIn);
+                                                        return parts.join('\n');
+                                                    }
+                                                    const parts: string[] = [cell.date, tt.studied.replace('{time}', formatSecondsMid(secs))];
+                                                    if (e?.checked)   parts.push(tt.checkedIn);
+                                                    if (e?.vocab)     parts.push(tt.vocab.replace('{n}', String(e.vocab)));
+                                                    if (e?.reading)   parts.push(tt.reading.replace('{n}', String(e.reading)));
+                                                    if (e?.listening) parts.push(tt.listening.replace('{n}', String(e.listening)));
+                                                    if (e?.speaking)  parts.push(tt.speaking.replace('{n}', String(e.speaking)));
+                                                    if (e?.writing)   parts.push(tt.writing.replace('{n}', String(e.writing)));
+                                                    return parts.join('\n');
+                                                };
+                                                return (
+                                                    <div
+                                                        key={`${col}-${row}`}
+                                                        className={`lc-dot lc-lvl-${cell.level}${e?.checked ? ' lc-checked' : ''}`}
+                                                        onMouseEnter={(ev) => {
+                                                            const rect = (ev.target as HTMLElement).getBoundingClientRect();
+                                                            setTooltip({
+                                                                x: rect.left + rect.width / 2,
+                                                                y: rect.top - 8,
+                                                                content: buildTooltip(),
+                                                            });
+                                                        }}
+                                                    />
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="lc-cal-legend">
+                                    <span>{t.profile.home.calendar.legend.labels[0]}</span>
+                                    <div className="lc-dot lc-lvl-0" />
+                                    <span>{t.profile.home.calendar.legend.labels[1]}</span>
+                                    <div className="lc-dot lc-lvl-1" />
+                                    <span>{t.profile.home.calendar.legend.labels[2]}</span>
+                                    <div className="lc-dot lc-lvl-2" />
+                                    <span>{t.profile.home.calendar.legend.labels[3]}</span>
+                                    <div className="lc-dot lc-lvl-3" />
+                                    <div className="lc-dot lc-lvl-4" />
+                                    <span>{t.profile.home.calendar.legend.labels[4]}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
 
             {/* Hover Tooltip — rendered via portal so it's never clipped */}
             {tooltip && createPortal(
@@ -350,7 +411,23 @@ export default function UserHome() {
                             {t.profile.home.plans.viewAll} <ChevronRight size={16} />
                         </button>
                     </div>
-                    {plans.length === 0 ? (
+                    {loading ? (
+                        <div className="plans-skeleton">
+                            {[0, 1, 2].map(i => (
+                                <div key={i} className="plan-item-skeleton">
+                                    <div className="plan-item-top">
+                                        <span className="lc-skeleton lc-skeleton-text" style={{ width: '120px' }} />
+                                        <span className="lc-skeleton lc-skeleton-text" style={{ width: '60px' }} />
+                                    </div>
+                                    <div className="plan-progress-bar lc-skeleton-bar" />
+                                    <div className="plan-item-bottom">
+                                        <span className="lc-skeleton lc-skeleton-text" style={{ width: '90px' }} />
+                                        <div className="plan-progress-bar plan-progress-bar-total lc-skeleton-bar" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : plans.length === 0 ? (
                         <div className="plans-empty">
                             <BookMarked size={32} opacity={0.3} />
                             <p>{t.profile.home.plans.empty}</p>

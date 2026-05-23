@@ -62,8 +62,8 @@ export default function ATBalanceCheck({
     }, [service, params, user, setBalanceOk, setIsChecking, t]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         checkBalance();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [service, params, user?.atBalance, checkBalance]); // Added checkBalance to useEffect dependencies
 
     if (isChecking) {
