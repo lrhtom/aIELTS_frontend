@@ -112,7 +112,7 @@ export const zh: Translations = {
         footerManual: '使用手册',
     },
     practiceHub: {
-        backToHome: '← 返回主页',
+        backToHome: '返回主页',
         heading: '雅思题库',
         subheading: '选择您的练习模式，开启高效提分之旅',
         realPractice: {
@@ -126,7 +126,7 @@ export const zh: Translations = {
         comingSoon: '更多练习模式正在开发中，敬请期待...',
     },
     aiPractice: {
-        backToPractice: '← 返回题库',
+        backToPractice: '返回题库',
         heading: 'AI 智能练习',
         subheading: '采用 DeepSeek/Gemini/GPT 等模型，为您量身定制学习内容',
         reading: {
@@ -148,7 +148,7 @@ export const zh: Translations = {
         comingSoon: '更多模块正在同步开发中...',
     },
     readingConfig: {
-        backToAI: '← 返回 AI 练习',
+        backToAI: '返回 AI 练习',
         heading: '阅读练习配置',
         subheading: '定制专属于您的阅读训练材料',
         targetScore: '目标 Band 分数',
@@ -188,7 +188,7 @@ export const zh: Translations = {
         },
     },
     speakingConfig: {
-        backToAI: '← 返回 AI 练习',
+        backToAI: '返回 AI 练习',
         heading: '🗣️ 口语练习配置',
         subheading: '选择题型、模式，AI 为你模拟雅思口语考官',
         vocabSettings: {
@@ -238,7 +238,7 @@ export const zh: Translations = {
         comingSoon: '考试模式即将上线！',
     },
     listeningConfig: {
-        backToAI: '← 返回 AI 练习',
+        backToAI: '返回 AI 练习',
         heading: '听力练习配置',
         subheading: '定制专属于您的听力训练材料',
         practiceType: {
@@ -272,7 +272,7 @@ export const zh: Translations = {
         },
     },
     writingHub: {
-        backToPractice: '← 返回AI突击特训',
+        backToPractice: '返回AI突击特训',
         heading: '写作大厅 (Writing)',
         subheading: '选择你要进行的写作练习类型',
         practiceMode: '练习模式',
@@ -298,7 +298,7 @@ export const zh: Translations = {
         }
     },
     task1Selection: {
-        backToWriting: '← 返回写作大厅',
+        backToWriting: '返回写作大厅',
         heading: '📝 雅思小作文 (Task 1) 分类突击',
         subheading: '请选择您要专项攻克的 Task 1 题型',
         types: {
@@ -312,7 +312,7 @@ export const zh: Translations = {
         comingSoon: '即将开发: '
     },
     chartSelection: {
-        backToHub: '← 返回雅思小作文分类',
+        backToHub: '返回雅思小作文分类',
         heading: '📊 图表题 (Chart Question)',
         subheading: '选择接下来的 Task 1 小作文要挑战的图表类型',
         types: {
@@ -327,7 +327,7 @@ export const zh: Translations = {
         startBtn: '开始练习'
     },
     task2Selection: {
-        backToWriting: '← 返回写作大厅',
+        backToWriting: '返回写作大厅',
         heading: '🖋️ 雅思大作文 (Task 2) 分类突击',
         subheading: '请选择接下来大作文练习想要挑战的文章架构类型',
         topicLabel: 'AI 生成作文种类（单选）',
@@ -368,7 +368,7 @@ export const zh: Translations = {
         startBtn: '🚀 获取随机题干并开始作答'
     },
     task2OpinionSelection: {
-        backToTask2Selection: '← 返回大作文选择',
+        backToTask2Selection: '返回大作文选择',
         heading: '⚖️ 观点题 (Opinion Essay) 专项训练',
         subheading: '请选择你想集中突破的具体观点题衍生结构',
         types: {
@@ -380,8 +380,8 @@ export const zh: Translations = {
         startBtn: '🚀 开始该子类测验'
     },
     task2OpinionDrill: {
-        backToTask2Selection: '← 返回写作大厅',
-        backToSetup: '← 返回观点题配置',
+        backToTask2Selection: '返回写作大厅',
+        backToSetup: '返回观点题配置',
         heading: '🧠 观点练习题板块',
         subheading: '先设定题量与话题，再一次性生成整轮题组，逐题作答并即时评分，最后查看总评。',
         countLabel: '一轮题量（1-10）',
@@ -774,7 +774,7 @@ export const zh: Translations = {
         reviewOriginal: '你的原文回顾',
         reviewAndAnswer: '回放: 题目与您的作答',
         overallBandSubtitle: '雅思综合评分',
-        abortBtn: '← 放弃考试',
+        abortBtn: '放弃考试',
         titleTask1: '📝 小作文特训 - 图表解析',
         titleTask2: '🖋️ 大作文特训 - {type}',
         toastEmpty: '请先输入您的作文',
@@ -790,7 +790,7 @@ export const zh: Translations = {
         toastSuccess: '批改完成！',
         toastFail: '提交失败',
         toastErrorTitle: '错误',
-        backToHall: '← 写作大厅',
+        backToHall: '写作大厅',
         title: '📝 AI写作板块 (AI Writing)',
         subtitle: '将你的作文输入下方，获知各项评分雅思标准分级图表',
         yourEssay: '你的作文内容',
@@ -1044,7 +1044,7 @@ export const zh: Translations = {
             btnCollapseEx: '收起例句',
             btnExpandEx: '查看例句 ({n})',
             pageInfo: '第 {page} / {total} 页 · 共 {n} 词',
-            prevPage: '← 上一页',
+            prevPage: '上一页',
             nextPage: '下一页 →',
             msgLoadFail: '加载计划失败',
             msgSaveSuccess: '计划名称已保存',
@@ -1166,7 +1166,7 @@ export const zh: Translations = {
         },
     },
     writingChatConfig: {
-        backToWriting: '← 返回写作大厅',
+        backToWriting: '返回写作大厅',
         heading: '打字聊天模式',
         subheading: '通过打字与 AI 进行实时互动，灵活练习目标词汇。',
         vocabSettings: {

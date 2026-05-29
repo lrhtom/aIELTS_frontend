@@ -8,7 +8,7 @@ import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
 import '../../styles/writing_correction_result.css';
@@ -30,6 +30,7 @@ export default function WritingCorrectionPage() {
     const [transMode, setTransMode] = useState<'en' | 'zh'>('en');
     const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
     const [isTranslating, setIsTranslating] = useState(false);
+    const [expandedCriteria, setExpandedCriteria] = useState<Record<string, boolean>>({});
     const [result, setResult] = useState<CorrectionResponse | null>(null);
     const [provider, setProvider] = useState<AIProvider>(() => {
         const localProvider = localStorage.getItem('ai_provider') as AIProvider | null;
@@ -395,33 +396,111 @@ export default function WritingCorrectionPage() {
                                             {lang === 'zh' ? '综合评价 (Comprehensive Evaluation)' : 'Comprehensive Evaluation'}
                                         </h3>
                                         
-                                        {/* Feedback / Areas for Improvement */}
-                                        <div style={{ marginBottom: '20px' }}>
-                                            <div style={{ fontWeight: 600, color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></div>
-                                                {lang === 'zh' ? '考官详评 (Examiner Feedback)' : 'Examiner Feedback'}
-                                            </div>
-                                            <div style={{ paddingLeft: '14px', borderLeft: '2px solid #fef3c7', marginLeft: '3px' }}>
-                                                {(result.Feedback || result.feedback || '').split('\n').map((line, idx) => (
-                                                    <p key={idx} style={{ marginBottom: '8px', lineHeight: 1.6, color: '#475569', fontSize: '0.95rem' }}>{line}</p>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Actionable Advice */}
-                                        {result.Actionable_Advice && result.Actionable_Advice.length > 0 && (
-                                            <div>
-                                                <div style={{ fontWeight: 600, color: '#1d4ed8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }}></div>
-                                                    {lang === 'zh' ? '下一步提升建议 (Actionable Strategies)' : 'Actionable Strategies'}
+                                        {/* Strengths */}
+                                        {result.Feedback_Strengths && result.Feedback_Strengths.length > 0 && (
+                                            <div style={{ marginBottom: '20px' }}>
+                                                <div style={{ fontWeight: 600, color: '#15803d', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }}></div>
+                                                    {lang === 'zh' ? '优点 (Strengths)' : 'Strengths'}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
-                                                    {result.Actionable_Advice.map((advice, idx) => (
-                                                        <li key={idx} style={{ lineHeight: 1.5 }}>{advice}</li>
-                                                    ))}
+                                                    {result.Feedback_Strengths.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
                                                 </ul>
                                             </div>
                                         )}
+
+                                        {/* Improvements */}
+                                        {result.Feedback_Improvements && result.Feedback_Improvements.length > 0 && (
+                                            <div style={{ marginBottom: '20px' }}>
+                                                <div style={{ fontWeight: 600, color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></div>
+                                                    {lang === 'zh' ? '待改进 (Areas for Improvement)' : 'Areas for Improvement'}
+                                                </div>
+                                                <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
+                                                    {result.Feedback_Improvements.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Actionable Advice */}
+                                        {result.Actionable_Advice && result.Actionable_Advice.length > 0 && (
+                                            <div style={{ marginBottom: '20px' }}>
+                                                <div style={{ fontWeight: 600, color: '#1d4ed8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }}></div>
+                                                    {lang === 'zh' ? '提升策略 (Actionable Strategies)' : 'Actionable Strategies'}
+                                                </div>
+                                                <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
+                                                    {result.Actionable_Advice.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Tasks */}
+                                        {result.Feedback_Tasks && result.Feedback_Tasks.length > 0 && (
+                                            <div style={{ marginBottom: '20px' }}>
+                                                <div style={{ fontWeight: 600, color: '#6d28d9', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#8b5cf6' }}></div>
+                                                    {lang === 'zh' ? '具体任务 (Specific Tasks)' : 'Specific Tasks'}
+                                                </div>
+                                                <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
+                                                    {result.Feedback_Tasks.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Path */}
+                                        {result.Feedback_Path && result.Feedback_Path.length > 0 && (
+                                            <div style={{ marginBottom: '20px' }}>
+                                                <div style={{ fontWeight: 600, color: '#0f766e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#14b8a6' }}></div>
+                                                    {lang === 'zh' ? '提分路径 (Path to Improvement)' : 'Path to Improvement'}
+                                                </div>
+                                                <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
+                                                    {result.Feedback_Path.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Legacy Feedback Fallback */}
+                                        {(result.Feedback || result.feedback) && !(result.Feedback_Strengths) && (
+                                            <div style={{ marginBottom: '20px' }}>
+                                                <div style={{ fontWeight: 600, color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></div>
+                                                    {lang === 'zh' ? '考官点评 (Examiner Feedback)' : 'Examiner Feedback'}
+                                                </div>
+                                                <div style={{ paddingLeft: '14px', borderLeft: '2px solid #f1f5f9', marginLeft: '3px' }}>
+                                                    {(result.Feedback || result.feedback || '').split('\n').map((line, idx) => (
+                                                        <p key={idx} style={{ marginBottom: '8px', lineHeight: 1.6, color: '#475569', fontSize: '0.95rem' }}>{line}</p>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Accordions for Detailed Criteria */}
+                                        <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            {[
+                                                { key: 'TR', label: lang === 'zh' ? (taskType === 'task1' ? '任务完成情况 (Task Achievement)' : '任务回应情况 (Task Response)') : 'Task Response', content: result.Feedback_TR },
+                                                { key: 'CC', label: lang === 'zh' ? '连贯与衔接 (Coherence & Cohesion)' : 'Coherence & Cohesion', content: result.Feedback_CC },
+                                                { key: 'LR', label: lang === 'zh' ? '词汇资源 (Lexical Resource)' : 'Lexical Resource', content: result.Feedback_LR },
+                                                { key: 'GRA', label: lang === 'zh' ? '语法多样性及准确性 (Grammatical Range)' : 'Grammatical Range', content: result.Feedback_GRA }
+                                            ].map(crit => crit.content ? (
+                                                <div key={crit.key} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                                                    <button 
+                                                        onClick={() => setExpandedCriteria(p => ({...p, [crit.key]: !p[crit.key]}))}
+                                                        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: expandedCriteria[crit.key] ? '#f8fafc' : '#ffffff', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s' }}
+                                                    >
+                                                        <span style={{ fontWeight: 600, color: '#334155', fontSize: '0.95rem' }}>{crit.label}</span>
+                                                        {expandedCriteria[crit.key] ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
+                                                    </button>
+                                                    {expandedCriteria[crit.key] && (
+                                                        <div style={{ padding: '16px', borderTop: '1px solid #e2e8f0', background: '#ffffff', color: '#475569', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                                                            {crit.content.split('\n').map((line, idx) => <p key={idx} style={{ marginBottom: '8px' }}>{line}</p>)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : null)}
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>

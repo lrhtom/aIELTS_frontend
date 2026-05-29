@@ -112,7 +112,7 @@ export const en: Translations = {
         footerManual: 'User Manual',
     },
     practiceHub: {
-        backToHome: '← Back to Home',
+        backToHome: 'Back to Home',
         heading: 'IELTS Practice Hub',
         subheading: 'Choose your practice mode and start your efficiency journey',
         realPractice: {
@@ -126,7 +126,7 @@ export const en: Translations = {
         comingSoon: 'More practice modes are coming soon...',
     },
     aiPractice: {
-        backToPractice: '← Back to Hub',
+        backToPractice: 'Back to Hub',
         heading: 'AI Smart Practice',
         subheading: 'Powered by DeepSeek/Gemini/GPT for personalized content',
         reading: {
@@ -148,7 +148,7 @@ export const en: Translations = {
         comingSoon: 'More modules for preparation are in development...',
     },
     readingConfig: {
-        backToAI: '← Back to AI Practice',
+        backToAI: 'Back to AI Practice',
         heading: 'Reading Configuration',
         subheading: 'Customize your reading training materials',
         targetScore: 'Target Band Score',
@@ -188,7 +188,7 @@ export const en: Translations = {
         },
     },
     speakingConfig: {
-        backToAI: '← Back to AI Practice',
+        backToAI: 'Back to AI Practice',
         heading: '🗣️ Speaking Practice Config',
         subheading: 'Choose part and mode, let AI act as your IELTS examiner',
         vocabSettings: {
@@ -238,7 +238,7 @@ export const en: Translations = {
         comingSoon: 'Exam mode is coming soon!',
     },
     listeningConfig: {
-        backToAI: '← Back to AI Practice',
+        backToAI: 'Back to AI Practice',
         heading: 'Listening Configuration',
         subheading: 'Customize your listening training materials',
         practiceType: {
@@ -584,7 +584,7 @@ export const en: Translations = {
         },
     },
     writingHub: {
-        backToPractice: '← Back to AI Practice',
+        backToPractice: 'Back to AI Practice',
         heading: 'Writing Hall (Writing)',
         subheading: 'Choose the type of writing practice you want to do',
         practiceMode: 'Practice Mode',
@@ -610,7 +610,7 @@ export const en: Translations = {
         }
     },
     task1Selection: {
-        backToWriting: '← Back to Writing Hub',
+        backToWriting: 'Back to Writing Hub',
         heading: '📝 IELTS Task 1 Category Training',
         subheading: 'Please select the Task 1 type you want to focus on',
         types: {
@@ -624,7 +624,7 @@ export const en: Translations = {
         comingSoon: 'Coming Soon: '
     },
     chartSelection: {
-        backToHub: '← Back to Task 1 Selection',
+        backToHub: 'Back to Task 1 Selection',
         heading: '📊 Chart Question',
         subheading: 'Choose the chart type for your next Task 1 practice',
         types: {
@@ -639,7 +639,7 @@ export const en: Translations = {
         startBtn: 'Start Practice'
     },
     task2Selection: {
-        backToWriting: '← Back to Writing Hub',
+        backToWriting: 'Back to Writing Hub',
         heading: '🖋️ IELTS Task 2 Category Training',
         subheading: 'Please select the essay structure you want to challenge',
         topicLabel: 'AI Topic Category (Single Choice)',
@@ -668,7 +668,7 @@ export const en: Translations = {
         startBtn: '🚀 Get Random Prompt and Start'
     },
     task2OpinionSelection: {
-        backToTask2Selection: '← Back to Task 2 Selection',
+        backToTask2Selection: 'Back to Task 2 Selection',
         heading: '⚖️ Opinion Essay Sub-topic Practice',
         subheading: 'Please select the specific Opinion derived structure you want to break through',
         types: {
@@ -680,8 +680,8 @@ export const en: Translations = {
         startBtn: '🚀 Start Sub-topic Quiz'
     },
     task2OpinionDrill: {
-        backToTask2Selection: '← Back to Writing Hub',
-        backToSetup: '← Back to Drill Setup',
+        backToTask2Selection: 'Back to Writing Hub',
+        backToSetup: 'Back to Drill Setup',
         heading: '🧠 Opinion Drill Board',
         subheading: 'Set question count and topics, generate a full round at once, answer one by one, and get a final summary.',
         countLabel: 'Questions per round (1-10)',
@@ -762,7 +762,7 @@ export const en: Translations = {
         reviewOriginal: 'Original Text Review',
         reviewAndAnswer: 'Replay: Prompt & Your Response',
         overallBandSubtitle: 'IELTS Overall Band Score',
-        abortBtn: '← Abort Test',
+        abortBtn: 'Abort Test',
         titleTask1: '📝 Task 1 Training - Chart Analysis',
         titleTask2: '🖋️ Task 2 Training - {type}',
         toastEmpty: 'Please input your essay first',
@@ -778,7 +778,7 @@ export const en: Translations = {
         toastSuccess: 'Evaluation complete!',
         toastFail: 'Submission failed',
         toastErrorTitle: 'Error',
-        backToHall: '← Back to Writing Hall',
+        backToHall: 'Back to Writing Hall',
         title: '📝 AI Writing',
         subtitle: 'Enter your essay below to get a graded report based on official IELTS criteria',
         yourEssay: 'Your Essay Content',
@@ -1032,7 +1032,7 @@ export const en: Translations = {
             btnCollapseEx: 'Hide Examples',
             btnExpandEx: 'View Examples ({n})',
             pageInfo: 'Page {page}/{total} · {n} words total',
-            prevPage: '← Prev Page',
+            prevPage: 'Prev Page',
             nextPage: 'Next Page →',
             msgLoadFail: 'Failed to load plan',
             msgSaveSuccess: 'Plan name saved',
@@ -1154,7 +1154,7 @@ export const en: Translations = {
         },
     },
     writingChatConfig: {
-        backToWriting: '← Back to Writing',
+        backToWriting: 'Back to Writing',
         heading: 'Typing Chat Mode',
         subheading: 'Interact with AI in real-time through typing and flexibly practice target vocabulary.',
         vocabSettings: {

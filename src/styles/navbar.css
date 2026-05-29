@@ -95,23 +95,41 @@
     justify-content: center;
 }
 
+/* ====== New Layout: Back section on left ====== */
+.navbar-back-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: 8px;
+}
+
+.navbar-divider {
+    width: 1px;
+    height: 24px;
+    background-color: #e2e8f0;
+}
+
 .navbar-back-btn {
     text-decoration: none;
     color: var(--color-text-secondary, #64748b);
-    font-weight: 600;
+    font-weight: 500;
     font-size: 14px;
-    transition: color 0.2s;
-    white-space: nowrap;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
-    background: #f1f5f9;
-    padding: 6px 12px;
-    border-radius: 20px;
+    gap: 4px;
+    background: transparent;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
 }
 
 .navbar-back-btn:hover {
     color: var(--color-primary, #0d9488);
-    background: #e2e8f0;
+    background: #f8fafc;
+    border-color: #e2e8f0;
 }
 
 .navbar-title-group {

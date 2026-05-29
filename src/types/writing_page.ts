@@ -8,8 +8,16 @@ export interface CorrectionResponse {
     Grammatical_Range: number;
     Overall_Band: number;
     word_count?: number;
-    Feedback?: string;
-    feedback?: string;
+    Feedback?: string; // Legacy
+    feedback?: string; // Legacy
+    Feedback_Strengths?: string[];
+    Feedback_Improvements?: string[];
+    Feedback_Tasks?: string[];
+    Feedback_Path?: string[];
+    Feedback_TR?: string;
+    Feedback_CC?: string;
+    Feedback_LR?: string;
+    Feedback_GRA?: string;
     Model_Essay?: string;
     Revised_Essay?: string;
     Actionable_Advice?: string[];

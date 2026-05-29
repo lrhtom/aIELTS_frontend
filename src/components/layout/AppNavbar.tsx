@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useLang } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { ArrowLeft } from 'lucide-react';
 import '../../styles/navbar.css';
 
 interface AppNavbarProps {
@@ -22,6 +23,9 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ba
     return (
         <nav className="navbar" aria-label="Top navigation">
             <div className="navbar-left">
+                {!isHome && (
+                    <Link to="/" className="navbar-logo navbar-logo-left"><span>aIELTS</span></Link>
+                )}
                 <button className="sidebar-open-btn" onClick={onToggleSidebar}>
                     <span className="hamburger-icon">
                         <span className="hamburger-line"></span>
@@ -29,8 +33,23 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ba
                         <span className="hamburger-line"></span>
                     </span>
                 </button>
-                {!isHome && (
-                    <Link to="/" className="navbar-logo navbar-logo-left"><span>aIELTS</span></Link>
+                
+                {/* Back Button moved to the left side next to logo */}
+                {!isHome && (backUrl || onBack) && (
+                    <div className="navbar-back-section">
+                        <div className="navbar-divider" />
+                        {onBack ? (
+                            <button onClick={onBack} className="navbar-back-btn">
+                                <ArrowLeft size={16} />
+                                <span>{backText || '返回'}</span>
+                            </button>
+                        ) : backUrl ? (
+                            <Link to={backUrl} className="navbar-back-btn">
+                                <ArrowLeft size={16} />
+                                <span>{backText || '返回'}</span>
+                            </Link>
+                        ) : null}
+                    </div>
                 )}
             </div>
             
@@ -38,21 +57,10 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ba
                 {isHome ? (
                     <Link to="/" className="navbar-logo"><span>aIELTS</span></Link>
                 ) : (
-                    (pageTitle || backUrl || onBack) && (
-                        <div className="navbar-page-header">
-                            {onBack ? (
-                                <button onClick={onBack} className="navbar-back-btn" style={{ border: 'none', cursor: 'pointer' }}>
-                                    ← {backText || 'Back'}
-                                </button>
-                            ) : backUrl ? (
-                                <Link to={backUrl} className="navbar-back-btn">← {backText || 'Back'}</Link>
-                            ) : null}
-                            {(pageTitle || pageSubtitle) && (
-                                <div className="navbar-title-group">
-                                    {pageTitle && <h1 className="navbar-page-title">{pageTitle}</h1>}
-                                    {pageSubtitle && <span className="navbar-page-subtitle">{pageSubtitle}</span>}
-                                </div>
-                            )}
+                    (pageTitle || pageSubtitle) && (
+                        <div className="navbar-title-group">
+                            {pageTitle && <h1 className="navbar-page-title">{pageTitle}</h1>}
+                            {pageSubtitle && <span className="navbar-page-subtitle">{pageSubtitle}</span>}
                         </div>
                     )
                 )}
