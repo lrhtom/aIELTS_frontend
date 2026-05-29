@@ -45,20 +45,14 @@ export default function Task1SelectionPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+            backUrl="/writing"
+            backText={t.task1Selection.backToWriting}
+            pageTitle={t.task1Selection.heading}
+            pageSubtitle={t.task1Selection.subheading}
+            headerRight={<AiModelSelector />}
+        >
             <div className="practice-container writing-selection-page">
-                <div className="writing-selection-header">
-                    <div className="practice-header writing-selection-title">
-                        <button className="back-link writing-back-btn" onClick={() => navigate('/writing')}>
-                            {t.task1Selection.backToWriting}
-                        </button>
-                        <h1>{t.task1Selection.heading}</h1>
-                        <p>{t.task1Selection.subheading}</p>
-                    </div>
-                    <div className="wc-model-box">
-                        <AiModelSelector />
-                    </div>
-                </div>
 
                 <div className="config-card writing-selection-card">
                     <div className="writing-selection-grid">

@@ -23,7 +23,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
       {/* 导航项 */}
       <div className="sidebar-nav-label">{t.nav.sidebarTitle}</div>
-      <nav className="sidebar-content">
+      <nav className="sidebar-content" aria-label="Main navigation">
         <Link to="/" className={`sidebar-item ${location.pathname === '/' ? 'active' : ''}`}>
           <span className="sidebar-icon">🏠</span>
           <span className="sidebar-text">{t.nav.home}</span>

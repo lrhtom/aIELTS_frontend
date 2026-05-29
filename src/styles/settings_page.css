@@ -20,7 +20,7 @@
     align-items: center;
     gap: 6px;
     text-decoration: none;
-    color: #6b7280;
+    color: var(--color-text-secondary);
     font-size: 13px;
     font-weight: 500;
     padding: 5px 12px 5px 8px;
@@ -32,7 +32,7 @@
 
 .settings-header .back-link:hover {
     background: rgba(13, 148, 136, 0.14);
-    color: #0d9488;
+    color: var(--color-primary);
 }
 
 .settings-header .back-link span.arrow {
@@ -48,19 +48,19 @@
 .settings-header h1 {
     font-size: 1.8rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
     margin: 8px 0 6px;
 }
 
 .settings-header p {
-    color: #6b7280;
+    color: var(--color-text-secondary);
     font-size: 0.95rem;
     margin: 0;
 }
 
 /* Card */
 .settings-card {
-    background: #fff;
+    background: var(--color-surface);
     border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
     padding: 24px 28px;
@@ -86,12 +86,12 @@
 .settings-label {
     font-size: 1rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--color-text);
 }
 
 .settings-desc {
     font-size: 0.82rem;
-    color: #9ca3af;
+    color: var(--color-text-muted);
 }
 
 /* Language Pills */
@@ -103,9 +103,9 @@
 .lang-pill {
     padding: 8px 22px;
     border-radius: 999px;
-    border: 2px solid #d1d5db;
+    border: 2px solid var(--color-border);
     background: transparent;
-    color: #4b5563;
+    color: var(--color-text);
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -113,13 +113,13 @@
 }
 
 .lang-pill:hover {
-    border-color: #0d9488;
-    color: #0d9488;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
 }
 
 .lang-pill.active {
-    border-color: #0d9488;
-    background: #0d9488;
+    border-color: var(--color-primary);
+    background: var(--color-primary);
     color: #fff;
 }
 
@@ -136,7 +136,7 @@
 
 .profile-message p {
     font-size: 18px;
-    color: #333;
+    color: var(--color-text);
     margin-bottom: 30px;
 }
 
@@ -158,13 +158,13 @@
 
 .settings-select {
     appearance: none;
-    background-color: #fff;
-    border: 2px solid #d1d5db;
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     padding: 8px 36px 8px 16px;
     font-size: 0.95rem;
     font-weight: 500;
-    color: #374151;
+    color: var(--color-text);
     cursor: pointer;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -176,10 +176,37 @@
 }
 
 .settings-select:hover {
-    border-color: #9ca3af;
+    border-color: var(--color-text-muted);
 }
 
 .settings-select:focus {
-    border-color: #0d9488;
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+}
+
+@media (max-width: 768px) {
+    .settings-page {
+        min-height: auto;
+    }
+
+    .settings-container {
+        max-width: none;
+        padding: 24px 16px 60px;
+    }
+
+    .settings-header {
+        margin-bottom: 20px;
+    }
+
+    .settings-header h1 {
+        font-size: 1.4rem;
+    }
+
+    .settings-card {
+        padding: 20px;
+    }
+
+    .settings-select {
+        min-width: 0;
+    }
 }

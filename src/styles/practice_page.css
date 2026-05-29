@@ -19,6 +19,9 @@
     animation: fadeInUp 0.4s ease both;
 }
 
+.config-page-wrap.config-page--narrow { max-width: 680px; }
+.config-page-wrap.config-page--medium { max-width: 760px; }
+
 .practice-header {
     margin-bottom: 28px;
     padding: 28px 32px;
@@ -871,4 +874,81 @@
     .writing-practice-page {
         padding: 18px 16px 26px;
     }
+}
+
+/* ─── Writing hub type buttons ───────────────────────────────────────────────────── */
+.writing-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.writing-type-btn {
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-primary);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.writing-type-btn:hover {
+    background-color: var(--color-primary-hover);
+    color: #fff;
+    box-shadow: var(--shadow-md);
+}
+
+.writing-type-btn:hover .writing-type-desc {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.writing-type-icon {
+    font-size: 24px;
+}
+
+.writing-type-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.writing-type-desc {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    transition: color var(--transition-fast);
+}
+
+/* ─── Confirm Dialog ─────────────────────────────────────────────────── */
+.confirm-dialog {
+    max-width: 400px;
+    text-align: center;
+}
+
+.confirm-dialog-message {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin: 8px 0 20px;
+}
+
+.confirm-dialog-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.confirm-dialog-actions button {
+    min-width: 100px;
+}
+
+.confirm-dialog-danger {
+    background: #ef4444 !important;
+}
+
+.confirm-dialog-danger:hover {
+    background: #dc2626 !important;
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { type VocabCard } from '../../api/vocab';
 import { speakWord } from '../../utils/speak';
 import { useLang } from '../../i18n/LanguageContext';
-import { type CompletionDueHint, type CopyPendingAction } from '../../utils/vocab_flashcard_utils';
+import { type CompletionDueHint, type CopyPendingAction, countCopies, extractTypedCopies } from '../../utils/vocab_flashcard_utils';
 
 function speak(word: string) {
     speakWord(word);
@@ -93,8 +93,7 @@ export default function CopyMode({
 
     // 计算当前输入的有效抄写次数
     const requiredCount = Math.max(0, copyRemaining[currentCardIdx] ?? copyRepetitions);
-    const typedWordsList = copyInput.split(/[\s,，\n]+/).map(w => w.trim().toLowerCase()).filter(w => w !== '');
-    const validCount = typedWordsList.filter(w => w === currentCard.word.trim().toLowerCase()).length;
+    const validCount = countCopies(copyInput, currentCard.word);
     const isCountMet = validCount >= requiredCount;
     const inputMatchesWord = isCountMet;
 
@@ -431,26 +430,31 @@ export default function CopyMode({
 
                         {(() => {
                             const targetWords: string[] = Array(requiredCount).fill(currentCard.word);
-                            const typedWords = copyInput.split(' ');
-                            const maxWords = Math.max(targetWords.length, typedWords.length);
+                            const typedCopies = extractTypedCopies(copyInput, currentCard.word, requiredCount);
+                            const maxWords = Math.max(targetWords.length, typedCopies.length);
 
+                            // 确定光标所在 copy 和 char 位置
                             const prefix = copyInput.slice(0, selectionStart);
-                            const prefixWords = prefix.split(' ');
-                            const cursorWordIndex = prefixWords.length - 1;
-                            const cursorCharIndex = prefixWords[prefixWords.length - 1].length;
+                            const prefixCopies = extractTypedCopies(prefix, currentCard.word, requiredCount);
+                            let cursorCopyIndex = 0;
+                            let cursorCharIndex = 0;
+                            if (prefixCopies.length > 0) {
+                                cursorCopyIndex = prefixCopies.length - 1;
+                                cursorCharIndex = prefixCopies[prefixCopies.length - 1].length;
+                            }
 
                             const wordsNodes: React.ReactNode[] = [];
 
                             for (let i = 0; i < maxWords; i++) {
                                 const targetWord = targetWords[i];
-                                const typedWord = typedWords[i];
-                                const isCursorHere = !copySubmitted && i === cursorWordIndex;
+                                const typedWord = typedCopies[i] ?? '';
+                                const isCursorHere = !copySubmitted && i === cursorCopyIndex;
 
                                 const charNodes: React.ReactNode[] = [];
 
                                 const iterateLen = Math.max(
                                     targetWord?.length || 0,
-                                    typedWord?.length || 0,
+                                    typedWord.length,
                                     isCursorHere ? cursorCharIndex : 0,
                                 );
 
@@ -462,9 +466,9 @@ export default function CopyMode({
                                     if (j === iterateLen) break;
 
                                     const charTarget = targetWord?.[j];
-                                    const charTyped = typedWord?.[j];
+                                    const charTyped = typedWord[j];
 
-                                    if (charTyped === undefined) {
+                                    if (charTyped === undefined || charTyped === '') {
                                         charNodes.push(<span key={`c-${j}`} style={{ color: '#cbd5e1' }}>{charTarget}</span>);
                                     } else if (charTarget === undefined) {
                                         charNodes.push(<span key={`c-${j}`} style={{ color: '#ef4444', backgroundColor: '#fee2e2', borderRadius: 2 }}>{charTyped}</span>);
@@ -489,21 +493,60 @@ export default function CopyMode({
                             value={copyInput}
                             onChange={(e) => {
                                 let val = e.target.value;
-                                // 阻止用户手动输入空格 — 空格由自动补全逻辑管理
+                                const isMultiWord = currentCard.word.includes(' ');
+
+                                // 阻止手动空格 — 单字模式空格由自动补全管理
                                 if (val.length > copyInput.length) {
                                     const added = val.slice(copyInput.length);
-                                    if (added === ' ') return; // 忽略手动空格
+                                    if (added === ' ' && !isMultiWord) {
+                                        return;
+                                    }
                                 }
-                                // 自动补空格：当最后一个词完整匹配目标词时
+
+                                // 词组内部自动补空格 — 用户只需连续打字，空格自动插入
+                                if (isMultiWord && val.length > copyInput.length) {
+                                    const segments = currentCard.word.trim().toLowerCase().split(/\s+/);
+                                    const segCount = segments.length;
+                                    const trimmedVal = val.trimEnd();
+                                    const trimmedLower = trimmedVal.toLowerCase();
+                                    const targetLower = currentCard.word.trim().toLowerCase();
+
+                                    if (!trimmedLower.endsWith(targetLower)) {
+                                        const typedSegments = trimmedLower.split(/\s+/);
+                                        const totalTyped = typedSegments.length;
+                                        const partialIdx = totalTyped % segCount;
+
+                                        // partialIdx > 0 表示当前 copy 正在输入中
+                                        // partialIdx = 0 表示刚好完成了一个完整 copy（交给抄写分隔逻辑处理）
+                                        if (partialIdx > 0) {
+                                            const curSegIdx = partialIdx - 1;
+                                            const lastSegment = typedSegments[totalTyped - 1];
+                                            const completeCopies = Math.floor(totalTyped / segCount);
+
+                                            if (lastSegment === segments[curSegIdx] && curSegIdx < segCount - 1) {
+                                                // 验证当前 copy 中之前的段是否全部匹配
+                                                let prevMatch = true;
+                                                for (let p = 0; p < curSegIdx; p++) {
+                                                    if (typedSegments[completeCopies * segCount + p] !== segments[p]) {
+                                                        prevMatch = false;
+                                                        break;
+                                                    }
+                                                }
+                                                if (prevMatch) {
+                                                    val = trimmedVal + ' ';
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 抄写之间自动补空格：当输入末尾完整匹配目标词时
                                 if (val.length > copyInput.length) {
-                                    const currentWords = val.split(' ').filter(w => w !== '');
-                                    const lastWord = currentWords[currentWords.length - 1];
-                                    if (
-                                        lastWord &&
-                                        lastWord.trim().toLowerCase() === currentCard.word.trim().toLowerCase() &&
-                                        currentWords.length <= requiredCount
-                                    ) {
-                                        val += ' ';
+                                    if (val.trimEnd().toLowerCase().endsWith(currentCard.word.trim().toLowerCase())) {
+                                        const currentCopies = countCopies(val, currentCard.word);
+                                        if (currentCopies < requiredCount) {
+                                            val += ' ';
+                                        }
                                     }
                                 }
                                 onCopyInput(val);

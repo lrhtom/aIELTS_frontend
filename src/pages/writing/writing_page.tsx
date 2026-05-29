@@ -1,5 +1,5 @@
-import Layout from '../../components/layout/Layout';
-import { Link, useNavigate } from 'react-router-dom';
+﻿import Layout from '../../components/layout/Layout';
+import { useNavigate } from 'react-router-dom';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
@@ -10,14 +10,13 @@ export default function Writing_page() {
     const t = translations[lang];
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={t.writingHub.heading}
+    pageSubtitle={t.writingHub.subheading}
+    backUrl='/practice/ai'
+    backText={t.writingHub.backToPractice}
+>
             <div className="practice-container">
-                <div className="practice-header">
-                    <Link to="/practice/ai" className="back-link">{t.writingHub.backToPractice}</Link>
-                    <h1>{t.writingHub.heading}</h1>
-                    <p>{t.writingHub.subheading}</p>
-                </div>
-
                 <div className="config-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <h3>{t.writingHub.practiceMode}</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>

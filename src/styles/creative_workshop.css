@@ -139,8 +139,8 @@
 
 .cw-counter span {
     font-size: 12px;
-    background: #eff6ff;
-    color: #1d4ed8;
+    background: #f0fdfa;
+    color: var(--color-primary-hover);
     padding: 5px 10px;
     border-radius: 999px;
 }

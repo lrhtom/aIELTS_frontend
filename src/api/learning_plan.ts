@@ -15,6 +15,7 @@ export interface LearningPlan {
     mastery_target?: number;
     copy_repetitions?: number;
     copy_review_days?: number;
+    article_review_days?: number;
     word_count:     number;
     studied_today:  number;
     studied_total:  number;
@@ -94,6 +95,7 @@ export async function updatePlan(
         mastery_target: number;
         copy_repetitions: number;
         copy_review_days: number;
+        article_review_days: number;
     }>,
 ): Promise<{ plan: LearningPlan }> {
     const resp = await apiClient.patch(`/plans/${id}/`, data);
@@ -187,4 +189,116 @@ export async function listBookWords(
         params: { page, page_size: pageSize, ...(q ? { q } : {}) },
     });
     return resp.data;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Article Copy
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface ArticleCopyData {
+    article_title: string;
+    article_text: string;
+    article_translation?: string;
+    typed_text?: string;
+    word_positions: Record<string, Array<{ start: number; end: number }>>;
+    word_meanings?: Record<string, string>;
+    article_boundaries?: Array<{
+        start: number;
+        end: number;
+        title: string;
+        translation: string;
+    }>;
+    cached: boolean;
+    atConsumed?: number;
+}
+
+export interface ArticleCopyCompleteResult {
+    marked_count: number;
+    due_map: Record<string, string>;
+}
+
+export async function getArticleCopy(
+    planId: number,
+    refresh?: boolean,
+    signal?: AbortSignal,
+): Promise<ArticleCopyData> {
+    const resp = await apiClient.get(`/plans/${planId}/article-copy/`, {
+        params: refresh ? { refresh: 'true' } : {},
+        timeout: 130_000, // 130s — just above the backend AI 120s timeout
+        signal,
+    });
+    return resp.data;
+}
+
+export async function completeArticleCopy(
+    planId: number,
+    reviewDays: number,
+): Promise<ArticleCopyCompleteResult> {
+    const resp = await apiClient.post(`/plans/${planId}/article-copy/complete/`, {
+        review_days: reviewDays,
+    });
+    return resp.data;
+}
+
+export async function saveArticleCopyProgress(
+    planId: number,
+    typedText: string,
+): Promise<void> {
+    await apiClient.post(`/plans/${planId}/article-copy/progress/`, {
+        typed_text: typedText,
+    });
+}
+// ──────────────────────────────────────────────────────────────────────────────
+// Story Mode API
+// ──────────────────────────────────────────────────────────────────────────────
+
+export interface StoryModeData {
+    story_title: string;
+    story_text: string;
+    clicked_words: string[];
+    target_words: string[];
+    article_boundaries?: Array<{
+        start: number;
+        end: number;
+        title: string;
+    }>;
+    cached: boolean;
+    atConsumed?: number;
+}
+
+export interface StoryModeCompleteResult {
+    marked_count: number;
+    due_map: Record<string, string>;
+}
+
+export async function getStoryMode(
+    planId: number,
+    refresh?: boolean,
+    signal?: AbortSignal,
+): Promise<StoryModeData> {
+    const resp = await apiClient.get(`/plans/${planId}/story-mode/`, {
+        params: refresh ? { refresh: 'true' } : {},
+        timeout: 130_000,
+        signal,
+    });
+    return resp.data;
+}
+
+export async function completeStoryMode(
+    planId: number,
+    reviewDays: number,
+): Promise<StoryModeCompleteResult> {
+    const resp = await apiClient.post(`/plans/${planId}/story-mode/complete/`, {
+        reviewDays: reviewDays,
+    });
+    return resp.data;
+}
+
+export async function saveStoryModeProgress(
+    planId: number,
+    clickedWords: string[],
+): Promise<void> {
+    await apiClient.post(`/plans/${planId}/story-mode/save/`, {
+        clicked_words: clickedWords,
+    });
 }

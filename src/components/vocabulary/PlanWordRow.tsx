@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Volume2, X } from 'lucide-react';
 import { speakWord } from '../../utils/speak';
 import { useLang } from '../../i18n/LanguageContext';
 import { type PlanEntry } from '../../api/learning_plan';
@@ -63,14 +64,15 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
     return (
         <div className="lp-word-item">
             <div className="lp-word-row1">
-                <div className="lp-word-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="lp-word-text lp-word-text-inner">
                     <span>{entry.word}</span>
                     <button
+                        type="button"
+                        className="lp-speak-btn"
                         onClick={() => { speakWord(entry.word); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: 0, color: 'var(--primary-color)' }}
-                        title="🔊 Play"
+                        aria-label="朗读发音"
                     >
-                        🔊
+                        <Volume2 size={16} />
                     </button>
                     {entry.phonetic && (
                         <span className="lp-word-phonetic">{entry.phonetic}</span>
@@ -109,8 +111,13 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                         </span>
                     </div>
 
-                    <button className="lp-del-btn" onClick={() => onRemove(entry)} title={t.vocab.plans.btnDelete}>
-                        ✕
+                    <button
+                        type="button"
+                        className="lp-del-btn"
+                        onClick={() => onRemove(entry)}
+                        aria-label="删除单词"
+                    >
+                        <X size={14} />
                     </button>
                 </div>
             </div>
@@ -132,6 +139,7 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                     )}
                     {entry.examples.length > 0 && (
                         <button
+                            type="button"
                             className="lp-example-toggle"
                             onClick={() => setShowExamples(v => !v)}
                         >

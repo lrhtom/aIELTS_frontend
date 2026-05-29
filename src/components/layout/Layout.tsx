@@ -6,23 +6,19 @@ import '../../styles/layout.css';
 
 interface LayoutProps {
   children: React.ReactNode;
+  pageTitle?: React.ReactNode;
+  pageSubtitle?: React.ReactNode;
+  backUrl?: string;
+  onBack?: () => void;
+  backText?: string;
+  headerRight?: React.ReactNode;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, pageTitle, pageSubtitle, backUrl, onBack, backText, headerRight }: LayoutProps) {
   const { pathname } = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => sessionStorage.getItem('sidebar_open') !== 'true'
   );
-
-  const shouldHideNavbar = [
-    '/writing/chart/doing',
-    '/writing/task2/doing',
-    '/writing/correction',
-    '/vocabulary/practice/doing',
-  ].includes(pathname);
-
-  const isVocabularyDoingRoute =
-    pathname.startsWith('/vocabulary/practice/') && pathname.endsWith('/doing');
 
   const setSidebar = (collapsed: boolean) => {
     setSidebarCollapsed(collapsed);
@@ -39,10 +35,16 @@ export default function Layout({ children }: LayoutProps) {
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebar(!sidebarCollapsed)}
       />
-      {!shouldHideNavbar && !isVocabularyDoingRoute && (
-        <AppNavbar onToggleSidebar={() => setSidebar(!sidebarCollapsed)} />
-      )}
-      <main className="layout-content">
+      <AppNavbar 
+          onToggleSidebar={() => setSidebar(!sidebarCollapsed)} 
+          pageTitle={pageTitle}
+          pageSubtitle={pageSubtitle}
+          backUrl={backUrl}
+          onBack={onBack}
+          backText={backText}
+          headerRight={headerRight}
+      />
+      <main className={`layout-content ${pathname === '/writing/correction' ? 'no-padding' : ''}`}>
         {children}
       </main>
     </div>

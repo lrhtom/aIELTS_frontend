@@ -342,18 +342,12 @@ export default function Task2PracticePage() {
     };
 
     return (
-        <Layout>
+        <Layout
+            onBack={(step === 'loading' || step === 'answering') ? () => navigate(-1) : undefined}
+            backText={(step === 'loading' || step === 'answering') ? t.practiceSandbox.abortBtn : undefined}
+            pageTitle={`🖋️ ${t.practiceSandbox.titleTask2.replace('{type}', titleName)}`}
+        >
             <div className="practice-container writing-practice-page">
-                <div className="practice-header writing-practice-header">
-                    {(step === 'loading' || step === 'answering') && (
-                        <button className="back-link writing-back-btn" onClick={() => navigate(-1)}>
-                            {t.practiceSandbox.abortBtn}
-                        </button>
-                    )}
-                    <h1 className="writing-practice-title">
-                        <span>🖋️</span> {t.practiceSandbox.titleTask2.replace('{type}', titleName)}
-                    </h1>
-                </div>
 
                 {step === 'loading' && renderLoading()}
                 {step === 'answering' && renderAnswering()}

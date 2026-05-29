@@ -12,7 +12,7 @@
     display: flex;
     height: 100%;
     flex-direction: column;
-    animation: fadeIn 0.4s ease-in-out;
+    animation: readingFadeIn 0.4s ease-in-out;
     overflow: hidden;
 }
 
@@ -663,7 +663,7 @@
 }
 
 /* Animations */
-@keyframes fadeIn {
+@keyframes readingFadeIn {
     from {
         opacity: 0;
         transform: translateY(10px);
@@ -687,19 +687,7 @@
     }
 }
 
-@keyframes pulse {
-    0% {
-        opacity: 0.6;
-    }
-
-    50% {
-        opacity: 1;
-    }
-
-    100% {
-        opacity: 0.6;
-    }
-}
+/* pulse keyframes defined in index.css */
 
 /* ─── 响应式 ──────────────────────────────────────────────────────────── */
 

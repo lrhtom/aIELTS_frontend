@@ -1,6 +1,6 @@
-import Layout from '../../components/layout/Layout';
+﻿import Layout from '../../components/layout/Layout';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { showToast } from '../../components/common/Toast';
 import { type VocabMode } from '../../utils/vocab_training_utils';
@@ -55,14 +55,13 @@ export default function VocabularyTrainingPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+    pageTitle='词汇练习'
+    pageSubtitle='先输入目标词汇，再从 3 个模式中选择 1 个开始练习'
+    backUrl='/vocabulary'
+    backText='返回词汇学习'
+>
             <div className="config-page-wrap reading-config">
-                <div className="practice-header">
-                    <Link to="/vocabulary" className="back-link">返回词汇学习</Link>
-                    <h1>词汇练习</h1>
-                    <p>先输入目标词汇，再从 3 个模式中选择 1 个开始练习</p>
-                </div>
-
                 <div className="config-card">
                     <h3>目标词汇（英-中）</h3>
                     <VocabInput

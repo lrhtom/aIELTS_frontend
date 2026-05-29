@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+﻿import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { useAuth } from '../../contexts/AuthContext';
@@ -250,12 +250,14 @@ export default function LearningPlanListPage() {
     const canCreate = user?.is_staff || plans.length < MAX_PLANS;
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={t.vocab.plans.title}
+    pageSubtitle={t.vocab.plans.subtitle}
+    backUrl='/vocabulary'
+    backText={`${t.common.back} ${t.vocab.hub.title}`}
+>
             <div className="config-page-wrap" style={{ maxWidth: 760 }}>
                 {/* ── Header ── */}
-                <div className="practice-header" style={{ marginBottom: 0 }}>
-                    <Link to="/vocabulary" className="back-link">{t.common.back}{t.vocab.hub.title}</Link>
-                </div>
                 <div className="lp-list-header">
                     <div className="lp-list-header-text">
                         <h2>{t.vocab.plans.title}</h2>

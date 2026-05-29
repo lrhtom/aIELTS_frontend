@@ -1,6 +1,6 @@
-import Layout from '../../components/layout/Layout';
+﻿import Layout from '../../components/layout/Layout';
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
@@ -96,14 +96,13 @@ export default function ListeningConfig() {
     };
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={t.heading}
+    pageSubtitle={t.subheading}
+    backUrl='/practice/ai'
+    backText={t.backToAI}
+>
             <div className="config-page-wrap listening-config">
-                <div className="practice-header">
-                    <Link to="/practice/ai" className="back-link">{t.backToAI}</Link>
-                    <h1>{t.heading}</h1>
-                    <p>{t.subheading}</p>
-                </div>
-
                 {/* AI Model Selector */}
                 <div className="config-card">
                     <AiModelSelector />

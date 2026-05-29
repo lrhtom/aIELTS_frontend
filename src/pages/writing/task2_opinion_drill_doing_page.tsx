@@ -300,20 +300,14 @@ export default function Task2OpinionDrillDoingPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+            backUrl="/writing/task2/opinion-drill"
+            backText={t.task2OpinionDrill.backToSetup}
+            pageTitle={t.task2OpinionDrill.heading}
+            pageSubtitle={t.task2OpinionDrill.subheading}
+            headerRight={<AiModelSelector />}
+        >
             <div className="practice-container writing-selection-page">
-                <div className="writing-selection-header">
-                    <div className="practice-header writing-selection-title">
-                        <button className="back-link writing-back-btn" onClick={() => navigate('/writing/task2/opinion-drill')}>
-                            {t.task2OpinionDrill.backToSetup}
-                        </button>
-                        <h1>{t.task2OpinionDrill.heading}</h1>
-                        <p>{t.task2OpinionDrill.subheading}</p>
-                    </div>
-                    <div className="wc-model-box">
-                        <AiModelSelector />
-                    </div>
-                </div>
 
                 {!bootReady && (
                     <div className="wp-state-wrap">

@@ -1,7 +1,7 @@
 /* ── Types ───────────────────────────────────────────────────────────────── */
 
 export type Step = 'doing' | 'result';
-export type StudyMode = 'flashcard' | 'choice' | 'write' | 'copy';
+export type StudyMode = 'flashcard' | 'choice' | 'write' | 'copy' | 'article_copy' | 'story_mode';
 export type MasterySetting = 'auto' | number;
 
 export interface CopyPendingAction {
@@ -121,4 +121,63 @@ export function pickUniqueZh(
         ),
     );
     return shuffleArray(pool).slice(0, count);
+}
+
+/* ── Copy mode helpers ───────────────────────────────────────────────────── */
+
+/**
+ * Count how many complete copies of `target` appear in `input`.
+ * Works for both single words ("apple") and phrases ("a lot of").
+ */
+export function countCopies(input: string, target: string): number {
+    const inputLower = input.toLowerCase().trim();
+    const targetLower = target.trim().toLowerCase();
+    if (!inputLower || !targetLower) return 0;
+
+    const escaped = targetLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let pattern: string;
+    if (targetLower.includes(' ')) {
+        pattern = escaped.replace(/\s+/g, '\\s+');
+    } else {
+        pattern = '\\b' + escaped + '\\b';
+    }
+
+    const matches = inputLower.match(new RegExp(pattern, 'g'));
+    return matches ? matches.length : 0;
+}
+
+/**
+ * Extract typed copies from input for visual rendering.
+ * Returns up to `maxCount` entries — complete copies first, then
+ * any remaining partial input as the last entry.
+ */
+export function extractTypedCopies(input: string, target: string, maxCount: number): string[] {
+    const result: string[] = [];
+    const targetLower = target.trim().toLowerCase();
+    const inputLower = input.toLowerCase();
+    if (!inputLower || !targetLower) return result;
+
+    const escaped = targetLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let pattern: string;
+    if (targetLower.includes(' ')) {
+        pattern = escaped.replace(/\s+/g, '\\s+');
+    } else {
+        pattern = '\\b' + escaped + '\\b';
+    }
+
+    const regex = new RegExp(pattern, 'gi');
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(inputLower)) !== null && result.length < maxCount) {
+        result.push(input.slice(match.index, match.index + match[0].length));
+        lastIndex = match.index + match[0].length;
+    }
+
+    const remaining = input.slice(lastIndex).trim();
+    if (remaining && result.length < maxCount) {
+        result.push(remaining);
+    }
+
+    return result;
 }

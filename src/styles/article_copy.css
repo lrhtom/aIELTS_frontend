@@ -1,0 +1,847 @@
+/* ── Article Copy Page ─────────────────────────────────────────────────────── */
+
+.ac-container {
+    max-width: none;
+    margin: 0;
+    padding: 12px 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: calc(100vh - 40px); /* 40px = layout-content padding top+bottom */
+}
+
+/* ── Layout & Sidebar ─────────────────────────────────────────────────────── */
+
+.ac-layout {
+    display: flex;
+    gap: 20px;
+    align-items: stretch; /* Make sidebar and main stretch to fill layout height */
+    width: 100%;
+    flex: 1;
+    min-height: 0; /* Prevent flex blowout so internal scroll works */
+}
+
+.ac-sidebar {
+    width: 280px; /* Default width, will be overridden by inline style */
+    flex-shrink: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 20px;
+    /* Remove transition for width so dragging is instant and smooth */
+    transition: background-color 0.3s, border-color 0.3s; 
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.ac-sidebar.is-closed {
+    width: 44px !important; /* Override inline width when closed */
+    padding: 20px 0;
+    align-items: center;
+}
+
+.ac-sidebar-toggle {
+    position: absolute;
+    right: -12px;
+    top: 20px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    color: var(--color-text-secondary);
+    font-size: 0.6rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+}
+
+.ac-sidebar-toggle:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.ac-sidebar-resizer {
+    position: absolute;
+    top: 0;
+    right: -4px; /* Slight overlap for easier grabbing */
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 5;
+    background: transparent;
+    transition: background 0.2s;
+}
+
+.ac-sidebar-resizer:hover,
+.ac-sidebar-resizer:active {
+    background: rgba(16, 185, 129, 0.2); /* Subtle highlight when hovering/dragging */
+}
+
+.ac-sidebar-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.ac-sidebar-content h4 {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin: 0 0 12px;
+    white-space: nowrap;
+}
+
+.ac-sidebar-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.ac-sidebar-tab {
+    background: none;
+    border: none;
+    padding: 8px 4px;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -1px;
+}
+
+.ac-sidebar-tab:hover {
+    color: var(--color-text);
+}
+
+.ac-sidebar-tab.active {
+    color: var(--color-primary);
+    font-weight: 600;
+    border-bottom-color: var(--color-primary);
+}
+
+.ac-sidebar-pane {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.ac-translation-text {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--color-text);
+    white-space: pre-wrap;
+}
+
+.ac-translation-empty {
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.ac-translation-page-hint {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.ac-sidebar-collapsed-text {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: 4px;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    user-select: none;
+}
+
+.ac-main {
+    flex: 1;
+    min-width: 0; /* Prevent flex blowout horizontally */
+    min-height: 0; /* Prevent flex blowout vertically */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+.ac-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ac-plan-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.ac-back-btn {
+    padding: 6px 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.ac-back-btn:hover {
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+/* ── Loading / Error ──────────────────────────────────────────────────────── */
+
+.ac-loading {
+    text-align: center;
+    padding: 40px 20px 60px;
+    color: var(--color-text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ac-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    animation: ac-spin 0.8s linear infinite;
+}
+
+.ac-loading-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 4px;
+}
+
+@keyframes ac-spin {
+    to { transform: rotate(360deg); }
+}
+
+.ac-loading-hint {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin: 0 0 4px;
+}
+
+/* ── Loading Step Indicator ───────────────────────────────────────────────── */
+
+.ac-loading-steps {
+    margin: 20px 0 0;
+    text-align: left;
+    max-width: 380px;
+    width: 100%;
+}
+
+.ac-loading-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    position: relative;
+}
+
+.ac-loading-step + .ac-loading-step::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: -2px;
+    width: 2px;
+    height: 14px;
+    background: var(--color-border);
+}
+
+.ac-loading-step.is-done + .ac-loading-step::before {
+    background: var(--color-primary);
+}
+
+.ac-step-indicator {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    margin-top: 1px;
+}
+
+.ac-loading-step.is-pending .ac-step-indicator {
+    border: 2px solid var(--color-border);
+    background: transparent;
+}
+
+.ac-loading-step.is-active .ac-step-indicator {
+    border: 2px solid var(--color-primary);
+    background: transparent;
+}
+
+.ac-loading-step.is-done .ac-step-indicator {
+    background: var(--color-primary);
+    border: 2px solid var(--color-primary);
+}
+
+.ac-step-check {
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.ac-step-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: ac-spin 0.8s linear infinite;
+}
+
+.ac-step-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-border);
+}
+
+.ac-step-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.ac-step-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.ac-loading-step.is-pending .ac-step-label {
+    color: #9ca3af;
+}
+
+.ac-loading-step.is-active .ac-step-label {
+    color: var(--color-text);
+}
+
+.ac-loading-step.is-done .ac-step-label {
+    color: var(--color-text-secondary);
+}
+
+.ac-step-desc {
+    font-size: 0.78rem;
+    color: #9ca3af;
+}
+
+.ac-loading-step.is-active .ac-step-desc {
+    color: var(--color-text-secondary);
+}
+
+/* ── Cancel Button During Loading ─────────────────────────────────────────── */
+
+.ac-cancel-btn {
+    margin-top: 24px;
+    padding: 8px 24px;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ac-cancel-btn:hover {
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+.ac-loading-slow {
+    margin-top: 12px;
+    color: #f59e0b;
+}
+
+.ac-error {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--color-text-secondary);
+}
+
+.ac-error button {
+    margin-top: 12px;
+    padding: 8px 20px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* ── Progress ─────────────────────────────────────────────────────────────── */
+
+.ac-progress {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.ac-progress-item {
+    flex: 1;
+    min-width: 140px;
+}
+
+.ac-progress-label {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.ac-progress-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.ac-progress-bar {
+    height: 6px;
+    background: var(--color-border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.ac-progress-fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 3px;
+    transition: width 0.15s ease;
+}
+
+.ac-progress-accuracy {
+    background: #16a34a;
+}
+
+.ac-progress-words {
+    background: #8b5cf6;
+}
+
+/* ── Meta ─────────────────────────────────────────────────────────────────── */
+
+.ac-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ac-article-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.ac-cached-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.ac-timer {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-left: auto;
+}
+
+.ac-regenerate-btn {
+    margin-left: 8px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.ac-regenerate-btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.ac-regenerate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ── Article Text Area ────────────────────────────────────────────────────── */
+
+.ac-article-area {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 24px;
+    flex: 1;
+    min-height: 0; /* Important for flex-child scrolling */
+    overflow-y: auto;
+    position: relative;
+}
+
+/* ── Page Navigation ───────────────────────────────────────────────────────── */
+
+.ac-page-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 4px 0;
+}
+
+.ac-page-nav-btn {
+    padding: 5px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface);
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.ac-page-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.ac-page-nav-btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.ac-page-nav-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+}
+
+.ac-page-nav-index {
+    font-size: 0.85rem;
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.ac-page-title {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin-top: 2px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ac-article-text {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 1.1rem;
+    line-height: 2.5; /* Increased for breathing room with ruby text */
+    letter-spacing: 0.02em;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--color-text);
+    user-select: none;
+}
+
+/* ── Character states ─────────────────────────────────────────────────────── */
+
+.ac-ghost {
+    color: #9ca3af;
+    opacity: 0.45;
+}
+
+.ac-ghost-target {
+    color: #10b981; /* Muted Emerald for premium feel */
+    opacity: 0.85;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(16, 185, 129, 0.1);
+}
+
+.ac-correct {
+    color: #16a34a;
+}
+
+.ac-wrong {
+    color: #dc2626;
+    background: #fecaca;
+    border-radius: 2px;
+}
+
+/* Cursor on top of a ghost character */
+.ac-cursor-inner {
+    color: inherit;
+    background: rgba(16, 185, 129, 0.15); /* Very light background instead of solid block */
+    border-bottom: 2px solid var(--color-primary); /* Underline cursor */
+    border-radius: 0;
+    padding-bottom: 1px;
+    animation: ac-blink 1s step-end infinite;
+}
+
+/* Cursor at end of article */
+.ac-cursor-end {
+    color: var(--color-primary);
+    font-weight: 300;
+    animation: ac-blink 1s step-end infinite;
+}
+
+@keyframes ac-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* ── Inline meanings ──────────────────────────────────────────────────────── */
+
+.ac-has-meaning {
+    position: relative;
+}
+
+.ac-inline-meaning {
+    position: absolute;
+    bottom: 100%;
+    /* Left is injected via inline style based on monospace ch units */
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    font-family: var(--font-primary, system-ui, -apple-system, sans-serif);
+    color: #059669; /* Darker green for readability */
+    font-weight: 600;
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
+    line-height: 1;
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+    z-index: 10;
+}
+
+/* ── Hidden textarea ──────────────────────────────────────────────────────── */
+
+.ac-hidden-input {
+    position: fixed;
+    left: -9999px;
+    top: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    resize: none;
+}
+
+/* ── Target word chips ────────────────────────────────────────────────────── */
+
+.ac-word-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ac-word-chips-vertical {
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ac-word-chips-vertical .ac-word-chip {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.ac-word-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    transition: all 0.2s ease;
+}
+
+.ac-chip-word {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.ac-chip-meaning {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    opacity: 0.85;
+}
+
+.ac-chip-check {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #10b981;
+}
+
+.ac-word-chip.ac-word-done {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+    color: #065f46;
+}
+
+/* ── Completion Overlay ───────────────────────────────────────────────────── */
+
+.ac-complete-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.ac-complete-card {
+    background: var(--color-surface);
+    border-radius: 16px;
+    padding: 32px 36px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.ac-complete-card h3 {
+    font-size: 1.3rem;
+    color: var(--color-text);
+    margin: 0 0 20px;
+}
+
+.ac-complete-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.ac-complete-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.ac-complete-row span:last-child {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.ac-completing-msg {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin: 0 0 12px;
+}
+
+.ac-complete-done {
+    font-size: 0.9rem;
+    color: #16a34a;
+    font-weight: 500;
+    margin: 0 0 12px;
+}
+
+.ac-back-btn-large {
+    padding: 10px 28px;
+    font-size: 0.95rem;
+}
+
+/* ── Cost ─────────────────────────────────────────────────────────────────── */
+
+.ac-cost {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .ac-layout {
+        flex-direction: column;
+    }
+    
+    .ac-sidebar {
+        width: 100%;
+    }
+    
+    .ac-sidebar.is-closed {
+        width: 100%;
+        height: 44px;
+        flex-direction: row;
+        padding: 0 20px;
+    }
+    
+    .ac-sidebar-toggle {
+        right: 20px;
+        top: -12px;
+        transform: rotate(90deg);
+    }
+
+    .ac-sidebar-collapsed-text {
+        writing-mode: horizontal-tb;
+        letter-spacing: 2px;
+    }
+
+    .ac-container {
+        padding: 12px 14px 32px;
+    }
+
+    .ac-progress {
+        gap: 12px;
+    }
+
+    .ac-progress-item {
+        min-width: 100px;
+    }
+
+    .ac-article-area {
+        padding: 16px;
+        flex: 1;
+    }
+
+    .ac-article-text {
+        font-size: 1rem;
+        line-height: 1.8;
+    }
+
+    .ac-complete-card {
+        padding: 24px 20px;
+    }
+}

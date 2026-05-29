@@ -1,6 +1,6 @@
-import Layout from '../../components/layout/Layout';
+﻿import Layout from '../../components/layout/Layout';
 import { useRef, useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { getInitialVocabInput } from '../../store/word_selection_store';
 import { speakingStore } from '../../store/speaking_page_store';
@@ -290,14 +290,13 @@ export default function Speaking() {
     };
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={sc.heading}
+    pageSubtitle={sc.subheading}
+    backUrl='/practice/ai'
+    backText={sc.backToAI}
+>
             <div className="practice-container">
-                <div className="practice-header">
-                    <Link to="/practice/ai" className="back-link">{sc.backToAI}</Link>
-                    <h1>{sc.heading}</h1>
-                    <p>{sc.subheading}</p>
-                </div>
-
                 {/* ── Board 0: AI Model ── */}
                 <div className="config-card">
                     <AiModelSelector />

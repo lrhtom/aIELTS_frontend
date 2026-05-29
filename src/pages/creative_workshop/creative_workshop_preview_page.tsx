@@ -111,7 +111,7 @@ export default function CreativeWorkshopPreviewPage() {
                     title={project?.title || 'creative-workshop-preview'}
                     className="cw-fullscreen-frame"
                     srcDoc={project?.generated_html || ''}
-                    sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
+                    sandbox="allow-scripts allow-forms allow-modals allow-popups"
                 />
             )}
         </div>

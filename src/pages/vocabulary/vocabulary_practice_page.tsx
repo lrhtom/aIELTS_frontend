@@ -7,13 +7,13 @@ export default function VocabularyPracticePage() {
     const { translations: t } = useLang();
 
     return (
-        <Layout>
+        <Layout
+            backUrl="/"
+            backText={t.common.back + t.common.home}
+            pageTitle={t.vocab.hub.title}
+            pageSubtitle={t.vocab.hub.desc}
+        >
             <div className="practice-hub-container">
-                <div className="practice-hub-header">
-                    <Link to="/" className="back-link">{t.common.back + t.common.home}</Link>
-                    <h1>{t.vocab.hub.title}</h1>
-                    <p>{t.vocab.hub.desc}</p>
-                </div>
 
                 <div className="skill-grid">
                     <Link to="/vocabulary/practice" className="skill-entry reading" style={{ textAlign: 'left' }}>

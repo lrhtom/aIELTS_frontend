@@ -1,6 +1,6 @@
-import Layout from '../../components/layout/Layout';
+﻿import Layout from '../../components/layout/Layout';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/practice_page.css';
 import { useLang } from '../../i18n/LanguageContext';
 
@@ -30,14 +30,13 @@ export default function ChartSelectionPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={t.chartSelection.heading}
+    pageSubtitle={t.chartSelection.subheading}
+    backUrl='/writing/task1'
+    backText={t.chartSelection.backToHub}
+>
             <div className="practice-hub-container" style={{ padding: '2rem' }}>
-                <div className="practice-header">
-                    <Link to="/writing/task1" className="back-link">{t.chartSelection.backToHub}</Link>
-                    <h1>{t.chartSelection.heading}</h1>
-                    <p>{t.chartSelection.subheading}</p>
-                </div>
-
                 <div className="config-card" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '2rem' }}>
 
                     <div className="chart-grid" style={{

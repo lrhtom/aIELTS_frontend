@@ -20,14 +20,13 @@ export default function VocabBookListPage() {
     }, []);
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={t.vocab.books.title}
+    pageSubtitle={t.vocab.books.desc}
+    backUrl='/vocabulary'
+    backText={`${t.common.back} ${t.vocab.hub.title}`}
+>
             <div className="config-page-wrap">
-                <div className="practice-header">
-                    <Link to="/vocabulary" className="back-link">{t.common.back}{t.vocab.hub.title}</Link>
-                    <h1>{t.vocab.books.title}</h1>
-                    <p>{t.vocab.books.desc}</p>
-                </div>
-
                 {loading ? (
                     <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '40px' }}>{t.common.loading}</p>
                 ) : books.length === 0 ? (

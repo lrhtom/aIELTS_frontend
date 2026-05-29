@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useLang } from '../../i18n/LanguageContext';
 // removed unused import
 import {
     Globe, Server, Search, ChevronDown, ChevronRight,
@@ -310,7 +309,6 @@ interface BackendData {
 }
 
 export default function RouteVisualization() {
-    const { translations: t } = useLang();
     const rv = rvMock;
     const resolveName = (key: string) => resolveModuleName(key, rv);
 

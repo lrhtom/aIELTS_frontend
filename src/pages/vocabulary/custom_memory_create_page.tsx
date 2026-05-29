@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { appendCustomDeck, createCustomDeck } from '../../api/custom_memory';
@@ -129,18 +129,13 @@ export default function CustomMemoryCreatePage() {
     };
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={targetDeckId !== null ? '添加自定义记忆卡' : '自定义记忆卡'}
+    pageSubtitle="\n                        {targetDeckId !== null\n                            ? '当前为添加模式：将把卡片追加到已有卡组。'\n                            : '输入文本后自动生成记忆卡，复习调度使用和背单词一致的 FSRS 算法。'}\n                    "
+    backUrl='/vocabulary/plans'
+    backText='返回词汇学习'
+>
             <div className="config-page-wrap cm-create-wrap">
-                <div className="practice-header">
-                    <Link to="/vocabulary/plans" className="back-link">返回词汇学习</Link>
-                    <h1>{targetDeckId !== null ? '添加自定义记忆卡' : '自定义记忆卡'}</h1>
-                    <p>
-                        {targetDeckId !== null
-                            ? '当前为添加模式：将把卡片追加到已有卡组。'
-                            : '输入文本后自动生成记忆卡，复习调度使用和背单词一致的 FSRS 算法。'}
-                    </p>
-                </div>
-
                 <div className="config-card">
                     <h3>计划名称</h3>
                     <input

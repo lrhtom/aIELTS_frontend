@@ -50,21 +50,102 @@
     margin: 2px 0;
 }
 
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.navbar-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 2;
+    min-width: 0;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    flex: 1;
+}
+
 .navbar-logo {
     font-size: 24px;
     font-weight: 700;
     color: var(--color-primary, #0d9488);
     text-decoration: none;
     letter-spacing: -0.5px;
+    white-space: nowrap;
 }
 
-/* 导航链接居中 */
+.navbar-logo-left {
+    font-size: 20px; /* Slightly smaller when on the left */
+}
+
+/* Page Header in Navbar */
+.navbar-page-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    justify-content: center;
+}
+
+.navbar-back-btn {
+    text-decoration: none;
+    color: var(--color-text-secondary, #64748b);
+    font-weight: 600;
+    font-size: 14px;
+    transition: color 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+.navbar-back-btn:hover {
+    color: var(--color-primary, #0d9488);
+    background: #e2e8f0;
+}
+
+.navbar-title-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.navbar-page-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-primary, #1e293b);
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.navbar-page-subtitle {
+    font-size: 12px;
+    color: var(--color-text-tertiary, #94a3b8);
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.navbar-header-right {
+    display: flex;
+    align-items: center;
+}
+
+/* 导航链接居中 (保留旧类名避免破坏) */
 .navbar-links {
     display: flex;
     gap: 32px;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
 }
 
 .navbar-links a {

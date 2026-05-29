@@ -59,20 +59,14 @@ export default function Task2OpinionDrillPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+            backUrl="/writing"
+            backText={t.task2OpinionDrill.backToTask2Selection}
+            pageTitle={t.task2OpinionDrill.heading}
+            pageSubtitle={t.task2OpinionDrill.subheading}
+            headerRight={<AiModelSelector />}
+        >
             <div className="practice-container writing-selection-page">
-                <div className="writing-selection-header">
-                    <div className="practice-header writing-selection-title">
-                        <button className="back-link writing-back-btn" onClick={() => navigate('/writing')}>
-                            {t.task2OpinionDrill.backToTask2Selection}
-                        </button>
-                        <h1>{t.task2OpinionDrill.heading}</h1>
-                        <p>{t.task2OpinionDrill.subheading}</p>
-                    </div>
-                    <div className="wc-model-box">
-                        <AiModelSelector />
-                    </div>
-                </div>
 
                 <div className="config-card writing-selection-card opinion-drill-config-card">
                     <div className="opinion-drill-form-grid">

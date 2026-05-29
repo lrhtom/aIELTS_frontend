@@ -3,6 +3,7 @@ import '../../styles/practice_page.css';
 import '../../styles/vocabulary_flashcard.css';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { submitReview, type VocabCard } from '../../api/vocab';
 import {
     listVocabBooks,
@@ -34,9 +35,9 @@ import {
     clearPendingLearningSeconds,
     shuffleArray,
     pickUniqueZh,
+    countCopies,
 } from '../../utils/vocab_flashcard_utils';
 import { speakWord } from '../../utils/speak';
-
 export default function VocabularyFlashcardDoingPage() {
     const { translations: t } = useLang();
     const { user } = useAuth();
@@ -56,6 +57,8 @@ export default function VocabularyFlashcardDoingPage() {
         choice:    t.vocab.modes.choice,
         write:     t.vocab.modes.write,
         copy:      t.vocab.modes.copy,
+        article_copy: '文章抄写',
+        story_mode: '故事模式',
     }), [t]);
 
     const RS_CLASSES = ['rs-again', 'rs-hard', 'rs-good', 'rs-easy'];
@@ -914,7 +917,6 @@ export default function VocabularyFlashcardDoingPage() {
         if (submitting || !currentCard || currentCardIdx < 0 || copySubmitted) return;
 
         const normalizedInput = copyInput.trim().toLowerCase();
-        const normalizedAnswer = currentCard.word.trim().toLowerCase();
         if (!normalizedInput) {
             showToast('请先输入抄写内容', 'error');
             return;
@@ -924,8 +926,7 @@ export default function VocabularyFlashcardDoingPage() {
             return;
         }
 
-        const typedWords = normalizedInput.split(/[\s,，\n]+/).map(w => w.trim());
-        const correctCount = typedWords.filter(w => w === normalizedAnswer).length;
+        const correctCount = countCopies(copyInput, currentCard.word);
 
         if (correctCount < currentRemaining) {
             showToast(`抄写次数不足，需完整抄写 ${currentRemaining} 次`, 'error');
@@ -1204,9 +1205,14 @@ export default function VocabularyFlashcardDoingPage() {
     /* ── 加载中 ── */
     if (!initialized || (!currentCard && step === 'doing')) {
         return (
-            <Layout>
-                <div className="config-page-wrap" style={{ textAlign: 'center', paddingTop: '60px' }}>
-                    <p style={{ color: 'var(--color-text-secondary)' }}>{t.common.loading}</p>
+            <Layout
+                pageTitle={`${t.vocab.resultTitle}${planName ? ` · ${planName}` : ''}`}
+                pageSubtitle={t.vocab.masteredCount.replace('{n}', results.length.toString())}
+                backUrl="/vocabulary"
+                backText={t.common.back}
+            >
+                <div className="config-page-wrap fc-loading">
+                    <p>{t.common.loading}</p>
                 </div>
             </Layout>
         );
@@ -1234,11 +1240,7 @@ export default function VocabularyFlashcardDoingPage() {
         return (
             <Layout>
                 <div className="config-page-wrap">
-                    <div className="practice-header">
-                        <button className="back-link" onClick={handleBack}>{t.common.back}</button>
-                        <h1>{t.vocab.resultTitle}{planName ? ` · ${planName}` : ''}</h1>
-                        <p>{t.vocab.masteredCount.replace('{n}', results.length.toString())}</p>
-                    </div>
+                    
                     <div className="config-card">
                         <div className="fc-result-stats">
                             {[0, 1, 2, 3].map(i => (
@@ -1251,18 +1253,18 @@ export default function VocabularyFlashcardDoingPage() {
                     </div>
                     <div className="config-card">
                         <h3>{t.vocab.reviewDetail}</h3>
-                        <div className="fc-result-list">
+                        <ul className="fc-result-list">
                             {results.map((r, i) => (
-                                <div key={i} className="fc-result-item">
+                                <li key={i} className="fc-result-item">
                                     <span className="fc-ri-word">{r.word}</span>
                                     <span className="fc-ri-zh">{r.zh}</span>
                                     <span className="fc-ri-due">{formatDue(r.newDue)}</span>
-                                </div>
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                         <div className="fc-result-actions">
-                            <button className="fc-action-btn" onClick={handleRetry}>🔄 {t.vocab.retry}</button>
-                            <button className="fc-action-btn primary" onClick={handleBack}>
+                            <button type="button" className="fc-action-btn" onClick={handleRetry}><RotateCcw size={16} /> {t.vocab.retry}</button>
+                            <button type="button" className="fc-action-btn primary" onClick={handleBack}>
                                 {t.common.back}
                             </button>
                         </div>
@@ -1276,46 +1278,53 @@ export default function VocabularyFlashcardDoingPage() {
     if (!currentCard) return null;
 
     return (
-        <Layout>
-            <div className="config-page-wrap" style={{ maxWidth: '680px' }}>
-                <div className="practice-header" style={{ marginBottom: '16px' }}>
-                    <button className="back-link" onClick={handleBack}>{t.common.back}</button>
-                    <h1 style={{ marginBottom: '4px' }}>{planName || t.vocab.studyTitle}{reviewOnly && <span style={{ fontSize: 13, fontWeight: 500, background: '#dbeafe', color: '#2563eb', padding: '2px 10px', borderRadius: 20, marginLeft: 10, verticalAlign: 'middle' }}>{t.vocab.reviewMode}</span>}</h1>
-                </div>
+        <Layout
+            onBack={handleBack}
+            backText={t.common.back}
+            pageTitle={
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {planName || t.vocab.studyTitle}
+                    {reviewOnly && <span className="fc-review-badge">{t.vocab.reviewMode}</span>}
+                </span>
+            }
+        >
+            <div className="config-page-wrap fc-doing-page">
 
                 {/* 进度行 */}
                 <div className="fc-header">
                     <span className="fc-counter">
                         ✓ {dailyDone} / {dailyTotal}
-                        <span style={{ fontWeight: 400, marginLeft: 6, opacity: 0.6 }}>
+                        <span className="fc-queue-remaining">
                             {t.vocab.queue} {queue.length}
                         </span>
                     </span>
                     <div className="fc-header-right">
                         <button
+                            type="button"
+                            className="fc-auto-speak-btn"
                             onClick={toggleAutoSpeak}
-                            title={autoSpeakEnabled ? "点击关闭自动发音" : "点击开启自动发音"}
-                            style={{
-                                background: 'none', border: 'none', cursor: 'pointer',
-                                fontSize: '13px', padding: '2px 6px',
-                                display: 'flex', alignItems: 'center', gap: '4px',
-                                color: 'var(--color-text-secondary)',
-                                borderRadius: '6px'
-                            }}
+                            aria-label={autoSpeakEnabled ? "关闭自动发音" : "开启自动发音"}
                         >
-                            {autoSpeakEnabled ? '🔊 自动发音开' : '🔇 自动发音关'}
+                            {autoSpeakEnabled ? <><Volume2 size={14} /> 自动发音开</> : <><VolumeX size={14} /> 自动发音关</>}
                         </button>
                         <span className="fc-learning-timer" title="今日学习时长（跨计划共享）">
                             今日时长 {todayLearningDuration}
                         </span>
                         <span className="fc-mode-badge">{MODE_LABELS[mode]}</span>
-                        <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                        <span className="fc-state-label-inline">
                             {STATE_LABELS[currentCard.state] ?? ''}
                             {currentCard.reps > 0 && ` · 复习 ${currentCard.reps} 次`}
                         </span>
                     </div>
                 </div>
-                <div className="fc-progress-bar">
+                <div
+                    className="fc-progress-bar"
+                    role="progressbar"
+                    aria-valuenow={progress}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="学习进度"
+                >
                     <div className="fc-progress-fill" style={{ width: `${progress}%` }} />
                 </div>
 

@@ -1,14 +1,15 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { retryWithBackoff } from '../../utils/retry';
 import { type StudyMode, type MasterySetting } from '../../utils/vocab_flashcard_utils';
 import { useLang } from '../../i18n/LanguageContext';
 import { listNotebooks, type Notebook } from '../../api/notebook';
 import {
     listPlanWords, addWord, updatePlanWord, removePlanWord,
-    updatePlan, startPlan,
+    updatePlan, startPlan, getArticleCopy,
     listVocabBooks, listBookWords,
     type LearningPlan, type PlanEntry, type VocabBook, type BookWord,
 } from '../../api/learning_plan';
@@ -25,6 +26,8 @@ const STUDY_MODES: [StudyMode, string][] = [
     ['choice', '4选1'],
     ['write', '看中文写英文'],
     ['copy', '抄写模式'],
+    ['article_copy', '文章抄写'],
+    ['story_mode', '追剧背词'],
 ];
 
 function clampCopyRepetitions(value: number): number {
@@ -33,6 +36,10 @@ function clampCopyRepetitions(value: number): number {
 
 function clampCopyReviewDays(value: number): number {
     return Math.min(365, Math.max(0, Number.isFinite(value) ? Math.floor(value) : 2));
+}
+
+function clampArticleReviewDays(value: number): number {
+    return Math.min(365, Math.max(0, Number.isFinite(value) ? Math.floor(value) : 7));
 }
 
 /**
@@ -155,6 +162,11 @@ export default function LearningPlanDetailPage() {
         const raw = Number(localStorage.getItem(`lp_copy_review_days_${planId}`) ?? '2');
         return clampCopyReviewDays(raw);
     });
+    const [articleRegenerating, setArticleRegenerating] = useState(false);
+    const [articleReviewDays, setArticleReviewDays] = useState<number>(() => {
+        const raw = Number(localStorage.getItem(`lp_article_review_days_${planId}`) ?? '7');
+        return clampArticleReviewDays(raw);
+    });
 
     // Add section
     const [addTab, setAddTab] = useState<AddTab>('manual');
@@ -179,6 +191,7 @@ export default function LearningPlanDetailPage() {
     const [bookPageJumpInput, setBookPageJumpInput] = useState('');
     const [bookQ, setBookQ] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [deletingEntry, setDeletingEntry] = useState<PlanEntry | null>(null);
 
     // ── Load plan + words ──────────────────────────────────────────────────
     useEffect(() => {
@@ -213,6 +226,9 @@ export default function LearningPlanDetailPage() {
                 if (typeof p.copy_review_days === 'number') {
                     setCopyReviewDays(clampCopyReviewDays(p.copy_review_days));
                 }
+                if (typeof p.article_review_days === 'number') {
+                    setArticleReviewDays(clampArticleReviewDays(p.article_review_days));
+                }
             }).catch(() => { });
         });
     }, [planId]);
@@ -244,6 +260,10 @@ export default function LearningPlanDetailPage() {
     useEffect(() => {
         localStorage.setItem(`lp_copy_review_days_${planId}`, String(copyReviewDays));
     }, [planId, copyReviewDays]);
+
+    useEffect(() => {
+        localStorage.setItem(`lp_article_review_days_${planId}`, String(articleReviewDays));
+    }, [planId, articleReviewDays]);
 
     // Reset pagination when search or entries change
     useEffect(() => { setPage(1); }, [search]);
@@ -320,6 +340,62 @@ export default function LearningPlanDetailPage() {
         }
     }, [copyRepetitions, copyReviewDays, plan, planId]);
 
+    const saveArticleConfig = useCallback(async () => {
+        if (!plan) return;
+
+        const nextDays = clampArticleReviewDays(articleReviewDays);
+        if (nextDays !== articleReviewDays) setArticleReviewDays(nextDays);
+
+        const originalDays = plan.article_review_days ?? 7;
+        if (nextDays === originalDays) return;
+
+        try {
+            const { plan: updated } = await updatePlan(planId, {
+                article_review_days: nextDays,
+            });
+            setPlan(updated);
+            setArticleReviewDays(clampArticleReviewDays(updated.article_review_days ?? nextDays));
+            showToast('文章抄写配置已保存', 'success');
+        } catch (e: unknown) {
+            const errorMsg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
+            showToast(errorMsg || '文章抄写配置保存失败', 'error');
+            setArticleReviewDays(clampArticleReviewDays(plan.article_review_days ?? 7));
+        }
+    }, [articleReviewDays, plan, planId]);
+
+    const articleRegeneratingRef = useRef(false);
+    const handleRegenerateArticle = useCallback(async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (articleRegeneratingRef.current || starting) return;
+        articleRegeneratingRef.current = true;
+        setArticleRegenerating(true);
+        setStarting(true);
+        try {
+            await getArticleCopy(planId, true);
+            const result = await startPlan(planId);
+            if (result.cards.length === 0) {
+                showToast('今日没有待学习的单词', 'success');
+                return;
+            }
+            navigate(`/vocabulary/plans/${planId}/article-copy`, {
+                state: {
+                    planId,
+                    planName: plan?.name,
+                    planDailyCount: plan?.daily_count,
+                    reviewDays: clampArticleReviewDays(plan?.article_review_days ?? articleReviewDays),
+                    cards: result.cards,
+                },
+            });
+        } catch (err: unknown) {
+            const errorMsg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+            showToast(errorMsg || '重新生成文章失败', 'error');
+        } finally {
+            articleRegeneratingRef.current = false;
+            setArticleRegenerating(false);
+            setStarting(false);
+        }
+    }, [planId, starting, plan, articleReviewDays, navigate]);
+
     // ── Start session ──────────────────────────────────────────────────────
     const isQuotaDone = plan ? shouldStartReview(plan) : false;
     const isTodayConfigLocked = !!plan?.has_activity_today;
@@ -360,7 +436,21 @@ export default function LearningPlanDetailPage() {
             }
 
             console.log(`[学习计划] 成功加载 ${cards.length} 个卡片，进入${isQuotaDone ? '复习' : '学习'}`);
-            navigate('/vocabulary/flashcard/doing', {
+
+            if (studyMode === 'article_copy') {
+                navigate(`/vocabulary/plans/${planId}/article-copy`, {
+                    state: {
+                        planId,
+                        planName: plan?.name,
+                        planDailyCount: plan?.daily_count,
+                        reviewDays: clampArticleReviewDays(plan?.article_review_days ?? articleReviewDays),
+                        cards,
+                    },
+                });
+            } else if (studyMode === 'story_mode') {
+                navigate(`/vocabulary/plans/${planId}/story`);
+            } else {
+                navigate('/vocabulary/flashcard/doing', {
                 state: {
                     cards,
                     stats,
@@ -375,6 +465,7 @@ export default function LearningPlanDetailPage() {
                     forceNewSession: studyMode !== 'copy',
                 },
             });
+            }
         } catch (e: unknown) {
             const error = e as { response?: { status?: number, data?: { error?: string } } };
             const status = error?.response?.status;
@@ -485,16 +576,21 @@ export default function LearningPlanDetailPage() {
         }
     };
 
-    const handleRemove = async (entry: PlanEntry) => {
-        if (!confirm(t.vocab.details.msgDeleteConfirm.replace('{word}', entry.word))) return;
+    const handleRemove = (entry: PlanEntry) => {
+        setDeletingEntry(entry);
+    };
+
+    const handleDeleteConfirmed = async () => {
+        if (!deletingEntry) return;
         try {
-            await removePlanWord(planId, entry.id);
-            setEntries(prev => prev.filter(e => e.id !== entry.id));
-            // 删除词汇后，清理缓存（队列已改变）
+            await removePlanWord(planId, deletingEntry.id);
+            setEntries(prev => prev.filter(e => e.id !== deletingEntry.id));
             clearPlanCaches(planId);
             showToast(t.vocab.details.msgDeleteSuccess, 'success');
         } catch {
             showToast(t.vocab.details.msgDeleteFail, 'error');
+        } finally {
+            setDeletingEntry(null);
         }
     };
 
@@ -675,7 +771,11 @@ export default function LearningPlanDetailPage() {
                                         ? t.vocab.modes.choice
                                         : m === 'write'
                                             ? t.vocab.modes.write
-                                            : t.vocab.modes.copy}
+                                            : m === 'copy'
+                                                ? t.vocab.modes.copy
+                                                : m === 'article_copy'
+                                                    ? '文章抄写'
+                                                    : '追剧背词'}
                             </button>
                         ))}
                     </div>
@@ -725,6 +825,46 @@ export default function LearningPlanDetailPage() {
                         <p className="lp-copy-config-hint">
                             抄写提交必须完全正确。每次抄完一遍会按学习队列重排规则重新插入，直到该词次数耗尽后从队列移除。完成后会在当前复习间隔基础上额外增加 {copyReviewDays} 天。
                         </p>
+                    </div>
+                )}
+
+                {studyMode === 'article_copy' && (
+                    <div className="lp-copy-config-card">
+                        <div className="lp-copy-config-row">
+                            <label htmlFor="lp-article-review-days">文章抄写完成后，所有单词复习间隔增加几天（相对今天）</label>
+                            <input
+                                id="lp-article-review-days"
+                                type="number"
+                                min={0}
+                                max={365}
+                                value={articleReviewDays}
+                                disabled={isTodayConfigLocked}
+                                title={isTodayConfigLocked ? '今日已学习，明天可调整复习天数' : ''}
+                                onChange={(e) => setArticleReviewDays(Number(e.target.value))}
+                                onBlur={saveArticleConfig}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        (e.target as HTMLInputElement).blur();
+                                    }
+                                }}
+                            />
+                        </div>
+                        {isTodayConfigLocked && (
+                            <div className="lp-daily-lock-hint">今日已学习过单词，今日不能修改完成后几天复习，请明天再调整。</div>
+                        )}
+                        <p className="lp-copy-config-hint">
+                            AI 会生成一篇包含今日所有学习单词的短文。逐字抄写全文直到完成，完成后所有单词统一标记为已学习，复习间隔在当天基础上增加 {articleReviewDays} 天。
+                        </p>
+                        <div className="lp-copy-config-row">
+                            <button
+                                type="button"
+                                className="lp-regenerate-btn"
+                                disabled={articleRegenerating}
+                                onClick={handleRegenerateArticle}
+                            >
+                                {articleRegenerating ? '重新生成中...' : '重新生成文章'}
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -1103,6 +1243,15 @@ export default function LearningPlanDetailPage() {
                     )}
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={deletingEntry !== null}
+                title="确认删除"
+                message={t.vocab.details.msgDeleteConfirm.replace('{word}', deletingEntry?.word ?? '')}
+                variant="danger"
+                onConfirm={handleDeleteConfirmed}
+                onCancel={() => setDeletingEntry(null)}
+            />
         </Layout>
     );
 }

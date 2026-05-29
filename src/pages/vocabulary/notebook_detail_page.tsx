@@ -1,6 +1,6 @@
-import Layout from '../../components/layout/Layout';
+﻿import Layout from '../../components/layout/Layout';
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import {
     getNotebook, listWords, addWord, updateWord, removeWord,
@@ -419,14 +419,13 @@ export default function NotebookDetailPage() {
     );
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={nbTitle}
+    pageSubtitle='管理笔记本中的单词，添加标签和个人释义'
+    backUrl='/vocabulary/notebook'
+    backText='返回我的笔记本'
+>
             <div className="config-page-wrap">
-                <div className="practice-header">
-                    <Link to="/vocabulary/notebook" className="back-link">返回我的笔记本</Link>
-                    <h1>{nbTitle}</h1>
-                    <p>管理笔记本中的单词，添加标签和个人释义</p>
-                </div>
-
                 {/* 搜索栏 */}
                 <div className="config-card" style={{ paddingBottom: '16px' }}>
                     <div className="nb-search-bar">

@@ -241,14 +241,14 @@
     box-shadow: 0 4px 14px rgba(5, 150, 105, 0.08);
 }
 
-/* Start button — purple gradient for speaking */
+/* Start button — teal gradient */
 .speaking-start-btn {
-    background: linear-gradient(135deg, #7c3aed, #a855f7);
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    background: linear-gradient(135deg, var(--color-primary), #14b8a6);
+    box-shadow: 0 4px 15px rgba(13, 148, 136, 0.3);
 }
 
 .speaking-start-btn:hover {
-    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+    box-shadow: 0 8px 25px rgba(13, 148, 136, 0.4);
 }
 
 /* ── Scenario file attachment ── */

@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { ClipboardList, ChevronDown } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
+import HighlightText from '../common/HighlightText';
 import { type LearningPlan } from '../../api/learning_plan';
 
 const FSRS_STATE_LABEL: Record<number, string> = {
@@ -27,15 +29,29 @@ export default function TodayStudiedSection({ plan }: Props) {
 
     return (
         <div className="lp-today-section">
-            <div className="lp-today-header" onClick={() => setExpanded(v => !v)}>
+            <button
+                type="button"
+                className="lp-today-header"
+                onClick={() => setExpanded(v => !v)}
+                aria-expanded={expanded}
+            >
                 <div className="lp-today-title">
-                    <span className="lp-today-icon">📋</span>
-                    <span dangerouslySetInnerHTML={{ __html: t.vocab.details.todayTitle.replace('{studied}', String(plan.studied_today)).replace('{total}', String(todayTotal)) }} />
+                    <span className="lp-today-icon"><ClipboardList size={16} /></span>
+                    <HighlightText text={t.vocab.details.todayTitle} studied={plan.studied_today} total={todayTotal} />
                     <span className="lp-today-pct">{pct}%</span>
                 </div>
-                <span className={`lp-today-toggle ${expanded ? 'open' : ''}`}>▾</span>
-            </div>
-            <div className="lp-today-progress">
+                <span className={`lp-today-toggle ${expanded ? 'open' : ''}`}>
+                    <ChevronDown size={14} />
+                </span>
+            </button>
+            <div
+                className="lp-today-progress"
+                role="progressbar"
+                aria-valuenow={pct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="今日学习进度"
+            >
                 <div className="lp-today-progress-fill" style={{ width: `${pct}%` }} />
             </div>
             {expanded && (

@@ -18,10 +18,10 @@
     padding: 48px;
     width: 100%;
     max-width: 440px;
-    animation: fadeIn 0.4s ease-out forwards;
+    animation: authFadeIn 0.4s ease-out forwards;
 }
 
-@keyframes fadeIn {
+@keyframes authFadeIn {
     from {
         opacity: 0;
         transform: translateY(15px);
@@ -168,11 +168,7 @@
     animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
+/* spin keyframes defined in index.css */
 
 .auth-footer {
     margin-top: 32px;

@@ -42,20 +42,14 @@ export default function Task2OpinionSelectionPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+            backUrl={`/writing/task2?${topicQuery}`}
+            backText={t.task2OpinionSelection.backToTask2Selection}
+            pageTitle={t.task2OpinionSelection.heading}
+            pageSubtitle={t.task2OpinionSelection.subheading}
+            headerRight={<AiModelSelector />}
+        >
             <div className="practice-container">
-                <div className="wc-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                    <div className="practice-header" style={{ marginBottom: 0 }}>
-                        <button className="back-link" onClick={() => navigate(`/writing/task2?${topicQuery}`)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                            {t.task2OpinionSelection.backToTask2Selection}
-                        </button>
-                        <h1>{t.task2OpinionSelection.heading}</h1>
-                        <p>{t.task2OpinionSelection.subheading}</p>
-                    </div>
-                    <div className="wc-model-box">
-                        <AiModelSelector />
-                    </div>
-                </div>
 
                 <div className="config-card">
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '2rem' }}>
@@ -63,7 +57,10 @@ export default function Task2OpinionSelectionPage() {
                             <div
                                 key={typeItem.id}
                                 className={`chart-card-btn ${selectedType === typeItem.id ? 'active' : ''}`}
+                                role="button"
+                                tabIndex={0}
                                 onClick={() => setSelectedType(typeItem.id)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedType(typeItem.id); } }}
                             >
                                 <div className="chart-card-icon">{typeItem.icon}</div>
                                 <div className="chart-card-content">

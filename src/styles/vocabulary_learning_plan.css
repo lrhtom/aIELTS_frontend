@@ -7,22 +7,22 @@
 .lp-detail-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 16px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
 }
 
 .lp-name-input {
     flex: 1;
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 800;
     color: var(--color-text);
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
     outline: none;
-    padding: 2px 4px;
-    min-width: 100px;
+    padding: 4px 8px;
+    min-width: 140px;
     transition: border-color 0.15s;
 }
 
@@ -75,17 +75,18 @@
 /* ── Add word tabs ─────────────────────────────────────────────────────────── */
 .lp-add-section {
     background: var(--color-surface);
-    border: 1.5px solid var(--color-border);
-    border-radius: 14px;
-    padding: 16px 18px;
-    margin-bottom: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
 }
 
 .lp-add-section h4 {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--color-text-secondary);
-    margin: 0 0 12px;
+    margin: 0 0 16px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -98,22 +99,28 @@
 }
 
 .lp-add-tab {
-    padding: 6px 14px;
+    padding: 8px 18px;
     border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     border: 1.5px solid var(--color-border);
     background: transparent;
     color: var(--color-text-secondary);
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    transition: all 0.2s ease;
 }
 
-.lp-add-tab:hover,
+.lp-add-tab:hover {
+    background: rgba(13, 148, 136, 0.04);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
 .lp-add-tab.active {
     background: var(--color-primary);
     border-color: var(--color-primary);
     color: #fff;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
 }
 
 .lp-add-form {
@@ -132,32 +139,38 @@
 .lp-add-row input[type="number"],
 .lp-add-row select {
     flex: 1;
-    padding: 8px 12px;
+    padding: 10px 14px;
     background: var(--color-bg);
     border: 1.5px solid var(--color-border);
-    border-radius: 10px;
-    font-size: 14px;
+    border-radius: 12px;
+    font-size: 15px;
     color: var(--color-text);
     outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .lp-add-row input:focus,
 .lp-add-row select:focus { border-color: var(--color-primary); }
 
 .lp-add-btn {
-    padding: 8px 16px;
+    padding: 10px 20px;
     background: var(--color-primary);
     color: #fff;
     border: none;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.15s;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
 }
 
-.lp-add-btn:hover { background: var(--color-primary-hover); }
+.lp-add-btn:hover:not(:disabled) { 
+    background: var(--color-primary-hover); 
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(13, 148, 136, 0.3);
+}
 
 .lp-add-btn:disabled {
     background: var(--color-border);
@@ -225,9 +238,10 @@
 /* ── Word list ─────────────────────────────────────────────────────────────── */
 .lp-word-section {
     background: var(--color-surface);
-    border: 1.5px solid var(--color-border);
-    border-radius: 14px;
-    padding: 16px 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
 }
 
 .lp-word-section-header {
@@ -239,7 +253,7 @@
 }
 
 .lp-word-section-header h4 {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--color-text-secondary);
     margin: 0;
@@ -299,13 +313,14 @@
 .lp-search {
     flex: 1;
     min-width: 160px;
-    padding: 6px 12px;
+    padding: 8px 14px;
     background: var(--color-bg);
     border: 1.5px solid var(--color-border);
     border-radius: 20px;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--color-text);
     outline: none;
+    transition: border-color 0.2s;
 }
 
 .lp-search:focus { border-color: var(--color-primary); }
@@ -324,26 +339,26 @@
 .lp-word-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .lp-word-item {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 12px 12px 10px;
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    background: linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 251, 250, 0.96) 100%);
-    font-size: 13px;
+    gap: 10px;
+    padding: 16px 18px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-surface);
+    font-size: 14px;
     color: var(--color-text);
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .lp-word-item:hover {
     border-color: rgba(13, 148, 136, 0.45);
-    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.08);
-    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(13, 148, 136, 0.06);
+    transform: translateY(-2px);
 }
 
 /* Row 1: word + zh input */
@@ -462,19 +477,24 @@
 
 /* ── Start button (top of detail page) ────────────────────────────────────── */
 .lp-start-btn {
-    padding: 8px 20px;
+    padding: 10px 24px;
     background: var(--color-primary);
     color: #fff;
     border: none;
-    border-radius: 10px;
-    font-size: 14px;
+    border-radius: 12px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: all 0.2s ease;
     white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
 }
 
-.lp-start-btn:hover { background: var(--color-primary-hover); }
+.lp-start-btn:hover { 
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(13, 148, 136, 0.3);
+}
 
 /* ── Pagination ─────────────────────────────────────────────────────────────── */
 .lp-pager {
@@ -658,22 +678,28 @@
 }
 
 .lp-mode-tab {
-    padding: 6px 16px;
+    padding: 8px 18px;
     border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     border: 1.5px solid var(--color-border);
     background: transparent;
     color: var(--color-text-secondary);
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    transition: all 0.2s ease;
 }
 
-.lp-mode-tab.active,
 .lp-mode-tab:hover {
+    background: rgba(13, 148, 136, 0.04);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.lp-mode-tab.active {
     background: var(--color-primary);
     border-color: var(--color-primary);
     color: #fff;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
 }
 
 .lp-copy-config-card {
@@ -723,7 +749,94 @@
     line-height: 1.45;
 }
 
+.lp-regenerate-btn {
+    padding: 7px 18px;
+    background: transparent;
+    border: 1.5px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.lp-regenerate-btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.lp-regenerate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────────── */
+/* ── Detail back button ───────────────────────────────────────────────────── */
+.lp-detail-back-btn { margin-right: 4px; }
+
+/* ── Manual add form ─────────────────────────────────────────────────────── */
+.lp-add-manual-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lp-add-word-input-wrap {
+    position: relative;
+    flex: 1;
+}
+
+.lp-add-word-input-wrap input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ── Book sub-mode tabs ──────────────────────────────────────────────────── */
+.lp-book-submode-tabs { margin-top: 4px; }
+
+.lp-book-submode-tab { font-size: 12px; }
+
+/* ── Book range inputs ───────────────────────────────────────────────────── */
+.lp-book-range-label {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.lp-book-range-sep {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.lp-book-range-input { max-width: 80px; }
+
+/* ── Book browser word row extras ────────────────────────────────────────── */
+.lp-book-word-row .bw-phonetic {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+/* ── PlanWordRow shared ──────────────────────────────────────────────────── */
+.lp-word-text-inner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lp-speak-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.lp-speak-btn:hover {
+    opacity: 0.8;
+}
+
 @media (max-width: 768px) {
     .lp-grid { grid-template-columns: 1fr; }
 

@@ -1,13 +1,17 @@
 import Layout from '../../components/layout/Layout';
 import { useState, useMemo, useRef, type ChangeEvent, type DragEvent } from 'react';
+import translate from 'translate';
+translate.engine = 'google';
 import { useNavigate } from 'react-router-dom';
 import AiModelSelector, { type AIProvider } from '../../components/common/AiModelSelector';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
+import { ArrowLeft } from 'lucide-react';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
+import '../../styles/writing_correction_result.css';
 import { type WritingTaskType, type CorrectionResponse } from '../../types/writing_page';
 
 const TASK1_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
@@ -22,8 +26,11 @@ export default function WritingCorrectionPage() {
     const [promptText, setPromptText] = useState('');
     const [taskType, setTaskType] = useState<WritingTaskType>('task2');
     const [isEvaluating, setIsEvaluating] = useState(false);
+    const [activeTab, setActiveTab] = useState<'sentence' | 'vocab' | 'improved' | 'model'>('sentence');
+    const [transMode, setTransMode] = useState<'en' | 'zh'>('en');
+    const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
+    const [isTranslating, setIsTranslating] = useState(false);
     const [result, setResult] = useState<CorrectionResponse | null>(null);
-    const [copied, setCopied] = useState(false);
     const [provider, setProvider] = useState<AIProvider>(() => {
         const localProvider = localStorage.getItem('ai_provider') as AIProvider | null;
         return localProvider || 'deepseek';
@@ -129,21 +136,75 @@ export default function WritingCorrectionPage() {
     };
 
     const scores = result ? [
-        { label: taskType === 'task1' ? t.writingCorrection.taTask1 : t.writingCorrection.ta, val: result.Task_Response },
-        { label: t.writingCorrection.cc, val: result.Coherence_Cohesion },
-        { label: t.writingCorrection.lr, val: result.Lexical_Resource },
-        { label: t.writingCorrection.gra, val: result.Grammatical_Range },
+        { label: lang === 'zh' ? (taskType === 'task1' ? '任务完成' : '任务回应') : (taskType === 'task1' ? 'TA' : 'TR'), val: result.Task_Response },
+        { label: lang === 'zh' ? '连贯衔接' : 'CC', val: result.Coherence_Cohesion },
+        { label: lang === 'zh' ? '词汇资源' : 'LR', val: result.Lexical_Resource },
+        { label: lang === 'zh' ? '语法多样' : 'GRA', val: result.Grammatical_Range },
     ] : [];
+
+
+    const renderAnnotatedText = () => {
+        if (!result) return text.split(/\n\n+/).map((para, idx) => <p key={idx} className="wc-essay-paragraph">{para}</p>);
+
+        let annotatedHtml = text;
+
+        const sentences = [...(result.Sentence_Corrections || [])].sort((a, b) => b.original.length - a.original.length);
+        const vocabs = [...(result.Vocabulary_Upgrades || [])].sort((a, b) => b.original.length - a.original.length);
+
+        sentences.forEach(corr => {
+            const severityClass = corr.severity === 'suggestion' ? 'severity-suggestion' : 'severity-warning';
+            const escaped = corr.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            annotatedHtml = annotatedHtml.replace(new RegExp(escaped, 'g'), `<span class="wc-inline-error ${severityClass}" title="${corr.explanation.replace(/"/g, '&quot;')}">${corr.original}</span>`);
+        });
+
+        vocabs.forEach(vocab => {
+            const escaped = vocab.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            annotatedHtml = annotatedHtml.replace(new RegExp(escaped, 'g'), `<span class="wc-inline-error type-vocabulary" title="Upgrades: ${vocab.upgrades.join(', ')}">${vocab.original}</span>`);
+        });
+
+        return annotatedHtml.split(/\n\n+/).map((para, idx) => (
+            <p key={idx} className="wc-essay-paragraph" dangerouslySetInnerHTML={{ __html: para }} />
+        ));
+    };
+
+    const handleEssayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains('wc-inline-error')) {
+            const textContent = target.textContent;
+            if (!textContent) return;
+            
+            // Check if it's a sentence correction
+            const isSentence = result?.Sentence_Corrections?.find(s => s.original === textContent);
+            if (isSentence) {
+                setActiveTab('sentence');
+                setTimeout(() => {
+                    const el = document.getElementById(`corr-${textContent}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+                return;
+            }
+            
+            // Check if it's a vocab upgrade
+            const isVocab = result?.Vocabulary_Upgrades?.find(v => v.original === textContent);
+            if (isVocab) {
+                setActiveTab('vocab');
+                setTimeout(() => {
+                    const el = document.getElementById(`vocab-${textContent}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            }
+        }
+    };
 
     return (
         <Layout>
-            <div className="wc-page">
+            <div className={`wc-page ${result ? 'is-result-mode' : ''}`}>
 
                 {/* Header */}
                 <div className="wc-header">
                     <div className="wc-header-title">
-                        <button className="back-link" onClick={() => navigate('/writing')}>
-                            {t.writingCorrection.backToHall}
+                        <button className="wc-back-btn" onClick={() => navigate('/writing')}>
+                            <ArrowLeft size={20} /> {t.writingCorrection.backToHall}
                         </button>
                         <h1>{t.writingCorrection.title}</h1>
                         <p>{t.writingCorrection.subtitle}</p>
@@ -154,8 +215,219 @@ export default function WritingCorrectionPage() {
                 </div>
 
                 {/* Main body */}
-                <div className="wc-body">
+                {result ? (
+                    <div className="wc-result-view">
+                            {/* 1. Left: Essay with Annotations */}
+                            <div className="wc-essay-panel">
+                                <div className="wc-panel-header">
+                                    <div className="wc-panel-title">✍️ {lang === 'zh' ? '您的作文 (带批注)' : 'Your Essay (Annotated)'}</div>
+                                </div>
+                                
+                                {/* Essay Prompt Placeholder */}
+                                <div style={{ padding: '24px 32px 0 32px', color: '#475569', fontSize: '0.95rem', fontStyle: 'italic', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                                    <div style={{ fontWeight: 600, marginBottom: '8px', color: '#334155' }}>📝 {lang === 'zh' ? '作文题目 (Prompt)' : 'Essay Prompt'}</div>
+                                    {promptText || (lang === 'zh' ? '（您未输入原题目，系统直接基于文章内容进行无题批改）' : '(No prompt was provided, the system evaluated based on the essay content alone)')}
+                                </div>
 
+                                <div className="wc-essay-content" onClick={handleEssayClick}>
+                                    {renderAnnotatedText()}
+                                </div>
+                            </div>
+
+                            {/* 2. Middle: Corrections & Feedback Tabs */}
+                            <div className="wc-corrections-panel">
+                                <div className="wc-tabs">
+                                    {result.Sentence_Corrections && result.Sentence_Corrections.length > 0 && (
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'sentence' ? ' active' : ''}`} onClick={() => setActiveTab('sentence')}>{lang === 'zh' ? '逐句精批' : 'Sentences'}</button>
+                                    )}
+                                    {result.Vocabulary_Upgrades && result.Vocabulary_Upgrades.length > 0 && (
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'vocab' ? ' active' : ''}`} onClick={() => setActiveTab('vocab')}>{lang === 'zh' ? '词汇升级' : 'Vocab'}</button>
+                                    )}
+                                    {result.Revised_Essay && (
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'improved' ? ' active' : ''}`} onClick={() => setActiveTab('improved')}>{lang === 'zh' ? '改后作文' : 'Improved'}</button>
+                                    )}
+                                    {result.Model_Essay && (
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'model' ? ' active' : ''}`} onClick={() => setActiveTab('model')}>{lang === 'zh' ? '高分范文' : 'Model'}</button>
+                                    )}
+                                </div>
+
+                                <div className="wc-corrections-content">
+                                    {activeTab === 'sentence' && result.Sentence_Corrections && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            {result.Sentence_Corrections.map((corr, idx) => (
+                                                <div key={idx} id={`corr-${corr.original}`} className={`wc-correction-card ${corr.severity === 'suggestion' ? 'severity-suggestion' : 'severity-warning'}`}>
+                                                    <div style={{ marginBottom: '8px' }}>
+                                                        <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#ef4444', fontWeight: 600, marginRight: '8px' }}>
+                                                            {lang === 'zh' ? '原句' : 'Original'}
+                                                        </span>
+                                                        <span style={{ textDecoration: 'line-through', color: 'var(--color-text-dim)' }}>{corr.original}</span>
+                                                    </div>
+                                                    <div style={{ marginBottom: '12px' }}>
+                                                        <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#d1fae5', color: '#10b981', fontWeight: 600, marginRight: '8px' }}>
+                                                            {lang === 'zh' ? '修改' : 'Improved'}
+                                                        </span>
+                                                        <span style={{ color: 'var(--color-text)', fontWeight: 500 }}>{corr.improved}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-dim)', borderTop: '1px dashed var(--color-border)', paddingTop: '12px' }}>
+                                                        <span style={{ fontWeight: 600, color: 'var(--color-primary)', marginRight: '6px' }}>[{corr.error_type}]</span>
+                                                        {corr.explanation}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'vocab' && result.Vocabulary_Upgrades && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            {result.Vocabulary_Upgrades.map((vocab, idx) => (
+                                                <div key={idx} id={`vocab-${vocab.original}`} className="wc-correction-card type-vocab">
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                                        <span style={{ color: '#ef4444', textDecoration: 'line-through', fontWeight: 500 }}>{vocab.original}</span>
+                                                        <span>➡️</span>
+                                                        <span style={{ color: '#10b981', fontWeight: 600 }}>{vocab.upgrades.join(' / ')}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-dim)', fontStyle: 'italic' }}>
+                                                        "{vocab.context}"
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'improved' && result.Revised_Essay && (
+                                        <div className="wc-correction-card">
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                                <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
+                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{lang === 'zh' ? '英文' : 'English'}</button>
+                                                    <button type="button" className={`wc-trans-btn${transMode === 'zh' ? ' active' : ''}`} onClick={async () => {
+                                                        setTransMode('zh');
+                                                        if (!translatedTexts['improved']) {
+                                                            setIsTranslating(true);
+                                                            try {
+                                                                const t = await translate(result.Revised_Essay!, "zh");
+                                                                setTranslatedTexts(prev => ({ ...prev, improved: t }));
+                                                            } catch (e) {
+                                                                console.error(e);
+                                                            } finally {
+                                                                setIsTranslating(false);
+                                                            }
+                                                        }
+                                                    }}>
+                                                        {lang === 'zh' ? '中文翻译' : 'Translation'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div style={{ lineHeight: 1.8, fontSize: '1.05rem', color: '#334155' }}>
+                                                {isTranslating && transMode === 'zh' ? (
+                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{lang === 'zh' ? '翻译中...' : 'Loading...'}</div>
+                                                ) : (
+                                                    (transMode === 'en' ? result.Revised_Essay : (translatedTexts['improved'] || '')).split(/\n\n+/).map((para, idx) => (
+                                                        <p key={idx} style={{ marginBottom: '16px' }}>{para.trim()}</p>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'model' && result.Model_Essay && (
+                                        <div className="wc-correction-card">
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                                <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
+                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{lang === 'zh' ? '英文' : 'English'}</button>
+                                                    <button type="button" className={`wc-trans-btn${transMode === 'zh' ? ' active' : ''}`} onClick={async () => {
+                                                        setTransMode('zh');
+                                                        if (!translatedTexts['model']) {
+                                                            setIsTranslating(true);
+                                                            try {
+                                                                const t = await translate(result.Model_Essay!, "zh");
+                                                                setTranslatedTexts(prev => ({ ...prev, model: t }));
+                                                            } catch (e) {
+                                                                console.error(e);
+                                                            } finally {
+                                                                setIsTranslating(false);
+                                                            }
+                                                        }
+                                                    }}>
+                                                        {lang === 'zh' ? '中文翻译' : 'Translation'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div style={{ lineHeight: 1.8, fontSize: '1.05rem', color: '#334155' }}>
+                                                {isTranslating && transMode === 'zh' ? (
+                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{lang === 'zh' ? '翻译中...' : 'Loading...'}</div>
+                                                ) : (
+                                                    (transMode === 'en' ? result.Model_Essay : (translatedTexts['model'] || '')).split(/\n\n+/).map((para, idx) => (
+                                                        <p key={idx} style={{ marginBottom: '16px' }}>{para.trim()}</p>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 3. Right: Scores Panel */}
+                            <div className="wc-score-panel">
+                                <div className="wc-score-header-box">
+                                    <div className="wc-score-overall-flex">
+                                        <div>
+                                            <div className="wc-score-overall-text">{t.writingCorrection.overallBand}</div>
+                                            <div className="wc-score-overall-sub">{t.writingCorrection.overallBandSubtitle}</div>
+                                        </div>
+                                        <div className="wc-score-overall-val">{result.Overall_Band.toFixed(1)}</div>
+                                    </div>
+                                    <div className="wc-subscores-box" style={{ background: '#ffffff', borderRadius: '12px', padding: '16px' }}>
+                                        <div className="wc-subscores">
+                                            {scores.map(({ label, val }) => (
+                                                <div key={label} className="wc-subscore-col">
+                                                    <div className="wc-subscore-label">{label}</div>
+                                                    <div className="wc-subscore-val">{val.toFixed(1)}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Comprehensive Evaluation Card */}
+                                <div style={{ padding: '20px', borderTop: '1px solid #f1f5f9' }}>
+                                    <div className="wc-overall-feedback">
+                                        <h3 style={{ marginBottom: '16px', fontSize: '1.05rem', color: '#1e293b', fontWeight: 700 }}>
+                                            {lang === 'zh' ? '综合评价 (Comprehensive Evaluation)' : 'Comprehensive Evaluation'}
+                                        </h3>
+                                        
+                                        {/* Feedback / Areas for Improvement */}
+                                        <div style={{ marginBottom: '20px' }}>
+                                            <div style={{ fontWeight: 600, color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></div>
+                                                {lang === 'zh' ? '考官详评 (Examiner Feedback)' : 'Examiner Feedback'}
+                                            </div>
+                                            <div style={{ paddingLeft: '14px', borderLeft: '2px solid #fef3c7', marginLeft: '3px' }}>
+                                                {(result.Feedback || result.feedback || '').split('\n').map((line, idx) => (
+                                                    <p key={idx} style={{ marginBottom: '8px', lineHeight: 1.6, color: '#475569', fontSize: '0.95rem' }}>{line}</p>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Actionable Advice */}
+                                        {result.Actionable_Advice && result.Actionable_Advice.length > 0 && (
+                                            <div>
+                                                <div style={{ fontWeight: 600, color: '#1d4ed8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }}></div>
+                                                    {lang === 'zh' ? '下一步提升建议 (Actionable Strategies)' : 'Actionable Strategies'}
+                                                </div>
+                                                <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
+                                                    {result.Actionable_Advice.map((advice, idx) => (
+                                                        <li key={idx} style={{ lineHeight: 1.5 }}>{advice}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                ) : (
+                    <div className="wc-body">
                     {/* Left: Editor */}
                     <div className="wc-editor-card">
 
@@ -314,168 +586,15 @@ export default function WritingCorrectionPage() {
                         </div>
                     </div>
 
-                    {/* Right: Result or Pending Placeholder */}
-                    {result ? (
-                        <div className="wc-result-card">
 
-                            {/* Task1-only model image capability status */}
-                            {taskType === 'task1' && (
-                                <div className={`wc-task1-image-support-status${supportsTask1ImageRecognition ? ' supported' : ' unsupported'}`}>
-                                    {supportsTask1ImageRecognition
-                                        ? t.writingCorrection.task1ImageModelSupportYes
-                                        : t.writingCorrection.task1ImageModelSupportNo}
-                                </div>
-                            )}
-
-                            {/* Overall band */}
-                            <div className="wc-band-display">
-                                <div className="wc-band-label">{t.writingCorrection.overallBand}</div>
-                                <div className="wc-band-value">{result.Overall_Band.toFixed(1)}</div>
-                                <div className="wc-band-subtitle">{t.writingCorrection.overallBandSubtitle}</div>
-                            </div>
-
-                            {/* Sub-scores */}
-                            <div className="wc-scores-grid">
-                                {scores.map(({ label, val }) => (
-                                    <div key={label} className="wc-score-item">
-                                        <div className="wc-score-label">{label}</div>
-                                        <div className="wc-score-val">{val.toFixed(1)}</div>
-                                        <div className="wc-score-bar">
-                                            <div className="wc-score-bar-fill" style={{ width: `${(val / 9) * 100}%` }} />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Feedback */}
-                            <div className="wc-feedback-box">
-                                <h3>{t.writingCorrection.examinerFeedback}</h3>
-                                <div className="wc-feedback-content">
-                                    {(result.Feedback || result.feedback || '').split('\n').map((line, idx) => (
-                                        <p key={idx}>{line}</p>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Actionable Advice */}
-                            {result.Actionable_Advice && result.Actionable_Advice.length > 0 && (
-                                <div className="wc-feedback-box" style={{ marginTop: '24px', backgroundColor: 'rgba(var(--color-primary-rgb), 0.05)', borderColor: 'rgba(var(--color-primary-rgb), 0.2)' }}>
-                                    <h3>🚀 {lang === 'zh' ? '下一步提升建议' : 'Actionable Advice'}</h3>
-                                    <div className="wc-feedback-content">
-                                        <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            {result.Actionable_Advice.map((advice, idx) => (
-                                                <li key={idx} style={{ lineHeight: 1.6 }}>{advice}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Sentence Corrections */}
-                            {result.Sentence_Corrections && result.Sentence_Corrections.length > 0 && (
-                                <div className="wc-feedback-box" style={{ marginTop: '24px' }}>
-                                    <h3>✍️ {lang === 'zh' ? '逐句精批' : 'Sentence Corrections'}</h3>
-                                    <div className="wc-feedback-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                        {result.Sentence_Corrections.map((corr, idx) => (
-                                            <div key={idx} style={{ padding: '16px', borderRadius: '12px', backgroundColor: 'var(--color-surface-hover)', border: '1px solid var(--color-border)' }}>
-                                                <div style={{ marginBottom: '8px' }}>
-                                                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#ef4444', fontWeight: 600, marginRight: '8px' }}>
-                                                        {lang === 'zh' ? '原句' : 'Original'}
-                                                    </span>
-                                                    <span style={{ textDecoration: 'line-through', color: 'var(--color-text-dim)' }}>{corr.original}</span>
-                                                </div>
-                                                <div style={{ marginBottom: '12px' }}>
-                                                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#d1fae5', color: '#10b981', fontWeight: 600, marginRight: '8px' }}>
-                                                        {lang === 'zh' ? '修改' : 'Improved'}
-                                                    </span>
-                                                    <span style={{ color: 'var(--color-text)', fontWeight: 500 }}>{corr.improved}</span>
-                                                </div>
-                                                <div style={{ fontSize: '0.9rem', color: 'var(--color-text-dim)', borderTop: '1px dashed var(--color-border)', paddingTop: '12px' }}>
-                                                    <span style={{ fontWeight: 600, color: 'var(--color-primary)', marginRight: '6px' }}>[{corr.error_type}]</span>
-                                                    {corr.explanation}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Vocabulary Upgrades */}
-                            {result.Vocabulary_Upgrades && result.Vocabulary_Upgrades.length > 0 && (
-                                <div className="wc-feedback-box" style={{ marginTop: '24px' }}>
-                                    <h3>✨ {lang === 'zh' ? '词汇升级' : 'Vocabulary Upgrades'}</h3>
-                                    <div className="wc-feedback-content" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                                        {result.Vocabulary_Upgrades.map((vocab, idx) => (
-                                            <div key={idx} style={{ flex: '1 1 300px', padding: '12px 16px', borderRadius: '12px', backgroundColor: 'var(--color-surface-hover)', border: '1px solid var(--color-border)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                                    <span style={{ color: '#ef4444', textDecoration: 'line-through', fontWeight: 500 }}>{vocab.original}</span>
-                                                    <span>➡️</span>
-                                                    <span style={{ color: '#10b981', fontWeight: 600 }}>{vocab.upgrades.join(' / ')}</span>
-                                                </div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-dim)', fontStyle: 'italic' }}>
-                                                    "{vocab.context}"
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Model essay */}
-                            {result.Model_Essay && (
-                                <div className="wc-model-essay-box">
-                                    <div className="wc-model-essay-header">
-                                        <div>
-                                            <span className="wc-model-essay-badge">{t.writingCorrection.modelEssayBadge}</span>
-                                            <h3>{t.writingCorrection.modelEssayTitle}</h3>
-                                        </div>
-                                        <button
-                                            className={`wc-copy-btn${copied ? ' copied' : ''}`}
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(result.Model_Essay!);
-                                                setCopied(true);
-                                                setTimeout(() => setCopied(false), 2000);
-                                            }}
-                                        >
-                                            {copied ? t.writingCorrection.copiedBtn : t.writingCorrection.copyBtn}
-                                        </button>
-                                    </div>
-                                    <div className="wc-model-essay-content">
-                                        {result.Model_Essay.split(/\n\n+/).map((para, idx) => (
-                                            <p key={idx}>{para.trim()}</p>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                        </div>
-                    ) : isEvaluating ? (
-                        <div className="wc-pending-card">
-                            <div className="wc-pending-inner">
-                                <div className="wc-loading-spinner" />
-                                <div className="wc-pending-title">
-                                    {t.writingCorrection.evaluatingTitle}
-                                </div>
-                                <div className="wc-pending-desc">
-                                    {t.writingCorrection.evaluatingDesc}
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="wc-pending-card">
-                            <div className="wc-pending-inner">
-                                <div className="wc-pending-icon">📋</div>
-                                <div className="wc-pending-title">
-                                    {t.writingCorrection.pendingTitle}
-                                </div>
-                                <div className="wc-pending-desc">
-                                    {t.writingCorrection.pendingDesc}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    <div className="wc-result-placeholder">
+                        <div className="wc-placeholder-icon">🤖</div>
+                        <h3>{lang === 'zh' ? '等待批改' : 'Waiting for evaluation'}</h3>
+                        <p>{lang === 'zh' ? '请在左侧输入您的作文并点击“开始批改”' : 'Please input your essay on the left and click "Evaluate"'}</p>
+                    </div>
                 </div>
-            </div>
-        </Layout>
-    );
+            )}
+        </div>
+    </Layout>
+);
 }

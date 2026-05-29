@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+﻿import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { listVocabBooks, listBookWords, type VocabBook, type BookWord } from '../../api/learning_plan';
@@ -73,15 +73,13 @@ export default function VocabBookDetailPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={book?.name || t.vocab.bookDetail.titleDefault}
+    pageSubtitle={book?.description}
+    backUrl='/vocabulary/books'
+    backText={`${t.common.back}${t.vocab.books.title}`}
+>
             <div className="config-page-wrap">
-                <div className="practice-header">
-                    <Link to="/vocabulary/books" className="back-link">{t.common.back}{t.vocab.books.title}</Link>
-                    <h1>{book?.name || t.vocab.bookDetail.titleDefault}</h1>
-                    {book?.description && <p>{book.description}</p>}
-                    {book && <p>{t.vocab.bookDetail.wordCount.replace('{n}', String(book.word_count))}</p>}
-                </div>
-
                 {/* Search */}
                 <div className="config-card" style={{ paddingBottom: '16px' }}>
                     <div className="nb-search-bar">

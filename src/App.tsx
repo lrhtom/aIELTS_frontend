@@ -70,6 +70,8 @@ const VocabularyTrainingDoingPage = lazy(() => import('./pages/vocabulary/vocabu
 const VocabularyFlashcardDoingPage = lazy(() => import('./pages/vocabulary/vocabulary_flashcard_doing_page'));
 const NotebookDetailPage = lazy(() => import('./pages/vocabulary/notebook_detail_page'));
 const LearningPlanDetailPage = lazy(() => import('./pages/vocabulary/learning_plan_detail_page'));
+const ArticleCopyPage = lazy(() => import('./pages/vocabulary/article_copy_page'));
+const StoryModePage = lazy(() => import('./pages/vocabulary/story_mode_page'));
 
 function PageFallback() {
   return <div className="page-loading" />;
@@ -99,6 +101,8 @@ export default function App() {
         <Route path="/vocabulary/notebook/:id" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><NotebookDetailPage /></Suspense></ProtectedRoute>} />
         <Route path="/vocabulary/plans" element={<ProtectedRoute><LearningPlanListPage /></ProtectedRoute>} />
         <Route path="/vocabulary/plans/:id" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><LearningPlanDetailPage /></Suspense></ProtectedRoute>} />
+        <Route path="/vocabulary/plans/:id/article-copy" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><ArticleCopyPage /></Suspense></ProtectedRoute>} />
+        <Route path="/vocabulary/plans/:id/story" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><StoryModePage /></Suspense></ProtectedRoute>} />
         <Route path="/vocabulary/books" element={<ProtectedRoute><VocabBookListPage /></ProtectedRoute>} />
         <Route path="/vocabulary/books/:id" element={<ProtectedRoute><VocabBookDetailPage /></ProtectedRoute>} />
 

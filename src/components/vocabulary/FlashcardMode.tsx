@@ -1,3 +1,4 @@
+import { Volume2 } from 'lucide-react';
 import { type VocabCard } from '../../api/vocab';
 import { speakWord } from '../../utils/speak';
 import { useLang } from '../../i18n/LanguageContext';
@@ -60,13 +61,14 @@ export default function FlashcardMode({
                 >
                     <div className="fc-face">
                         <button
+                            type="button"
                             className="fc-speak-btn"
                             onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                            title="朗读"
-                        >🔊</button>
+                            aria-label="朗读发音"
+                        ><Volume2 size={18} /></button>
                         <div className="fc-word">{currentCard.word}</div>
                         {currentCard.phonetic && (
-                            <div className="fc-phonetic" style={{ marginTop: 6 }}>
+                            <div className="fc-phonetic fc-phonetic-front">
                                 {currentCard.phonetic}
                             </div>
                         )}
@@ -89,10 +91,11 @@ export default function FlashcardMode({
                         <div className="fc-back-word">
                             {currentCard.word}
                             <button
+                                type="button"
                                 className="fc-speak-btn fc-speak-btn--inline"
                                 onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                                title="朗读"
-                            >🔊</button>
+                                aria-label="朗读发音"
+                            ><Volume2 size={18} /></button>
                         </div>
                         {currentCard.phonetic && (
                             <div className="fc-phonetic">{currentCard.phonetic}</div>
@@ -133,6 +136,7 @@ export default function FlashcardMode({
                 {RATING_INFO.map(info => (
                     <button
                         key={info.id}
+                        type="button"
                         className={`fc-btn ${info.cls}`}
                         onClick={() => onRating(info.id)}
                         disabled={!isFlipped || submitting}

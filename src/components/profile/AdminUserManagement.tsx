@@ -629,13 +629,13 @@ export default function AdminUserManagement() {
                 }
 
                 .admin-users-btn.adjust-btn {
-                    color: #7c3aed;
-                    background: rgba(124, 58, 237, 0.08);
-                    border-color: rgba(124, 58, 237, 0.22);
+                    color: #0d9488;
+                    background: rgba(13, 148, 136, 0.08);
+                    border-color: rgba(13, 148, 136, 0.22);
                 }
 
                 .admin-users-btn.adjust-btn:hover:not(:disabled) {
-                    background: rgba(124, 58, 237, 0.16);
+                    background: rgba(13, 148, 136, 0.16);
                 }
 
                 .admin-users-btn.delete-btn {

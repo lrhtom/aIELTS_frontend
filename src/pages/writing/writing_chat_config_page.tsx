@@ -1,6 +1,6 @@
-import Layout from '../../components/layout/Layout';
+﻿import Layout from '../../components/layout/Layout';
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { getInitialVocabInput } from '../../store/word_selection_store';
 import { useLang } from '../../i18n/LanguageContext';
@@ -71,16 +71,13 @@ export default function WritingChatConfigPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+    pageTitle='💬 {t.heading}'
+    pageSubtitle={t.subheading}
+    backUrl='/writing'
+    backText='\n                        {t.backToWriting}\n                    '
+>
             <div className="practice-container">
-                <div className="practice-header">
-                    <Link to="/writing" className="back-link">
-                        {t.backToWriting}
-                    </Link>
-                    <h1>💬 {t.heading}</h1>
-                    <p>{t.subheading}</p>
-                </div>
-
                 <div className="config-card">
                     <AiModelSelector />
                 </div>

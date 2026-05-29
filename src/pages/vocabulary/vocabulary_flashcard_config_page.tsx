@@ -1,6 +1,6 @@
-import Layout from '../../components/layout/Layout';
+﻿import Layout from '../../components/layout/Layout';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { showToast } from '../../components/common/Toast';
 import { syncVocab, type VocabCard, type VocabStats } from '../../api/vocab';
@@ -109,14 +109,13 @@ export default function VocabularyFlashcardConfigPage() {
         : 0;
 
     return (
-        <Layout>
+        <Layout
+    pageTitle='记忆卡背诵'
+    pageSubtitle='翻转卡片，快速记忆单词含义。使用 FSRS 算法智能安排复习间隔。'
+    backUrl='/vocabulary'
+    backText='返回词汇学习'
+>
             <div className="config-page-wrap reading-config">
-                <div className="practice-header">
-                    <Link to="/vocabulary" className="back-link">返回词汇学习</Link>
-                    <h1>记忆卡背诵</h1>
-                    <p>翻转卡片，快速记忆单词含义。使用 FSRS 算法智能安排复习间隔。</p>
-                </div>
-
                 {/* 词汇输入 */}
                 <div className="config-card">
                     <h3>目标词汇（英-中）</h3>

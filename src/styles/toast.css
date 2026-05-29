@@ -101,3 +101,17 @@
         transform: translateX(0) scale(1);
     }
 }
+
+@media (max-width: 768px) {
+    .toast-container {
+        top: 12px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+    }
+
+    .toast-card {
+        width: 100%;
+        min-width: 0;
+    }
+}

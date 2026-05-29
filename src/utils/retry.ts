@@ -108,9 +108,17 @@ export async function retryWithBackoff<T>(
       return result;
     } catch (error) {
       lastError = error;
-      
+
+      // 请求被主动取消（AbortController / CanceledError），无需日志，直接抛出
+      if (
+        (error as any)?.code === 'ERR_CANCELED' ||
+        (error as any)?.name === 'CanceledError'
+      ) {
+        throw error;
+      }
+
       console.warn(`[重试] 第 ${attempt} 次失败:`, error);
-      
+
       // 检查是否是永久错误
       if (isNonTransientError(error)) {
         console.error(`[重试] 永久错误 (不重试):`, {

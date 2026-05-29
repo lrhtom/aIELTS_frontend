@@ -403,12 +403,11 @@ export default function VocabularyTrainingDoingPage() {
         const pct = Math.round((score / total) * 100);
         const modeLabel = mode === 'dictation' ? '完全听写模式' : mode === 'complete' ? '看中文写英文' : '4选1模式';
         return (
-            <Layout>
+            <Layout
+                pageTitle="练习完成 🎉"
+                pageSubtitle={`${modeLabel} · 共 ${total} 道题`}
+            >
                 <div className="practice-container">
-                    <div className="practice-header" style={{ textAlign: 'center' }}>
-                        <h1>练习完成 🎉</h1>
-                        <p>{modeLabel} · 共 {total} 道题</p>
-                    </div>
 
                     {/* Score */}
                     <div className="config-card" style={{ textAlign: 'center', padding: '36px 24px' }}>

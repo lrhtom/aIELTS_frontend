@@ -427,18 +427,12 @@ export default function ChartPracticePage() {
     );
 
     return (
-        <Layout>
+        <Layout
+            onBack={(step === 'loading' || step === 'answering') ? () => navigate(-1) : undefined}
+            backText={(step === 'loading' || step === 'answering') ? t.practiceSandbox.abortBtn : undefined}
+            pageTitle={(step === 'loading' || step === 'answering') ? `📉 ${t.practiceSandbox.titleTask1}` : undefined}
+        >
             <div className="practice-container writing-practice-page">
-                {(step === 'loading' || step === 'answering') && (
-                    <div className="practice-header writing-practice-header">
-                        <button className="back-link writing-back-btn" onClick={() => navigate(-1)}>
-                            {t.practiceSandbox.abortBtn}
-                        </button>
-                        <h1 className="writing-practice-title">
-                            <span>📉</span> {t.practiceSandbox.titleTask1}
-                        </h1>
-                    </div>
-                )}
 
                 {step === 'loading' && renderLoading()}
                 {step === 'answering' && renderAnswering()}

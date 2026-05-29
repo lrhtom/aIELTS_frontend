@@ -11,6 +11,12 @@
   padding: 20px;
 }
 
+.layout-content.no-padding {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
   /* 移除响应式padding-left，保持布局不变 */

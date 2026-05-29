@@ -16,16 +16,17 @@ export class ATInterceptor {
         // 获取当前余额
         const balance = await balanceApi.getBalance();
 
+        // Precheck is advisory only — actual cost is determined server-side.
+        // We warn when balance is low but never block; the backend handles billing.
         if (balance.atBalance < estimatedCost) {
-            console.error(`AT币余额不足: ${balance.atBalance} AT < ${estimatedCost} AT`);
-            window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
+            console.warn(`AT币余额可能不足 (预估): ${balance.atBalance} AT < ${estimatedCost} AT`);
+            window.dispatchEvent(new CustomEvent('at-balance-low', {
                 detail: {
-                    message: `AT币余额不足，需要 ${estimatedCost} AT，当前余额 ${balance.atBalance} AT`,
+                    message: `预估消耗 ${estimatedCost} AT，当前余额 ${balance.atBalance} AT。实际扣费以服务端为准。`,
                     estimatedCost,
                     currentBalance: balance.atBalance
                 }
             }));
-            return false;
         }
 
         return true;
@@ -36,15 +37,11 @@ export class ATInterceptor {
         apiCall: () => Promise<T>,
         params?: Record<string, number>
     ): Promise<T> {
-        // 先检查余额
-        const canProceed = await this.checkAndConsume({
+        // 预检余额（仅提醒，不阻断；实际扣费由服务端决定）
+        await this.checkAndConsume({
             service,
             params
         });
-
-        if (!canProceed) {
-            throw new Error('AT币余额不足');
-        }
 
         // 执行API调用
         const result = await apiCall();

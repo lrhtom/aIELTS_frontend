@@ -446,7 +446,10 @@ export default function UserHome() {
                                     <div
                                         key={plan.id}
                                         className="plan-item"
+                                        role="button"
+                                        tabIndex={0}
                                         onClick={() => navigate(`/vocabulary/plans/${plan.id}`)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/vocabulary/plans/${plan.id}`); } }}
                                     >
                                         <div className="plan-item-top">
                                             <span className="plan-item-name">{plan.name}</span>

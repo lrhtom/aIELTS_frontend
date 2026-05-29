@@ -1,6 +1,6 @@
-import Layout from '../../components/layout/Layout';
+﻿import Layout from '../../components/layout/Layout';
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import {
     listNotebooks, createNotebook, updateNotebook, deleteNotebook,
@@ -119,14 +119,13 @@ export default function NotebookListPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+    pageTitle={t.vocab.notebooks.title}
+    pageSubtitle={t.vocab.notebooks.desc}
+    backUrl='/vocabulary'
+    backText={`${t.common.back} ${t.vocab.hub.title}`}
+>
             <div className="config-page-wrap">
-                <div className="practice-header">
-                    <Link to="/vocabulary" className="back-link">{t.common.back}{t.vocab.hub.title}</Link>
-                    <h1>{t.vocab.notebooks.title}</h1>
-                    <p>{t.vocab.notebooks.desc}</p>
-                </div>
-
                 {/* 新建按钮 */}
                 <div className="config-card" style={{ paddingBottom: '16px' }}>
                     <button

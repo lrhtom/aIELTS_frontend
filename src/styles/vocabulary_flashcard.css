@@ -93,8 +93,8 @@
 .fc-scene {
     perspective: 1200px;
     width: 100%;
-    max-width: 560px;
-    margin: 0 auto 20px;
+    max-width: 680px;
+    margin: 0 auto 24px;
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -103,10 +103,10 @@
 .fc-card {
     position: relative;
     width: 100%;
-    min-height: 240px;
+    min-height: 300px;
     transform-style: preserve-3d;
     transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 20px;
+    border-radius: 24px;
 }
 
 .fc-card.is-flipped {
@@ -125,7 +125,7 @@
     inset: 0;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    border-radius: 20px;
+    border-radius: 24px;
     background: var(--color-surface);
     border: 1.5px solid var(--color-border);
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.07);
@@ -133,7 +133,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 36px 28px;
+    padding: 48px 40px;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -214,7 +214,7 @@
     justify-content: center;
     flex-wrap: wrap;
     margin-bottom: 12px;
-    max-width: 560px;
+    max-width: 680px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -223,32 +223,33 @@
     flex: 1;
     min-width: 72px;
     max-width: 120px;
-    padding: 12px 8px 10px;
-    border-radius: 14px;
+    padding: 14px 8px 12px;
+    border-radius: 16px;
     font-size: 14px;
     font-weight: 700;
-    border: 1.5px solid transparent;
+    border: 1.5px solid var(--color-border);
+    background: transparent;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
 }
 
 .fc-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
-.fc-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.10); }
+.fc-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
 .fc-btn:not(:disabled):active { transform: translateY(0); }
 
-.fc-btn.btn-again { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
-.fc-btn.btn-hard  { background: #fff7ed; color: #ea580c; border-color: #fdba74; }
-.fc-btn.btn-good  { background: #f0fdf4; color: #16a34a; border-color: #86efac; }
-.fc-btn.btn-easy  { background: #eff6ff; color: #2563eb; border-color: #93c5fd; }
+.fc-btn.btn-again { color: #dc2626; }
+.fc-btn.btn-hard  { color: #d97706; }
+.fc-btn.btn-good  { color: #059669; }
+.fc-btn.btn-easy  { color: #2563eb; }
 
-.fc-btn.btn-again:not(:disabled):hover { background: #fee2e2; }
-.fc-btn.btn-hard:not(:disabled):hover  { background: #ffedd5; }
-.fc-btn.btn-good:not(:disabled):hover  { background: #dcfce7; }
-.fc-btn.btn-easy:not(:disabled):hover  { background: #dbeafe; }
+.fc-btn.btn-again:not(:disabled):hover { background: rgba(239, 68, 68, 0.06); border-color: rgba(239, 68, 68, 0.4); }
+.fc-btn.btn-hard:not(:disabled):hover  { background: rgba(245, 158, 11, 0.06); border-color: rgba(245, 158, 11, 0.4); }
+.fc-btn.btn-good:not(:disabled):hover  { background: rgba(16, 185, 129, 0.06); border-color: rgba(16, 185, 129, 0.4); }
+.fc-btn.btn-easy:not(:disabled):hover  { background: rgba(59, 130, 246, 0.06); border-color: rgba(59, 130, 246, 0.4); }
 
 .fc-btn .btn-label    { font-size: 14px; font-weight: 700; }
 .fc-btn .btn-key      { font-size: 11px; opacity: 0.5; font-weight: 500; }
@@ -312,11 +313,13 @@
 
 /* 结果列表 */
 .fc-result-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 14px;
     overflow: hidden;
-    margin-bottom: 20px;
     max-height: 320px;
     overflow-y: auto;
 }
@@ -447,9 +450,9 @@
 .fc-choices {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    max-width: 560px;
-    margin: 0 auto 16px;
+    gap: 12px;
+    max-width: 680px;
+    margin: 0 auto 20px;
 }
 
 .fc-choice-opt {
@@ -479,7 +482,7 @@
 .fc-choice-opt:disabled { cursor: not-allowed; }
 
 .fc-choice-actions {
-    max-width: 560px;
+    max-width: 680px;
     margin: 0 auto 16px;
     display: flex;
     justify-content: center;
@@ -547,8 +550,8 @@
 
 /* ── 4选1 前置：会/不会选择 ─────────────────────────────────────────────── */
 .fc-choice-reveal-actions {
-    max-width: 560px;
-    margin: 0 auto 16px;
+    max-width: 680px;
+    margin: 0 auto 20px;
     display: flex;
     justify-content: center;
     gap: 12px;
@@ -659,8 +662,8 @@
 
 /* ── Write mode ──────────────────────────────────────────────────────────── */
 .fc-write-area {
-    max-width: 560px;
-    margin: 0 auto 16px;
+    max-width: 680px;
+    margin: 0 auto 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -913,11 +916,10 @@
    四选一 (ChoiceMode) 视觉翻新
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Quiz card ────────────────────────────────────────────────────────────── */
 .choice-quiz-card {
     width: 100%;
-    max-width: 560px;
-    margin: 0 auto 20px;
+    max-width: 680px;
+    margin: 0 auto 24px;
     background: rgba(255, 255, 255, 0.72);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1015,8 +1017,8 @@
 
 /* ── Reveal actions (会 / 不会) ──────────────────────────────────────────── */
 .choice-reveal-actions {
-    max-width: 560px;
-    margin: 0 auto 16px;
+    max-width: 680px;
+    margin: 0 auto 20px;
     display: flex;
     justify-content: center;
     gap: 14px;
@@ -1069,9 +1071,9 @@
 .choice-options-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    max-width: 560px;
-    margin: 0 auto 16px;
+    gap: 16px;
+    max-width: 680px;
+    margin: 0 auto 20px;
 }
 
 @keyframes choiceOptionEnter {
@@ -1226,7 +1228,7 @@
 
 /* ── Feedback bar ─────────────────────────────────────────────────────────── */
 .choice-feedback-bar {
-    max-width: 560px;
+    max-width: 680px;
     margin: 0 auto 16px;
     min-height: 44px;
 }
@@ -1349,3 +1351,65 @@
     20%  { opacity: 1; transform: scale(1.02); }
     100% { opacity: 1; transform: scale(1); }
 }
+
+/* ── Doing page overrides ───────────────────────────────────────────────── */
+.config-page-wrap.fc-doing-page { max-width: 680px; }
+.fc-doing-page .practice-header { margin-bottom: 16px; }
+.fc-doing-page .practice-header h1 { margin-bottom: 4px; }
+
+/* ── Review badge ────────────────────────────────────────────────────────── */
+.fc-review-badge {
+    font-size: 13px;
+    font-weight: 500;
+    background: #dbeafe;
+    color: #2563eb;
+    padding: 2px 10px;
+    border-radius: 20px;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+/* ── Auto speak button ───────────────────────────────────────────────────── */
+.fc-auto-speak-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 2px 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-text-secondary);
+    border-radius: 6px;
+    transition: opacity 0.15s;
+}
+
+.fc-auto-speak-btn:hover {
+    opacity: 0.8;
+}
+
+/* ── Queue remaining ─────────────────────────────────────────────────────── */
+.fc-queue-remaining {
+    font-weight: 400;
+    margin-left: 6px;
+    opacity: 0.6;
+}
+
+/* ── State label inline ──────────────────────────────────────────────────── */
+.fc-state-label-inline {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+/* ── Loading state ───────────────────────────────────────────────────────── */
+.fc-loading {
+    text-align: center;
+    padding-top: 60px;
+}
+
+.fc-loading p {
+    color: var(--color-text-secondary);
+}
+
+/* ── FlashcardMode phonetic front ────────────────────────────────────────── */
+.fc-phonetic-front { margin-top: 6px; }

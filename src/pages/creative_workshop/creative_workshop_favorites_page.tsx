@@ -61,17 +61,16 @@ export default function CreativeWorkshopFavoritesPage() {
     };
 
     return (
-        <Layout>
+        <Layout
+            pageTitle={t.creativeWorkshop.favoritesTitle}
+            pageSubtitle={t.creativeWorkshop.favoritesSubtitle}
+            headerRight={
+                <button className="cw-favorites-entry" onClick={() => navigate('/creative-workshop')}>
+                    {t.creativeWorkshop.backToHome}
+                </button>
+            }
+        >
             <div className="cw-page-wrap">
-                <header className="cw-page-header">
-                    <div>
-                        <h1>{t.creativeWorkshop.favoritesTitle}</h1>
-                        <p>{t.creativeWorkshop.favoritesSubtitle}</p>
-                    </div>
-                    <button className="cw-favorites-entry" onClick={() => navigate('/creative-workshop')}>
-                        {t.creativeWorkshop.backToHome}
-                    </button>
-                </header>
 
                 <section className="cw-list-card">
                     {loading ? (
