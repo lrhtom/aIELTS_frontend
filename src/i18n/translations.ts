@@ -100,6 +100,18 @@ export interface Translations {
         footer: string;
         footerFeedback: string;
         footerManual: string;
+        checkin: {
+            heading: string;
+            todayLabel: string;
+            totalLabel: string;
+            rewardLabel: string;
+            btnCheckin: string;
+            btnChecking: string;
+            btnDone: string;
+            errorToast: string;
+            milestoneHint: string;
+            rules: string;
+        };
     };
     practiceHub: {
         backToHome: string;
@@ -314,6 +326,9 @@ export interface Translations {
         ideaLabel: string;
         explainLabel: string;
         exampleLabel: string;
+        toastEmptyTopic: string;
+        toastSuccess: string;
+        toastError: string;
         examplesTitle: string;
         example1: string;
         example2: string;
@@ -425,6 +440,7 @@ export interface Translations {
         evalFail: string;
         countRangeError: string;
         missingConfig: string;
+        wordCount: string;
         categories: {
             education: string;
             technology: string;
@@ -482,6 +498,10 @@ export interface Translations {
         toastFailGenChart: string;
         toastFailGenTask2: string;
         toastFailEval: string;
+        wordCountBadgeTask1: string;
+        wordCountBadgeTask2: string;
+        wordCountWords: string;
+        typeFallback: string;
     };
     writingCorrection: {
         toastEmpty: string;
@@ -589,6 +609,9 @@ export interface Translations {
         };
         welcome: string;
         welcomeDesc: string;
+        accessDeniedTitle: string;
+        accessDeniedDesc: string;
+        backToHome: string;
         info: {
             title: string;
             username: string;
@@ -683,6 +706,19 @@ export interface Translations {
             backToSubmit: string;
         };
         avatarHint: string;
+        avatarUpload: {
+            fileValidationError: string;
+            uploadSuccess: string;
+            uploadFailed: string;
+            deleteConfirm: string;
+            deleteSuccess: string;
+            deleteFailed: string;
+            avatarAlt: string;
+            uploading: string;
+            clickToChange: string;
+            deleteBtn: string;
+            hint: string;
+        };
         background: {
             title: string;
             desc: string;
@@ -776,6 +812,9 @@ export interface Translations {
                 jumpTo: string;
                 pagePlaceholder: string;
                 goBtn: string;
+            };
+            routes: {
+                title: string;
             };
         };
     };
@@ -930,6 +969,24 @@ export interface Translations {
             choice: string;
             write: string;
             copy: string;
+            gaze: string;
+        };
+        flashcardTracking: {
+            eye: string;
+            mouse: string;
+            none: string;
+        };
+        gaze: {
+            calibrating: string;
+            scanPrompt: string;
+            scanComplete: string;
+            notSupported: string;
+            cameraDenied: string;
+            recalibrate: string;
+            trackingEye: string;
+            trackingMouse: string;
+            switchToMouse: string;
+            switchToEye: string;
         };
         ratings: {
             again: string;
@@ -1184,6 +1241,13 @@ export interface Translations {
             desc: string;
         };
         startBtn: string;
+        planImportPlaceholder: string;
+        planImporting: string;
+        planImportBtn: string;
+        planNoWords: string;
+        planImportFailed: string;
+        planImportSuccess: string;
+        planImportSkipped: string;
     };
     writingChat: {
         backToConfig: string;
@@ -1200,6 +1264,9 @@ export interface Translations {
         summaryTitle: string;
         summarizing: string;
         searchVocab: string;
+        hideScores: string;
+        viewScores: string;
+        attachFiles: string;
     };
     analytics: {
         title: string;
@@ -1251,6 +1318,132 @@ export interface Translations {
         saveFail: string;
         savedToCloud: string;
         selectNote: string;
+    };
+    chromeOnlyGuard: {
+        warningTitle: string;
+        warningDesc: string;
+        copyUrl: string;
+    };
+    assistant: {
+        title: string;
+        openAria: string;
+        collapseTitle: string;
+        collapseAria: string;
+        screenshotTitle: string;
+        screenshotAria: string;
+        switchLangTitleEn: string;
+        switchLangTitleZh: string;
+        switchLangBtnEn: string;
+        switchLangBtnZh: string;
+        actions: {
+            translate: string;
+            personalAgent: string;
+            rewrite: string;
+            summarize: string;
+            checkin: string;
+            checkinDone: string;
+            checking: string;
+            todoList: string;
+        };
+        translate: {
+            sourceLang: string;
+            targetLang: string;
+            swapTitle: string;
+            swapAria: string;
+            sourceText: string;
+            speakSourceTitle: string;
+            speakSourceAria: string;
+            startVoiceTitle: string;
+            stopVoiceTitle: string;
+            inputPlaceholder: string;
+            translating: string;
+            translateBtn: string;
+            translatedText: string;
+            speakTranslatedTitle: string;
+            speakTranslatedAria: string;
+            outputPlaceholder: string;
+            toastEmpty: string;
+            toastSameLang: string;
+            toastSuccess: string;
+            toastFail: string;
+        };
+        agent: {
+            tip: string;
+            collapseConfig: string;
+            expandConfig: string;
+            clearChat: string;
+            nameLabel: string;
+            namePlaceholder: string;
+            roleLabel: string;
+            rolePlaceholder: string;
+            goalLabel: string;
+            goalPlaceholder: string;
+            styleLabel: string;
+            stylePlaceholder: string;
+            saveConfig: string;
+            thinkingTitle: string;
+            thinkingInit: string;
+            emptyChat: string;
+            you: string;
+            fallbackName: string;
+            collapseMsg: string;
+            expandMsg: string;
+            thinking: string;
+            inputPlaceholder: string;
+            replying: string;
+            send: string;
+            toastEmptyProfile: string;
+            toastProfileSaved: string;
+            toastProfileSaveFail: string;
+            toastChatCleared: string;
+            toastReplyFail: string;
+            toastNoReply: string;
+            stepObsSuccess: string;
+            stepObsFail: string;
+            stepAction: string;
+            stepObservation: string;
+            stepFinal: string;
+            stepError: string;
+            routeReason: string;
+            routeOpenPagesDisabled: string;
+            defaultProfile: {
+                name: string;
+                role: string;
+                goal: string;
+                style: string;
+            };
+        };
+        speech: {
+            noMicPermission: string;
+            noSpeech: string;
+            micUnavailable: string;
+            networkError: string;
+            genericError: string;
+        };
+        screenshot: {
+            toastGenerateFail: string;
+            toastSaved: string;
+            toastFail: string;
+        };
+        checkin: {
+            failMessage: string;
+            balance: string;
+            totalCheckins: string;
+            daysUnit: string;
+            comeBack: string;
+        };
+        voice: {
+            noText: string;
+        };
+        todo: {
+            title: string;
+            inputPlaceholder: string;
+            addBtn: string;
+            empty: string;
+            deleteAria: string;
+            remaining: string;
+            cleared: string;
+        };
     };
 }
 

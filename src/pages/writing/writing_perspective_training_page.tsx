@@ -96,7 +96,7 @@ export default function WritingPerspectiveTrainingPage() {
 
     const handleAnalyze = async () => {
         if (!topic.trim()) {
-            showToast(lang === 'zh' ? '请先输入雅思写作题目' : 'Please enter an IELTS writing topic first', 'error');
+            showToast(t.writingPerspective?.toastEmptyTopic || 'Please enter an IELTS writing topic first', 'error');
             return;
         }
         setIsLoading(true);
@@ -112,10 +112,10 @@ export default function WritingPerspectiveTrainingPage() {
                 },
             );
             setResult(res);
-            showToast(lang === 'zh' ? '分析完成！' : 'Analysis complete!', 'success');
+            showToast(t.writingPerspective?.toastSuccess || 'Analysis complete!', 'success');
         } catch (err: unknown) {
             const error = err as { message?: string };
-            showToast(error.message || (lang === 'zh' ? '分析失败，请重试' : 'Analysis failed, please retry'), 'error');
+            showToast(error.message || t.writingPerspective?.toastError || 'Analysis failed, please retry', 'error');
         } finally {
             setIsLoading(false);
         }

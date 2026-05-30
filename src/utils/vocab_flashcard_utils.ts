@@ -2,6 +2,7 @@
 
 export type Step = 'doing' | 'result';
 export type StudyMode = 'flashcard' | 'choice' | 'write' | 'copy' | 'article_copy' | 'story_mode';
+export type TrackingMode = 'none' | 'eye' | 'mouse';
 export type MasterySetting = 'auto' | number;
 
 export interface CopyPendingAction {

@@ -384,7 +384,7 @@ function WritingChatPage() {
                                         {hasScores && (
                                             <div className="sc-msg-actions">
                                                 <button onClick={() => toggleMsg(i)} className="sc-score-toggle">
-                                                    {isExpanded ? 'Hide Scores' : 'View Scores'}
+                                                    {isExpanded ? t.hideScores : t.viewScores}
                                                 </button>
                                             </div>
                                         )}
@@ -456,7 +456,7 @@ function WritingChatPage() {
                                 className="sc-attach-btn"
                                 onClick={handleAttach}
                                 disabled={isGenerating || isSummarizing}
-                                title="Attach files"
+                                title={t.attachFiles}
                             >
                                 📎
                             </button>

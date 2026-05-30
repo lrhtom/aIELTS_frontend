@@ -774,8 +774,8 @@ export default function LearningPlanDetailPage() {
                                             : m === 'copy'
                                                 ? t.vocab.modes.copy
                                                 : m === 'article_copy'
-                                                    ? '文章抄写'
-                                                    : '追剧背词'}
+                                                        ? '文章抄写'
+                                                        : '追剧背词'}
                             </button>
                         ))}
                     </div>

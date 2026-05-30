@@ -345,7 +345,7 @@ export default function Task2OpinionDrillDoingPage() {
                             <div className="wp-panel">
                                 <div className="wp-panel-header">
                                     <h3>✍️ {t.task2OpinionDrill.answerLabel}</h3>
-                                    <span className="wp-word-badge">{wordCount} words</span>
+                                    <span className="wp-word-badge">{t.task2OpinionDrill.wordCount.replace('{n}', String(wordCount))}</span>
                                 </div>
                                 <div className="wp-panel-body">
                                     <textarea

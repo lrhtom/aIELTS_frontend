@@ -19,9 +19,11 @@ import FlashcardMode from '../../components/vocabulary/FlashcardMode';
 import ChoiceMode from '../../components/vocabulary/ChoiceMode';
 import WriteMode from '../../components/vocabulary/WriteMode';
 import CopyMode from '../../components/vocabulary/CopyMode';
+import GazeMode from '../../components/vocabulary/GazeMode';
 import {
     type Step,
     type StudyMode,
+    type TrackingMode,
     type MasterySetting,
     type CopyPendingAction,
     type ReviewResult,
@@ -59,6 +61,12 @@ export default function VocabularyFlashcardDoingPage() {
         copy:      t.vocab.modes.copy,
         article_copy: '文章抄写',
         story_mode: '故事模式',
+    }), [t]);
+
+    const TRACKING_LABELS: Record<TrackingMode, string> = useMemo(() => ({
+        none:  t.vocab.flashcardTracking.none,
+        eye:   t.vocab.flashcardTracking.eye,
+        mouse: t.vocab.flashcardTracking.mouse,
     }), [t]);
 
     const RS_CLASSES = ['rs-again', 'rs-hard', 'rs-good', 'rs-easy'];
@@ -159,6 +167,21 @@ export default function VocabularyFlashcardDoingPage() {
     const [planId,       setPlanId]       = useState<number | null>(null);
     const [planName,     setPlanName]     = useState('');
     const [mode,         setMode]         = useState<StudyMode>('flashcard');
+    const [trackingMode, setTrackingMode] = useState<TrackingMode>('none');
+    const [trackingMenuOpen, setTrackingMenuOpen] = useState(false);
+    const trackingMenuRef = useRef<HTMLDivElement | null>(null);
+
+    // Click outside to close tracking menu
+    useEffect(() => {
+        if (!trackingMenuOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (trackingMenuRef.current && !trackingMenuRef.current.contains(e.target as Node)) {
+                setTrackingMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [trackingMenuOpen]);
     const [masteryTarget, setMasteryTarget] = useState<MasterySetting>(2);
     const [copyRepetitions, setCopyRepetitions] = useState(3);
     const [copyReviewDays, setCopyReviewDays] = useState(2);
@@ -1082,7 +1105,7 @@ export default function VocabularyFlashcardDoingPage() {
         }
     }, [copyWordHidden, copySubmitted]);
 
-    /* 键盘快捷键（仅记忆卡模式） */
+    /* 键盘快捷键（记忆卡模式） */
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (step !== 'doing' || submitting || mode !== 'flashcard') return;
@@ -1323,7 +1346,34 @@ export default function VocabularyFlashcardDoingPage() {
                         <span className="fc-learning-timer" title="今日学习时长（跨计划共享）">
                             今日时长 {todayLearningDuration}
                         </span>
-                        <span className="fc-mode-badge">{MODE_LABELS[mode]}</span>
+                        <div className="fc-mode-badge-wrap" ref={trackingMenuRef}>
+                            <button
+                                className={`fc-mode-badge${mode === 'flashcard' ? ' has-submenu' : ''}`}
+                                onClick={() => mode === 'flashcard' && setTrackingMenuOpen(v => !v)}
+                                title={mode === 'flashcard' ? '追踪选项' : undefined}
+                            >
+                                {MODE_LABELS[mode]}
+                                {mode === 'flashcard' && trackingMode !== 'none' && (
+                                    <span className="fc-mode-badge-sub">· {TRACKING_LABELS[trackingMode]}</span>
+                                )}
+                                {mode === 'flashcard' && <span className="fc-mode-badge-arrow">▾</span>}
+                            </button>
+                            {trackingMenuOpen && mode === 'flashcard' && (
+                                <div className="fc-tracking-menu">
+                                    {(['none', 'eye', 'mouse'] as TrackingMode[]).map(tm => (
+                                        <button
+                                            key={tm}
+                                            className={`fc-tracking-menu-item${trackingMode === tm ? ' active' : ''}`}
+                                            onClick={() => { setTrackingMode(tm); setTrackingMenuOpen(false); }}
+                                        >
+                                            <span className="fc-tracking-menu-dot" />
+                                            <span>{TRACKING_LABELS[tm]}</span>
+                                            {trackingMode === tm && <span className="fc-tracking-menu-check">✓</span>}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                         <span className="fc-state-label-inline">
                             {STATE_LABELS[currentCard.state] ?? ''}
                             {currentCard.reps > 0 && ` · 复习 ${currentCard.reps} 次`}
@@ -1343,13 +1393,32 @@ export default function VocabularyFlashcardDoingPage() {
 
 
                 {/* ══ 记忆卡模式 ══ */}
-                {mode === 'flashcard' && (
+                {mode === 'flashcard' && trackingMode === 'none' && (
                     <FlashcardMode
                         currentCard={currentCard}
                         isFlipped={isFlipped}
                         isFlipping={isFlipping}
                         statusCls={statusCls}
                         submitting={submitting}
+                        onFlip={() => {
+                            setIsFlipping(true);
+                            setIsFlipped(f => !f);
+                            setTimeout(() => setIsFlipping(false), 350);
+                        }}
+                        onRating={handleFlashcardRating}
+                        estimateInterval={estimateInterval}
+                    />
+                )}
+
+                {/* ══ 记忆卡 · 追踪模式 ══ */}
+                {mode === 'flashcard' && trackingMode !== 'none' && (
+                    <GazeMode
+                        currentCard={currentCard}
+                        isFlipped={isFlipped}
+                        isFlipping={isFlipping}
+                        statusCls={statusCls}
+                        submitting={submitting}
+                        trackingMode={trackingMode as 'eye' | 'mouse'}
                         onFlip={() => {
                             setIsFlipping(true);
                             setIsFlipped(f => !f);

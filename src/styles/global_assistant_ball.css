@@ -941,6 +941,169 @@
   font-weight: 600;
 }
 
+/* ── Todo panel ── */
+.assistant-todo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.assistant-todo-input-wrap {
+  display: flex;
+  gap: 6px;
+}
+
+.assistant-todo-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  font-family: inherit;
+}
+
+.assistant-todo-input:focus {
+  border-color: var(--color-primary);
+}
+
+.assistant-todo-add-btn {
+  padding: 7px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.assistant-todo-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.assistant-todo-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  padding: 0 2px;
+}
+
+.assistant-todo-clear-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+}
+
+.assistant-todo-clear-btn:hover {
+  color: var(--color-danger, #ef4444);
+}
+
+.assistant-todo-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+
+.assistant-todo-empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  padding: 24px 8px;
+}
+
+.assistant-todo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.assistant-todo-item:hover {
+  background: var(--color-bg);
+}
+
+.assistant-todo-item.is-done .assistant-todo-text {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.assistant-todo-checkbox {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border: 2px solid var(--color-border);
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--color-primary);
+  padding: 0;
+  font-family: inherit;
+}
+
+.assistant-todo-item.is-done .assistant-todo-checkbox {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.assistant-todo-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.assistant-todo-delete-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  font-family: inherit;
+  padding: 0;
+}
+
+.assistant-todo-item:hover .assistant-todo-delete-btn {
+  opacity: 1;
+}
+
+.assistant-todo-delete-btn:hover {
+  color: var(--color-danger, #ef4444);
+}
+
 @media (max-width: 640px) {
   .assistant-panel {
     width: min(280px, calc(100vw - 90px));

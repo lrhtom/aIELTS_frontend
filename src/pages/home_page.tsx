@@ -11,10 +11,10 @@ import '../styles/home_page.css';
 const skillIcons = [BookOpen, Headphones, Mic, PenTool];
 const stepIcons = [Target, Sparkles, MessageSquare];
 
-function getMilestoneHint(count: number): string | null {
+function getMilestoneHint(count: number, tpl: string): string | null {
     const next = [7, 30, 100, 365, 1000].find(n => n > count && n - count <= 5);
     if (!next) return null;
-    return `还有 ${next - count} 天到达 ${next} 天里程碑！`;
+    return tpl.replace('{remain}', String(next - count)).replace('{next}', String(next));
 }
 
 export default function HomePage() {
@@ -46,7 +46,7 @@ export default function HomePage() {
                 setRewardMsg(res.message);
             }
         } catch {
-            setRewardMsg('签到失败，请稍后重试');
+            setRewardMsg(t.home.checkin.errorToast);
         } finally {
             setCheckingIn(false);
         }
@@ -88,7 +88,7 @@ export default function HomePage() {
                     <div className="checkin-card">
                         <div className="checkin-header">
                             <Gift size={24} />
-                            <h2>每日签到</h2>
+                            <h2>{t.home.checkin.heading}</h2>
                         </div>
                         <div className="checkin-body">
                             <div className="checkin-stats">
@@ -98,20 +98,20 @@ export default function HomePage() {
                                             ? '✅'
                                             : checkingIn ? '⏳' : '🗓️'}
                                     </span>
-                                    <span className="checkin-stat-label">今日签到</span>
+                                    <span className="checkin-stat-label">{t.home.checkin.todayLabel}</span>
                                 </div>
                                 <div className="checkin-stat">
                                     <span className="checkin-stat-value">
                                         {checkinStatus?.total_checkins ?? '--'}
                                     </span>
-                                    <span className="checkin-stat-label">累计签到</span>
+                                    <span className="checkin-stat-label">{t.home.checkin.totalLabel}</span>
                                 </div>
                                 {checkinStatus?.today_bonus ? (
                                     <div className="checkin-stat">
                                         <span className="checkin-stat-value bonus">
                                             +{checkinStatus.today_bonus.toLocaleString()}
                                         </span>
-                                        <span className="checkin-stat-label">今日奖励 AT</span>
+                                        <span className="checkin-stat-label">{t.home.checkin.rewardLabel}</span>
                                     </div>
                                 ) : null}
                             </div>
@@ -121,8 +121,8 @@ export default function HomePage() {
                                 disabled={checkinStatus?.today_checked || checkingIn}
                             >
                                 {checkinStatus?.today_checked
-                                    ? '今日已签到 ✓'
-                                    : checkingIn ? '签到中...' : '📋 签到领 AT 币'}
+                                    ? t.home.checkin.btnDone
+                                    : checkingIn ? t.home.checkin.btnChecking : t.home.checkin.btnCheckin}
                             </button>
                             {rewardMsg && (
                                 <p className={`checkin-reward-msg${checkinStatus?.today_checked ? ' done' : ''}`}>
@@ -131,11 +131,11 @@ export default function HomePage() {
                             )}
                             {checkinStatus && !checkinStatus.today_checked && (
                                 <p className="checkin-milestone-hint">
-                                    {getMilestoneHint(checkinStatus.total_checkins)}
+                                    {getMilestoneHint(checkinStatus.total_checkins, t.home.checkin.milestoneHint)}
                                 </p>
                             )}
                             <p className="checkin-rules">
-                                签到奖励：每日 1,000 AT | 7 天 +1 万 | 30 天 +3 万 | 100 天 +10 万 | 365 天 +100 万 | 1000 天 +1000 万
+                                {t.home.checkin.rules}
                             </p>
                         </div>
                     </div>
@@ -153,7 +153,7 @@ export default function HomePage() {
                                 <div className="skill-icon"><Icon size={28} /></div>
                                 <h3>{item.title}</h3>
                                 <p>{item.desc}</p>
-                                <span className="skill-link">开始练习 →</span>
+                                <span className="skill-link">{t.home.hero.startPractice} →</span>
                             </Link>
                         );
                     })}

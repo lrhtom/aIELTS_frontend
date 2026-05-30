@@ -141,7 +141,7 @@ export default function ChartPracticePage() {
         return trimmed.split(/\s+/).length;
     }, [userAnswer]);
 
-    const wordBadge = lang === 'zh' ? `${wordCount} / 150+ 词` : `${wordCount} / 150+ words`;
+    const wordBadge = t.practiceSandbox.wordCountBadgeTask1.replace('{n}', String(wordCount));
 
     const resolvedImageSrc = useMemo(() => {
         if (!chartData?.imageUrl) return null;

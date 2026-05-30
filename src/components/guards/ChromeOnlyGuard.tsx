@@ -1,7 +1,12 @@
 import { type ReactNode, useState } from 'react';
+import { useLang } from '../../i18n/LanguageContext';
+import { translations } from '../../i18n/translations';
 import '../../styles/ChromeOnlyGuard.css';
 
 export default function ChromeOnlyGuard({ children }: { children: ReactNode }) {
+    const { lang } = useLang();
+    const t = translations[lang].chromeOnlyGuard;
+
     // 兼容 iOS Chrome (CriOS) 和桌面端/安卓端 Chrome
     // 同时排除 Edge (Edg) 和 Opera (OPR)
     const isChrome = (/Chrome/.test(navigator.userAgent) || /CriOS/.test(navigator.userAgent)) && 
@@ -35,12 +40,12 @@ export default function ChromeOnlyGuard({ children }: { children: ReactNode }) {
                     <div className="chrome-guard-banner-content">
                         <span className="chrome-guard-banner-icon">⚠️</span>
                         <div className="chrome-guard-banner-text">
-                            <strong>浏览器兼容性提示：</strong>
-                            推荐使用 Chrome 浏览器以获得完整语音体验。
+                            <strong>{t.warningTitle}</strong>
+                            {t.warningDesc}
                         </div>
                         <div className="chrome-guard-banner-actions">
                             <button className="chrome-guard-banner-copy" onClick={handleCopy}>
-                                📋 复制网址
+                                {t.copyUrl}
                             </button>
                             <button className="chrome-guard-banner-close" onClick={dismiss}>✕</button>
                         </div>

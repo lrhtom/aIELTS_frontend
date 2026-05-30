@@ -131,6 +131,7 @@
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.07);
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
     align-items: center;
     justify-content: center;
     padding: 48px 40px;
@@ -251,6 +252,17 @@
 .fc-btn.btn-good:not(:disabled):hover  { background: rgba(16, 185, 129, 0.06); border-color: rgba(16, 185, 129, 0.4); }
 .fc-btn.btn-easy:not(:disabled):hover  { background: rgba(59, 130, 246, 0.06); border-color: rgba(59, 130, 246, 0.4); }
 
+.fc-btn { position: relative; overflow: hidden; }
+.fc-btn::after {
+    content: "";
+    position: absolute;
+    bottom: 0; left: 0; height: 3px;
+    background: var(--color-primary);
+    width: var(--gaze-progress, 0%);
+    transition: width 0.05s linear;
+    border-radius: 2px;
+}
+
 .fc-btn .btn-label    { font-size: 14px; font-weight: 700; }
 .fc-btn .btn-key      { font-size: 11px; opacity: 0.5; font-weight: 500; }
 .fc-btn .btn-interval { font-size: 11px; opacity: 0.65; font-weight: 500; }
@@ -270,6 +282,281 @@
     opacity: 0.45;
     margin-top: 4px;
     margin-bottom: 12px;
+}
+
+/* ── 凝视扫描模式 ──────────────────────────────────────────────────────────── */
+.fc-gaze-loading {
+  text-align: center;
+  padding: 32px 16px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.fc-gaze-word {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 20px 8px 12px;
+  user-select: none;
+}
+
+.fc-gaze-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 54px;
+  padding: 0 4px;
+  font-size: 38px;
+  font-weight: 800;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--color-text);
+  border-radius: 6px;
+  transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.fc-gaze-letter.is-word {
+  min-width: auto;
+  height: auto;
+  padding: 6px 12px;
+  font-size: 20px;
+  font-weight: 600;
+  font-family: var(--font-family-base, inherit);
+  border-radius: 8px;
+}
+
+.fc-gaze-space {
+  display: inline-block;
+  width: 6px;
+}
+
+.fc-gaze-letter.is-scanned {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(13, 148, 136, 0.35);
+}
+
+.fc-gaze-prompt {
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+  min-height: 20px;
+}
+
+.fc-gaze-tracker-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.fc-gaze-tracker-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+.fc-gaze-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.fc-gaze-switch-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ── 凝视校准弹窗 ──────────────────────────────────────────────────────────── */
+.fc-gaze-calibration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fc-gaze-calibration-card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 28px 32px;
+  max-width: 480px;
+  width: 90vw;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+}
+
+.fc-gaze-calibration-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.fc-gaze-calibration-sub {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 20px;
+}
+
+.fc-gaze-calibration-grid {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 320px;
+  background: var(--color-bg);
+  border-radius: 10px;
+  margin-bottom: 18px;
+}
+
+.fc-gaze-calibration-dot {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  margin-top: -14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  z-index: 2;
+}
+
+.fc-gaze-calibration-dot:hover {
+  transform: scale(1.25);
+}
+
+.fc-gaze-calibration-dot.is-clicked {
+  background: #22c55e;
+}
+
+.fc-gaze-calibration-done {
+  padding: 8px 28px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.fc-gaze-calibration-done:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── 追踪子菜单 ──────────────────────────────────────────────────────────── */
+.fc-mode-badge-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.fc-mode-badge.has-submenu {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    user-select: none;
+}
+
+.fc-mode-badge.has-submenu:hover {
+    opacity: 0.85;
+}
+
+.fc-mode-badge-sub {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.fc-mode-badge-arrow {
+    font-size: 9px;
+    margin-left: 1px;
+    opacity: 0.5;
+}
+
+.fc-tracking-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    padding: 4px;
+    min-width: 170px;
+    z-index: 100;
+    animation: fc-tracking-menu-in 0.12s ease-out;
+}
+
+@keyframes fc-tracking-menu-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.fc-tracking-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.1s;
+    text-align: left;
+}
+
+.fc-tracking-menu-item:hover {
+    background: var(--color-hover, rgba(0,0,0,0.04));
+}
+
+.fc-tracking-menu-item.active {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.fc-tracking-menu-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.fc-tracking-menu-item.active .fc-tracking-menu-dot {
+    border-color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.4);
+}
+
+.fc-tracking-menu-check {
+    margin-left: auto;
+    font-size: 12px;
+    opacity: 0.8;
 }
 
 /* ── 结果页 ──────────────────────────────────────────────────────────────── */

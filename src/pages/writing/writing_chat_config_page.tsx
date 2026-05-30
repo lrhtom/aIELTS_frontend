@@ -43,7 +43,7 @@ export default function WritingChatConfigPage() {
             const { plan: detail } = await getPlanDetail(importPlanId);
             const todayWords = detail.today_words || [];
             if (todayWords.length === 0) {
-                showToast(lang === 'zh' ? '该计划今日暂无待学单词' : 'No words to study today in this plan', 'error');
+                showToast(t.planNoWords, 'error');
                 return;
             }
             const validWords = todayWords.filter(w => w.zh && w.zh.trim());
@@ -51,12 +51,12 @@ export default function WritingChatConfigPage() {
             const lines = validWords.map(w => `${w.word} - ${w.zh}`).join('\n');
             handleVocabChange(lines);
             if (skipped > 0) {
-                showToast(lang === 'zh' ? `已导入 ${validWords.length} 个单词，${skipped} 个因缺少中文释义被跳过` : `Imported ${validWords.length} words, skipped ${skipped} without Chinese meaning`, 'error');
+                showToast(t.planImportSkipped.replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
             } else {
-                showToast(lang === 'zh' ? `已导入 ${validWords.length} 个单词` : `Imported ${validWords.length} words`, 'success');
+                showToast(t.planImportSuccess.replace('{n}', String(validWords.length)), 'success');
             }
         } catch {
-            showToast(lang === 'zh' ? '导入失败' : 'Import failed', 'error');
+            showToast(t.planImportFailed, 'error');
         } finally {
             setImportingPlan(false);
         }
@@ -72,10 +72,10 @@ export default function WritingChatConfigPage() {
 
     return (
         <Layout
-    pageTitle='💬 {t.heading}'
+    pageTitle={'💬 ' + t.heading}
     pageSubtitle={t.subheading}
     backUrl='/writing'
-    backText='\n                        {t.backToWriting}\n                    '
+    backText={t.backToWriting}
 >
             <div className="practice-container">
                 <div className="config-card">
@@ -106,7 +106,7 @@ export default function WritingChatConfigPage() {
                                         onChange={e => setImportPlanId(Number(e.target.value))}
                                         className="plan-import-select"
                                     >
-                                        <option value={0} disabled>-- 选择学习计划导入今日单词 --</option>
+                                        <option value={0} disabled>{t.planImportPlaceholder}</option>
                                         {plans.map(p => (
                                             <option key={p.id} value={p.id}>{p.name}</option>
                                         ))}
@@ -116,7 +116,7 @@ export default function WritingChatConfigPage() {
                                         onClick={handleImportPlan}
                                         disabled={importingPlan || !importPlanId}
                                     >
-                                        {importingPlan ? '导入中...' : '⬇ 导入今日单词'}
+                                        {importingPlan ? t.planImporting : t.planImportBtn}
                                     </button>
                                 </div>
                             )}

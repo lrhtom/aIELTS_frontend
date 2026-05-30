@@ -146,7 +146,7 @@ export default function Task2PracticePage() {
         return trimmed.split(/\s+/).length;
     }, [userAnswer]);
 
-    const wordBadge = lang === 'zh' ? `${wordCount} / 250+ 词` : `${wordCount} / 250+ words`;
+    const wordBadge = t.practiceSandbox.wordCountBadgeTask2.replace('{n}', String(wordCount));
 
     const handleSubmitAnser = () => {
         if (!userAnswer.trim()) {
@@ -195,7 +195,7 @@ export default function Task2PracticePage() {
         'random': t.task2Selection.types.random.title,
         'innovation': t.task2Selection.types.innovation.title,
     };
-    const titleName = typeNameMap[type] || (lang === 'zh' ? '大作文测试' : 'Task 2 Practice');
+    const titleName = typeNameMap[type] || t.practiceSandbox.typeFallback;
 
     const renderLoading = () => (
         <div className="wp-state-wrap">

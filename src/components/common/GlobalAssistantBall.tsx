@@ -9,6 +9,7 @@ import remarkGfm from 'remark-gfm';
 import { apiClient, fetchStream } from '../../api/client';
 import { checkinApi } from '../../api/checkin';
 import { useLang } from '../../i18n/LanguageContext';
+import type { Translations } from '../../i18n/translations';
 
 async function readSseStream(
     response: Response,
@@ -79,7 +80,7 @@ import { showToast } from './Toast';
 import '../../styles/global_assistant_ball.css';
 
 type DockSide = 'left' | 'right' | null;
-type AssistantAction = 'translate' | 'personal-agent' | null;
+type AssistantAction = 'translate' | 'personal-agent' | 'todo' | null;
 type TranslateEngine = 'google' | 'deepl' | 'libre' | 'yandex';
 
 interface BrowserSpeechRecognitionResultAlternative {
@@ -210,6 +211,13 @@ interface DomContextElement {
     attrs: Record<string, string>;
 }
 
+interface TodoItem {
+    id: string;
+    text: string;
+    done: boolean;
+    createdAt: number;
+}
+
 interface DomContextPayload {
     url: string;
     title: string;
@@ -228,6 +236,7 @@ const EDGE_DETECT = 52;
 const EDGE_REVEAL_GAP = 8;
 const SAFE_PADDING = 12;
 const PERSONAL_AGENT_STORAGE_KEY = 'aielts.personal_agent_profile_v1';
+const TODO_STORAGE_KEY = 'aielts.assistant_todos_v1';
 const AGENT_MESSAGE_COLLAPSE_THRESHOLD = 280;
 const DOM_CONTEXT_MAX_ELEMENTS = 120;
 const DOM_CONTEXT_MAX_TEXT = 120;
@@ -305,20 +314,20 @@ function getSpeechRecognitionConstructor(): BrowserSpeechRecognitionConstructor 
     return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
 }
 
-function mapSpeechRecognitionError(errorCode: string) {
+function mapSpeechRecognitionError(errorCode: string, t: Translations['assistant']['speech']) {
     if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed') {
-        return '未获得麦克风权限，请允许浏览器访问麦克风后重试。';
+        return t.noMicPermission;
     }
     if (errorCode === 'no-speech') {
-        return '未检测到语音输入，请靠近麦克风后重试。';
+        return t.noSpeech;
     }
     if (errorCode === 'audio-capture') {
-        return '麦克风不可用，请检查录音设备。';
+        return t.micUnavailable;
     }
     if (errorCode === 'network') {
-        return '语音识别网络异常，请稍后重试。';
+        return t.networkError;
     }
-    return '语音识别失败，请稍后重试。';
+    return t.genericError;
 }
 
 function trimCompactText(value: string, maxLen: number) {
@@ -557,18 +566,21 @@ const STEP_ICON: Record<string, string> = {
     error: '❌',
 };
 
-const STEP_LABEL: Record<string, string> = {
-    thinking: '思考中',
-    action: '调用工具',
-    observation: '观察结果',
-    final: '完成',
-    error: '出错',
-};
+function getStepLabel(type: string, t: Translations['assistant']['agent']) {
+    const labels: Record<string, string> = {
+        thinking: t.thinkingTitle,
+        action: t.stepAction,
+        observation: t.stepObservation,
+        final: t.stepFinal,
+        error: t.stepError,
+    };
+    return labels[type] || type;
+}
 
 export default function GlobalAssistantBall() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { lang, setLang } = useLang();
+    const { lang, setLang, translations: t } = useLang();
     const initialViewport = getViewportSize();
 
     const [viewport, setViewport] = useState(initialViewport);
@@ -592,10 +604,10 @@ export default function GlobalAssistantBall() {
     const [isTranslating, setIsTranslating] = useState(false);
     const [isVoiceListening, setIsVoiceListening] = useState(false);
     const [agentProfile, setAgentProfile] = useState<PersonalAgentProfile>({
-        name: '我的雅思教练',
-        role: '你是一位专注雅思备考的私人 AI 学习教练。',
-        goal: '帮助我制定每天可执行的学习计划，并及时纠正表达问题。',
-        style: '先给结论，再给分步骤建议，内容简洁且可落地。',
+        name: t.assistant.agent.defaultProfile.name,
+        role: t.assistant.agent.defaultProfile.role,
+        goal: t.assistant.agent.defaultProfile.goal,
+        style: t.assistant.agent.defaultProfile.style,
     });
     const [agentMessages, setAgentMessages] = useState<AgentChatMessage[]>([]);
     const [agentInputText, setAgentInputText] = useState('');
@@ -611,6 +623,53 @@ export default function GlobalAssistantBall() {
     const [isCapturing, _setIsCapturing] = useState(false);
     const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
     const [isCheckingIn, setIsCheckingIn] = useState(false);
+
+    // ── Todo list state ──
+    const [todos, setTodos] = useState<TodoItem[]>(() => {
+        try {
+            const raw = window.localStorage.getItem(TODO_STORAGE_KEY);
+            return raw ? (JSON.parse(raw) as TodoItem[]) : [];
+        } catch {
+            return [];
+        }
+    });
+    const [todoInput, setTodoInput] = useState('');
+
+    const persistTodos = (items: TodoItem[]) => {
+        setTodos(items);
+        try {
+            window.localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(items));
+        } catch { /* ignore quota errors */ }
+    };
+
+    const handleAddTodo = () => {
+        const text = todoInput.trim();
+        if (!text) return;
+        const item: TodoItem = {
+            id: `todo-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+            text,
+            done: false,
+            createdAt: Date.now(),
+        };
+        persistTodos([item, ...todos]);
+        setTodoInput('');
+    };
+
+    const handleToggleTodo = (id: string) => {
+        persistTodos(todos.map(item => item.id === id ? { ...item, done: !item.done } : item));
+    };
+
+    const handleDeleteTodo = (id: string) => {
+        persistTodos(todos.filter(item => item.id !== id));
+    };
+
+    const handleClearCompletedTodos = () => {
+        const remaining = todos.filter(item => !item.done);
+        if (remaining.length < todos.length) {
+            persistTodos(remaining);
+            showToast(t.assistant.todo.cleared, 'success');
+        }
+    };
 
     const rootRef = useRef<HTMLDivElement | null>(null);
     const dragRef = useRef<DragState | null>(null);
@@ -882,12 +941,12 @@ export default function GlobalAssistantBall() {
     const handleTranslate = useCallback(async () => {
         const trimmed = inputText.trim();
         if (!trimmed) {
-            showToast('请输入要翻译的文本', 'error');
+            showToast(t.assistant.translate.toastEmpty, 'error');
             return;
         }
 
         if (sourceLang !== 'auto' && sourceLang === targetLang) {
-            showToast('源语言和目标语言不能相同', 'error');
+            showToast(t.assistant.translate.toastSameLang, 'error');
             return;
         }
 
@@ -907,10 +966,10 @@ export default function GlobalAssistantBall() {
             }
 
             setTranslatedText(decodeHtmlEntities(translated));
-            showToast('翻译完成', 'success');
+            showToast(t.assistant.translate.toastSuccess, 'success');
         } catch (error) {
             console.error('Translate failed', error);
-            showToast('翻译失败，请稍后再试', 'error');
+            showToast(t.assistant.translate.toastFail, 'error');
         } finally {
             setIsTranslating(false);
         }
@@ -959,7 +1018,7 @@ export default function GlobalAssistantBall() {
         };
 
         recognition.onerror = (event) => {
-            const message = mapSpeechRecognitionError(String(event.error || '').trim());
+            const message = mapSpeechRecognitionError(String(event.error || '').trim(), t.assistant.speech);
             console.warn('Voice input error:', message);
             voiceManualStopRef.current = true;
         };
@@ -1021,7 +1080,7 @@ export default function GlobalAssistantBall() {
     const speakText = useCallback((text: string, lang: string) => {
         const trimmed = text.trim();
         if (!trimmed) {
-            showToast('没有可播放的文本', 'error');
+            showToast(t.assistant.voice.noText, 'error');
             return;
         }
 
@@ -1063,17 +1122,17 @@ export default function GlobalAssistantBall() {
         };
 
         if (!normalizedProfile.name || !normalizedProfile.role || !normalizedProfile.goal || !normalizedProfile.style) {
-            showToast('请先完整填写个人 AI Agent 的四项设定', 'error');
+            showToast(t.assistant.agent.toastEmptyProfile, 'error');
             return;
         }
 
         try {
             window.localStorage.setItem(PERSONAL_AGENT_STORAGE_KEY, JSON.stringify(normalizedProfile));
             setAgentProfile(normalizedProfile);
-            showToast('个人 AI Agent 设定已保存', 'success');
+            showToast(t.assistant.agent.toastProfileSaved, 'success');
         } catch (error) {
             console.error('Save personal agent profile failed', error);
-            showToast('保存失败，请稍后再试', 'error');
+            showToast(t.assistant.agent.toastProfileSaveFail, 'error');
         }
     };
 
@@ -1084,7 +1143,7 @@ export default function GlobalAssistantBall() {
         setAgentSteps([]);
         setIsAgentRunning(false);
         setIsAgentThinkingExpanded(false);
-        showToast('已清空对话', 'success');
+        showToast(t.assistant.agent.toastChatCleared, 'success');
     };
 
     const handleQuickCheckin = useCallback(async () => {
@@ -1097,9 +1156,9 @@ export default function GlobalAssistantBall() {
             }
             const embed = `**${result.message}**\n\n` +
                 (result.ok
-                    ? `${lang === 'zh' ? '当前余额' : 'Current balance'}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
-                      `${lang === 'zh' ? '累计签到' : 'Total check-ins'}: ${result.checkin_count ?? 0} ${lang === 'zh' ? '天' : 'days'}`
-                    : `${lang === 'zh' ? '明天再来吧！' : 'Come back tomorrow!'}`);
+                    ? `${t.assistant.checkin.balance}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
+                      `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}`
+                    : `${t.assistant.checkin.comeBack}`);
             const assistantMessage: AgentChatMessage = {
                 id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
                 role: 'assistant',
@@ -1107,7 +1166,7 @@ export default function GlobalAssistantBall() {
             };
             setAgentMessages(prev => [...prev, assistantMessage]);
         } catch {
-            showToast(lang === 'zh' ? '签到失败，请稍后重试' : 'Check-in failed, please try again later', 'error');
+            showToast(t.assistant.checkin.failMessage, 'error');
         } finally {
             setIsCheckingIn(false);
         }
@@ -1156,9 +1215,9 @@ export default function GlobalAssistantBall() {
                     const result = await checkinApi.doCheckin();
                     const embed = `**${result.message}**\n\n` +
                         (result.ok
-                            ? `${lang === 'zh' ? '当前余额' : 'Current balance'}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
-                              `${lang === 'zh' ? '累计签到' : 'Total check-ins'}: ${result.checkin_count ?? 0} ${lang === 'zh' ? '天' : 'days'}`
-                            : `${lang === 'zh' ? '明天再来吧！' : 'Come back tomorrow!'}`);
+                            ? `${t.assistant.checkin.balance}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
+                              `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}`
+                            : `${t.assistant.checkin.comeBack}`);
                     const assistantMessage: AgentChatMessage = {
                         id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
                         role: 'assistant',
@@ -1169,7 +1228,7 @@ export default function GlobalAssistantBall() {
                     const failMessage: AgentChatMessage = {
                         id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
                         role: 'assistant',
-                        content: lang === 'zh' ? '签到失败，请稍后重试' : 'Check-in failed, please try again later',
+                        content: t.assistant.checkin.failMessage,
                     };
                     setAgentMessages(prev => [...prev, failMessage]);
                 }
@@ -1189,7 +1248,7 @@ export default function GlobalAssistantBall() {
             let routeReason = '';
 
             if (!mcpRouteEnabled) {
-                routeReason = '后端已禁用 MCP route，使用前端回退路由。';
+                routeReason = 'MCP route disabled by backend; using client-side fallback routing.';
             } else {
                 try {
                     const routeResponse = await apiClient.post<AssistantMcpRouteResponse>('/assistant/mcp/route', {
@@ -1213,7 +1272,7 @@ export default function GlobalAssistantBall() {
                 setAgentSteps(prev => [...prev, {
                     id: `route-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
                     type: 'thinking',
-                    summary: `路由判定：${routeMode}${routeReason ? `（${routeReason}）` : ''}`,
+                    summary: `Route: ${routeMode}${routeReason ? ` (${routeReason})` : ''}`,
                 }]);
             }
 
@@ -1340,7 +1399,7 @@ export default function GlobalAssistantBall() {
 
                         setIsAgentRunning(false);
                         if (!created) {
-                            throw new Error('Agent 未返回结果');
+                            throw new Error('Agent returned no result');
                         }
                     }
                 }
@@ -1391,7 +1450,7 @@ export default function GlobalAssistantBall() {
                 setAgentSteps(prev => [...prev, {
                     id: `route-disabled-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
                     type: 'thinking',
-                    summary: 'open_pages 模式已禁用，自动降级到 direct。',
+                    summary: t.assistant.agent.routeOpenPagesDisabled,
                 }]);
             }
 
@@ -1429,14 +1488,14 @@ export default function GlobalAssistantBall() {
             });
 
             if (!receivedReply) {
-                throw new Error('AI 未返回内容，请稍后重试');
+                throw new Error(t.assistant.agent.toastNoReply);
             }
 
         } catch (error) {
             console.error('Agent chat failed', error);
             const responseData = (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
             const backendMessage = String(responseData?.error || responseData?.message || (error as Error).message || '').trim();
-            showToast(backendMessage || '个人 AI Agent 回复失败，请稍后再试', 'error');
+            showToast(backendMessage || t.assistant.agent.toastReplyFail, 'error');
         } finally {
             setIsAgentReplying(false);
             replyLockRef.current = false;
@@ -1497,7 +1556,7 @@ export default function GlobalAssistantBall() {
             });
 
             if (!blob) {
-                showToast('截图生成失败', 'error');
+                showToast(t.assistant.screenshot.toastGenerateFail, 'error');
                 return;
             }
 
@@ -1513,7 +1572,7 @@ export default function GlobalAssistantBall() {
                     const writable = await handle.createWritable();
                     await writable.write(blob);
                     await writable.close();
-                    showToast('截图已保存', 'success');
+                    showToast(t.assistant.screenshot.toastSaved, 'success');
                     return;
                 } catch (e) {
                     // User cancelled the picker — silently return
@@ -1530,10 +1589,10 @@ export default function GlobalAssistantBall() {
             a.click();
             URL.revokeObjectURL(url);
 
-            showToast('截图已保存', 'success');
+            showToast(t.assistant.screenshot.toastSaved, 'success');
         } catch (e) {
             console.error('Screenshot failed', e);
-            showToast('截图失败，请重试', 'error');
+            showToast(t.assistant.screenshot.toastFail, 'error');
         } finally {
             // Restore assistant visibility
             rootRef.current!.style.display = prevDisplay;
@@ -1556,7 +1615,7 @@ export default function GlobalAssistantBall() {
             <button
                 type="button"
                 className="assistant-ball"
-                aria-label="打开智能助手"
+                aria-label={t.assistant.openAria}
                 onPointerDown={handleBallPointerDown}
                 onClick={handleBallClick}
             >
@@ -1568,22 +1627,22 @@ export default function GlobalAssistantBall() {
                     className={`assistant-panel ${dockSide === 'right' ? 'assistant-panel--left' : 'assistant-panel--right'}`}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div className="assistant-panel-title">智能助手</div>
+                        <div className="assistant-panel-title">{t.assistant.title}</div>
                         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                             <button
                                 type="button"
                                 className="assistant-panel-lang-btn"
-                                title={lang === 'zh' ? 'Switch to English' : '切换到中文'}
-                                aria-label={lang === 'zh' ? 'Switch to English' : '切换到中文'}
+                                title={lang === 'zh' ? t.assistant.switchLangTitleEn : t.assistant.switchLangTitleZh}
+                                aria-label={lang === 'zh' ? t.assistant.switchLangTitleEn : t.assistant.switchLangTitleZh}
                                 onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
                             >
-                                {lang === 'zh' ? '🌐 EN' : '🌐 中文'}
+                                {lang === 'zh' ? t.assistant.switchLangBtnEn : t.assistant.switchLangBtnZh}
                             </button>
                             <button
                                 type="button"
                                 className="assistant-panel-screenshot-btn"
-                                title="截取当前页面（不含助手）"
-                                aria-label="截取当前页面"
+                                title={t.assistant.screenshotTitle}
+                                aria-label={t.assistant.screenshotAria}
                                 disabled={isCapturing}
                                 onClick={handleScreenshot}
                             >
@@ -1592,8 +1651,8 @@ export default function GlobalAssistantBall() {
                             <button
                                 type="button"
                                 className="assistant-panel-close-btn"
-                                title="收起助手"
-                                aria-label="收起助手"
+                                title={t.assistant.collapseTitle}
+                                aria-label={t.assistant.collapseAria}
                                 onClick={() => {
                                     setMenuOpen(false);
                                     setActiveAction(null);
@@ -1610,20 +1669,27 @@ export default function GlobalAssistantBall() {
                             className={`assistant-option-btn ${activeAction === 'translate' ? 'is-active' : ''}`}
                             onClick={() => setActiveAction(prev => (prev === 'translate' ? null : 'translate'))}
                         >
-                            翻译
+                            {t.assistant.actions.translate}
                         </button>
                         <button
                             type="button"
                             className={`assistant-option-btn ${activeAction === 'personal-agent' ? 'is-active' : ''}`}
                             onClick={() => setActiveAction(prev => (prev === 'personal-agent' ? null : 'personal-agent'))}
                         >
-                            个人 AI Agent
+                            {t.assistant.actions.personalAgent}
                         </button>
                         <button type="button" className="assistant-option-btn" disabled>
-                            改写（即将上线）
+                            {t.assistant.actions.rewrite}
                         </button>
                         <button type="button" className="assistant-option-btn" disabled>
-                            总结（即将上线）
+                            {t.assistant.actions.summarize}
+                        </button>
+                        <button
+                            type="button"
+                            className={`assistant-option-btn ${activeAction === 'todo' ? 'is-active' : ''}`}
+                            onClick={() => setActiveAction(prev => (prev === 'todo' ? null : 'todo'))}
+                        >
+                            {t.assistant.actions.todoList}
                         </button>
                         <button
                             type="button"
@@ -1631,7 +1697,7 @@ export default function GlobalAssistantBall() {
                             onClick={handleQuickCheckin}
                             disabled={isCheckingIn || hasCheckedInToday}
                         >
-                            {isCheckingIn ? '签到中...' : hasCheckedInToday ? '✅ 今日已签到' : '📅 每日签到'}
+                            {isCheckingIn ? t.assistant.actions.checking : hasCheckedInToday ? t.assistant.actions.checkinDone : t.assistant.actions.checkin}
                         </button>
                     </div>
 
@@ -1639,7 +1705,7 @@ export default function GlobalAssistantBall() {
                         <div className="assistant-translate-panel">
                             <div className="assistant-translate-lang-row">
                                 <label>
-                                    源语言
+                                    {t.assistant.translate.sourceLang}
                                     <select value={sourceLang} onChange={e => handleSourceLangChange(e.target.value)}>
                                         <option value="zh-CN">中文</option>
                                         <option value="en">English</option>
@@ -1650,13 +1716,13 @@ export default function GlobalAssistantBall() {
                                     type="button"
                                     className="assistant-translate-swap-btn"
                                     onClick={handleSwapLanguages}
-                                    title="互换源语言和目标语言"
-                                    aria-label="互换源语言和目标语言"
+                                    title={t.assistant.translate.swapTitle}
+                                    aria-label={t.assistant.translate.swapAria}
                                 >
                                     ⇄
                                 </button>
                                 <label>
-                                    目标语言
+                                    {t.assistant.translate.targetLang}
                                     <select value={targetLang} onChange={e => setTargetLang(e.target.value)}>
                                         <option value="en">English</option>
                                         <option value="zh-CN">中文</option>
@@ -1667,14 +1733,14 @@ export default function GlobalAssistantBall() {
                             </div>
 
                             <div className="assistant-translate-field-head">
-                                <span>原文</span>
+                                <span>{t.assistant.translate.sourceText}</span>
                                 <div className="assistant-translate-btn-group">
                                     <button
                                         type="button"
                                         className="assistant-voice-btn"
                                         onClick={handleSpeakSourceText}
-                                        title="朗读原文"
-                                        aria-label="朗读原文"
+                                        title={t.assistant.translate.speakSourceTitle}
+                                        aria-label={t.assistant.translate.speakSourceAria}
                                     >
                                         🔊
                                     </button>
@@ -1682,8 +1748,8 @@ export default function GlobalAssistantBall() {
                                         type="button"
                                         className={`assistant-voice-input-btn ${isVoiceListening ? 'is-listening' : ''}`}
                                         onClick={isVoiceListening ? handleStopVoiceForTranslate : handleStartVoiceForTranslate}
-                                        title={isVoiceListening ? '停止语音输入' : '开始语音输入'}
-                                        aria-label={isVoiceListening ? '停止语音输入' : '开始语音输入'}
+                                        title={isVoiceListening ? t.assistant.translate.stopVoiceTitle : t.assistant.translate.startVoiceTitle}
+                                        aria-label={isVoiceListening ? t.assistant.translate.stopVoiceTitle : t.assistant.translate.startVoiceTitle}
                                     >
                                         {isVoiceListening ? '🎤⏹' : '🎤'}
                                     </button>
@@ -1694,7 +1760,7 @@ export default function GlobalAssistantBall() {
                                 className="assistant-translate-input"
                                 value={inputText}
                                 onChange={e => setInputText(e.target.value)}
-                                placeholder="输入要翻译的内容或点击麦克风进行语音输入"
+                                placeholder={t.assistant.translate.inputPlaceholder}
                             />
 
                             <button
@@ -1703,24 +1769,24 @@ export default function GlobalAssistantBall() {
                                 disabled={isTranslating}
                                 onClick={handleTranslate}
                             >
-                                {isTranslating ? '翻译中...' : '开始翻译'}
+                                {isTranslating ? t.assistant.translate.translating : t.assistant.translate.translateBtn}
                             </button>
 
                             <div className="assistant-translate-field-head">
-                                <span>译文</span>
+                                <span>{t.assistant.translate.translatedText}</span>
                                 <button
                                     type="button"
                                     className="assistant-voice-btn"
                                     onClick={handleSpeakTranslatedText}
-                                    title="朗读译文"
-                                    aria-label="朗读译文"
+                                    title={t.assistant.translate.speakTranslatedTitle}
+                                    aria-label={t.assistant.translate.speakTranslatedAria}
                                 >
                                     🔊
                                 </button>
                             </div>
 
                             <div className="assistant-translate-output" aria-live="polite">
-                                {translatedText || '翻译结果将显示在这里'}
+                                {translatedText || t.assistant.translate.outputPlaceholder}
                             </div>
                         </div>
                     )}
@@ -1728,7 +1794,7 @@ export default function GlobalAssistantBall() {
                     {activeAction === 'personal-agent' && (
                         <div className="assistant-agent-panel">
                             <p className="assistant-agent-tip">
-                                配置你的专属助手角色，然后直接在下方聊天。
+                                {t.assistant.agent.tip}
                             </p>
 
                             <div className="assistant-agent-actions">
@@ -1737,10 +1803,10 @@ export default function GlobalAssistantBall() {
                                     className="assistant-agent-btn is-secondary"
                                     onClick={() => setIsAgentConfigExpanded(prev => !prev)}
                                 >
-                                    {isAgentConfigExpanded ? '收起设定' : '展开设定'}
+                                    {isAgentConfigExpanded ? t.assistant.agent.collapseConfig : t.assistant.agent.expandConfig}
                                 </button>
                                 <button type="button" className="assistant-agent-btn" onClick={handleResetAgentChat}>
-                                    清空对话
+                                    {t.assistant.agent.clearChat}
                                 </button>
                             </div>
 
@@ -1748,45 +1814,45 @@ export default function GlobalAssistantBall() {
                                 <div className="assistant-agent-config-wrap">
                                     <div className="assistant-agent-config-grid">
                                         <label className="assistant-agent-field">
-                                            Agent 名称
+                                            {t.assistant.agent.nameLabel}
                                             <input
                                                 type="text"
                                                 value={agentProfile.name}
                                                 onChange={e => handleAgentFieldChange('name', e.target.value)}
-                                                placeholder="例如：我的雅思冲刺教练"
+                                                placeholder={t.assistant.agent.namePlaceholder}
                                             />
                                         </label>
 
                                         <label className="assistant-agent-field">
-                                            核心身份
+                                            {t.assistant.agent.roleLabel}
                                             <textarea
                                                 value={agentProfile.role}
                                                 onChange={e => handleAgentFieldChange('role', e.target.value)}
-                                                placeholder="描述这个 Agent 是谁"
+                                                placeholder={t.assistant.agent.rolePlaceholder}
                                             />
                                         </label>
 
                                         <label className="assistant-agent-field">
-                                            主要目标
+                                            {t.assistant.agent.goalLabel}
                                             <textarea
                                                 value={agentProfile.goal}
                                                 onChange={e => handleAgentFieldChange('goal', e.target.value)}
-                                                placeholder="描述它最重要的任务"
+                                                placeholder={t.assistant.agent.goalPlaceholder}
                                             />
                                         </label>
 
                                         <label className="assistant-agent-field">
-                                            回复风格
+                                            {t.assistant.agent.styleLabel}
                                             <textarea
                                                 value={agentProfile.style}
                                                 onChange={e => handleAgentFieldChange('style', e.target.value)}
-                                                placeholder="描述希望它如何回答"
+                                                placeholder={t.assistant.agent.stylePlaceholder}
                                             />
                                         </label>
                                     </div>
 
                                     <button type="button" className="assistant-agent-btn is-secondary" onClick={handleSaveAgentProfile}>
-                                        保存设定
+                                        {t.assistant.agent.saveConfig}
                                     </button>
                                 </div>
                             )}
@@ -1801,7 +1867,7 @@ export default function GlobalAssistantBall() {
                                             aria-expanded={isAgentThinkingExpanded}
                                         >
                                             <span className="assistant-agent-thinking-title">
-                                                Show thinking
+                                                {t.assistant.agent.thinkingTitle}
                                                 {agentSteps.length > 0 ? ` (${agentSteps.length})` : ''}
                                             </span>
                                             <span className="assistant-agent-thinking-toggle">
@@ -1824,7 +1890,7 @@ export default function GlobalAssistantBall() {
                                                                 </div>
                                                                 <div className="agent-step-body">
                                                                     <div className="agent-step-label">
-                                                                        {STEP_LABEL[s.type] || s.type}
+                                                                        {getStepLabel(s.type, t.assistant.agent)}
                                                                         {s.step != null && <span className="agent-step-num"> (Step {s.step})</span>}
                                                                     </div>
                                                                     {s.type === 'thinking' && s.summary && (
@@ -1844,7 +1910,7 @@ export default function GlobalAssistantBall() {
                                                                     {s.type === 'observation' && (
                                                                         <div className="agent-step-detail">
                                                                             <span className={`agent-step-status ${s.status === 'ok' ? 'is-ok' : 'is-err'}`}>
-                                                                                {s.status === 'ok' ? '成功' : '失败'}
+                                                                                {s.status === 'ok' ? t.assistant.agent.stepObsSuccess : t.assistant.agent.stepObsFail}
                                                                             </span>
                                                                             {s.summary && <span className="agent-step-summary">{s.summary}</span>}
                                                                         </div>
@@ -1858,7 +1924,7 @@ export default function GlobalAssistantBall() {
                                                     </div>
                                                 ) : (
                                                     <div className="assistant-agent-thinking-placeholder">
-                                                        正在初始化思考流程...
+                                                        {t.assistant.agent.thinkingInit}
                                                     </div>
                                                 )}
                                             </div>
@@ -1868,7 +1934,7 @@ export default function GlobalAssistantBall() {
 
                                 {agentMessages.length === 0 && !isAgentReplying && (
                                     <div className="assistant-agent-empty">
-                                        请输入你的问题，我会按当前 Agent 设定和你连续对话。
+                                        {t.assistant.agent.emptyChat}
                                     </div>
                                 )}
 
@@ -1883,7 +1949,7 @@ export default function GlobalAssistantBall() {
                                             className={`assistant-agent-bubble ${isAssistantMessage ? 'is-assistant' : 'is-user'}`}
                                         >
                                             <div className="assistant-agent-bubble-role">
-                                                {isAssistantMessage ? agentProfile.name || '个人 AI Agent' : '你'}
+                                                {isAssistantMessage ? agentProfile.name || t.assistant.agent.fallbackName : t.assistant.agent.you}
                                             </div>
                                             <div className={`assistant-agent-bubble-markdown ${canCollapse && !isExpanded ? 'is-collapsed' : ''}`}>
                                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -1902,7 +1968,7 @@ export default function GlobalAssistantBall() {
                                                         }));
                                                     }}
                                                 >
-                                                    {isExpanded ? '收起' : '展开全文'}
+                                                    {isExpanded ? t.assistant.agent.collapseMsg : t.assistant.agent.expandMsg}
                                                 </button>
                                             )}
                                         </div>
@@ -1911,9 +1977,9 @@ export default function GlobalAssistantBall() {
 
                                 {shouldShowAgentPendingBubble && (
                                     <div className="assistant-agent-bubble is-assistant is-pending">
-                                        <div className="assistant-agent-bubble-role">{agentProfile.name || '个人 AI Agent'}</div>
+                                        <div className="assistant-agent-bubble-role">{agentProfile.name || t.assistant.agent.fallbackName}</div>
                                         <div className="assistant-agent-pending-text">
-                                            <span className="assistant-agent-pending-label">正在思考</span>
+                                            <span className="assistant-agent-pending-label">{t.assistant.agent.thinking}</span>
                                             <span className="assistant-agent-typing-dots" aria-hidden="true">
                                                 <i />
                                                 <i />
@@ -1930,7 +1996,7 @@ export default function GlobalAssistantBall() {
                                     value={agentInputText}
                                     onChange={e => setAgentInputText(e.target.value)}
                                     onKeyDown={handleAgentInputKeyDown}
-                                    placeholder="输入消息，按 Enter 发送，Shift + Enter 换行"
+                                    placeholder={t.assistant.agent.inputPlaceholder}
                                 />
                                 <button
                                     type="button"
@@ -1940,8 +2006,82 @@ export default function GlobalAssistantBall() {
                                     }}
                                     disabled={isAgentReplying || !agentInputText.trim()}
                                 >
-                                    {isAgentReplying ? '回复中...' : '发送'}
+                                    {isAgentReplying ? t.assistant.agent.replying : t.assistant.agent.send}
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeAction === 'todo' && (
+                        <div className="assistant-todo-panel">
+                            <div className="assistant-todo-input-wrap">
+                                <input
+                                    type="text"
+                                    className="assistant-todo-input"
+                                    value={todoInput}
+                                    onChange={e => setTodoInput(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.nativeEvent.isComposing) return;
+                                        if (e.key === 'Enter') handleAddTodo();
+                                    }}
+                                    placeholder={t.assistant.todo.inputPlaceholder}
+                                />
+                                <button
+                                    type="button"
+                                    className="assistant-todo-add-btn"
+                                    onClick={handleAddTodo}
+                                    disabled={!todoInput.trim()}
+                                >
+                                    {t.assistant.todo.addBtn}
+                                </button>
+                            </div>
+
+                            {todos.length > 0 && (
+                                <div className="assistant-todo-meta">
+                                    <span className="assistant-todo-remaining">
+                                        {t.assistant.todo.remaining.replace('{n}', String(todos.filter(item => !item.done).length))}
+                                    </span>
+                                    {todos.some(item => item.done) && (
+                                        <button
+                                            type="button"
+                                            className="assistant-todo-clear-btn"
+                                            onClick={handleClearCompletedTodos}
+                                        >
+                                            {t.assistant.todo.cleared}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="assistant-todo-list">
+                                {todos.length === 0 ? (
+                                    <div className="assistant-todo-empty">{t.assistant.todo.empty}</div>
+                                ) : (
+                                    todos.map(item => (
+                                        <div
+                                            key={item.id}
+                                            className={`assistant-todo-item ${item.done ? 'is-done' : ''}`}
+                                        >
+                                            <button
+                                                type="button"
+                                                className="assistant-todo-checkbox"
+                                                onClick={() => handleToggleTodo(item.id)}
+                                                aria-label={item.done ? 'Undo' : 'Done'}
+                                            >
+                                                {item.done ? '✓' : ''}
+                                            </button>
+                                            <span className="assistant-todo-text">{item.text}</span>
+                                            <button
+                                                type="button"
+                                                className="assistant-todo-delete-btn"
+                                                onClick={() => handleDeleteTodo(item.id)}
+                                                aria-label={t.assistant.todo.deleteAria}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     )}

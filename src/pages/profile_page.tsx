@@ -38,14 +38,15 @@ type Tab = 'home' | 'analytics' | 'settings' | 'backpack' | 'feedback' | 'backgr
 
 /** Shown when a non-admin tries to access an admin tab via DevTools state manipulation */
 function AccessDenied() {
+    const { translations: t } = useLang();
     return (
         <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 16, padding: '80px 24px', color: 'var(--color-text-secondary)',
         }}>
             <ShieldOff size={48} strokeWidth={1.5} style={{ color: 'var(--color-danger, #ef4444)' }} />
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)' }}>访问被拒绝</div>
-            <div style={{ fontSize: 14 }}>此页面仅限管理员访问。</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)' }}>{t.profile.accessDeniedTitle}</div>
+            <div style={{ fontSize: 14 }}>{t.profile.accessDeniedDesc}</div>
         </div>
     );
 }
@@ -175,7 +176,7 @@ export default function ProfilePage() {
                                             onClick={() => setActiveTab('admin_users')}
                                         >
                                             <Users size={16} className="menu-item-icon" />
-                                            <span className="menu-item-text">用户管理</span>
+                                            <span className="menu-item-text">{t.profile.admin.users.title}</span>
                                         </button>
                                         <button
                                             className={`profile-menu-item profile-sub-item ${activeTab === 'admin_feedback' ? 'active' : ''}`}
@@ -189,7 +190,7 @@ export default function ProfilePage() {
                                             onClick={() => setActiveTab('admin_routes')}
                                         >
                                             <GitBranch size={16} className="menu-item-icon" />
-                                            <span className="menu-item-text">路由可视化</span>
+                                            <span className="menu-item-text">{t.profile.admin.routes.title}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -199,7 +200,7 @@ export default function ProfilePage() {
                         {/* Back to home link */}
                         <Link to="/" className="profile-back-link">
                             <ArrowLeft size={16} />
-                            <span>返回首页</span>
+                            <span>{t.profile.backToHome}</span>
                         </Link>
                     </aside>
 

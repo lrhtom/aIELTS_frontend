@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { avatarApi } from '../../api/avatar';
 import { showToast } from '../common/Toast';
+import { useLang } from '../../i18n/LanguageContext';
+import { translations } from '../../i18n/translations';
 import '../../styles/avatarUpload.css';
 
 interface AvatarUploadProps {
@@ -13,6 +15,8 @@ interface AvatarUploadProps {
 
 export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'medium', disabled = false }: AvatarUploadProps) {
     const { user, updateUser } = useAuth();
+    const { lang } = useLang();
+    const t = translations[lang].profile.avatarUpload;
     const [isUploading, setIsUploading] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -39,7 +43,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
         // 验证文件
         const validation = avatarApi.validateImageFile(file);
         if (!validation.isValid) {
-            showToast(validation.error || '文件验证失败', 'error');
+            showToast(validation.error || t.fileValidationError, 'error');
             return;
         }
 
@@ -56,12 +60,12 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
             updateUser(response.user);
             onAvatarUpdate?.(response.user.avatar_url || null);
 
-            showToast('头像上传成功', 'success');
+            showToast(t.uploadSuccess, 'success');
         } catch (error: unknown) {
             const e = error as { response?: { data?: { error?: string } } };
             console.error('头像上传失败:', error);
-            showToast(e.response?.data?.error || '头像上传失败，请重试', 'error');
-            setPreviewUrl(user?.avatar_url || null); // 恢复原来的头像
+            showToast(e.response?.data?.error || t.uploadFailed, 'error');
+            setPreviewUrl(user?.avatar_url || null);
         } finally {
             setIsUploading(false);
             // 清除文件输入
@@ -74,7 +78,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
     const handleDeleteAvatar = async () => {
         if (!user?.avatar_url) return;
 
-        if (!window.confirm('确定要删除头像吗？删除后将显示默认头像。')) {
+        if (!window.confirm(t.deleteConfirm)) {
             return;
         }
 
@@ -87,11 +91,11 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
             onAvatarUpdate?.(null);
             setPreviewUrl(null);
 
-            showToast('头像已删除', 'success');
+            showToast(t.deleteSuccess, 'success');
         } catch (error: unknown) {
             const e = error as { response?: { data?: { error?: string } } };
             console.error('删除头像失败:', error);
-            showToast(e.response?.data?.error || '删除头像失败，请重试', 'error');
+            showToast(e.response?.data?.error || t.deleteFailed, 'error');
         } finally {
             setIsUploading(false);
         }
@@ -104,7 +108,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
 
     const getAvatarContent = () => {
         if (previewUrl) {
-            return <img src={previewUrl} alt="用户头像" className="avatar-image" />;
+            return <img src={previewUrl} alt={t.avatarAlt} className="avatar-image" />;
         } else if (user) {
             return (
                 <div className="avatar-placeholder">
@@ -128,13 +132,13 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
                 {isUploading && (
                     <div className="avatar-upload-overlay">
                         <div className="avatar-upload-spinner"></div>
-                        <span>上传中...</span>
+                        <span>{t.uploading}</span>
                     </div>
                 )}
 
                 {!isUploading && isHovering && !disabled && (
                     <div className="avatar-upload-overlay">
-                        <span>点击更换头像</span>
+                        <span>{t.clickToChange}</span>
                     </div>
                 )}
             </div>
@@ -154,12 +158,12 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
                     onClick={handleDeleteAvatar}
                     disabled={isUploading}
                 >
-                    删除头像
+                    {t.deleteBtn}
                 </button>
             )}
 
             <div className="avatar-upload-hint">
-                支持 JPG、PNG、GIF、WebP 格式，最大 5MB
+                {t.hint}
             </div>
         </div>
     );
