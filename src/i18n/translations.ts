@@ -286,6 +286,38 @@ export interface Translations {
             title: string;
             desc: string;
         };
+        perspective: {
+            title: string;
+            desc: string;
+        };
+    };
+    writingPerspective: {
+        heading: string;
+        subheading: string;
+        backToHall: string;
+        inputTitle: string;
+        inputDesc: string;
+        placeholder: string;
+        analyzeBtn: string;
+        analyzingBtn: string;
+        loadingTitle: string;
+        loadingDesc: string;
+        emptyTitle: string;
+        emptyDesc: string;
+        goodBadge: string;
+        goodTitle: string;
+        badBadge: string;
+        badTitle: string;
+        reasonLabel: string;
+        expandBtn: string;
+        collapseBtn: string;
+        ideaLabel: string;
+        explainLabel: string;
+        exampleLabel: string;
+        examplesTitle: string;
+        example1: string;
+        example2: string;
+        example3: string;
     };
     task1Selection: {
         backToWriting: string;

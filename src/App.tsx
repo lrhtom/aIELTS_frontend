@@ -51,6 +51,7 @@ import Task2OpinionDrillDoingPage from './pages/writing/task2_opinion_drill_doin
 import Task2PracticePage from './pages/writing/task2_practice_page';
 import ChartSelectionPage from './pages/writing/chart_selection_page';
 import ChartPracticePage from './pages/writing/chart_practice_page';
+import WritingPerspectiveTrainingPage from './pages/writing/writing_perspective_training_page';
 
 // 词汇
 import VocabularyPracticePage from './pages/vocabulary/vocabulary_practice_page';
@@ -129,6 +130,7 @@ export default function App() {
         <Route path="/writing/task2/doing" element={<ProtectedRoute><Task2PracticePage /></ProtectedRoute>} />
         <Route path="/writing/chart" element={<ProtectedRoute><ChartSelectionPage /></ProtectedRoute>} />
         <Route path="/writing/chart/doing" element={<ProtectedRoute><ChartPracticePage /></ProtectedRoute>} />
+        <Route path="/writing/perspective" element={<ProtectedRoute><WritingPerspectiveTrainingPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/prompts" element={<ProtectedRoute><PromptPage /></ProtectedRoute>} />

@@ -242,6 +242,18 @@ export default function VocabularyFlashcardDoingPage() {
         return [...rest.slice(0, insertPos), cardIndex, ...rest.slice(insertPos)];
     }, [sessionErrorCount]);
 
+    /**
+     * 写模式专用后插公式（独立于其他模式）：
+     * - 第1次错：放到后5个位置
+     * - 第2次错：放到后6个位置
+     * - 依此类推，最多10个或到队尾
+     */
+    const reinsertAfterGapForWrite = useCallback((rest: number[], cardIndex: number) => {
+        const errorCount = sessionErrorCount[cardIndex] ?? 0;
+        const gap = Math.min(errorCount + 5, 10, rest.length);
+        return [...rest.slice(0, gap), cardIndex, ...rest.slice(gap)];
+    }, [sessionErrorCount]);
+
     const getLiveSessionLearningSeconds = useCallback((): number => {
         const wallClockSeconds = Math.max(0, Math.floor((Date.now() - learningTimerStartRef.current) / 1000));
         return Math.max(sessionLearningSecondsRef.current, wallClockSeconds);
@@ -647,12 +659,13 @@ export default function VocabularyFlashcardDoingPage() {
                 setSessionErrorCount(p => { const a = [...p]; a[ci] = 0; return a; });
                 return rest;
             }
-            return reinsertAfterGap(rest, ci);
+            const reinsert = mode === 'write' ? reinsertAfterGapForWrite : reinsertAfterGap;
+            return reinsert(rest, ci);
         });
 
         setVisitKey(k => k + 1);
         setSubmitting(false);
-    }, [submitReviewWithRetry, reinsertAfterGap, reviewOnly, mode, t.vocab.toastSyncFail]);
+    }, [submitReviewWithRetry, reinsertAfterGap, reinsertAfterGapForWrite, reviewOnly, mode, t.vocab.toastSyncFail]);
 
     /**
      * 记忆卡手动评分

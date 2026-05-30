@@ -607,6 +607,10 @@ export const en: Translations = {
         typingChat: {
             title: '💬 Typing Chat Mode',
             desc: 'Chat with AI via pure text, apply your target vocabulary in real scenarios to improve writing expression.'
+        },
+        perspective: {
+            title: '🎯 Perspective Training',
+            desc: 'Enter an IELTS writing topic and AI will generate a high-scoring opinion and a common mistake version to improve your expression quality.'
         }
     },
     task1Selection: {
@@ -727,6 +731,34 @@ export const en: Translations = {
             abstract: 'Abstract Topics',
             random: 'Random',
         },
+    },
+    writingPerspective: {
+        heading: '🎯 Writing Perspective Training',
+        subheading: 'Enter an IELTS writing topic and AI will generate a high-scoring opinion and a common mistake version for comparison',
+        backToHall: '← Back to Writing Hall',
+        inputTitle: 'Writing Topic',
+        inputDesc: 'Enter an IELTS writing topic. AI will generate a high-scoring opinion and a common mistake opinion in response.',
+        placeholder: 'Enter an IELTS writing topic here, e.g.: Some people think that remote work greatly improves individual productivity. To what extent do you agree or disagree?',
+        analyzeBtn: '🔍 Analyze',
+        analyzingBtn: 'Analyzing...',
+        loadingTitle: 'Analyzing...',
+        loadingDesc: 'AI is generating a high-scoring opinion and a common mistake version for your topic',
+        emptyTitle: 'Awaiting Analysis',
+        emptyDesc: 'Enter an IELTS writing topic on the left and click "Analyze". AI will show you a high-scoring opinion and a common mistake version.',
+        goodBadge: 'High Score',
+        goodTitle: 'High-Scoring Opinion',
+        badBadge: 'Mistake',
+        badTitle: 'Common Mistake Opinion',
+        reasonLabel: 'Why it\'s wrong',
+        expandBtn: 'Expand',
+        collapseBtn: 'Collapse',
+        ideaLabel: 'Idea',
+        explainLabel: 'Why (Logic)',
+        exampleLabel: 'Example (Scenario)',
+        examplesTitle: 'Quick try: click an example topic below',
+        example1: 'Does remote work improve productivity?',
+        example2: 'Government or individuals: who should protect the environment?',
+        example3: 'Can free university education promote social mobility?',
     },
     practiceSandbox: {
         loadingDescTask1: 'AI Examiner is designing a chart practice test...',
@@ -998,8 +1030,8 @@ export const en: Translations = {
             tabManual: 'Manual',
             tabNotebook: 'Notebook',
             tabBook: 'Vocab Book',
-            manualWord: 'English Word',
-            manualZh: 'Chinese (Optional)',
+            manualWord: 'English / Question',
+            manualZh: 'Chinese / Answer',
             manualPhonetic: 'Phonetic (Optional)',
             manualGrammar: 'Grammar (Optional)',
             manualDuplicate: 'Already in plan',

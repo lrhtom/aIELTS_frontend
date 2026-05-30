@@ -295,6 +295,10 @@ export const zh: Translations = {
         typingChat: {
             title: '💬 打字聊天模式',
             desc: '通过纯文本与 AI 对话，在实战中运用目标词汇，提升写作表达能力。'
+        },
+        perspective: {
+            title: '🎯 观点表达训练',
+            desc: '输入一道雅思写作题目，AI 会给出高分观点范例和常见错误观点，帮你提升观点表达质量。'
         }
     },
     task1Selection: {
@@ -427,6 +431,34 @@ export const zh: Translations = {
             abstract: '抽象类',
             random: '随机类',
         },
+    },
+    writingPerspective: {
+        heading: '🎯 写作观点训练',
+        subheading: '输入雅思写作题目，AI 会针对该题目生成高分观点和常见错误观点对比',
+        backToHall: '← 返回写作大厅',
+        inputTitle: '写作题目',
+        inputDesc: '输入一道雅思写作题目，AI 将针对该题目生成高分观点范例与常见错误观点。',
+        placeholder: '在此输入雅思写作题目，例如：Some people think that remote work greatly improves individual productivity. To what extent do you agree or disagree?',
+        analyzeBtn: '🔍 开始分析',
+        analyzingBtn: '分析中...',
+        loadingTitle: '正在分析...',
+        loadingDesc: 'AI 正在为你的题目生成高分观点和错误观点对比',
+        emptyTitle: '等待分析',
+        emptyDesc: '在左边输入一道雅思写作题目，点击"开始分析"，AI 将为你展示该题目的高分观点和常见错误写法。',
+        goodBadge: '高分',
+        goodTitle: '高分观点范例',
+        badBadge: '错误',
+        badTitle: '常见错误观点',
+        reasonLabel: '错误原因',
+        expandBtn: '展开观点',
+        collapseBtn: '收起观点',
+        ideaLabel: '观点',
+        explainLabel: '底层逻辑',
+        exampleLabel: '具象例子',
+        examplesTitle: '快速体验：点击下方示例题目',
+        example1: '远程工作是否提高个人生产力？',
+        example2: '政府还是个人应对环保负责？',
+        example3: '免费大学教育能否促进社会流动？',
     },
     settings: {
         heading: '账户设置',
@@ -1010,8 +1042,8 @@ export const zh: Translations = {
             tabManual: '手动输入',
             tabNotebook: '从笔记本',
             tabBook: '从词书',
-            manualWord: '英文单词',
-            manualZh: '中文释义（可选）',
+            manualWord: '英语/问题',
+            manualZh: '中文/答案',
             manualPhonetic: '音标（可选）e.g. /əˈbændən/',
             manualGrammar: '词性（可选）e.g. v. / n. adj.',
             manualDuplicate: '已在计划中',

@@ -2,13 +2,12 @@ import Layout from '../../components/layout/Layout';
 import { useState, useMemo, useRef, type ChangeEvent, type DragEvent } from 'react';
 import translate from 'translate';
 translate.engine = 'google';
-import { useNavigate } from 'react-router-dom';
 import AiModelSelector, { type AIProvider } from '../../components/common/AiModelSelector';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
-import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
 import '../../styles/writing_correction_result.css';
@@ -18,7 +17,6 @@ const TASK1_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const TASK1_IMAGE_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
 
 export default function WritingCorrectionPage() {
-    const navigate = useNavigate();
     const { lang } = useLang();
     const t = translations[lang];
 
@@ -198,22 +196,17 @@ export default function WritingCorrectionPage() {
     };
 
     return (
-        <Layout>
-            <div className={`wc-page ${result ? 'is-result-mode' : ''}`}>
-
-                {/* Header */}
-                <div className="wc-header">
-                    <div className="wc-header-title">
-                        <button className="wc-back-btn" onClick={() => navigate('/writing')}>
-                            <ArrowLeft size={20} /> {t.writingCorrection.backToHall}
-                        </button>
-                        <h1>{t.writingCorrection.title}</h1>
-                        <p>{t.writingCorrection.subtitle}</p>
-                    </div>
-                    <div className="wc-model-box">
-                        <AiModelSelector onModelChange={(nextProvider) => setProvider(nextProvider)} />
-                    </div>
+        <Layout
+            pageTitle={t.writingCorrection.title}
+            backUrl="/writing"
+            backText={t.writingCorrection.backToHall}
+            headerRight={
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <AiModelSelector variant="minimal" onModelChange={(nextProvider) => setProvider(nextProvider)} />
                 </div>
+            }
+        >
+            <div className={`wc-page ${result ? 'is-result-mode' : ''}`}>
 
                 {/* Main body */}
                 {result ? (

@@ -9,9 +9,10 @@ interface AiModelSelectorProps {
     onModelChange?: (provider: AIProvider) => void;
     label?: string;
     description?: string;
+    variant?: 'default' | 'minimal';
 }
 
-export default function AiModelSelector({ onModelChange, label, description }: AiModelSelectorProps) {
+export default function AiModelSelector({ onModelChange, label, description, variant = 'default' }: AiModelSelectorProps) {
     const { translations: t } = useLang();
     const resolvedLabel = label ?? t.components.aiModel.label;
     const resolvedDesc = description ?? t.components.aiModel.desc;
@@ -46,6 +47,41 @@ export default function AiModelSelector({ onModelChange, label, description }: A
         }
         onModelChangeRef.current?.(p);
     };
+
+    if (variant === 'minimal') {
+        return (
+            <select
+                style={{
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    border: '1px solid var(--color-border)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text-secondary)',
+                    fontWeight: 500,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    transition: 'all 0.2s',
+                    width: 'auto'
+                }}
+                value={provider}
+                onChange={(e) => handleProviderChange(e.target.value as AIProvider)}
+                onMouseOver={(e) => {
+                    e.currentTarget.style.color = 'var(--color-primary)';
+                    e.currentTarget.style.borderColor = 'var(--color-primary)';
+                }}
+                onMouseOut={(e) => {
+                    e.currentTarget.style.color = 'var(--color-text-secondary)';
+                    e.currentTarget.style.borderColor = 'var(--color-border)';
+                }}
+            >
+                <option value="deepseek">DeepSeek v3.2</option>
+                <option value="gemini">Gemini 3.0</option>
+                <option value="gpt5_4">GPT-5.4</option>
+                <option value="gpt5_mini">GPT-5.4 Mini</option>
+            </select>
+        );
+    }
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
