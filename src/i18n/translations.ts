@@ -503,6 +503,26 @@ export interface Translations {
         wordCountWords: string;
         typeFallback: string;
     };
+    writingAiTeacher: {
+        hubTitle: string;
+        hubDesc: string;
+        genTitle: string;
+        genSubtitle: string;
+        genPlaceholder: string;
+        genBtn: string;
+        lessonTitle: string;
+        sectionNames: string[];
+        loading: string;
+        loadingSteps: string[];
+        download: string;
+        prev: string;
+        next: string;
+        badExample: string;
+        fullEssay: string;
+        sectionSummary: string;
+        errorGen: string;
+        errorTopic: string;
+    };
     writingCorrection: {
         toastEmpty: string;
         toastSuccess: string;

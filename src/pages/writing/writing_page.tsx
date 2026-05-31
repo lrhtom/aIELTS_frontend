@@ -1,4 +1,4 @@
-﻿import Layout from '../../components/layout/Layout';
+import Layout from '../../components/layout/Layout';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
@@ -20,28 +20,6 @@ export default function Writing_page() {
                 <div className="config-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <h3>{t.writingHub.practiceMode}</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                        <button
-                            style={{
-                                padding: '1.5rem',
-                                borderRadius: '12px',
-                                border: '2px solid var(--color-primary)',
-                                backgroundColor: 'var(--color-surface)',
-                                color: 'var(--color-text)',
-                                textAlign: 'left',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '8px'
-                            }}
-                            onClick={() => navigate('/writing/correction')}
-                        >
-                            <span style={{ fontSize: '24px' }}>📝</span>
-                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.correction.title}</div>
-                            <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                                {t.writingHub.correction.desc}
-                            </div>
-                        </button>
-
                         <button
                             style={{
                                 padding: '1.5rem',
@@ -146,9 +124,31 @@ export default function Writing_page() {
                             onClick={() => navigate('/writing/chat-config')}
                         >
                             <span style={{ fontSize: '24px' }}>💬</span>
-                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.typingChat.title}</div>
+                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.typingChat?.title || 'Opinion Typing Chat'}</div>
                             <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                                {t.writingHub.typingChat.desc}
+                                {t.writingHub.typingChat?.desc || 'Interactive chat to practice writing speed and vocabulary'}
+                            </div>
+                        </button>
+
+                        <button
+                            style={{
+                                padding: '1.5rem',
+                                borderRadius: '12px',
+                                border: '2px solid var(--color-primary)',
+                                backgroundColor: 'var(--color-surface)',
+                                color: 'var(--color-text)',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px'
+                            }}
+                            onClick={() => navigate('/writing/ai-teachers')}
+                        >
+                            <span style={{ fontSize: '24px' }}>👨‍🏫</span>
+                            <div style={{ fontSize: '18px', fontWeight: '600' }}>AI 写作老师</div>
+                            <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
+                                包含 AI 批改、小作文与大作文一对一辅导
                             </div>
                         </button>
                     </div>

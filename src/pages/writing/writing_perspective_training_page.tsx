@@ -6,6 +6,7 @@ import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
+import BadExampleList, { type BadExample } from '../../components/writing/BadExampleList';
 import '../../styles/practice_page.css';
 import '../../styles/writing_perspective.css';
 
@@ -17,15 +18,6 @@ interface GoodExample {
     explain_zh: string;
     example_en: string;
     example_zh: string;
-}
-
-interface BadExample {
-    type: string;
-    en: string;
-    zh: string;
-    expanded_en: string;
-    expanded_zh: string;
-    reason: string;
 }
 
 interface PerspectiveResult {
@@ -53,24 +45,6 @@ const GOOD_TYPE_LABELS_EN: Record<string, string> = {
     report_solutions: 'Solutions',
 };
 
-const ERROR_TYPE_LABELS_ZH: Record<string, string> = {
-    wordy: '废话连篇',
-    absolute: '过于绝对',
-    superficial: '表面现象',
-    illogical: '缺乏说服力',
-    colloquial: '口语化表达',
-    example_dump: '堆砌例子',
-};
-
-const ERROR_TYPE_LABELS_EN: Record<string, string> = {
-    wordy: 'Wordy / Empty',
-    absolute: 'Overly Absolute',
-    superficial: 'Superficial',
-    illogical: 'Lacks Persuasion',
-    colloquial: 'Overly Colloquial',
-    example_dump: 'Example Dumping',
-};
-
 export default function WritingPerspectiveTrainingPage() {
     const navigate = useNavigate();
     const { lang } = useLang();
@@ -84,14 +58,8 @@ export default function WritingPerspectiveTrainingPage() {
         return local || 'deepseek';
     });
     const [expandedGood, setExpandedGood] = useState<Record<number, boolean>>({});
-    const [expandedBad, setExpandedBad] = useState<Record<number, boolean>>({});
-
     const toggleGood = (idx: number) => {
         setExpandedGood(prev => ({ ...prev, [idx]: !prev[idx] }));
-    };
-
-    const toggleBad = (idx: number) => {
-        setExpandedBad(prev => ({ ...prev, [idx]: !prev[idx] }));
     };
 
     const handleAnalyze = async () => {
@@ -102,7 +70,6 @@ export default function WritingPerspectiveTrainingPage() {
         setIsLoading(true);
         setResult(null);
         setExpandedGood({});
-        setExpandedBad({});
         try {
             const res = await api<PerspectiveResult & { atConsumed?: number }>(
                 '/writing/perspective/train',
@@ -124,11 +91,6 @@ export default function WritingPerspectiveTrainingPage() {
     const getGoodLabel = (type: string) => {
         if (lang === 'zh') return GOOD_TYPE_LABELS_ZH[type] || type;
         return GOOD_TYPE_LABELS_EN[type] || type;
-    };
-
-    const getErrorLabel = (type: string) => {
-        if (lang === 'zh') return ERROR_TYPE_LABELS_ZH[type] || type;
-        return ERROR_TYPE_LABELS_EN[type] || type;
     };
 
     return (
@@ -239,35 +201,7 @@ export default function WritingPerspectiveTrainingPage() {
                             ))}
 
                             {/* Bad examples */}
-                            {result.bad_examples.map((bad, idx) => (
-                                <div className="wpt-bad-box" key={bad.type}>
-                                    <div className="wpt-box-header">
-                                        <span className="wpt-badge wpt-badge-bad">{t.writingPerspective?.badBadge}</span>
-                                        <span className="wpt-error-type-label">{getErrorLabel(bad.type)}</span>
-                                    </div>
-                                    <div className="wpt-opinion-bilingual">
-                                        <p className="wpt-bilingual-en">{bad.en}</p>
-                                        <p className="wpt-bilingual-zh">{bad.zh}</p>
-                                    </div>
-                                    <button
-                                        className="wpt-expand-btn"
-                                        onClick={() => toggleBad(idx)}
-                                    >
-                                        {expandedBad[idx] ? t.writingPerspective?.collapseBtn : t.writingPerspective?.expandBtn}
-                                        <span className={`wpt-expand-arrow${expandedBad[idx] ? ' open' : ''}`}>▸</span>
-                                    </button>
-                                    {expandedBad[idx] && (
-                                        <div className="wpt-expanded-content">
-                                            <div className="wpt-reason-box">
-                                                <span className="wpt-reason-label">{t.writingPerspective?.reasonLabel}</span>
-                                                <p>{bad.reason}</p>
-                                            </div>
-                                            <p className="wpt-expanded-en">{bad.expanded_en}</p>
-                                            <p className="wpt-expanded-zh">{bad.expanded_zh}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                            <BadExampleList badExamples={result.bad_examples} />
                         </div>
                     ) : isLoading ? (
                         <div className="wpt-pending-card">

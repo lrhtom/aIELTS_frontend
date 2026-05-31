@@ -12,6 +12,7 @@ interface Props {
     onFlip: () => void;
     onRating: (rating: number) => void;
     estimateInterval: (card: VocabCard, rating: number) => string;
+    simpleMode?: boolean;
 }
 
 function speak(word: string) {
@@ -27,6 +28,7 @@ export default function FlashcardMode({
     onFlip,
     onRating,
     estimateInterval,
+    simpleMode,
 }: Props) {
     const { translations: t } = useLang();
 
@@ -48,7 +50,7 @@ export default function FlashcardMode({
         <>
             <div
                 className="fc-scene"
-                onClick={() => !submitting && onFlip()}
+                onClick={!simpleMode ? onFlip : undefined}
                 role="button"
                 tabIndex={0}
                 onKeyDown={e => {
@@ -57,7 +59,7 @@ export default function FlashcardMode({
                 aria-label={isFlipped ? '点击翻回正面' : '点击翻转查看释义'}
             >
                 <div
-                    className={`fc-card ${isFlipped ? 'is-flipped' : ''} ${isFlipping ? 'is-flipping' : ''} ${statusCls}`}
+                    className={`fc-card ${isFlipped && !simpleMode ? 'is-flipped' : ''} ${isFlipping ? 'is-flipping' : ''} ${statusCls}`}
                 >
                     <div className="fc-face">
                         <button
@@ -76,6 +78,11 @@ export default function FlashcardMode({
                             <div className="fc-reps-badge">
                                 {t.vocab.repsDone.replace('{n}', currentCard.reps.toString())}
                                 {currentCard.lapses > 0 && ` · ${t.vocab.lapsesCount.replace('{n}', currentCard.lapses.toString())}`}
+                            </div>
+                        )}
+                        {simpleMode && (
+                            <div className="fc-flashcard-meaning" style={{ marginTop: '30px', fontSize: '1.2rem', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
+                                {currentCard.zh}
                             </div>
                         )}
                         <div className="fc-tap-hint">

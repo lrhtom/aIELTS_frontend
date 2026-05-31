@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Volume2 } from 'lucide-react';
 import { type VocabCard } from '../../api/vocab';
 import { speakWord } from '../../utils/speak';
@@ -14,6 +15,7 @@ interface Props {
     onFlip: () => void;
     onRating: (rating: number) => void;
     estimateInterval: (card: VocabCard, rating: number) => string;
+    simpleMode?: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,6 +39,7 @@ export default function GazeMode({
     onFlip,
     onRating,
     estimateInterval,
+    simpleMode,
 }: Props) {
     const { translations: t } = useLang();
 
@@ -52,11 +55,20 @@ export default function GazeMode({
 
     const dwellRef = useRef<Record<number, number>>({});
     const ratingDwellRef = useRef<Record<number, number>>({});
-    const pointerPosRef = useRef<{x: number, y: number} | null>(null);
+    const pointerPosRef = useRef<{ x: number, y: number } | null>(null);
+    const autoFlippedRef = useRef(false);
     
     const webgazerRef = useRef<WebGazerInstance | null>(null);
     const rafRef = useRef<number>(0);
     const scannedRef = useRef<Set<number>>(new Set());
+    const unmountedRef = useRef<boolean>(false);
+
+    useEffect(() => {
+        unmountedRef.current = false;
+        return () => {
+            unmountedRef.current = true;
+        };
+    }, []);
 
     const word = currentCard.word;
     const isPhrase = word.includes(' ') && word.length > 12;
@@ -80,15 +92,17 @@ export default function GazeMode({
         scannedRef.current = new Set();
         dwellRef.current = {};
         ratingDwellRef.current = {};
+        autoFlippedRef.current = false;
     }, [currentCard.word]);
 
     // Auto-flip when all letters scanned
     useEffect(() => {
-        if (allScanned && !isFlipped && !submitting && gazeReady) {
+        if (allScanned && !isFlipped && !submitting && gazeReady && !simpleMode && !autoFlippedRef.current) {
+            autoFlippedRef.current = true;
             const timer = setTimeout(() => onFlip(), 400);
             return () => clearTimeout(timer);
         }
-    }, [allScanned, isFlipped, submitting, gazeReady, onFlip]);
+    }, [allScanned, isFlipped, submitting, gazeReady, onFlip, simpleMode]);
 
     const markLetterScanned = useCallback((index: number) => {
         if (scannedRef.current.has(index)) return;
@@ -98,23 +112,15 @@ export default function GazeMode({
         setScannedLetters(next);
     }, []);
 
-    // Global Mouse Listener for mouse tracking mode
-    useEffect(() => {
-        if (activeTracking !== 'mouse' || !gazeReady) return;
-        const handler = (e: MouseEvent) => {
-            pointerPosRef.current = { x: e.clientX, y: e.clientY };
-        };
-        window.addEventListener('mousemove', handler);
-        return () => window.removeEventListener('mousemove', handler);
-    }, [activeTracking, gazeReady]);
-
     // ── Eye tracking (WebGazer) Init ──
     const initEyeTracking = useCallback(async () => {
+        if ((window as any)._webgazerInitializing) return;
+        (window as any)._webgazerInitializing = true;
+
         setCalibrating(true);
         setError(null);
 
         try {
-
             // Load webgazer via script tag to avoid Vite CJS/ESM bundling issues
             let wg = (window as any).webgazer;
             if (!wg) {
@@ -133,10 +139,12 @@ export default function GazeMode({
 
             wg.setRegression('ridge')
                 .setTracker('TFFacemesh')
-                .showVideoPreview(true)
-                .showPredictionPoints(true)
-                .applyKalmanFilter(false) // Disable heavy built-in filter to fix latency
-                .setGazeListener((data: any, elapsedTime: number) => {
+                .showVideoPreview(true) 
+                .showFaceOverlay(false)
+                .showFaceFeedbackBox(false)
+                .showPredictionPoints(false) // Red dot retired, teal cursor takes over!
+                .applyKalmanFilter(true) // Re-enable official Kalman filter for maximum accuracy
+                .setGazeListener((data: any, _elapsedTime: number) => {
                     if (data) {
                         (window as any)._gazePos = { x: data.x, y: data.y };
                     } else {
@@ -144,81 +152,119 @@ export default function GazeMode({
                     }
                 });
 
-            const saved = sessionStorage.getItem(GAZE_STORAGE_KEY);
-            if (saved) {
-                try {
-                    wg.setRegression('ridge');
-                } catch { /* use fresh calibration */ }
-            }
-
             webgazerRef.current = wg;
 
-            // Start camera FIRST so WebGazer can track eyes during calibration
+            // Start camera FIRST so WebGazer can track eyes
             await wg.begin();
 
-            // Calibration UI (camera is now open)
-            await new Promise<void>((resolve) => {
-                const overlay = document.createElement('div');
-                overlay.className = 'fc-gaze-calibration-overlay';
-                overlay.innerHTML = `
-                    <div class="fc-gaze-calibration-card">
-                        <div class="fc-gaze-calibration-title">${t.vocab.gaze.calibrating}</div>
-                        <div class="fc-gaze-calibration-sub">Click each dot while looking directly at it</div>
-                        <div class="fc-gaze-calibration-grid" id="gaze-calib-grid"></div>
-                        <button class="fc-gaze-calibration-done" id="gaze-calib-done" disabled>Done</button>
-                    </div>
-                `;
-                document.body.appendChild(overlay);
+            if (unmountedRef.current) {
+                try {
+                    wg.end();
+                    const video = document.getElementById('webgazerVideoFeed') as HTMLVideoElement;
+                    if (video && video.srcObject) {
+                        const stream = video.srcObject as MediaStream;
+                        stream.getTracks().forEach(track => track.stop());
+                        video.srcObject = null;
+                    }
+                    document.getElementById('webgazerVideoContainer')?.remove();
+                    document.getElementById('webgazerGazeDot')?.remove();
+                } catch (e) {
+                    console.warn('Cleanup during init failed', e);
+                }
+                return;
+            }
 
-                const grid = overlay.querySelector('#gaze-calib-grid')!;
-
-                const positions = [
-                    { x: 10, y: 10 }, { x: 50, y: 10 }, { x: 90, y: 10 },
-                    { x: 10, y: 50 }, { x: 50, y: 50 }, { x: 90, y: 50 },
-                    { x: 10, y: 90 }, { x: 50, y: 90 }, { x: 90, y: 90 },
-                ];
-
-                let clickedCount = 0;
-
-                for (const pos of positions) {
-                    const dot = document.createElement('div');
-                    dot.className = 'fc-gaze-calibration-dot';
-                    dot.style.left = `${pos.x}%`;
-                    dot.style.top = `${pos.y}%`;
-                    dot.addEventListener('click', (e) => {
-                        if (dot.classList.contains('is-clicked')) return;
-                        
-                        // EXPLICITLY feed the exact pixel coordinates to WebGazer
-                        if (webgazerRef.current) {
-                            try {
-                                webgazerRef.current.recordScreenPosition(e.clientX, e.clientY, 'click');
-                            } catch (err) {
-                                console.warn('Failed to record click for webgazer', err);
-                            }
-                        }
-
-                        clickedCount++;
-                        dot.classList.add('is-clicked');
-                        if (clickedCount >= positions.length) {
-                            const doneBtn = overlay.querySelector('#gaze-calib-done') as HTMLButtonElement;
-                            if (doneBtn) doneBtn.disabled = false;
-                        }
-                    });
-                    grid.appendChild(dot);
+            const saved = sessionStorage.getItem(GAZE_STORAGE_KEY);
+            if (!saved) {
+                // Clear polluted historical data from IndexedDB to ensure fresh calibration
+                try {
+                    wg.clearData();
+                } catch (e) {
+                    console.warn('Failed to clear webgazer data', e);
                 }
 
-                const doneBtn = overlay.querySelector('#gaze-calib-done')!;
-                doneBtn.addEventListener('click', () => {
-                    overlay.remove();
-                    sessionStorage.setItem(GAZE_STORAGE_KEY, '1');
-                    resolve();
+                // Calibration UI
+                await new Promise<void>((resolve) => {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'fc-gaze-calibration-overlay';
+                    overlay.innerHTML = `
+                        <div class="fc-gaze-calibration-card" style="max-width: 600px;">
+                            <div class="fc-gaze-calibration-title">Precision Calibration</div>
+                            <div class="fc-gaze-calibration-sub">Click each dot <b>3 times</b> while looking directly at it.</div>
+                            <div class="fc-gaze-calibration-grid" id="gaze-calib-grid"></div>
+                            <button class="fc-gaze-calibration-done" id="gaze-calib-done" disabled style="width: 100%; margin-top: 10px;">Start Tracking</button>
+                        </div>
+                    `;
+                    document.body.appendChild(overlay);
+
+                    const grid = overlay.querySelector('#gaze-calib-grid')!;
+                    const positions = [
+                        { x: 10, y: 10 }, { x: 50, y: 10 }, { x: 90, y: 10 },
+                        { x: 10, y: 50 }, { x: 50, y: 50 }, { x: 90, y: 50 },
+                        { x: 10, y: 90 }, { x: 50, y: 90 }, { x: 90, y: 90 },
+                    ];
+
+                    let completedDots = 0;
+                    for (const pos of positions) {
+                        const dot = document.createElement('div');
+                        dot.className = 'fc-gaze-calibration-dot';
+                        dot.style.left = `${pos.x}%`;
+                        dot.style.top = `${pos.y}%`;
+                        dot.style.transition = 'all 0.2s ease';
+                        
+                        let clickCount = 0;
+                        dot.addEventListener('click', (e) => {
+                            if (clickCount >= 3) return;
+                            
+                            // Feed coordinate to WebGazer
+                            if (webgazerRef.current) {
+                                try {
+                                    webgazerRef.current.recordScreenPosition(e.clientX, e.clientY, 'click');
+                                } catch (err) {
+                                    console.warn('Failed to record click for webgazer', err);
+                                }
+                            }
+                            
+                            clickCount++;
+                            
+                            // Visual feedback
+                            if (clickCount === 1) {
+                                dot.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                                dot.style.background = '#FFC107'; // Yellow
+                            } else if (clickCount === 2) {
+                                dot.style.transform = 'translate(-50%, -50%) scale(0.6)';
+                                dot.style.background = '#FF9800'; // Orange
+                            } else if (clickCount === 3) {
+                                dot.style.transform = 'translate(-50%, -50%) scale(0.5)';
+                                dot.style.background = '#00D2A0'; // Teal (Done)
+                                dot.style.opacity = '0.5';
+                                dot.style.pointerEvents = 'none';
+                                
+                                completedDots++;
+                                if (completedDots >= positions.length) {
+                                    const doneBtn = overlay.querySelector('#gaze-calib-done') as HTMLButtonElement;
+                                    if (doneBtn) doneBtn.disabled = false;
+                                }
+                            }
+                        });
+                        grid.appendChild(dot);
+                    }
+                    
+                    const doneBtn = overlay.querySelector('#gaze-calib-done')!;
+                    doneBtn.addEventListener('click', () => {
+                        overlay.remove();
+                        sessionStorage.setItem(GAZE_STORAGE_KEY, '1');
+                        resolve();
+                    });
                 });
-            });
+            }
 
             setGazeReady(true);
             setCalibrating(false);
+            (window as any)._webgazerInitializing = false;
         } catch (err) {
             console.warn('WebGazer init failed, falling back to mouse', err);
+            (window as any)._webgazerInitializing = false;
             setCalibrating(false);
             setActiveTracking('mouse');
             setGazeReady(true);
@@ -226,33 +272,90 @@ export default function GazeMode({
         }
     }, [t]);
 
-    // Initialize tracking on mount (guard against React StrictMode double-invoke)
+    // Handle trackingMode prop changes from parent
+    useEffect(() => {
+        if (!initRef.current) return;
+        setActiveTracking(trackingMode);
+        
+        if (trackingMode === 'eye') {
+            // Always re-initialize and recalibrate when switching back
+            initEyeTracking();
+        } else {
+            // Switch to mouse: shut down tracking AND the physical camera light
+            try { 
+                if (webgazerRef.current) {
+                    webgazerRef.current.end();
+                    // Manually kill the camera stream just to be absolutely sure
+                    const video = document.getElementById('webgazerVideoFeed') as HTMLVideoElement;
+                    if (video && video.srcObject) {
+                        const stream = video.srcObject as MediaStream;
+                        stream.getTracks().forEach(track => track.stop());
+                        video.srcObject = null;
+                    }
+                }
+            } catch { }
+
+            // Forget previous calibration so it forces the 9-dot UI next time
+            sessionStorage.removeItem(GAZE_STORAGE_KEY);
+            
+            setGazeReady(true);
+            setCalibrating(false);
+            setError(null);
+        }
+    }, [trackingMode, initEyeTracking]);
+
+    // Global Mouse Listener for mouse tracking mode
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            pointerPosRef.current = { x: e.clientX, y: e.clientY };
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
+    // Initialize tracking on mount
     const initRef = useRef(false);
     useEffect(() => {
         if (initRef.current) return;
         initRef.current = true;
 
         if (trackingMode === 'eye') {
-            setActiveTracking('eye');
             initEyeTracking();
         } else {
-            setActiveTracking('mouse');
             setGazeReady(true);
-            setCalibrating(false);
-            setError(null);
         }
 
         return () => {
+            initRef.current = false;
+            (window as any)._smoothPos = null;
+            document.querySelectorAll('.fc-gaze-calibration-overlay').forEach(el => el.remove());
+
             if (rafRef.current) {
                 cancelAnimationFrame(rafRef.current);
                 rafRef.current = 0;
             }
             if (webgazerRef.current) {
-                try { webgazerRef.current.end(); } catch { /* ignore */ }
+                try { 
+                    webgazerRef.current.end(); 
+                    const video = document.getElementById('webgazerVideoFeed') as HTMLVideoElement;
+                    if (video && video.srcObject) {
+                        const stream = video.srcObject as MediaStream;
+                        stream.getTracks().forEach(track => track.stop());
+                        video.srcObject = null;
+                    }
+                } catch { }
                 webgazerRef.current = null;
             }
+            
+            // Fix: Clean up dirty DOM elements injected by WebGazer so normal mode isn't affected
+            document.getElementById('webgazerVideoContainer')?.remove();
+            document.getElementById('webgazerGazeDot')?.remove();
+            document.getElementById('webgazerFaceOverlay')?.remove();
+            document.getElementById('webgazerFaceFeedbackBox')?.remove();
+            
+            // Per user request: require recalibration every time tracking is toggled back on
+            sessionStorage.removeItem(GAZE_STORAGE_KEY);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const RATING_INFO = [
@@ -286,36 +389,28 @@ export default function GazeMode({
                 py = pointerPosRef.current.y;
             }
 
-            if (px !== null && py !== null) {
-                // Initialize smooth pos if it's the first frame
+            if (px !== null && py !== null && (px !== 0 || py !== 0)) {
                 if (!(window as any)._smoothPos) {
                     (window as any)._smoothPos = { x: px, y: py };
                 }
-                
-                // LERP (Linear Interpolation) factor (0.0 to 1.0)
-                // Higher = snappier/more jittery, Lower = smoother/more delay
-                const lerpFactor = activeTracking === 'eye' ? 0.35 : 0.8;
-                
+                const lerpFactor = activeTracking === 'eye' ? 0.08 : 0.8;
                 (window as any)._smoothPos.x += (px - (window as any)._smoothPos.x) * lerpFactor;
                 (window as any)._smoothPos.y += (py - (window as any)._smoothPos.y) * lerpFactor;
 
                 const renderX = (window as any)._smoothPos.x;
                 const renderY = (window as any)._smoothPos.y;
 
-                // Update custom cursor
                 if (cursorRef.current) {
                     cursorRef.current.style.display = 'block';
                     cursorRef.current.style.transform = `translate(${renderX - 10}px, ${renderY - 10}px)`;
                 }
 
                 if (!isFlippedRef.current) {
-                    // Front Face: Scan letters
                     for (let i = 0; i < targetCountRef.current; i++) {
                         if (scannedRef.current.has(i)) continue;
                         const el = letterRefs.current[i];
                         if (!el) continue;
                         const rect = el.getBoundingClientRect();
-                        // Add slight padding to make letter scanning easier
                         const PADDING = 10;
                         if (renderX >= rect.left - PADDING && renderX <= rect.right + PADDING && renderY >= rect.top - PADDING && renderY <= rect.bottom + PADDING) {
                             dwellRef.current[i] = (dwellRef.current[i] || 0) + dt;
@@ -327,7 +422,6 @@ export default function GazeMode({
                         }
                     }
                 } else if (!submittingRef.current) {
-                    // Back Face: Rate cards
                     for (let i = 0; i < RATING_INFO.length; i++) {
                         const el = ratingRefs.current[i];
                         if (!el) continue;
@@ -339,12 +433,11 @@ export default function GazeMode({
                             el.style.setProperty('--gaze-progress', `${progress}%`);
                             
                             if (ratingDwellRef.current[i] >= RATING_DWELL_MS) {
-                                // Trigger Rating
                                 for (let j=0; j<RATING_INFO.length; j++) {
                                     if (ratingRefs.current[j]) ratingRefs.current[j]!.style.setProperty('--gaze-progress', `0%`);
                                 }
                                 ratingDwellRef.current = {};
-                                pointerPosRef.current = null; // Prevent multi-trigger
+                                pointerPosRef.current = null;
                                 onRatingRef.current(RATING_INFO[i].id);
                                 break;
                             }
@@ -377,8 +470,15 @@ export default function GazeMode({
 
     return (
         <>
-            {/* Custom Gaze/Mouse Cursor Overlay */}
-            {(gazeReady) && (
+            <style>{`
+                #webgazerVideoContainer {
+                    opacity: 0 !important;
+                    pointer-events: none !important;
+                    z-index: -9999 !important;
+                }
+            `}</style>
+
+            {gazeReady && createPortal(
                 <div 
                     ref={cursorRef}
                     style={{
@@ -397,7 +497,8 @@ export default function GazeMode({
                         display: 'none',
                         transition: 'opacity 0.1s ease',
                     }}
-                />
+                />,
+                document.body
             )}
 
             <div
@@ -410,9 +511,9 @@ export default function GazeMode({
                 aria-label={isFlipped ? '点击翻回正面' : '点击翻转查看释义'}
             >
                 <div
-                    className={`fc-card ${isFlipped ? 'is-flipped' : ''} ${isFlipping ? 'is-flipping' : ''} ${statusCls}`}
+                    className={`fc-card ${isFlipped && !simpleMode ? 'is-flipped' : ''} ${isFlipping ? 'is-flipping' : ''} ${statusCls}`}
+                    onClick={!simpleMode ? onFlip : undefined}
                 >
-                    {/* Front face — gaze scan letters */}
                     <div className="fc-face">
                         <button
                             type="button"
@@ -440,6 +541,11 @@ export default function GazeMode({
                                         </span>
                                     ))}
                                 </div>
+                                {simpleMode && (
+                                    <div className="fc-flashcard-meaning" style={{ marginTop: '20px', fontSize: '1.2rem', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
+                                        {currentCard.zh}
+                                    </div>
+                                )}
                                 <div className="fc-gaze-prompt">
                                     {allScanned ? t.vocab.gaze.scanComplete : t.vocab.gaze.scanPrompt}
                                 </div>

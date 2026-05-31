@@ -56,6 +56,7 @@ export default function VocabularyFlashcardDoingPage() {
 
     const MODE_LABELS: Record<StudyMode, string> = useMemo(() => ({
         flashcard: t.vocab.modes.flashcard,
+        'flashcard-simple': '记忆卡简单模式',
         choice:    t.vocab.modes.choice,
         write:     t.vocab.modes.write,
         copy:      t.vocab.modes.copy,
@@ -384,7 +385,7 @@ export default function VocabularyFlashcardDoingPage() {
         } else if (state.planId) {
             // 尝试从localStorage恢复该计划的持久化mode设置
             const cachedMode = localStorage.getItem(`lp_study_mode_${state.planId}`) as StudyMode | null;
-            if (cachedMode && ['flashcard', 'choice', 'write', 'copy'].includes(cachedMode)) {
+            if (cachedMode && ['flashcard', 'flashcard-simple', 'choice', 'write', 'copy'].includes(cachedMode)) {
                 resolvedMode = cachedMode;
                 console.log('[词汇学习] Mode从localStorage恢复', { mode: cachedMode, planId: state.planId });
             } else {
@@ -469,7 +470,7 @@ export default function VocabularyFlashcardDoingPage() {
     /* Mode同步到localStorage（作为长期持久化备份） */
     useEffect(() => {
         if (!initialized || !planId) return;
-        if (mode && ['flashcard', 'choice', 'write', 'copy'].includes(mode)) {
+        if (mode && ['flashcard', 'flashcard-simple', 'choice', 'write', 'copy'].includes(mode)) {
             localStorage.setItem(`lp_study_mode_${planId}`, mode);
             console.log('[词汇学习] Mode已同步到localStorage', { planId, mode });
         }
@@ -1108,20 +1109,21 @@ export default function VocabularyFlashcardDoingPage() {
     /* 键盘快捷键（记忆卡模式） */
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            if (step !== 'doing' || submitting || mode !== 'flashcard') return;
+            if (step !== 'doing' || submitting || !mode.startsWith('flashcard')) return;
             const tag = (e.target as HTMLElement)?.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA') return;
             switch (e.code) {
                 case 'Space':
+                    if (mode === 'flashcard-simple') return;
                     e.preventDefault();
                     setIsFlipping(true);
                     setIsFlipped(f => !f);
                     setTimeout(() => setIsFlipping(false), 350);
                     break;
-                case 'Digit1': case 'Numpad1': if (isFlipped) handleFlashcardRating(1); break;
-                case 'Digit2': case 'Numpad2': if (isFlipped) handleFlashcardRating(2); break;
-                case 'Digit3': case 'Numpad3': if (isFlipped) handleFlashcardRating(3); break;
-                case 'Digit4': case 'Numpad4': if (isFlipped) handleFlashcardRating(4); break;
+                case 'Digit1': case 'Numpad1': if (isFlipped || mode === 'flashcard-simple') handleFlashcardRating(1); break;
+                case 'Digit2': case 'Numpad2': if (isFlipped || mode === 'flashcard-simple') handleFlashcardRating(2); break;
+                case 'Digit3': case 'Numpad3': if (isFlipped || mode === 'flashcard-simple') handleFlashcardRating(3); break;
+                case 'Digit4': case 'Numpad4': if (isFlipped || mode === 'flashcard-simple') handleFlashcardRating(4); break;
             }
         };
         window.addEventListener('keydown', handler);
@@ -1348,18 +1350,32 @@ export default function VocabularyFlashcardDoingPage() {
                         </span>
                         <div className="fc-mode-badge-wrap" ref={trackingMenuRef}>
                             <button
-                                className={`fc-mode-badge${mode === 'flashcard' ? ' has-submenu' : ''}`}
-                                onClick={() => mode === 'flashcard' && setTrackingMenuOpen(v => !v)}
-                                title={mode === 'flashcard' ? '追踪选项' : undefined}
+                                className={`fc-mode-badge${mode.startsWith('flashcard') ? ' has-submenu' : ''}`}
+                                onClick={() => mode.startsWith('flashcard') && setTrackingMenuOpen(v => !v)}
+                                title={mode.startsWith('flashcard') ? '模式与追踪选项' : undefined}
                             >
                                 {MODE_LABELS[mode]}
-                                {mode === 'flashcard' && trackingMode !== 'none' && (
+                                {mode.startsWith('flashcard') && trackingMode !== 'none' && (
                                     <span className="fc-mode-badge-sub">· {TRACKING_LABELS[trackingMode]}</span>
                                 )}
-                                {mode === 'flashcard' && <span className="fc-mode-badge-arrow">▾</span>}
+                                {mode.startsWith('flashcard') && <span className="fc-mode-badge-arrow">▾</span>}
                             </button>
-                            {trackingMenuOpen && mode === 'flashcard' && (
+                            {trackingMenuOpen && mode.startsWith('flashcard') && (
                                 <div className="fc-tracking-menu">
+                                    <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>学习模式</div>
+                                    {(['flashcard', 'flashcard-simple'] as StudyMode[]).map(m => (
+                                        <button
+                                            key={m}
+                                            className={`fc-tracking-menu-item${mode === m ? ' active' : ''}`}
+                                            onClick={() => { setMode(m); setTrackingMenuOpen(false); }}
+                                        >
+                                            <span className="fc-tracking-menu-dot" />
+                                            <span>{MODE_LABELS[m]}</span>
+                                            {mode === m && <span className="fc-tracking-menu-check">✓</span>}
+                                        </button>
+                                    ))}
+                                    <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
+                                    <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>追踪模式</div>
                                     {(['none', 'eye', 'mouse'] as TrackingMode[]).map(tm => (
                                         <button
                                             key={tm}
@@ -1393,7 +1409,7 @@ export default function VocabularyFlashcardDoingPage() {
 
 
                 {/* ══ 记忆卡模式 ══ */}
-                {mode === 'flashcard' && trackingMode === 'none' && (
+                {(mode === 'flashcard' || mode === 'flashcard-simple') && trackingMode === 'none' && (
                     <FlashcardMode
                         currentCard={currentCard}
                         isFlipped={isFlipped}
@@ -1407,11 +1423,12 @@ export default function VocabularyFlashcardDoingPage() {
                         }}
                         onRating={handleFlashcardRating}
                         estimateInterval={estimateInterval}
+                        simpleMode={mode === 'flashcard-simple'}
                     />
                 )}
 
                 {/* ══ 记忆卡 · 追踪模式 ══ */}
-                {mode === 'flashcard' && trackingMode !== 'none' && (
+                {(mode === 'flashcard' || mode === 'flashcard-simple') && trackingMode !== 'none' && (
                     <GazeMode
                         currentCard={currentCard}
                         isFlipped={isFlipped}
@@ -1426,6 +1443,7 @@ export default function VocabularyFlashcardDoingPage() {
                         }}
                         onRating={handleFlashcardRating}
                         estimateInterval={estimateInterval}
+                        simpleMode={mode === 'flashcard-simple'}
                     />
                 )}
 

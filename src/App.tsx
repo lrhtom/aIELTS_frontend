@@ -52,6 +52,11 @@ import Task2PracticePage from './pages/writing/task2_practice_page';
 import ChartSelectionPage from './pages/writing/chart_selection_page';
 import ChartPracticePage from './pages/writing/chart_practice_page';
 import WritingPerspectiveTrainingPage from './pages/writing/writing_perspective_training_page';
+import AiTeacherGenPage from './pages/writing/ai_teacher_gen_page';
+import AiTeacherLessonPage from './pages/writing/ai_teacher_lesson_page';
+import Task1AiTeacherGenPage from './pages/writing/task1_ai_teacher_gen_page';
+import Task1AiTeacherLessonPage from './pages/writing/task1_ai_teacher_lesson_page';
+import AiTeachersHubPage from './pages/writing/ai_teachers_hub_page';
 
 // 词汇
 import VocabularyPracticePage from './pages/vocabulary/vocabulary_practice_page';
@@ -131,6 +136,11 @@ export default function App() {
         <Route path="/writing/chart" element={<ProtectedRoute><ChartSelectionPage /></ProtectedRoute>} />
         <Route path="/writing/chart/doing" element={<ProtectedRoute><ChartPracticePage /></ProtectedRoute>} />
         <Route path="/writing/perspective" element={<ProtectedRoute><WritingPerspectiveTrainingPage /></ProtectedRoute>} />
+        <Route path="/writing/ai-teacher" element={<ProtectedRoute><AiTeacherGenPage /></ProtectedRoute>} />
+        <Route path="/writing/ai-teacher/lesson" element={<ProtectedRoute><AiTeacherLessonPage /></ProtectedRoute>} />
+        <Route path="/writing/task1-ai-teacher" element={<ProtectedRoute><Task1AiTeacherGenPage /></ProtectedRoute>} />
+        <Route path="/writing/task1-ai-teacher/lesson" element={<ProtectedRoute><Task1AiTeacherLessonPage /></ProtectedRoute>} />
+        <Route path="/writing/ai-teachers" element={<ProtectedRoute><AiTeachersHubPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/prompts" element={<ProtectedRoute><PromptPage /></ProtectedRoute>} />

@@ -12,9 +12,10 @@ interface LayoutProps {
   onBack?: () => void;
   backText?: string;
   headerRight?: React.ReactNode;
+  fullScreen?: boolean;
 }
 
-export default function Layout({ children, pageTitle, pageSubtitle, backUrl, onBack, backText, headerRight }: LayoutProps) {
+export default function Layout({ children, pageTitle, pageSubtitle, backUrl, onBack, backText, headerRight, fullScreen }: LayoutProps) {
   const { pathname } = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => sessionStorage.getItem('sidebar_open') !== 'true'
@@ -24,6 +25,16 @@ export default function Layout({ children, pageTitle, pageSubtitle, backUrl, onB
     setSidebarCollapsed(collapsed);
     sessionStorage.setItem('sidebar_open', collapsed ? 'false' : 'true');
   };
+
+  if (fullScreen) {
+    return (
+      <div className="layout full-screen">
+        <main className="layout-content no-padding" style={{ height: '100vh', width: '100vw', overflow: 'auto', padding: '2rem' }}>
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={`layout ${sidebarCollapsed ? 'collapsed-sidebar' : ''}`}>
