@@ -51,7 +51,6 @@ import Task2OpinionDrillDoingPage from './pages/writing/task2_opinion_drill_doin
 import Task2PracticePage from './pages/writing/task2_practice_page';
 import ChartSelectionPage from './pages/writing/chart_selection_page';
 import ChartPracticePage from './pages/writing/chart_practice_page';
-import WritingPerspectiveTrainingPage from './pages/writing/writing_perspective_training_page';
 import AiTeacherGenPage from './pages/writing/ai_teacher_gen_page';
 import AiTeacherLessonPage from './pages/writing/ai_teacher_lesson_page';
 import Task1AiTeacherGenPage from './pages/writing/task1_ai_teacher_gen_page';
@@ -135,7 +134,6 @@ export default function App() {
         <Route path="/writing/task2/doing" element={<ProtectedRoute><Task2PracticePage /></ProtectedRoute>} />
         <Route path="/writing/chart" element={<ProtectedRoute><ChartSelectionPage /></ProtectedRoute>} />
         <Route path="/writing/chart/doing" element={<ProtectedRoute><ChartPracticePage /></ProtectedRoute>} />
-        <Route path="/writing/perspective" element={<ProtectedRoute><WritingPerspectiveTrainingPage /></ProtectedRoute>} />
         <Route path="/writing/ai-teacher" element={<ProtectedRoute><AiTeacherGenPage /></ProtectedRoute>} />
         <Route path="/writing/ai-teacher/lesson" element={<ProtectedRoute><AiTeacherLessonPage /></ProtectedRoute>} />
         <Route path="/writing/task1-ai-teacher" element={<ProtectedRoute><Task1AiTeacherGenPage /></ProtectedRoute>} />

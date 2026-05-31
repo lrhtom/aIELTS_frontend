@@ -99,28 +99,6 @@ export default function Writing_page() {
                                 flexDirection: 'column',
                                 gap: '8px'
                             }}
-                            onClick={() => navigate('/writing/perspective')}
-                        >
-                            <span style={{ fontSize: '24px' }}>🎯</span>
-                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.perspective?.title}</div>
-                            <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                                {t.writingHub.perspective?.desc}
-                            </div>
-                        </button>
-
-                        <button
-                            style={{
-                                padding: '1.5rem',
-                                borderRadius: '12px',
-                                border: '2px solid var(--color-primary)',
-                                backgroundColor: 'var(--color-surface)',
-                                color: 'var(--color-text)',
-                                textAlign: 'left',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '8px'
-                            }}
                             onClick={() => navigate('/writing/chat-config')}
                         >
                             <span style={{ fontSize: '24px' }}>💬</span>

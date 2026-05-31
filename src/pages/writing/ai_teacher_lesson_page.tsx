@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
-import { apiClient } from '../../api/client';
+import { apiClient, fetchStream } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import BadExampleList, { type BadExample } from '../../components/writing/BadExampleList';
 import '../../styles/writing_ai_teacher.css';
@@ -73,6 +73,11 @@ interface BilingualArg {
     main_idea_zh: string;
     explanation_en: string;
     explanation_zh: string;
+    explanation_steps?: Array<{
+        step_name: string;
+        en: string;
+        zh: string;
+    }>;
     example_en: string;
     example_zh: string;
     bad_examples: BadExample[];
@@ -214,6 +219,157 @@ function BilingualBlock({ en, zh, label }: { en: string; zh: string; label?: str
     );
 }
 
+function ExplanationBlock({ arg }: { arg: BilingualArg }) {
+    const { lang } = useLang();
+    const [isSubdivided, setIsSubdivided] = useState(false);
+
+    // Fallback logic for older cached data without explanation_steps
+    const steps = arg.explanation_steps?.length ? arg.explanation_steps : (() => {
+        const enSentences = arg.explanation_en.split(/(?<=\.|\?|\!)\s+/).filter(s => s.trim());
+        const zhSentences = arg.explanation_zh.split(/(?<=[。？！])\s*/).filter(s => s.trim());
+        const labels = ['背景', '顺推', '反推'];
+        const fallbackSteps = [];
+        const maxLen = Math.max(enSentences.length, zhSentences.length, 1);
+        for (let i = 0; i < maxLen; i++) {
+            fallbackSteps.push({
+                step_name: labels[i] || `步骤 ${i + 1}`,
+                en: enSentences[i] || '',
+                zh: zhSentences[i] || ''
+            });
+        }
+        return fallbackSteps;
+    })();
+
+    const hasSteps = steps.length > 0;
+
+    return (
+        <div className="at-bilingual-container" style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <div className="at-bilingual-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--practice-accent)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {lang === 'zh' ? '解释展开' : 'Explanation'}
+                </div>
+                {hasSteps && (
+                    <button 
+                        onClick={() => setIsSubdivided(!isSubdivided)}
+                        style={{
+                            background: isSubdivided ? 'rgba(79, 70, 229, 0.1)' : 'transparent',
+                            color: isSubdivided ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                            border: `1px solid ${isSubdivided ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                            padding: '0.2rem 0.6rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            transition: 'all 0.2s'
+                        }}
+                        title={lang === 'zh' ? '切换逻辑细分模式' : 'Toggle step breakdown'}
+                    >
+                        {isSubdivided ? '📄 完整段落' : '🔍 解析细分'}
+                    </button>
+                )}
+            </div>
+
+            {!isSubdivided ? (
+                <div className="at-bilingual">
+                    <div className="at-lang-block at-lang-en">
+                        <span className="at-lang-tag">EN</span>
+                        <p>{arg.explanation_en}</p>
+                    </div>
+                    <div className="at-lang-block at-lang-zh">
+                        <span className="at-lang-tag">中文</span>
+                        <p>{arg.explanation_zh}</p>
+                    </div>
+                </div>
+            ) : (
+                <div className="at-explanation-steps-timeline" style={{ position: 'relative', marginTop: '1rem', paddingLeft: '8px' }}>
+                    {/* Vertical connecting line */}
+                    <div style={{
+                        position: 'absolute',
+                        top: '1.5rem',
+                        bottom: '1.5rem',
+                        left: '18px', // 8px padding + 11px half node - 1px half line
+                        width: '2px',
+                        background: 'linear-gradient(to bottom, var(--color-primary), rgba(79, 70, 229, 0.1))',
+                        zIndex: 0
+                    }} />
+
+                    {steps.map((step, i) => (
+                        <div key={i} style={{ 
+                            display: 'flex',
+                            gap: '1.2rem',
+                            paddingBottom: i < steps.length - 1 ? '1.5rem' : '0',
+                            position: 'relative',
+                            zIndex: 1
+                        }}>
+                            {/* Timeline Node */}
+                            <div style={{
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                background: 'var(--color-bg, #fff)',
+                                border: '2px solid var(--color-primary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                marginTop: '4px',
+                                boxShadow: '0 0 0 4px var(--color-bg, #fff)'
+                            }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)' }} />
+                            </div>
+
+                            {/* Card Content */}
+                            <div style={{
+                                flex: 1,
+                                background: 'linear-gradient(145deg, rgba(79, 70, 229, 0.03) 0%, rgba(79, 70, 229, 0.01) 100%)',
+                                border: '1px solid rgba(79, 70, 229, 0.1)',
+                                borderRadius: '12px',
+                                padding: '1.2rem',
+                                transition: 'all 0.2s',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.015)'
+                            }}>
+                                <div style={{ 
+                                    display: 'inline-block',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    color: 'var(--color-primary)',
+                                    background: 'rgba(79, 70, 229, 0.1)',
+                                    padding: '0.2rem 0.6rem',
+                                    borderRadius: '6px',
+                                    marginBottom: '0.8rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
+                                }}>
+                                    {step.step_name}
+                                </div>
+                                <div style={{ 
+                                    fontSize: '0.95rem', 
+                                    color: 'var(--color-text)', 
+                                    fontWeight: 500, 
+                                    lineHeight: 1.6, 
+                                    marginBottom: '0.6rem' 
+                                }}>
+                                    {step.en}
+                                </div>
+                                <div style={{ 
+                                    fontSize: '0.85rem', 
+                                    color: 'var(--color-text-secondary)', 
+                                    lineHeight: 1.6 
+                                }}>
+                                    {step.zh}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 function SingleLangBadBox({ en, zh, label }: { en: string; zh: string; label: string }) {
     const { lang } = useLang();
     return (
@@ -286,29 +442,70 @@ export default function AiTeacherLessonPage() {
         fetchingRef.current = true;
         setState('loading');
         setErrorMsg('');
+        setLoadingStep(0);
 
         try {
-            const res = await apiClient.post('/writing/ai-teacher/generate', { topic });
-            const lessonData = normalize(res.data);
-            setData(lessonData);
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ topic, data: lessonData }));
-            setState('ready');
-        } catch (e: unknown) {
-            const msg = (e as { response?: { data?: { error?: string, reason?: string } } })?.response?.data?.error || t.writingAiTeacher.errorGen;
+            const res = await fetchStream('/writing/ai-teacher/generate', {
+                method: 'POST',
+                body: { topic },
+            });
             
-            if (msg === 'INVALID_TOPIC') {
-                const reason = (e as { response?: { data?: { reason?: string } } })?.response?.data?.reason || '';
-                showToast(lang === 'zh' ? '输入内容不合法或不是雅思作文题目！\n' + reason : 'Invalid topic or not an IELTS writing prompt!\n' + reason, 'error');
-                navigate('/writing/ai-teacher', { replace: true });
-                return;
+            if (!res.ok) {
+                let errorData = null;
+                try { errorData = await res.json(); } catch(e) {}
+                throw { response: { data: errorData } };
             }
 
+            const reader = res.body?.getReader();
+            if (!reader) throw new Error('No stream body');
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    try {
+                        const data = JSON.parse(line);
+                        
+                        if (data.error) {
+                            if (data.error === 'INVALID_TOPIC') {
+                                showToast(lang === 'zh' ? '输入内容不合法或不是雅思作文题目！\n' + (data.reason || '') : 'Invalid topic or not an IELTS writing prompt!\n' + (data.reason || ''), 'error');
+                                navigate('/writing/ai-teacher', { replace: true });
+                                return;
+                            }
+                            throw { response: { data: data } };
+                        }
+                        
+                        if (data.step !== undefined) {
+                            setLoadingStep(data.step);
+                        }
+                        
+                        if (data.result) {
+                            const lessonData = normalize(data.result);
+                            setData(lessonData);
+                            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ topic, data: lessonData }));
+                            setState('ready');
+                        }
+                    } catch (e) {
+                        // ignore unparseable lines (should not happen with valid NDJSON)
+                    }
+                }
+            }
+        } catch (e: any) {
+            const msg = (e as { response?: { data?: { error?: string, detail?: string } } })?.response?.data?.error || t.writingAiTeacher.errorGen;
             setErrorMsg(msg);
             setState('error');
-        } finally {
             fetchingRef.current = false;
+            return;
         }
-    }, [topic, t.writingAiTeacher.errorGen]);
+    }, [topic, navigate, lang, t]);
 
     useEffect(() => {
         if (!data) {
@@ -319,15 +516,6 @@ export default function AiTeacherLessonPage() {
             fetchLesson();
         }
     }, [data, topic, navigate, fetchLesson]);
-
-    useEffect(() => {
-        if (state !== 'loading') return;
-        const steps = t.writingAiTeacher.loadingSteps;
-        const interval = setInterval(() => {
-            setLoadingStep(prev => (prev < steps.length - 1 ? prev + 1 : prev));
-        }, 2000);
-        return () => clearInterval(interval);
-    }, [state, t.writingAiTeacher.loadingSteps]);
 
     const sectionNames = t.writingAiTeacher.sectionNames;
     const totalSections = sectionNames.length;
@@ -465,7 +653,7 @@ export default function AiTeacherLessonPage() {
                 <div className="at-split-main">
                     <h4>{titleEn} <span className="at-structure-name-zh">{titleZh}</span></h4>
                     <BilingualBlock en={arg.main_idea_en} zh={arg.main_idea_zh} label={lang === 'zh' ? '主旨句' : 'Main Idea'} />
-                <BilingualBlock en={arg.explanation_en} zh={arg.explanation_zh} label={lang === 'zh' ? '解释展开' : 'Explanation'} />
+                <ExplanationBlock arg={arg} />
                 <BilingualBlock en={arg.example_en} zh={arg.example_zh} label={lang === 'zh' ? '举例论证' : 'Example'} />
                 </div>
 

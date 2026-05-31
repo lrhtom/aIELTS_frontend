@@ -671,12 +671,51 @@
     display: grid;
     grid-template-columns: 3fr 2fr;
     gap: 2rem;
-    align-items: start;
+    position: relative; /* Crucial for absolute positioned grid item */
+}
+
+.at-split-main {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.at-split-side {
+    grid-column: 2;
+    grid-row: 1;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+/* Beautiful Scrollbar for the Bad Examples List */
+.at-split-side::-webkit-scrollbar {
+    width: 6px;
+}
+.at-split-side::-webkit-scrollbar-track {
+    background: transparent;
+}
+.at-split-side::-webkit-scrollbar-thumb {
+    background: rgba(239, 68, 68, 0.2);
+    border-radius: 10px;
+}
+.at-split-side::-webkit-scrollbar-thumb:hover {
+    background: rgba(239, 68, 68, 0.4);
 }
 
 @media (max-width: 1024px) {
     .at-split-layout {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .at-split-side {
+        position: static;
+        overflow-y: visible;
+        padding-right: 0;
     }
 }
 
@@ -697,7 +736,118 @@
 }
 
 .at-split-side .wpt-box-header {
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.at-split-side .wpt-badge-bad {
+    background: #ef4444;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.at-split-side .wpt-error-type-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #b91c1c; /* A slightly darker red for the title text */
+    display: flex;
+    align-items: center;
+}
+
+.at-split-side .wpt-error-type-label::before {
+    content: '🚨';
+    margin-right: 0.4rem;
+    font-size: 1.1rem;
+}
+
+.at-split-side .wpt-opinion-bilingual {
     margin-bottom: 0.5rem;
+}
+
+.at-split-side .wpt-bilingual-en {
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: 0.25rem;
+    line-height: 1.5;
+}
+
+.at-split-side .wpt-bilingual-zh {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.at-split-side .wpt-expand-btn {
+    background: transparent;
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+    margin-top: 0.75rem;
+}
+
+.at-split-side .wpt-expand-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.at-split-side .wpt-expand-arrow {
+    display: inline-block;
+    transition: transform 0.3s ease;
+    font-size: 0.75rem;
+}
+
+.at-split-side .wpt-expand-arrow.open {
+    transform: rotate(90deg);
+}
+
+.at-split-side .wpt-expanded-content {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed rgba(239, 68, 68, 0.2);
+    font-size: 0.95rem;
+    color: var(--color-text);
+}
+
+.at-split-side .wpt-reason-box {
+    background: rgba(239, 68, 68, 0.06);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    color: var(--color-text);
+}
+
+.at-split-side .wpt-reason-label {
+    font-weight: 600;
+    color: #ef4444;
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.at-split-side .wpt-expanded-en {
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    color: var(--color-text);
+}
+
+.at-split-side .wpt-expanded-zh {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
 }
 
 .at-topic-btn {
