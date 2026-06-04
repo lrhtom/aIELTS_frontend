@@ -289,7 +289,7 @@ export const zh: Translations = {
         subheading: '选择你要进行的写作练习类型',
         practiceMode: '练习模式',
         correction: {
-            title: 'AI写作板块 (AI Writing)',
+            title: 'AI写作批改',
             desc: '将你的雅思大作文或小作文粘贴至此，AI 考官将根据雅思官方四项评分准则（Task Response, Coherence, Lexical, Grammar）为你进行深入批改和打分。'
         },
         task1: {
@@ -882,7 +882,7 @@ export const zh: Translations = {
         toastFail: '提交失败',
         toastErrorTitle: '错误',
         backToHall: '写作大厅',
-        title: '📝 AI写作板块 (AI Writing)',
+        title: '📝 AI写作批改',
         subtitle: '将你的作文输入下方，获知各项评分雅思标准分级图表',
         yourEssay: '你的作文内容',
         wordCount: '字数: ',

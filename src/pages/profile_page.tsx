@@ -12,6 +12,7 @@ import AdminUserManagement from '../components/profile/AdminUserManagement';
 import UserBackground from '../components/profile/UserBackground';
 import UserManual from '../components/profile/UserManual';
 import UserAnalytics from '../components/profile/UserAnalytics';
+import UserFinance from '../components/profile/UserFinance';
 import RouteVisualization from '../components/admin/RouteVisualization';
 import { formatATBalance } from '../utils/format';
 import {
@@ -34,7 +35,7 @@ import {
 } from 'lucide-react';
 import '../styles/profile_page.css';
 
-type Tab = 'home' | 'analytics' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'manual';
+type Tab = 'home' | 'analytics' | 'finance' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'manual';
 
 /** Shown when a non-admin tries to access an admin tab via DevTools state manipulation */
 function AccessDenied() {
@@ -66,6 +67,7 @@ export default function ProfilePage() {
         switch (activeTab) {
             case 'home': return <UserHome />;
             case 'analytics': return <UserAnalytics />;
+            case 'finance': return <UserFinance />;
             case 'settings': return <UserSettings />;
             case 'backpack': return <UserBackpack onBack={() => setActiveTab('home')} />;
             case 'feedback': return <UserFeedback />;
@@ -85,6 +87,7 @@ export default function ProfilePage() {
     const menuItems: { tab: Tab; Icon: typeof LayoutDashboard; label: string }[] = [
         { tab: 'home', Icon: LayoutDashboard, label: t.profile.menu.home },
         { tab: 'analytics', Icon: BarChart3, label: t.profile.menu.analytics },
+        { tab: 'finance', Icon: Coins, label: '财政分析' },
         { tab: 'backpack', Icon: Backpack, label: t.profile.menu.backpack },
         { tab: 'settings', Icon: Settings, label: t.profile.menu.settings },
         { tab: 'feedback', Icon: MessageSquareText, label: t.profile.feedback.title },

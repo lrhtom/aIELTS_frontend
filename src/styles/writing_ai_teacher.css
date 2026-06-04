@@ -369,6 +369,25 @@
     margin-bottom: 0.5rem;
 }
 
+/* Positive / good example boxes */
+.at-good-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--color-success-bg, rgba(16, 185, 129, 0.06));
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-left: 4px solid var(--color-success, #10b981);
+    border-radius: 8px;
+}
+
+.at-good-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-success-dark, #059669);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
 .at-bad-content {
     font-size: 0.92rem;
     line-height: 1.6;
@@ -614,13 +633,16 @@
     padding: 1rem;
 }
 
-/* Bilingual in bad boxes */
-.at-bad-box .at-bilingual {
+/* Bilingual in bad/good boxes */
+.at-bad-box .at-bilingual,
+.at-good-box .at-bilingual {
     margin-top: 0.4rem;
 }
 
-.at-bad-box .at-lang-block {
-    background: rgba(255, 255, 255, 0.6);
+.at-bad-box .at-lang-block,
+.at-good-box .at-lang-block {
+    background: var(--color-surface, rgba(255, 255, 255, 0.6));
+    border-color: transparent;
 }
 
 /* Summary item with bilingual */
@@ -691,19 +713,28 @@
     padding-right: 0.5rem;
 }
 
-/* Beautiful Scrollbar for the Bad Examples List */
-.at-split-side::-webkit-scrollbar {
+/* Beautiful Scrollbar for the Bad Examples List and Split Main */
+.at-split-side::-webkit-scrollbar,
+.at-split-main::-webkit-scrollbar {
     width: 6px;
 }
-.at-split-side::-webkit-scrollbar-track {
+.at-split-side::-webkit-scrollbar-track,
+.at-split-main::-webkit-scrollbar-track {
     background: transparent;
 }
 .at-split-side::-webkit-scrollbar-thumb {
     background: rgba(239, 68, 68, 0.2);
     border-radius: 10px;
 }
+.at-split-main::-webkit-scrollbar-thumb {
+    background: var(--color-border, #cbd5e1);
+    border-radius: 10px;
+}
 .at-split-side::-webkit-scrollbar-thumb:hover {
     background: rgba(239, 68, 68, 0.4);
+}
+.at-split-main::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary, #94a3b8);
 }
 
 @media (max-width: 1024px) {
@@ -939,3 +970,381 @@
     white-space: pre-wrap;
 }
 
+
+/* ==========================================================================
+   PREMIUM UI REDESIGN (Overrides for Task 1 / Task 2 AI Teacher)
+   ========================================================================== */
+
+/* 1. Global Page Background & Font Smoothing */
+.at-lesson-wrap {
+    background: #f8fafc;
+    min-height: 100vh;
+    padding-bottom: 80px;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 2. Advanced Card Design (Shadows, Borders, Radius) */
+.at-section-card {
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.6) !important;
+    border-radius: 24px !important;
+    padding: 2.5rem !important;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03), 0 12px 30px -4px rgba(15, 23, 42, 0.02) !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin-bottom: 0;
+}
+
+.at-section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.06), 0 20px 40px -10px rgba(15, 23, 42, 0.04) !important;
+}
+
+.at-section-card h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+/* 3. Redesigned Split Side (Warning / Alert Panels) */
+.at-split-side .at-section-card {
+    padding: 2rem !important;
+    border-radius: 20px !important;
+    border: none !important;
+    background: rgba(254, 242, 242, 0.5) !important; /* Soft Rose Glass */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: inset 0 0 0 1px rgba(254, 226, 226, 0.8), 0 8px 20px rgba(0,0,0,0.02) !important;
+}
+
+.at-split-side .at-section-card[style*="#f0fdf4"] {
+    background: rgba(240, 253, 244, 0.5) !important; /* Soft Mint Glass */
+    box-shadow: inset 0 0 0 1px rgba(187, 247, 208, 0.8), 0 8px 20px rgba(0,0,0,0.02) !important;
+}
+
+.at-split-side .at-section-card h3 {
+    font-size: 1.2rem;
+    color: #991b1b;
+}
+
+.at-split-side .at-section-card[style*="#f0fdf4"] h3 {
+    color: #166534;
+}
+
+/* 4. Beautiful Bilingual Typography */
+.at-bilingual-block {
+    margin-bottom: 1.5rem;
+    padding-left: 1rem;
+    border-left: 3px solid #e2e8f0;
+    transition: border-color 0.2s ease;
+}
+
+.at-bilingual-block:hover {
+    border-left-color: var(--color-primary);
+}
+
+.at-text-en {
+    font-size: 1.1rem;
+    color: #1e293b;
+    font-weight: 500;
+    line-height: 1.7;
+    margin-bottom: 0.5rem;
+}
+
+.at-text-zh {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.at-bilingual-label {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    background: rgba(13, 148, 136, 0.1);
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 5. Floating Glass Navigation Bar (Dynamic Island Style) */
+.at-section-nav {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.4) !important;
+    border-radius: 100px !important;
+    padding: 0.75rem 1.5rem !important;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.05) !important;
+    width: max-content;
+    margin: 0 auto 2.5rem auto !important;
+    position: sticky;
+    top: 20px;
+    z-index: 50;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.at-nav-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 50px !important;
+    transition: all 0.2s ease !important;
+}
+
+.at-nav-btn:not(:disabled):hover {
+    background: rgba(15, 23, 42, 0.05) !important;
+    color: #0f172a !important;
+}
+
+.at-nav-btn:disabled {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+}
+
+.at-nav-info {
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    font-size: 1rem !important;
+    padding: 0 1.5rem !important;
+    border-left: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+}
+
+.at-topic-btn, .at-download-btn {
+    border-radius: 50px !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 1.2rem !important;
+    border: none !important;
+}
+
+.at-topic-btn {
+    background: rgba(13, 148, 136, 0.1) !important;
+    color: var(--color-primary) !important;
+}
+.at-topic-btn:hover {
+    background: rgba(13, 148, 136, 0.2) !important;
+}
+
+/* 6. Structure Cards Refinement */
+.at-structure-card {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+}
+.at-structure-card:hover {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    border-color: #e2e8f0;
+}
+.at-structure-num {
+    background: var(--color-primary);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+/* 7. Beautiful Content Box Grids */
+.at-section-card > div[style*="grid-template-columns"] > div {
+    background: #f8fafc !important;
+    border: 1px solid #f1f5f9;
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+    transition: all 0.2s ease;
+    border-radius: 12px !important;
+}
+.at-section-card > div[style*="grid-template-columns"] > div:hover {
+    background: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+
+/* Vocabulary Highlighting */
+.at-section-card > div[style*="borderLeft: 3px solid"] {
+    background: #f8fafc !important;
+    border-radius: 12px !important;
+    border-left: 4px solid #3b82f6 !important;
+    padding: 1.25rem !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+/* Clean up hardcoded style borders */
+.at-section-card[style*="borderLeft: 4px solid"] {
+    border-left: 1px solid rgba(226, 232, 240, 0.6) !important;
+}
+
+/* Fade-in Animation for the current section */
+.at-split-layout {
+    animation: atFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes atFadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Beautiful Sentence Blocks */
+.wpt-sentence-block {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.wpt-sentence-block:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    border-color: #cbd5e1;
+}
+.wpt-sentence-block > div[style*="borderLeft"] {
+    background: rgba(139, 92, 246, 0.05) !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 8px;
+    border-left: 3px solid #8b5cf6 !important;
+    margin-top: 1rem !important;
+}
+
+/* --- UNIFIED GLASSMORPHISM FOR BAD BOXES (Task 1 and Task 2) --- */
+.at-split-side .wpt-bad-box, .at-bad-box {
+    background: rgba(254, 242, 242, 0.6) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: none !important;
+    border-left: 4px solid #ef4444 !important;
+    border-radius: 12px !important;
+    padding: 1.5rem !important;
+    box-shadow: inset 0 0 0 1px rgba(254, 226, 226, 0.8), 0 8px 24px -4px rgba(239, 68, 68, 0.08) !important;
+    margin-bottom: 1.25rem !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.at-split-side .wpt-bad-box:hover, .at-bad-box:hover {
+    transform: translateX(-2px);
+    box-shadow: inset 0 0 0 1px rgba(254, 226, 226, 0.9), 0 12px 28px -6px rgba(239, 68, 68, 0.12) !important;
+}
+.at-split-side .wpt-bad-box .wpt-box-header { margin-bottom: 0.8rem; }
+.at-split-side-title { 
+    font-size: 1.15rem !important; 
+    font-weight: 700; 
+    color: #1e293b !important; 
+    display: flex; 
+    align-items: center; 
+    gap: 0.5rem; 
+}
+.at-split-side-title span { font-size: 1.25rem; }
+
+/* --- PREMIUM STRUCTURE CARDS (SECTION 1) --- */
+.at-structure-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+}
+
+.at-structure-card {
+    background: #ffffff !important;
+    border: 1px solid #f1f5f9 !important;
+    border-radius: 20px !important;
+    padding: 2rem !important;
+    margin-bottom: 1.5rem !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03), inset 0 2px 4px rgba(255,255,255,0.5) !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+    position: relative;
+    overflow: hidden;
+}
+.at-structure-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.8) !important;
+}
+
+.at-structure-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 1rem;
+}
+
+.at-structure-num {
+    background: linear-gradient(135deg, #0d9488, #14b8a6) !important;
+    color: white !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3) !important;
+}
+
+.at-structure-title {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    letter-spacing: 0.5px;
+}
+
+.at-structure-purpose {
+    margin-bottom: 1rem;
+}
+.at-structure-purpose strong {
+    display: inline-block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+}
+
+.at-structure-card .at-structure-purpose .at-lang-block {
+    background: rgba(20, 184, 166, 0.04) !important;
+    border: none !important;
+    border-left: 3px solid #14b8a6 !important;
+    border-radius: 4px 12px 12px 4px !important;
+    padding: 1.25rem 1.5rem !important;
+    box-shadow: none !important;
+    margin-bottom: 0 !important;
+    color: #0f172a !important;
+    font-weight: 500;
+}
+
+.at-structure-card .at-structure-guide {
+    margin-top: 1rem;
+}
+.at-structure-card .at-structure-guide .at-lang-block {
+    background: transparent !important;
+    border: none !important;
+    border-top: 1px dashed #cbd5e1 !important;
+    border-radius: 0 !important;
+    padding: 1.25rem 0 0 0 !important;
+    box-shadow: none !important;
+    color: #475569 !important;
+    font-size: 0.95rem;
+    line-height: 1.7;
+}

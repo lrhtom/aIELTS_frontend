@@ -171,6 +171,7 @@ export default function VocabularyFlashcardDoingPage() {
     const [trackingMode, setTrackingMode] = useState<TrackingMode>('none');
     const [trackingMenuOpen, setTrackingMenuOpen] = useState(false);
     const trackingMenuRef = useRef<HTMLDivElement | null>(null);
+    const submittedFsrsIndices = useRef<Set<number>>(new Set());
 
     // Click outside to close tracking menu
     useEffect(() => {
@@ -600,10 +601,10 @@ export default function VocabularyFlashcardDoingPage() {
         try {
             return await submitReview(word, rating, lastReview, cardPlanId);
         } catch (err: unknown) {
-            const axiosErr = err as { response?: { status?: number; data?: { server_last_review?: string | null } } };
+            const axiosErr = err as { response?: { status?: number } };
             if (axiosErr?.response?.status === 409) {
-                const freshLR = axiosErr.response.data?.server_last_review ?? null;
-                return await submitReview(word, rating, freshLR, cardPlanId);
+                console.warn(`Word ${word} already updated on server, skipping local FSRS sync.`);
+                return { card: null };
             }
             throw err;
         }
@@ -635,9 +636,20 @@ export default function VocabularyFlashcardDoingPage() {
 
         let updatedCard: VocabCard = card;
 
-        // 复习模式：跳过 FSRS 提交，纯浏览不影响间隔调度
-        // 默写模式：只在毕业时提交 FSRS，中间进度不提交（退出即丢弃）
-        const shouldSubmitFsrs = !reviewOnly && !(mode === 'write' && !graduate);
+        let shouldSubmitFsrs = false;
+        
+        if (!reviewOnly) {
+            const hasSubmittedMistake = submittedFsrsIndices.current.has(ci);
+            
+            if (graduate) {
+                // 如果毕业，必须提交通知后端将其转为 REVIEW 状态（即使之前答错过）
+                shouldSubmitFsrs = true;
+            } else if (forgotNow && !hasSubmittedMistake) {
+                // 如果是首次答错，提交惩罚。后续答错不再重复提交
+                shouldSubmitFsrs = true;
+                submittedFsrsIndices.current.add(ci);
+            }
+        }
 
         if (shouldSubmitFsrs) {
             try {
@@ -647,14 +659,17 @@ export default function VocabularyFlashcardDoingPage() {
                     card.last_review,
                     card.plan_id,
                 );
-                updatedCard = nextCard;
-                setCards(prev => {
-                    const next = [...prev];
-                    next[ci] = nextCard;
-                    return next;
-                });
+                if (nextCard) {
+                    updatedCard = nextCard;
+                    setCards(prev => {
+                        const next = [...prev];
+                        next[ci] = nextCard;
+                        return next;
+                    });
+                }
             } catch {
                 showToast(t.vocab.toastSyncFail || '评分同步失败，请检查网络后重试', 'error');
+                submittedFsrsIndices.current.delete(ci);
                 setSubmitting(false);
                 return;
             }
@@ -687,9 +702,26 @@ export default function VocabularyFlashcardDoingPage() {
             return reinsert(rest, ci);
         });
 
+        // 核心修复：在这里同步重置UI状态，防止下一个单词渲染时使用上一个单词的残余UI状态（产生显示闪烁）
+        setIsFlipped(false);
+        setLastRating(null);
+        setChoiceSelected(null);
+        setChoiceCorrect(null);
+        setChoiceRevealed(false);
+        setWriteInput('');
+        setWriteSubmitted(false);
+        setWriteCorrect(null);
+        setUnknownMode(false);
+        setQuickProficient(false);
+        setCopyInput('');
+        setCopySubmitted(false);
+        setCopyPendingAction(null);
+        setCompletionDueHint(null);
+        setCopyWordVisible(!copyWordHidden);
+
         setVisitKey(k => k + 1);
         setSubmitting(false);
-    }, [submitReviewWithRetry, reinsertAfterGap, reinsertAfterGapForWrite, reviewOnly, mode, t.vocab.toastSyncFail]);
+    }, [submitReviewWithRetry, reinsertAfterGap, reinsertAfterGapForWrite, reviewOnly, mode, t.vocab.toastSyncFail, copyWordHidden]);
 
     /**
      * 记忆卡手动评分
@@ -774,6 +806,12 @@ export default function VocabularyFlashcardDoingPage() {
         // write 模式中途退出不补交，未完成的进度直接丢弃
 
         if (!outcome) return;
+
+        // 防止重复提交（如果该词在本次会话中已经发过 FSRS 请求，则不再重复发送）
+        if (submittedFsrsIndices.current.has(currentCardIdx)) {
+            console.log('[词汇学习] 退出前检测到当前词已提交过 FSRS，跳过补交');
+            return;
+        }
 
         const { card: nextCard } = await submitReviewWithRetry(
             currentCard.word,

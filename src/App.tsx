@@ -56,6 +56,7 @@ import AiTeacherLessonPage from './pages/writing/ai_teacher_lesson_page';
 import Task1AiTeacherGenPage from './pages/writing/task1_ai_teacher_gen_page';
 import Task1AiTeacherLessonPage from './pages/writing/task1_ai_teacher_lesson_page';
 import AiTeachersHubPage from './pages/writing/ai_teachers_hub_page';
+import WritingServiceRecordsPage from './pages/writing/writing_service_records_page';
 
 // 词汇
 import VocabularyPracticePage from './pages/vocabulary/vocabulary_practice_page';
@@ -139,6 +140,7 @@ export default function App() {
         <Route path="/writing/task1-ai-teacher" element={<ProtectedRoute><Task1AiTeacherGenPage /></ProtectedRoute>} />
         <Route path="/writing/task1-ai-teacher/lesson" element={<ProtectedRoute><Task1AiTeacherLessonPage /></ProtectedRoute>} />
         <Route path="/writing/ai-teachers" element={<ProtectedRoute><AiTeachersHubPage /></ProtectedRoute>} />
+        <Route path="/writing/ai-teachers/records" element={<ProtectedRoute><WritingServiceRecordsPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/prompts" element={<ProtectedRoute><PromptPage /></ProtectedRoute>} />

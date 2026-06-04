@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { useLang } from '../../i18n/LanguageContext';
 import { showToast } from '../../components/common/Toast';
+import AiModelSelector from '../../components/common/AiModelSelector';
 import '../../styles/writing_ai_teacher.css';
 
 const EXAMPLE_TOPICS = [
@@ -67,6 +68,7 @@ export default function Task1AiTeacherGenPage() {
             pageSubtitle={lang === 'zh' ? '极速图表分析与段落结构指导' : 'Fast chart analysis and structure guide'}
             backUrl="/writing"
             backText={t.writingHub.backToPractice}
+            headerRight={<AiModelSelector variant="minimal" label="" description="" />}
         >
             <div className="at-gen-wrap">
                 <div className="at-gen-card">

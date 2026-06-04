@@ -52,7 +52,7 @@ export default function AiModelSelector({ onModelChange, label, description, var
         return (
             <select
                 style={{
-                    padding: '6px 12px',
+                    padding: '4px 10px',
                     borderRadius: '20px',
                     border: '1px solid var(--color-border)',
                     backgroundColor: 'var(--color-surface)',
@@ -62,7 +62,8 @@ export default function AiModelSelector({ onModelChange, label, description, var
                     cursor: 'pointer',
                     outline: 'none',
                     transition: 'all 0.2s',
-                    width: 'auto'
+                    width: 'auto',
+                    height: '28px'
                 }}
                 value={provider}
                 onChange={(e) => handleProviderChange(e.target.value as AIProvider)}

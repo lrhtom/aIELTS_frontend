@@ -409,14 +409,22 @@ export default function AiTeacherLessonPage() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const topic = (location.state as { topic?: string } | null)?.topic || '';
+    const [topic, setTopic] = useState(() => (location.state as any)?.topic || '');
+    const recordId = (location.state as any)?.record_id;
+    
+    // 提取高级偏好设置
+    const [viewpointEnabled] = useState(() => (location.state as any)?.viewpointEnabled || false);
+    const [viewpoint] = useState(() => (location.state as any)?.viewpoint || '');
+    const [customInstructions] = useState(() => (location.state as any)?.customInstructions || '');
 
     const [state, setState] = useState<PageState>(() => {
+        if (recordId) return 'loading';
         const cached = sessionStorage.getItem(SESSION_KEY);
         return cached ? 'ready' : 'loading';
     });
 
     const [data, setData] = useState<LessonData | null>(() => {
+        if (recordId) return null;
         const cachedRaw = sessionStorage.getItem(SESSION_KEY);
         if (cachedRaw) {
             try {
@@ -432,10 +440,43 @@ export default function AiTeacherLessonPage() {
     const [loadingStep, setLoadingStep] = useState(0);
     const [isDownloading, setIsDownloading] = useState(false);
     const [showTopic, setShowTopic] = useState(false);
+    const [isSaved, setIsSaved] = useState(!!recordId);
+    const [isSaving, setIsSaving] = useState(false);
 
     const contentRef = useRef<HTMLDivElement>(null);
     const allSectionsRef = useRef<HTMLDivElement>(null);
     const fetchingRef = useRef(false);
+
+    const handleSaveResult = async () => {
+        if (!data || isSaved) return;
+        setIsSaving(true);
+        try {
+            const res = await apiClient.post<{status: string, id: number}>('/writing/records', {
+                service_type: 'task2_teacher',
+                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : '大作文讲解',
+                content: { ...data, original_topic: topic },
+            });
+            if (res.data.status === 'success') {
+                showToast(lang === 'zh' ? '保存成功！' : 'Saved successfully!', 'success');
+                setIsSaved(true);
+            } else {
+                showToast(lang === 'zh' ? '保存失败' : 'Failed to save', 'error');
+            }
+        } catch (e: any) {
+            const msg = e.response?.data?.message || e.message; showToast((lang === 'zh' ? '保存出错: ' : 'Error saving: ') + msg, 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleBack = () => {
+        if (state === 'ready' && !isSaved && !recordId) {
+            if (!window.confirm(lang === 'zh' ? '尚未保存本次结果，退出将丢失该讲解记录，是否确认退出？' : 'Result not saved. Exit without saving?')) {
+                return;
+            }
+        }
+        navigate('/writing/ai-teachers', { replace: true });
+    };
 
     const fetchLesson = useCallback(async () => {
         if (fetchingRef.current) return;
@@ -444,10 +485,36 @@ export default function AiTeacherLessonPage() {
         setErrorMsg('');
         setLoadingStep(0);
 
+        if (recordId) {
+            try {
+                const res = await apiClient.get<{status: string, data: any}>(`/writing/records/${recordId}`);
+                if (res.data.status === 'success') {
+                    const lessonData = normalize(res.data.data.content);
+                    setData(lessonData);
+                    setTopic(res.data.data.content.original_topic || res.data.data.title || '');
+                    setState('ready');
+                    setIsSaved(true);
+                } else {
+                    throw new Error('Load failed');
+                }
+            } catch (e: any) {
+                setErrorMsg(lang === 'zh' ? '记录加载失败' : 'Failed to load record');
+                setState('error');
+            } finally {
+                fetchingRef.current = false;
+            }
+            return;
+        }
+
         try {
             const res = await fetchStream('/writing/ai-teacher/generate', {
                 method: 'POST',
-                body: { topic },
+                body: { 
+                    topic,
+                    viewpointEnabled,
+                    viewpoint,
+                    customInstructions 
+                },
             });
             
             if (!res.ok) {
@@ -493,7 +560,7 @@ export default function AiTeacherLessonPage() {
                             sessionStorage.setItem(SESSION_KEY, JSON.stringify({ topic, data: lessonData }));
                             setState('ready');
                         }
-                    } catch (e) {
+                    } catch (e: any) {
                         // ignore unparseable lines (should not happen with valid NDJSON)
                     }
                 }
@@ -509,7 +576,7 @@ export default function AiTeacherLessonPage() {
 
     useEffect(() => {
         if (!data) {
-            if (!topic) {
+            if (!topic && !recordId) {
                 navigate('/writing/ai-teacher', { replace: true });
                 return;
             }
@@ -782,20 +849,22 @@ export default function AiTeacherLessonPage() {
             >
                 <div className="at-loading-wrap">
                     <div className="at-loading-spinner" />
-                    <div className="at-loading-title">{t.writingAiTeacher.loading}</div>
-                    <div className="at-loading-steps">
-                        {steps.map((step, i) => (
-                            <div
-                                key={i}
-                                className={`at-loading-step${i === loadingStep ? ' is-active' : ''}${i < loadingStep ? ' is-done' : ''}`}
-                            >
-                                <span className="at-step-indicator">
-                                    {i < loadingStep ? '✓' : i === loadingStep ? '' : ''}
-                                </span>
-                                {step}
-                            </div>
-                        ))}
-                    </div>
+                    <div className="at-loading-title">{recordId ? (lang === 'zh' ? '正在提取历史服务记录...' : 'Loading service record...') : t.writingAiTeacher.loading}</div>
+                    {!recordId && (
+                        <div className="at-loading-steps">
+                            {steps.map((step, i) => (
+                                <div
+                                    key={i}
+                                    className={`at-loading-step${i === loadingStep ? ' is-active' : ''}${i < loadingStep ? ' is-done' : ''}`}
+                                >
+                                    <span className="at-step-indicator">
+                                        {i < loadingStep ? '✓' : i === loadingStep ? '➤' : ''}
+                                    </span>
+                                    {step}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </Layout>
         );
@@ -804,9 +873,8 @@ export default function AiTeacherLessonPage() {
     if (state === 'error') {
         return (
             <Layout
-                pageTitle={t.writingAiTeacher.lessonTitle}
+                pageTitle={t.writingAiTeacher?.lessonTitle || 'AI作文老师讲解'}
                 backUrl="/writing/ai-teacher"
-                backText={t.writingAiTeacher.genTitle}
             >
                 <div className="at-error-wrap">
                     <div className="at-error-msg">{errorMsg}</div>
@@ -821,8 +889,31 @@ export default function AiTeacherLessonPage() {
     return (
         <Layout
             pageTitle={t.writingAiTeacher.lessonTitle}
-            backUrl="/writing/ai-teacher"
+            backUrl={recordId ? "/writing/ai-teachers/records" : "/writing/ai-teacher"}
             backText={t.writingAiTeacher.genTitle}
+            onBack={handleBack}
+            headerRight={
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    {state === 'ready' && !isSaved && !recordId && (
+                        <button
+                            onClick={handleSaveResult}
+                            disabled={isSaving}
+                            style={{
+                                padding: '0.4rem 1rem',
+                                borderRadius: '8px',
+                                background: isSaving ? '#ccc' : 'var(--color-primary)',
+                                color: '#fff',
+                                border: 'none',
+                                cursor: isSaving ? 'not-allowed' : 'pointer',
+                                fontSize: '0.9rem',
+                                fontWeight: 500
+                            }}
+                        >
+                            {isSaving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '💾 保存结果' : '💾 Save')}
+                        </button>
+                    )}
+                </div>
+            }
         >
             <div className="at-lesson-wrap">
                 <div className="at-section-nav">

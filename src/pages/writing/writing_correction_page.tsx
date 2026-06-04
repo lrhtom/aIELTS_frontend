@@ -1,5 +1,6 @@
 import Layout from '../../components/layout/Layout';
-import { useState, useMemo, useRef, type ChangeEvent, type DragEvent } from 'react';
+import { useState, useMemo, useRef, useEffect, type ChangeEvent, type DragEvent } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import translate from 'translate';
 translate.engine = 'google';
 import AiModelSelector, { type AIProvider } from '../../components/common/AiModelSelector';
@@ -38,6 +39,31 @@ export default function WritingCorrectionPage() {
     const [task1ImageName, setTask1ImageName] = useState('');
     const [isTask1ImageDragOver, setIsTask1ImageDragOver] = useState(false);
     const task1ImageInputRef = useRef<HTMLInputElement | null>(null);
+
+    const location = useLocation();
+    const navigate = useNavigate();
+    const recordId = (location.state as { record_id?: number } | null)?.record_id;
+    const [isSaved, setIsSaved] = useState(!!recordId);
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (recordId) {
+            api<{status: string, data: any}>(`/writing/records/${recordId}`)
+                .then(res => {
+                    if (res.status === 'success') {
+                        const content = res.data.content;
+                        setResult(content.result);
+                        setText(content.text || '');
+                        setPromptText(content.prompt || '');
+                        setTaskType(content.task_type || 'task2');
+                        setIsSaved(true);
+                    }
+                })
+                .catch(err => {
+                    showToast(lang === 'zh' ? '加载记录失败' : 'Failed to load record', 'error');
+                });
+        }
+    }, [recordId, lang]);
 
     const minWords = taskType === 'task1' ? 150 : 250;
     const supportsTask1ImageRecognition = provider.startsWith('gpt5');
@@ -124,6 +150,7 @@ export default function WritingCorrectionPage() {
                 body: payload,
             });
             setResult(res);
+            setIsSaved(false);
             showToast(t.writingCorrection.toastSuccess, 'success');
         } catch (err: unknown) {
             console.error('Submit writing correction error:', err);
@@ -134,6 +161,45 @@ export default function WritingCorrectionPage() {
         }
     };
 
+    const handleSaveResult = async () => {
+        if (!result || isSaved) return;
+        setIsSaving(true);
+        try {
+            const res = await api<{status: string, id: number}>('/writing/records', {
+                method: 'POST',
+                body: {
+                    service_type: 'correction',
+                    title: promptText ? (promptText.slice(0, 30) + '...') : (lang === 'zh' ? '无题作文批改' : 'Untitled Correction'),
+                    content: {
+                        result,
+                        text,
+                        prompt: promptText,
+                        task_type: taskType
+                    },
+                }
+            });
+            if (res.status === 'success') {
+                showToast(lang === 'zh' ? '保存成功！' : 'Saved successfully!', 'success');
+                setIsSaved(true);
+            } else {
+                showToast(lang === 'zh' ? '保存失败' : 'Failed to save', 'error');
+            }
+        } catch (e) {
+            showToast(lang === 'zh' ? '保存出错' : 'Error saving', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleBack = () => {
+        if (result && !isSaved && !recordId) {
+            if (!window.confirm(lang === 'zh' ? '尚未保存本次批改结果，退出将丢失该记录，是否确认退出？' : 'Result not saved. Exit without saving?')) {
+                return;
+            }
+        }
+        navigate('/writing');
+    };
+
     const scores = result ? [
         { label: lang === 'zh' ? (taskType === 'task1' ? '任务完成' : '任务回应') : (taskType === 'task1' ? 'TA' : 'TR'), val: result.Task_Response },
         { label: lang === 'zh' ? '连贯衔接' : 'CC', val: result.Coherence_Cohesion },
@@ -142,23 +208,46 @@ export default function WritingCorrectionPage() {
     ] : [];
 
 
+    const escapeHtml = (str: string) => {
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    };
+
     const renderAnnotatedText = () => {
         if (!result) return text.split(/\n\n+/).map((para, idx) => <p key={idx} className="wc-essay-paragraph">{para}</p>);
 
-        let annotatedHtml = text;
+        let annotatedHtml = escapeHtml(text);
+        const replacements: Record<string, string> = {};
 
         const sentences = [...(result.Sentence_Corrections || [])].sort((a, b) => b.original.length - a.original.length);
         const vocabs = [...(result.Vocabulary_Upgrades || [])].sort((a, b) => b.original.length - a.original.length);
 
-        sentences.forEach(corr => {
+        sentences.forEach((corr, idx) => {
+            const token = `__SENT_${idx}__`;
             const severityClass = corr.severity === 'suggestion' ? 'severity-suggestion' : 'severity-warning';
-            const escaped = corr.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            annotatedHtml = annotatedHtml.replace(new RegExp(escaped, 'g'), `<span class="wc-inline-error ${severityClass}" title="${corr.explanation.replace(/"/g, '&quot;')}">${corr.original}</span>`);
+            const escapedOriginal = escapeHtml(corr.original);
+            const regexEscaped = escapedOriginal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            replacements[token] = `<span class="wc-inline-error ${severityClass}" title="${escapeHtml(corr.explanation)}">${escapedOriginal}</span>`;
+            annotatedHtml = annotatedHtml.replace(new RegExp(regexEscaped, 'g'), token);
         });
 
-        vocabs.forEach(vocab => {
-            const escaped = vocab.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            annotatedHtml = annotatedHtml.replace(new RegExp(escaped, 'g'), `<span class="wc-inline-error type-vocabulary" title="Upgrades: ${vocab.upgrades.join(', ')}">${vocab.original}</span>`);
+        vocabs.forEach((vocab, idx) => {
+            const token = `__VOCAB_${idx}__`;
+            const escapedOriginal = escapeHtml(vocab.original);
+            const regexEscaped = escapedOriginal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            replacements[token] = `<span class="wc-inline-error type-vocabulary" title="Upgrades: ${escapeHtml(vocab.upgrades.join(', '))}">${escapedOriginal}</span>`;
+            annotatedHtml = annotatedHtml.replace(new RegExp(regexEscaped, 'g'), token);
+        });
+
+        // Resolve tokens
+        Object.keys(replacements).forEach(token => {
+            annotatedHtml = annotatedHtml.replace(new RegExp(token, 'g'), replacements[token]);
         });
 
         return annotatedHtml.split(/\n\n+/).map((para, idx) => (
@@ -194,15 +283,71 @@ export default function WritingCorrectionPage() {
             }
         }
     };
+    // --- Stats calculations ---
+    const grammarMistakesCount = useMemo(() => {
+        if (!result || !result.Sentence_Corrections) return 0;
+        return result.Sentence_Corrections.length;
+    }, [result]);
+
+    const repeatedWords = useMemo(() => {
+        if (!result || !text) return [];
+        const words = text.toLowerCase().replace(/[^a-z\s-]/g, ' ').split(/\s+/).filter(w => w.length > 2);
+        const stopWords = new Set(['the', 'and', 'that', 'with', 'for', 'this', 'but', 'not', 'are', 'was', 'have', 'from', 'they', 'you', 'can', 'will', 'has', 'would', 'what', 'there', 'when', 'which', 'about', 'more', 'some', 'these', 'them', 'because', 'who', 'how', 'than', 'any', 'could', 'should', 'only', 'also', 'such', 'very', 'even', 'then', 'into', 'most', 'its', 'been', 'out', 'may', 'after', 'well', 'where', 'through', 'many', 'those', 'much', 'before', 'between', 'both', 'since', 'under', 'without', 'same', 'another', 'does', 'did', 'being', 'just', 'too', 'over', 'now', 'down', 'why', 'way', 'each', 'need', 'must', 'should', 'all', 'one', 'good', 'take', 'make', 'see', 'get']);
+        const counts: Record<string, number> = {};
+        for (const w of words) {
+            if (!stopWords.has(w)) counts[w] = (counts[w] || 0) + 1;
+        }
+        return Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .filter(item => item[1] > 3)
+            .slice(0, 8);
+    }, [result, text]);
+
+    const [synonymsMap, setSynonymsMap] = useState<Record<string, string[]>>({});
+    useEffect(() => {
+        if (repeatedWords.length > 0) {
+            const wordsToFetch = repeatedWords.map(rw => rw[0]).filter(w => !synonymsMap[w]);
+            if (wordsToFetch.length > 0) {
+                api<{synonyms: Record<string, string[]>}>('/writing/synonyms', {
+                    method: 'POST',
+                    body: { words: wordsToFetch, context: text }
+                }).then(res => {
+                    if (res.synonyms) {
+                        setSynonymsMap(prev => ({ ...prev, ...res.synonyms }));
+                    }
+                }).catch(err => console.error('Failed to fetch synonyms', err));
+            }
+        }
+    }, [repeatedWords]);
+    // --- End Stats ---
 
     return (
         <Layout
             pageTitle={t.writingCorrection.title}
-            backUrl="/writing"
-            backText={t.writingCorrection.backToHall}
+            backUrl={recordId ? "/writing/ai-teachers/records" : "/writing"}
+            backText={recordId ? (lang === 'zh' ? '返回记录' : 'Back to Records') : t.writingCorrection.backToHall}
+            onBack={handleBack}
             headerRight={
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <AiModelSelector variant="minimal" onModelChange={(nextProvider) => setProvider(nextProvider)} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {result && !isSaved && !recordId && (
+                        <button
+                            onClick={handleSaveResult}
+                            disabled={isSaving}
+                            style={{
+                                padding: '0.4rem 1rem',
+                                borderRadius: '8px',
+                                background: isSaving ? '#ccc' : 'var(--color-primary)',
+                                color: '#fff',
+                                border: 'none',
+                                cursor: isSaving ? 'not-allowed' : 'pointer',
+                                fontSize: '0.9rem',
+                                fontWeight: 500
+                            }}
+                        >
+                            {isSaving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '💾 保存结果' : '💾 Save')}
+                        </button>
+                    )}
+                    {!recordId && <AiModelSelector variant="minimal" onModelChange={(nextProvider) => setProvider(nextProvider)} />}
                 </div>
             }
         >
@@ -243,9 +388,39 @@ export default function WritingCorrectionPage() {
                                     {result.Model_Essay && (
                                         <button type="button" className={`wc-tab-btn${activeTab === 'model' ? ' active' : ''}`} onClick={() => setActiveTab('model')}>{lang === 'zh' ? '高分范文' : 'Model'}</button>
                                     )}
+                                    <button type="button" className={`wc-tab-btn${activeTab === 'stats' ? ' active' : ''}`} onClick={() => setActiveTab('stats')}>{lang === 'zh' ? '数据统计' : 'Statistics'}</button>
                                 </div>
 
                                 <div className="wc-corrections-content">
+                                    {activeTab === 'stats' && (
+                                        <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            <div style={{ backgroundColor: '#ffd6dc', color: '#000', padding: '16px', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                                Grammar Mistakes: {grammarMistakesCount}
+                                            </div>
+                                            
+                                            {repeatedWords.length > 0 && (
+                                                <div style={{ backgroundColor: '#dbe0ff', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                    <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '8px', color: '#334155' }}>
+                                                        Vocabulary Repetition:
+                                                    </div>
+                                                    {repeatedWords.map(([word, count], i) => (
+                                                        <div key={i} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                                                            <div>{word}: <span style={{fontWeight: 'normal'}}>{count}</span></div>
+                                                            {synonymsMap[word] && synonymsMap[word].length > 0 && (
+                                                                <div style={{ color: '#16a34a', fontSize: '1.05rem', marginTop: '6px', fontWeight: 500 }}>
+                                                                    {synonymsMap[word].slice(0, 3).join(', ')}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    <div style={{ textAlign: 'center', fontWeight: '600', fontSize: '1rem', marginTop: '12px', color: '#475569' }}>
+                                                        Try using synonyms for the above words
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {activeTab === 'sentence' && result.Sentence_Corrections && (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                             {result.Sentence_Corrections.map((corr, idx) => (
@@ -621,30 +796,36 @@ export default function WritingCorrectionPage() {
                             </div>
                         )}
 
-                        {/* Essay */}
-                        <div className="wc-section">
-                            <div className="wc-section-head">
-                                <label className="wc-section-label">{t.writingCorrection.yourEssay}</label>
-                                <span className="wc-word-count">
-                                    {t.writingCorrection.wordCount}<strong>{wordCount}</strong> / {minWords}+
-                                </span>
-                            </div>
-                            <textarea
-                                className="wc-textarea wc-textarea--essay"
-                                placeholder={t.writingCorrection.placeholder}
-                                value={text}
-                                onChange={(e) => setText(e.target.value)}
-                                disabled={isEvaluating}
-                            />
-                            <div className="wc-word-bar">
-                                <div
-                                    className="wc-word-bar-fill"
-                                    style={{ width: `${Math.min((wordCount / minWords) * 100, 100)}%` }}
+                        </div>{/* end wc-editor-scroll */}
+                    </div>
+
+                    {/* Right: Essay Content */}
+                    <div className="wc-editor-card" style={{ position: 'relative', overflow: 'hidden' }}>
+                        <div className="wc-editor-scroll">
+                            {/* Essay */}
+                            <div className="wc-section" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                <div className="wc-section-head">
+                                    <label className="wc-section-label">{t.writingCorrection.yourEssay}</label>
+                                    <span className="wc-word-count">
+                                        {t.writingCorrection.wordCount}<strong>{wordCount}</strong> / {minWords}+
+                                    </span>
+                                </div>
+                                <textarea
+                                    className="wc-textarea wc-textarea--essay"
+                                    placeholder={t.writingCorrection.placeholder}
+                                    value={text}
+                                    onChange={(e) => setText(e.target.value)}
+                                    disabled={isEvaluating}
+                                    style={{ flex: 1, minHeight: '400px' }}
                                 />
+                                <div className="wc-word-bar" style={{ marginTop: 'auto' }}>
+                                    <div
+                                        className="wc-word-bar-fill"
+                                        style={{ width: `${Math.min((wordCount / minWords) * 100, 100)}%` }}
+                                    />
+                                </div>
                             </div>
                         </div>
-
-                        </div>{/* end wc-editor-scroll */}
 
                         {/* Submit footer — pinned at bottom */}
                         <div className="wc-footer">
@@ -656,13 +837,15 @@ export default function WritingCorrectionPage() {
                                 {isEvaluating ? t.writingCorrection.evaluatingBtn : t.writingCorrection.evaluateBtn}
                             </button>
                         </div>
-                    </div>
 
-
-                    <div className="wc-result-placeholder">
-                        <div className="wc-placeholder-icon">🤖</div>
-                        <h3>{lang === 'zh' ? '等待批改' : 'Waiting for evaluation'}</h3>
-                        <p>{lang === 'zh' ? '请在左侧输入您的作文并点击“开始批改”' : 'Please input your essay on the left and click "Evaluate"'}</p>
+                        {/* Overlay Animation during evaluation */}
+                        {isEvaluating && (
+                            <div className="wc-result-placeholder" style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderRadius: 0, height: '100%', minHeight: '100%' }}>
+                                <div className="wc-ai-pulsing-core">AI</div>
+                                <h3>{lang === 'zh' ? '正在深度批改中' : 'Evaluating your essay'}</h3>
+                                <p style={{ color: '#475569', fontWeight: 500 }}>{lang === 'zh' ? 'AI 正在逐字句分析您的作文并提供高级词汇替换，请稍候...' : 'AI is analyzing your essay sentence by sentence and preparing advanced vocabulary upgrades, please wait...'}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -112,6 +112,36 @@ export default function AiTeachersHubPage() {
                             极速解题与段落级深度指导
                         </div>
                     </button>
+
+                    <button
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                            padding: '24px',
+                            borderRadius: '16px',
+                            border: '1px solid var(--color-border)',
+                            background: 'var(--color-background-soft)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'none';
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
+                        onClick={() => navigate('/writing/ai-teachers/records')}
+                    >
+                        <span style={{ fontSize: '24px' }}>📂</span>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{lang === 'zh' ? '服务记录' : 'Service Records'}</div>
+                        <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
+                            {lang === 'zh' ? '回顾所有作文批改与 AI 解析' : 'Review past corrections and AI lessons'}
+                        </div>
+                    </button>
                 </div>
             </div>
         </Layout>
