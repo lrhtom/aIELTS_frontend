@@ -197,7 +197,7 @@ export default function WritingCorrectionPage() {
                 return;
             }
         }
-        navigate('/writing');
+        navigate('/writing/ai-teachers');
     };
 
     const scores = result ? [

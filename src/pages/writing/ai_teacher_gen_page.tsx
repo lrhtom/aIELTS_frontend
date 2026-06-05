@@ -49,7 +49,7 @@ export default function AiTeacherGenPage() {
         <Layout
             pageTitle={t.writingAiTeacher.genTitle}
             pageSubtitle={t.writingAiTeacher.genSubtitle}
-            backUrl="/writing"
+            backUrl="/writing/ai-teachers"
             backText={t.writingHub.backToPractice}
             headerRight={<AiModelSelector variant="minimal" label="" description="" />}
         >

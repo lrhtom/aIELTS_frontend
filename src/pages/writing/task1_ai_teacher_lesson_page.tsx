@@ -184,7 +184,7 @@ export default function Task1AiTeacherLessonPage() {
                 return;
             }
         }
-        navigate('/writing/task1-ai-teacher', { replace: true });
+        navigate('/writing/ai-teachers', { replace: true });
     };
 
     const sectionNames = lang === 'zh' ? [
@@ -255,7 +255,7 @@ export default function Task1AiTeacherLessonPage() {
                 try { errorData = await res.json(); } catch { /* ignore */ }
                 if (errorData?.error === 'INVALID_TOPIC') {
                     showToast(lang === 'zh' ? '输入内容不合法！\n' + (errorData.reason || '') : 'Invalid topic!\n' + (errorData.reason || ''), 'error');
-                    navigate('/writing/task1-ai-teacher', { replace: true });
+                    navigate('/writing/ai-teachers', { replace: true });
                     return;
                 }
                 throw new Error(errorData?.error || 'Generation failed');
@@ -282,7 +282,7 @@ export default function Task1AiTeacherLessonPage() {
                         if (parsed.error) {
                             if (parsed.error === 'INVALID_TOPIC') {
                                 showToast(lang === 'zh' ? '输入内容不合法！\n' + (parsed.reason || '') : 'Invalid topic!\n' + (parsed.reason || ''), 'error');
-                                navigate('/writing/task1-ai-teacher', { replace: true });
+                                navigate('/writing/ai-teachers', { replace: true });
                                 return;
                             }
                             throw new Error(parsed.detail || parsed.error);
@@ -317,7 +317,7 @@ export default function Task1AiTeacherLessonPage() {
     useEffect(() => {
         if (!data) {
             if (!topic && !recordId) {
-                navigate('/writing/task1-ai-teacher', { replace: true });
+                navigate('/writing/ai-teachers', { replace: true });
                 return;
             }
             fetchLesson();
@@ -793,7 +793,7 @@ export default function Task1AiTeacherLessonPage() {
         return (
             <Layout
                 pageTitle={lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}
-                backUrl="/writing/task1-ai-teacher"
+                backUrl="/writing/ai-teachers"
                 backText="Back"
                 onBack={handleBack}
             >
@@ -857,7 +857,7 @@ export default function Task1AiTeacherLessonPage() {
         return (
             <Layout
                 pageTitle={lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}
-                backUrl="/writing/task1-ai-teacher"
+                backUrl="/writing/ai-teachers"
                 backText="Back"
                 onBack={handleBack}
             >
@@ -872,51 +872,64 @@ export default function Task1AiTeacherLessonPage() {
     return (
         <Layout
             pageTitle={lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}
-            backUrl={recordId ? "/writing/ai-teachers/records" : "/writing/task1-ai-teacher"}
+            backUrl={recordId ? "/writing/ai-teachers/records" : "/writing/ai-teachers"}
             backText="Back"
             onBack={handleBack}
             headerRight={
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    {data && (
+                        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-surface, #fff)', borderRadius: '20px', padding: '0.15rem', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', border: '1px solid var(--color-border, #e2e8f0)' }}>
+                            <button onClick={goPrev} disabled={currentSection === 0} style={{ border: 'none', background: currentSection === 0 ? 'transparent' : 'var(--color-bg, #f8fafc)', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: currentSection === 0 ? '#cbd5e1' : 'var(--color-text)', cursor: currentSection === 0 ? 'not-allowed' : 'pointer', fontSize: '0.9rem', transition: 'all 0.2s', flexShrink: 0 }}>
+                                &#8249;
+                            </button>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', minWidth: '40px', textAlign: 'center', padding: '0 0.2rem', userSelect: 'none', whiteSpace: 'nowrap' }}>
+                                {currentSection + 1} / {totalSections}
+                            </div>
+                            <button onClick={goNext} disabled={currentSection === totalSections - 1} style={{ border: 'none', background: currentSection === totalSections - 1 ? 'transparent' : 'var(--color-bg, #f8fafc)', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: currentSection === totalSections - 1 ? '#cbd5e1' : 'var(--color-text)', cursor: currentSection === totalSections - 1 ? 'not-allowed' : 'pointer', fontSize: '0.9rem', transition: 'all 0.2s', flexShrink: 0 }}>
+                                &#8250;
+                            </button>
+                        </div>
+                    )}
+                    
+                    {data && (
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <button onClick={() => setShowTopic(true)} style={{ padding: '0.25rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '20px', background: 'rgba(59, 130, 246, 0.08)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
+                                📄 {lang === 'zh' ? '查看题目' : 'Topic'}
+                            </button>
+                            <button onClick={handleDownload} disabled={isDownloading} style={{ padding: '0.25rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '20px', background: 'var(--color-surface, #fff)', color: 'var(--color-text)', border: '1px solid var(--color-border, #e2e8f0)', cursor: isDownloading ? 'not-allowed' : 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', whiteSpace: 'nowrap' }}>
+                                📸 {isDownloading ? '...' : (lang === 'zh' ? '保存长图' : 'Download')}
+                            </button>
+                        </div>
+                    )}
+
                     {state === 'ready' && !isSaved && !recordId && (
                         <button
                             onClick={handleSaveResult}
                             disabled={isSaving}
                             style={{
-                                padding: '0.4rem 1rem',
-                                borderRadius: '8px',
-                                background: isSaving ? '#ccc' : 'var(--color-primary)',
+                                padding: '0.25rem 1rem',
+                                borderRadius: '20px',
+                                background: isSaving ? '#cbd5e1' : 'var(--color-primary)',
                                 color: '#fff',
                                 border: 'none',
                                 cursor: isSaving ? 'not-allowed' : 'pointer',
-                                fontSize: '0.9rem',
-                                fontWeight: 500
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                boxShadow: isSaving ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.2)',
+                                whiteSpace: 'nowrap'
                             }}
                         >
-                            {isSaving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '💾 保存结果' : '💾 Save')}
+                            {isSaving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '💾 收藏记录' : '💾 Save')}
                         </button>
                     )}
                 </div>
             }
         >
             <div className="at-lesson-wrap">
-                <div className="at-section-nav">
-                    <button className="at-nav-btn" onClick={goPrev} disabled={currentSection === 0}>
-                        <span className="at-nav-arrow">&#8249;</span> {t.writingAiTeacher.prev}
-                    </button>
-                    <div className="at-nav-info">
-                        <div className="at-nav-title">{sectionNames[currentSection]}</div>
-                        <div className="at-nav-index">{currentSection + 1} / {totalSections}</div>
-                    </div>
-                    <button className="at-nav-btn" onClick={goNext} disabled={currentSection === totalSections - 1}>
-                        {t.writingAiTeacher.next} <span className="at-nav-arrow">&#8250;</span>
-                    </button>
-                    <button className="at-topic-btn" onClick={() => setShowTopic(true)}>
-                        {lang === 'zh' ? '查看题目' : 'View Topic'}
-                    </button>
-                    <button className="at-download-btn" onClick={handleDownload} disabled={isDownloading}>
-                        {isDownloading ? '...' : t.writingAiTeacher.download}
-                    </button>
-                </div>
 
                 <div ref={contentRef}>
                     {renderCurrentSection()}
@@ -956,17 +969,7 @@ export default function Task1AiTeacherLessonPage() {
                     </div>
                 )}
 
-                <div className="at-section-nav">
-                    <button className="at-nav-btn" onClick={goPrev} disabled={currentSection === 0}>
-                        <span className="at-nav-arrow">&#8249;</span> {t.writingAiTeacher.prev}
-                    </button>
-                    <div className="at-nav-info">
-                        <div className="at-nav-index">{currentSection + 1} / {totalSections}</div>
-                    </div>
-                    <button className="at-nav-btn" onClick={goNext} disabled={currentSection === totalSections - 1}>
-                        {t.writingAiTeacher.next} <span className="at-nav-arrow">&#8250;</span>
-                    </button>
-                </div>
+
             </div>
 
             {/* Topic Modal */}

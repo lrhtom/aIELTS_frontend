@@ -66,7 +66,7 @@ export default function Task1AiTeacherGenPage() {
         <Layout
             pageTitle={lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}
             pageSubtitle={lang === 'zh' ? '极速图表分析与段落结构指导' : 'Fast chart analysis and structure guide'}
-            backUrl="/writing"
+            backUrl="/writing/ai-teachers"
             backText={t.writingHub.backToPractice}
             headerRight={<AiModelSelector variant="minimal" label="" description="" />}
         >

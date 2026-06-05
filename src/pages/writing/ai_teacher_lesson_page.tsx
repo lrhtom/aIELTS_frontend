@@ -6,7 +6,24 @@ import { apiClient, fetchStream } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import BadExampleList, { type BadExample } from '../../components/writing/BadExampleList';
 import ReactMarkdown from 'react-markdown';
+import Tree from 'react-d3-tree';
 import '../../styles/writing_ai_teacher.css';
+
+const LOGICAL_FRAMEWORKS = [
+    { name_zh: '辩证让步链', name_en: 'Standard Argument', steps: ['背景', '顺推', '反推'] },
+    { name_zh: '递进深挖链', name_en: 'Cause-Effect-Impact', steps: ['起因', '直接结果', '深层影响'] },
+    { name_zh: '假设推演链', name_en: 'Hypothesis-Reaction-Consequence', steps: ['假设', '连锁反应', '灾难后果'] },
+    { name_zh: '机制拆解链', name_en: 'Phenomenon-Mechanism-Value', steps: ['现象', '机制', '核心价值'] },
+    { name_zh: '方案评估链', name_en: 'Measure-Execution-Limitation', steps: ['提出方案', '落地执行', '预期成效', '局限'] }
+];
+
+const detectFrameworkIndex = (stepsList: any[]) => {
+    const stepNames = stepsList.map(s => s.step_name);
+    for (let i = 0; i < LOGICAL_FRAMEWORKS.length; i++) {
+        if (stepNames.some(n => LOGICAL_FRAMEWORKS[i].steps.includes(n))) return i;
+    }
+    return 0; // Default
+};
 
 /* ── Bilingual interfaces ── */
 
@@ -64,8 +81,7 @@ interface Part2Data {
             text_en: string;
             text_zh: string;
         }>;
-        bad_closing_en: string;
-        bad_closing_zh: string;
+        bad_examples: BadExample[];
     };
 }
 
@@ -78,6 +94,11 @@ interface BilingualArg {
         step_name: string;
         en: string;
         zh: string;
+        clauses?: Array<{
+            label: string;
+            en: string;
+            zh: string;
+        }>;
     }>;
     example_en: string;
     example_zh: string;
@@ -148,6 +169,7 @@ function normArg(raw: any) {
         main_idea_zh: str(raw.main_idea_zh),
         explanation_en: str(raw.explanation_en || raw.explanation),
         explanation_zh: str(raw.explanation_zh),
+        explanation_steps: Array.isArray(raw.explanation_steps) ? raw.explanation_steps : undefined,
         example_en: str(raw.example_en || raw.example),
         example_zh: str(raw.example_zh),
         bad_examples: Array.isArray(raw.bad_examples) ? raw.bad_examples : [],
@@ -180,8 +202,7 @@ function normalize(raw: any): LessonData {
             },
             closing: {
                 sentences: normSentences(raw.part2?.closing?.sentences),
-                bad_closing_en: str(raw.part2?.closing?.bad_closing_en || raw.part2?.closing?.bad_closing_example),
-                bad_closing_zh: str(raw.part2?.closing?.bad_closing_zh),
+                bad_examples: Array.isArray(raw.part2?.closing?.bad_examples) ? raw.part2?.closing?.bad_examples : [],
             },
         },
         part3: {
@@ -338,30 +359,51 @@ function ExplanationBlock({ arg }: { arg: BilingualArg }) {
                                     display: 'inline-block',
                                     fontSize: '0.75rem',
                                     fontWeight: 700,
-                                    color: 'var(--color-primary)',
-                                    background: 'rgba(79, 70, 229, 0.1)',
+                                    color: '#5b21b6',
+                                    background: '#ede9fe',
                                     padding: '0.2rem 0.6rem',
-                                    borderRadius: '6px',
-                                    marginBottom: '0.8rem',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
+                                    borderRadius: '4px',
+                                    marginBottom: '1rem',
                                 }}>
                                     {step.step_name}
                                 </div>
                                 <div style={{ 
-                                    fontSize: '0.95rem', 
-                                    color: 'var(--color-text)', 
-                                    fontWeight: 500, 
+                                    fontSize: '1rem', 
+                                    color: '#1e293b', 
+                                    fontWeight: 400, 
                                     lineHeight: 1.6, 
-                                    marginBottom: '0.6rem' 
                                 }}>
                                     {step.en}
                                 </div>
-                                <div style={{ 
-                                    fontSize: '0.85rem', 
-                                    color: 'var(--color-text-secondary)', 
-                                    lineHeight: 1.6 
-                                }}>
+                                {step.clauses && step.clauses.length > 0 && (
+                                    <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px dashed #cbd5e1', paddingTop: '1rem', marginBottom: '1rem' }}>
+                                        {step.clauses.map((clause: any, ci: number) => (
+                                            <div key={ci} style={{ display: 'flex', alignItems: 'stretch', background: '#fff', borderRadius: '4px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                                                <div style={{ 
+                                                    width: '36px', 
+                                                    background: '#0d9488', 
+                                                    color: '#fff', 
+                                                    fontWeight: 600, 
+                                                    display: 'flex', 
+                                                    flexDirection: 'column', 
+                                                    alignItems: 'center', 
+                                                    justifyContent: 'center', 
+                                                    padding: '0.5rem 0',
+                                                    fontSize: '0.85rem',
+                                                    gap: '2px',
+                                                    flexShrink: 0
+                                                }}>
+                                                    {clause.label.split('').map((char: string, idx: number) => <span key={idx}>{char}</span>)}
+                                                </div>
+                                                <div style={{ padding: '0.6rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
+                                                    <div style={{ color: '#334155', fontSize: '0.9rem', fontWeight: 400 }}>{clause.en}</div>
+                                                    <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{clause.zh}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5, marginTop: (!step.clauses || step.clauses.length === 0) ? '1rem' : '0' }}>
                                     {step.zh}
                                 </div>
                             </div>
@@ -618,6 +660,109 @@ export default function AiTeacherLessonPage() {
 
     /* ── Section renderers ── */
 
+    /* ── Logic Tree Helpers ── */
+    const renderCustomNodeElement = ({ nodeDatum, toggleNode }: any) => {
+        // Calculate dynamic height based on text length
+        const enLen = nodeDatum.attributes?.en ? nodeDatum.attributes.en.length : 0;
+        const zhLen = nodeDatum.attributes?.zh ? nodeDatum.attributes.zh.length : 0;
+        const estLines = Math.max(1, Math.ceil(enLen / 35)) + Math.max(1, Math.ceil(zhLen / 15));
+        const finalHeight = Math.max(100, 40 + estLines * 22);
+
+        return (
+            <g onClick={toggleNode}>
+                <foreignObject width="320" height={finalHeight} x="-160" y="-30">
+                    <div className="at-tree-node-card" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <div className="at-tree-node-badge" style={{ whiteSpace: 'nowrap' }}>
+                            {nodeDatum.name}
+                        </div>
+                        <div className="at-tree-node-content" style={{ flex: 1 }}>
+                            {nodeDatum.attributes?.en && <div className="at-tree-node-en">{nodeDatum.attributes.en}</div>}
+                            {nodeDatum.attributes?.zh && <div className="at-tree-node-zh">{nodeDatum.attributes.zh}</div>}
+                        </div>
+                    </div>
+                </foreignObject>
+            </g>
+        );
+    };
+
+    const buildLogicTree = (d: LessonData) => {
+        const root = {
+            name: lang === 'zh' ? '文章核心主旨' : 'Core Thesis',
+            attributes: { 
+                en: d.part1.structure.paragraphs.find(p => p.name_en.includes('Introduction'))?.content_guide_en || 'Topic',
+                zh: d.part1.structure.paragraphs.find(p => p.name_en.includes('Introduction'))?.content_guide_zh || '题目'
+            },
+            children: [] as any[]
+        };
+
+        const introNode = {
+            name: lang === 'zh' ? '引言段' : 'Introduction',
+            attributes: { en: 'Opening sentences', zh: '开头句' },
+            children: d.part2.opening.sentences.map(s => ({
+                name: lang === 'zh' ? '开篇句' : 'Sentence',
+                attributes: { en: s.text_en, zh: s.text_zh }
+            }))
+        };
+        root.children.push(introNode);
+
+        const bodyNode = {
+            name: lang === 'zh' ? '主体论述' : 'Body Paragraphs',
+            attributes: { en: 'Arguments', zh: '论点' },
+            children: [d.part2.arguments.body1, d.part2.arguments.body2].filter(Boolean).map((arg: any, i) => {
+                const steps = arg.explanation_steps?.length ? arg.explanation_steps : (() => {
+                    const enSentences = (arg.explanation_en || '').split(/(?<=\.|\?|\!)\s+/).filter((s: string) => s.trim());
+                    const zhSentences = (arg.explanation_zh || '').split(/(?<=[。？！])\s*/).filter((s: string) => s.trim());
+                    const labels = ['背景', '顺推', '反推'];
+                    const fallbackSteps = [];
+                    const maxLen = Math.max(enSentences.length, zhSentences.length, 1);
+                    for (let k = 0; k < maxLen; k++) {
+                        fallbackSteps.push({
+                            step_name: labels[k] || `步骤 ${k + 1}`,
+                            en: enSentences[k] || '',
+                            zh: zhSentences[k] || ''
+                        });
+                    }
+                    return fallbackSteps;
+                })();
+
+                const argChildren = steps.map((step: any, j: number) => ({
+                    name: step.step_name || (lang === 'zh' ? `逻辑细分 ${j + 1}` : `Logic Step ${j + 1}`),
+                    attributes: { en: step.en, zh: step.zh },
+                    children: (step.clauses || []).map((clause: any) => ({
+                        name: clause.label,
+                        attributes: { en: clause.en, zh: clause.zh }
+                    }))
+                }));
+
+                if (arg.example_en || arg.example_zh) {
+                    argChildren.push({
+                        name: lang === 'zh' ? '举例论证' : 'Example',
+                        attributes: { en: arg.example_en, zh: arg.example_zh }
+                    });
+                }
+
+                return {
+                    name: lang === 'zh' ? `分论点 ${i + 1}` : `Argument ${i + 1}`,
+                    attributes: { en: arg.main_idea_en, zh: arg.main_idea_zh },
+                    children: argChildren
+                };
+            })
+        };
+        root.children.push(bodyNode);
+
+        const closingNode = {
+            name: lang === 'zh' ? '结尾段' : 'Conclusion',
+            attributes: { en: 'Closing sentences', zh: '结尾句' },
+            children: d.part2.closing.sentences.map(s => ({
+                name: lang === 'zh' ? '总结句' : 'Sentence',
+                attributes: { en: s.text_en, zh: s.text_zh }
+            }))
+        };
+        root.children.push(closingNode);
+
+        return root;
+    };
+
     const renderSection0 = (d: LessonData) => {
         const qa = d.part1.question_analysis;
         return (
@@ -651,21 +796,68 @@ export default function AiTeacherLessonPage() {
 
     const renderSection1 = (d: LessonData) => {
         const st = d.part1.structure;
+        
+        // Detect which logical frameworks are used by the AI in body paragraphs
+        const body1Steps = d.part2?.arguments?.body1?.explanation_steps || [];
+        const body2Steps = d.part2?.arguments?.body2?.explanation_steps || [];
+        const activeIdx1 = detectFrameworkIndex(body1Steps);
+        const activeIdx2 = detectFrameworkIndex(body2Steps);
+        const activeIndices = new Set([activeIdx1, activeIdx2]);
+
         return (
             <div className="at-split-layout">
                 <div className="at-split-main">
                     <div className="at-section-card">
-                    <h3>{sectionNames[1]}</h3>
-                    <div className="at-structure-grid">
-                        {st.paragraphs.map((p, i) => (
-                            <div key={i} className="at-structure-item">
-                                <h4>{p.name_en}<span className="at-structure-name-zh">{p.name_zh}</span></h4>
-                                <SingleLangBlock en={p.purpose_en} zh={p.purpose_zh} />
-                                <SingleLangBlock en={p.content_guide_en} zh={p.content_guide_zh} />
-                            </div>
-                        ))}
+                        <h3>{sectionNames[1]}</h3>
+                        <div className="at-structure-grid">
+                            {st.paragraphs.map((p, i) => (
+                                <div key={i} className="at-structure-item">
+                                    <h4>{p.name_en}<span className="at-structure-name-zh">{p.name_zh}</span></h4>
+                                      <div style={{ marginBottom: '0.5rem' }}>
+                                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--practice-accent)', textTransform: 'uppercase', marginBottom: '0.2rem', display: 'inline-block' }}>{lang === 'zh' ? '段落目的' : 'Purpose'}</span>
+                                          <SingleLangBlock en={p.purpose_en} zh={p.purpose_zh} />
+                                      </div>
+                                      <div>
+                                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-primary)', textTransform: 'uppercase', marginBottom: '0.2rem', display: 'inline-block' }}>{lang === 'zh' ? '内容指南' : 'Content Guide'}</span>
+                                          <SingleLangBlock en={p.content_guide_en} zh={p.content_guide_zh} />
+                                      </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                    
+                    <div className="at-section-card" style={{ marginTop: '1.5rem' }}>
+                        <h4 style={{ fontSize: '1.1rem', color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span>🧠</span> {lang === 'zh' ? 'AI 智能推演逻辑链' : 'AI Reasoning Logic Chains'}
+                        </h4>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                            <div style={{ width: '100%', fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>
+                                {lang === 'zh' ? '以下是所有可选的逻辑链，高亮显示的为本篇作文主体段实际使用的推演方式：' : 'Available logical chains. Highlighted ones are used in the body paragraphs:'}
+                            </div>
+                            {LOGICAL_FRAMEWORKS.map((fw, idx) => {
+                                const isActive = activeIndices.has(idx);
+                                return (
+                                    <div key={idx} style={{
+                                        padding: '0.5rem 0.8rem',
+                                        borderRadius: '6px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: isActive ? 700 : 500,
+                                        background: isActive ? 'var(--color-primary)' : '#e2e8f0',
+                                        color: isActive ? '#fff' : '#64748b',
+                                        transition: 'all 0.3s',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.3rem'
+                                    }}>
+                                        <div>{lang === 'zh' ? fw.name_zh : fw.name_en}</div>
+                                        <div style={{ fontSize: '0.75rem', opacity: isActive ? 0.95 : 0.75, marginTop: '0.2rem' }}>
+                                            {fw.steps.join(' ➔ ')}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="at-split-side">
@@ -778,7 +970,7 @@ export default function AiTeacherLessonPage() {
                     <h5 className="at-split-side-title" style={{ color: '#ef4444', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
                         <span>⚠️</span> {lang === 'zh' ? '常见结尾错误' : 'Common Conclusion Mistakes'}
                     </h5>
-                    <BadBilingual en={cl.bad_closing_en} zh={cl.bad_closing_zh} label={t.writingAiTeacher.badExample} />
+                    <BadExampleList badExamples={cl.bad_examples || []} />
                 </div>
             </div>
         );
@@ -878,11 +1070,38 @@ export default function AiTeacherLessonPage() {
     };
 
     const renderSection6 = (d: LessonData) => {
+        const treeData = buildLogicTree(d);
+        return (
+            <div className="at-split-layout">
+                <div className="at-section-card" style={{ height: '70vh', width: '100%', position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                        <h3 style={{ marginBottom: 0 }}>{sectionNames[6]}</h3>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                            {lang === 'zh' ? '💡 提示：按住拖动可移动画布，鼠标滚轮可缩放，点击节点可折叠/展开' : '💡 Tip: Drag to move, scroll to zoom, click nodes to collapse/expand'}
+                        </div>
+                    </div>
+                    <div style={{ width: '100%', height: 'calc(100% - 3rem)', background: '#f8fafc', borderRadius: '12px', overflow: 'hidden' }}>
+                        <Tree 
+                            data={treeData} 
+                            orientation="horizontal" 
+                            pathFunc="step" 
+                            translate={{ x: 150, y: 350 }}
+                            nodeSize={{ x: 420, y: 280 }}
+                            renderCustomNodeElement={renderCustomNodeElement}
+                            initialDepth={5}
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderSection7 = (d: LessonData) => {
         const p3 = d.part3;
         return (
             <div className="at-split-layout" style={{ gridTemplateColumns: '1fr 1fr' }}>
                 <div className="at-section-card" style={{ height: '100%' }}>
-                    <h3>{sectionNames[6]}</h3>
+                    <h3>{lang === 'zh' ? '核心词汇与短语' : 'Core Vocabulary'}</h3>
                     <div className="at-summary-list">
                         {p3.section_summary.map((ss, i) => (
                             <div key={i} className="at-summary-item">
@@ -894,7 +1113,7 @@ export default function AiTeacherLessonPage() {
                 </div>
 
                 <div className="at-section-card" style={{ height: '100%' }}>
-                    <h3>{t.writingAiTeacher.fullEssay}</h3>
+                    <h3>{sectionNames[7]}</h3>
                     <div className="at-bilingual at-essay-bilingual">
                         <div className="at-lang-block at-lang-en">
                             <span className="at-lang-tag">EN</span>
@@ -920,6 +1139,7 @@ export default function AiTeacherLessonPage() {
             case 4: return renderSection4(data);
             case 5: return renderSection5(data);
             case 6: return renderSection6(data);
+            case 7: return renderSection7(data);
             default: return null;
         }
     };
@@ -991,23 +1211,24 @@ export default function AiTeacherLessonPage() {
             backText={t.writingAiTeacher.genTitle}
             onBack={handleBack}
             headerRight={
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                     {state === 'ready' && !isSaved && !recordId && (
                         <button
                             onClick={handleSaveResult}
                             disabled={isSaving}
                             style={{
                                 padding: '0.4rem 1rem',
-                                borderRadius: '8px',
+                                borderRadius: '999px',
                                 background: isSaving ? '#ccc' : 'var(--color-primary)',
                                 color: '#fff',
                                 border: 'none',
                                 cursor: isSaving ? 'not-allowed' : 'pointer',
                                 fontSize: '0.9rem',
-                                fontWeight: 500
+                                fontWeight: 500,
+                                whiteSpace: 'nowrap'
                             }}
                         >
-                            {isSaving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '💾 保存结果' : '💾 Save')}
+                            {isSaving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '💾 保存记录' : '💾 Save')}
                         </button>
                     )}
                 </div>
@@ -1025,10 +1246,10 @@ export default function AiTeacherLessonPage() {
                     <button className="at-nav-btn" onClick={goNext} disabled={currentSection === totalSections - 1}>
                         {t.writingAiTeacher.next} <span className="at-nav-arrow">&#8250;</span>
                     </button>
-                    <button className="at-topic-btn" onClick={() => setShowTopic(true)}>
+                    <button className="at-topic-btn" onClick={() => setShowTopic(true)} style={{ whiteSpace: 'nowrap', borderRadius: '999px', padding: '0.4rem 1rem', background: '#f1f5f9', color: '#475569', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.9rem' }}>
                         {lang === 'zh' ? '查看题目' : 'View Topic'}
                     </button>
-                    <button className="at-download-btn" onClick={handleDownload} disabled={isDownloading}>
+                    <button className="at-download-btn" onClick={handleDownload} disabled={isDownloading} style={{ whiteSpace: 'nowrap', borderRadius: '999px', padding: '0.4rem 1rem', background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', cursor: isDownloading ? 'not-allowed' : 'pointer', fontWeight: 500, fontSize: '0.9rem' }}>
                         {isDownloading ? '...' : t.writingAiTeacher.download}
                     </button>
                 </div>
@@ -1067,6 +1288,7 @@ export default function AiTeacherLessonPage() {
                         {renderSection4(data)}
                         {renderSection5(data)}
                         {renderSection6(data)}
+                        {renderSection7(data)}
                         
                         <div style={{ textAlign: 'center', marginTop: '2rem', color: '#94a3b8', fontSize: '0.9rem' }}>
                             Generated by AI IELTS Teacher

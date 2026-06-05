@@ -1678,12 +1678,7 @@ export default function GlobalAssistantBall() {
                         >
                             {t.assistant.actions.personalAgent}
                         </button>
-                        <button type="button" className="assistant-option-btn" disabled>
-                            {t.assistant.actions.rewrite}
-                        </button>
-                        <button type="button" className="assistant-option-btn" disabled>
-                            {t.assistant.actions.summarize}
-                        </button>
+
                         <button
                             type="button"
                             className={`assistant-option-btn ${activeAction === 'todo' ? 'is-active' : ''}`}

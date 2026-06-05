@@ -987,7 +987,7 @@
     background: #ffffff;
     border: 1px solid rgba(226, 232, 240, 0.6) !important;
     border-radius: 24px !important;
-    padding: 2.5rem !important;
+    padding: 1.5rem !important;
     box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03), 0 12px 30px -4px rgba(15, 23, 42, 0.02) !important;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     margin-bottom: 0;
@@ -1002,7 +1002,7 @@
     font-size: 1.4rem;
     font-weight: 700;
     color: #0f172a;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.8rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -1435,3 +1435,78 @@
     border-left: 4px solid var(--color-primary);
     margin-top: 1rem;
 }
+
+/* Logic Tree Styles */
+.at-tree-container {
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.5) 0%, rgba(241, 245, 249, 0.5) 100%);
+    border-radius: 1.5rem;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.at-tree-node-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.at-tree-node-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.1), 0 2px 6px rgba(0, 0, 0, 0.04);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.at-tree-node-badge {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.75rem 0 0.75rem 0;
+    display: inline-block;
+    letter-spacing: 0.02em;
+}
+
+.at-tree-node-content {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.at-tree-node-en {
+    font-size: 0.9rem;
+    color: #1e293b;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.at-tree-node-zh {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+/* Override react-d3-tree default link paths */
+.rd3t-link {
+    stroke: #cbd5e1 !important;
+    stroke-width: 2px !important;
+    opacity: 0.7;
+}
+
+.rd3t-node {
+    cursor: grab;
+}
+.rd3t-node:active {
+    cursor: grabbing;
+}
+
