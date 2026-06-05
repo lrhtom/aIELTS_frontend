@@ -87,7 +87,7 @@ export default function ProfilePage() {
     const menuItems: { tab: Tab; Icon: typeof LayoutDashboard; label: string }[] = [
         { tab: 'home', Icon: LayoutDashboard, label: t.profile.menu.home },
         { tab: 'analytics', Icon: BarChart3, label: t.profile.menu.analytics },
-        { tab: 'finance', Icon: Coins, label: '财政分析' },
+        { tab: 'finance', Icon: Coins, label: t.profile.menu.finance },
         { tab: 'backpack', Icon: Backpack, label: t.profile.menu.backpack },
         { tab: 'settings', Icon: Settings, label: t.profile.menu.settings },
         { tab: 'feedback', Icon: MessageSquareText, label: t.profile.feedback.title },

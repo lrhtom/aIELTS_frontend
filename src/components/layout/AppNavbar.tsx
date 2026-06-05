@@ -41,12 +41,12 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ba
                         {onBack ? (
                             <button onClick={onBack} className="navbar-back-btn">
                                 <ArrowLeft size={16} />
-                                <span>{backText || '返回'}</span>
+                                <span>{backText || t.common.back}</span>
                             </button>
                         ) : backUrl ? (
                             <Link to={backUrl} className="navbar-back-btn">
                                 <ArrowLeft size={16} />
-                                <span>{backText || '返回'}</span>
+                                <span>{backText || t.common.back}</span>
                             </Link>
                         ) : null}
                     </div>

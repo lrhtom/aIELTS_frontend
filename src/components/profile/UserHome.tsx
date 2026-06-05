@@ -40,11 +40,11 @@ export default function UserHome() {
         const m = Math.floor((total % 3600) / 60);
         const s = total % 60;
         const parts: string[] = [];
-        if (d > 0) parts.push(`${d}天`);
-        if (h > 0) parts.push(`${h}小时`);
-        if (m > 0) parts.push(`${m}分`);
-        if (s > 0 || parts.length === 0) parts.push(`${s}秒`);
-        return parts.join('');
+        if (d > 0) parts.push(`${d}${t.profile.timeFormat.day} `);
+        if (h > 0) parts.push(`${h}${t.profile.timeFormat.hour} `);
+        if (m > 0) parts.push(`${m}${t.profile.timeFormat.minute} `);
+        if (s > 0 || parts.length === 0) parts.push(`${s}${t.profile.timeFormat.second}`);
+        return parts.join('').trim();
     };
 
     // Format seconds as readable for tooltip (e.g. 1小时23分)
@@ -52,9 +52,9 @@ export default function UserHome() {
         const h = Math.floor(secs / 3600);
         const m = Math.floor((secs % 3600) / 60);
         const s = secs % 60;
-        if (h > 0) return `${h}小时${m > 0 ? m + '分' : ''}`;
-        if (m > 0) return `${m}分${s > 0 ? s + '秒' : ''}`;
-        return `${s}秒`;
+        if (h > 0) return `${h}${t.profile.timeFormat.hour}${m > 0 ? ' ' + m + t.profile.timeFormat.minute : ''}`;
+        if (m > 0) return `${m}${t.profile.timeFormat.minute}${s > 0 ? ' ' + s + t.profile.timeFormat.second : ''}`;
+        return `${s}${t.profile.timeFormat.second}`;
     };
 
     useEffect(() => {

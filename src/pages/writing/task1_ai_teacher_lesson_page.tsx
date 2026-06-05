@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { useLang } from '../../i18n/LanguageContext';
 import { showToast } from '../../components/common/Toast';
-import { apiClient, fetchStream } from '../../api/client';
+import { apiClient } from '../../api/client';
+import ReactMarkdown from 'react-markdown';
 import '../../styles/writing_ai_teacher.css';
 
 const SESSION_KEY = 'task1AiTeacherLesson';
@@ -55,6 +56,7 @@ interface Task1LessonData {
             usage_en: string; usage_zh: string;
             synonyms?: string[];
         }>;
+        template_analysis?: any;
         full_essay: { essay_en: string; essay_zh: string; };
     };
 }
@@ -148,6 +150,7 @@ export default function Task1AiTeacherLessonPage() {
     const [showTopic, setShowTopic] = useState(false);
     const [isSaved, setIsSaved] = useState(!!recordId);
     const [isSaving, setIsSaving] = useState(false);
+    const [activeTemplateContent, setActiveTemplateContent] = useState<any>(null);
 
     const contentRef = useRef<HTMLDivElement>(null);
     const allSectionsRef = useRef<HTMLDivElement>(null);
@@ -189,13 +192,15 @@ export default function Task1AiTeacherLessonPage() {
         '2. 行文结构指南',
         '3. 开头与概述段',
         '4. 主体段落数据对比',
-        '5. 核心词汇与完整范文'
+        '5. 作文模板解析',
+        '6. 核心词汇与完整范文'
     ] : [
         '1. Question Analysis & Trends',
         '2. Structure Guide',
         '3. Intro & Overview',
         '4. Body Paragraphs (Data)',
-        '5. Vocab & Full Essay'
+        '5. Template Analysis',
+        '6. Vocab & Full Essay'
     ];
     const totalSections = sectionNames.length;
 
@@ -619,6 +624,99 @@ export default function Task1AiTeacherLessonPage() {
     };
 
     const renderSection4 = (d: Task1LessonData) => {
+        const p3 = d.part3;
+        const templateData = p3?.template_analysis;
+        const isArrayFormat = Array.isArray(templateData);
+
+        if (!templateData) {
+            return (
+                <div className="at-split-layout">
+                    <div className="at-section-card">
+                        <h3>{sectionNames[4]}</h3>
+                        <p>{lang === 'zh' ? '暂无模板分析数据' : 'No template analysis available for this record.'}</p>
+                    </div>
+                </div>
+            );
+        }
+        
+        return (
+            <div className="at-split-layout">
+                <div className="at-split-main">
+                    <div className="at-section-card">
+                        <h3>{sectionNames[4]}</h3>
+                        <div style={{ padding: '1rem' }}>
+                            {isArrayFormat ? (
+                                templateData.map((paragraphInfo: any, pIdx: number) => {
+                                    // Handle legacy single-language format or unified format
+                                    const title = lang === 'zh' ? (paragraphInfo.paragraph_zh || paragraphInfo.paragraph) : (paragraphInfo.paragraph_en || paragraphInfo.paragraph);
+                                    
+                                    return (
+                                        <div key={pIdx} className="at-template-paragraph">
+                                            {title && (
+                                                <div className="at-template-paragraph-title">{title}</div>
+                                            )}
+                                            <div style={{ lineHeight: '2' }}>
+                                                {(paragraphInfo.segments || []).map((seg: any, sIdx: number) => {
+                                                    if (seg.type === 'text') {
+                                                        return <span key={sIdx}>{seg.content}</span>;
+                                                    } else if (seg.type === 'placeholder') {
+                                                        const isActive = activeTemplateContent === seg;
+                                                        const instruction = lang === 'zh' ? (seg.instruction_zh || seg.instruction) : (seg.instruction_en || seg.instruction);
+                                                        return (
+                                                            <span 
+                                                                key={sIdx} 
+                                                                className={`at-template-bracket ${isActive ? 'is-active' : ''}`}
+                                                                onClick={() => setActiveTemplateContent(seg)}
+                                                            >
+                                                                [{instruction}]
+                                                            </span>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="markdown-body custom-markdown" style={{ fontSize: '0.95rem' }}>
+                                    <ReactMarkdown>{typeof templateData === 'string' ? templateData : ''}</ReactMarkdown>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="at-split-side">
+                    <div className="at-template-viewer">
+                        {activeTemplateContent ? (
+                            <div className="at-template-viewer-content">
+                                <div className="at-template-viewer-title">
+                                    <span style={{ marginRight: '6px' }}>📝</span>
+                                    {lang === 'zh' ? 'AI 原文片段' : 'Original Text Segment'}
+                                </div>
+                                <div className="at-template-viewer-text">
+                                    {activeTemplateContent.actual_content_en || activeTemplateContent.actual_content}
+                                </div>
+                                {(activeTemplateContent.actual_content_zh || activeTemplateContent.actual_content) && (
+                                    <div className="at-template-viewer-text" style={{ marginTop: '0.5rem', color: 'var(--color-text-secondary)', background: 'transparent', borderLeft: 'none', padding: '0.5rem 0' }}>
+                                        {activeTemplateContent.actual_content_zh || (lang === 'zh' ? activeTemplateContent.actual_content : '')}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="at-template-viewer-empty">
+                                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>👈</div>
+                                <div>{lang === 'zh' ? '点击左侧模板中的括号 [...] 查看对应的 AI 生成内容' : 'Click the brackets [...] on the left to view the corresponding AI-generated content'}</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderSection5 = (d: Task1LessonData) => {
         if (!d?.part3?.vocabulary || !d?.part3?.full_essay) return <div className="at-section-card"><p>Loading vocabulary & essay data...</p></div>;
         const p3 = d.part3;
         return (
@@ -672,6 +770,7 @@ export default function Task1AiTeacherLessonPage() {
             case 2: return renderSection2(data);
             case 3: return renderSection3(data);
             case 4: return renderSection4(data);
+            case 5: return renderSection5(data);
             default: return null;
         }
     };
@@ -849,6 +948,7 @@ export default function Task1AiTeacherLessonPage() {
                         {renderSection2(data)}
                         {renderSection3(data)}
                         {renderSection4(data)}
+                        {renderSection5(data)}
                         
                         <div style={{ textAlign: 'center', marginTop: '2rem', color: '#94a3b8', fontSize: '0.9rem' }}>
                             Generated by AI IELTS Teacher

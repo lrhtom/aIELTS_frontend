@@ -86,44 +86,46 @@ export default function UserFinance() {
 
   return (
     <div className="profile-tab-pane">
-      <div className="profile-tab-header">
-        <h2 className="profile-tab-title">财政分析 (Financial Analysis)</h2>
-        <p className="profile-tab-subtitle">查看你的代币与现金消费流水及统计图表</p>
+      <div className="profile-tab-header" style={{ marginBottom: '32px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
+        <h2 className="profile-tab-title" style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: 'var(--color-text)' }}>{t.profile.finance.title}</h2>
+        <p className="profile-tab-subtitle" style={{ color: 'var(--color-text-secondary)', fontSize: '15px' }}>{t.profile.finance.subtitle}</p>
       </div>
 
       {loadingStats ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-          <Loader2 className="animate-spin" size={32} style={{ color: 'var(--color-primary)' }} />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+          <Loader2 className="animate-spin" size={36} style={{ color: 'var(--color-primary)' }} />
         </div>
       ) : stats ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           {/* Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             <div style={{ 
-              background: 'var(--color-bg-elevated)', borderRadius: '12px', padding: '24px',
-              border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '16px'
-            }}>
-              <div style={{ padding: '16px', background: 'rgba(234, 179, 8, 0.1)', borderRadius: '50%', color: '#eab308' }}>
-                <Coins size={32} />
+              background: 'var(--color-bg-elevated)', borderRadius: '16px', padding: '28px',
+              border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '20px',
+              boxShadow: '0 4px 20px -4px rgba(0,0,0,0.05)', transition: 'transform 0.2s', cursor: 'default'
+            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+              <div style={{ padding: '18px', background: 'rgba(234, 179, 8, 0.15)', borderRadius: '14px', color: '#eab308' }}>
+                <Coins size={36} strokeWidth={2} />
               </div>
               <div>
-                <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>累计消耗 AT 币</div>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-text)' }}>
+                <div style={{ fontSize: '15px', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>{t.profile.finance.totalAtUsed}</div>
+                <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text)', letterSpacing: '-0.5px' }}>
                   {stats.total_at_used.toLocaleString()}
                 </div>
               </div>
             </div>
 
             <div style={{ 
-              background: 'var(--color-bg-elevated)', borderRadius: '12px', padding: '24px',
-              border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '16px'
-            }}>
-              <div style={{ padding: '16px', background: 'rgba(34, 197, 94, 0.1)', borderRadius: '50%', color: '#22c55e' }}>
-                <Banknote size={32} />
+              background: 'var(--color-bg-elevated)', borderRadius: '16px', padding: '28px',
+              border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '20px',
+              boxShadow: '0 4px 20px -4px rgba(0,0,0,0.05)', transition: 'transform 0.2s', cursor: 'default'
+            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+              <div style={{ padding: '18px', background: 'rgba(34, 197, 94, 0.15)', borderRadius: '14px', color: '#22c55e' }}>
+                <Banknote size={36} strokeWidth={2} />
               </div>
               <div>
-                <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>累计消耗现金 (CNY)</div>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-text)' }}>
+                <div style={{ fontSize: '15px', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>{t.profile.finance.totalCnyUsed}</div>
+                <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text)', letterSpacing: '-0.5px' }}>
                   ¥{stats.total_cny_used.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </div>
               </div>
@@ -132,11 +134,11 @@ export default function UserFinance() {
 
           {/* Charts Section */}
           <div style={{ 
-            background: 'var(--color-bg-elevated)', borderRadius: '12px', padding: '24px',
-            border: '1px solid var(--color-border)'
+            background: 'var(--color-bg-elevated)', borderRadius: '16px', padding: '32px',
+            border: '1px solid var(--color-border)', boxShadow: '0 4px 20px -4px rgba(0,0,0,0.02)'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0, color: 'var(--color-text)' }}>每日消费趋势</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: 'var(--color-text)' }}>{t.profile.finance.dailyTrend}</h3>
               
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ display: 'flex', background: 'var(--color-bg)', borderRadius: '8px', padding: '4px', border: '1px solid var(--color-border)' }}>
@@ -149,7 +151,7 @@ export default function UserFinance() {
                       border: 'none', cursor: 'pointer', transition: 'all 0.2s'
                     }}
                   >
-                    AT 币
+                    {t.profile.finance.atCoin}
                   </button>
                   <button 
                     onClick={() => setCurrencyType('CNY')}
@@ -160,7 +162,7 @@ export default function UserFinance() {
                       border: 'none', cursor: 'pointer', transition: 'all 0.2s'
                     }}
                   >
-                    现金 (CNY)
+                    {t.profile.finance.cny}
                   </button>
                 </div>
                 
@@ -174,7 +176,7 @@ export default function UserFinance() {
                       border: 'none', cursor: 'pointer', transition: 'all 0.2s'
                     }}
                   >
-                    柱状图
+                    {t.profile.finance.barChart}
                   </button>
                   <button 
                     onClick={() => setChartType('line')}
@@ -185,7 +187,7 @@ export default function UserFinance() {
                       border: 'none', cursor: 'pointer', transition: 'all 0.2s'
                     }}
                   >
-                    折线图
+                    {t.profile.finance.lineChart}
                   </button>
                 </div>
               </div>
@@ -199,9 +201,10 @@ export default function UserFinance() {
                     <XAxis dataKey="date" stroke="var(--color-text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="var(--color-text-secondary)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => value.toLocaleString()} />
                     <Tooltip 
-                      contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
+                      cursor={{ fill: 'transparent' }}
+                      contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                       itemStyle={{ color: 'var(--color-text)' }}
-                      formatter={(value: number) => [value.toLocaleString(), currencyType === 'AT_COIN' ? '消耗 AT 币' : '消耗现金']}
+                      formatter={(value: number) => [value.toLocaleString(), currencyType === 'AT_COIN' ? t.profile.finance.consumeAt : t.profile.finance.consumeCny]}
                       labelStyle={{ color: 'var(--color-text-secondary)', marginBottom: '8px' }}
                     />
                     <Bar dataKey={currencyType === 'AT_COIN' ? 'at_used' : 'cny_used'} fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
@@ -212,9 +215,10 @@ export default function UserFinance() {
                     <XAxis dataKey="date" stroke="var(--color-text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="var(--color-text-secondary)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => value.toLocaleString()} />
                     <Tooltip 
-                      contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
+                      cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '3 3' }}
+                      contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                       itemStyle={{ color: 'var(--color-text)' }}
-                      formatter={(value: number) => [value.toLocaleString(), currencyType === 'AT_COIN' ? '消耗 AT 币' : '消耗现金']}
+                      formatter={(value: number) => [value.toLocaleString(), currencyType === 'AT_COIN' ? t.profile.finance.consumeAt : t.profile.finance.consumeCny]}
                       labelStyle={{ color: 'var(--color-text-secondary)', marginBottom: '8px' }}
                     />
                     <Line type="monotone" dataKey={currencyType === 'AT_COIN' ? 'at_used' : 'cny_used'} stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-primary)' }} activeDot={{ r: 6 }} />
@@ -225,7 +229,7 @@ export default function UserFinance() {
           </div>
         </div>
       ) : (
-        <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '40px' }}>暂无数据</div>
+        <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '40px' }}>{t.profile.finance.noData}</div>
       )}
 
       {/* Transactions Table */}
@@ -236,7 +240,7 @@ export default function UserFinance() {
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0, color: 'var(--color-text)' }}>
             <ArrowRightLeft size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-            交易流水明细
+            {t.profile.finance.transactionDetails}
           </h3>
         </div>
         
@@ -244,10 +248,10 @@ export default function UserFinance() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--color-bg)', color: 'var(--color-text-secondary)', fontSize: '13px', textTransform: 'uppercase' }}>
-                <th style={{ padding: '16px 24px', fontWeight: '600' }}>时间</th>
-                <th style={{ padding: '16px 24px', fontWeight: '600' }}>描述</th>
-                <th style={{ padding: '16px 24px', fontWeight: '600' }}>金额变动</th>
-                <th style={{ padding: '16px 24px', fontWeight: '600' }}>变动后余额</th>
+                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t.profile.finance.time}</th>
+                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t.profile.finance.description}</th>
+                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t.profile.finance.amount}</th>
+                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t.profile.finance.balanceAfter}</th>
               </tr>
             </thead>
             <tbody>
@@ -273,7 +277,7 @@ export default function UserFinance() {
                           background: txn.currency === 'AT_COIN' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(34, 197, 94, 0.1)',
                           color: txn.currency === 'AT_COIN' ? '#eab308' : '#22c55e'
                         }}>
-                          {txn.currency === 'AT_COIN' ? 'AT币' : 'CNY'}
+                          {txn.currency === 'AT_COIN' ? t.profile.finance.atCoin : t.profile.finance.cny}
                         </span>
                       </td>
                       <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '600', whiteSpace: 'nowrap' }}>
@@ -291,7 +295,7 @@ export default function UserFinance() {
               ) : (
                 <tr>
                   <td colSpan={4} style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
-                    暂无流水记录
+                    {t.profile.finance.noTransactions}
                   </td>
                 </tr>
               )}
@@ -313,11 +317,11 @@ export default function UserFinance() {
                 cursor: page === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
               }}
             >
-              <ChevronLeft size={16} /> 上一页
+              <ChevronLeft size={16} /> {t.profile.finance.prevPage}
             </button>
             
             <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-              第 {page} / {totalPages} 页
+              {t.profile.finance.pageOf.replace('{page}', String(page)).replace('{total}', String(totalPages))}
             </span>
             
             <button 
@@ -331,7 +335,7 @@ export default function UserFinance() {
                 cursor: page === totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
               }}
             >
-              下一页 <ChevronRight size={16} />
+              {t.profile.finance.nextPage} <ChevronRight size={16} />
             </button>
           </div>
         )}

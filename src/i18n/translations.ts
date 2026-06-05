@@ -622,6 +622,7 @@ export interface Translations {
             analytics: string;
             settings: string;
             backpack: string;
+            finance: string;
             style: string;
             background: string;
             admin: string;
@@ -629,6 +630,35 @@ export interface Translations {
         };
         welcome: string;
         welcomeDesc: string;
+        timeFormat: {
+            day: string;
+            hour: string;
+            minute: string;
+            second: string;
+        };
+        finance: {
+            title: string;
+            subtitle: string;
+            totalAtUsed: string;
+            totalCnyUsed: string;
+            dailyTrend: string;
+            atCoin: string;
+            cny: string;
+            barChart: string;
+            lineChart: string;
+            consumeAt: string;
+            consumeCny: string;
+            noData: string;
+            transactionDetails: string;
+            time: string;
+            description: string;
+            amount: string;
+            balanceAfter: string;
+            noTransactions: string;
+            prevPage: string;
+            pageOf: string;
+            nextPage: string;
+        };
         accessDeniedTitle: string;
         accessDeniedDesc: string;
         backToHome: string;
