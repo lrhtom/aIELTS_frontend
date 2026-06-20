@@ -42,7 +42,7 @@ export default function WritingCorrectionPage() {
 
     const location = useLocation();
     const navigate = useNavigate();
-    const recordId = (location.state as { record_id?: number } | null)?.record_id;
+    const [recordId, setRecordId] = useState<number | undefined>((location.state as { record_id?: number } | null)?.record_id);
     const [isSaved, setIsSaved] = useState(!!recordId);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -56,6 +56,9 @@ export default function WritingCorrectionPage() {
                         setText(content.text || '');
                         setPromptText(content.prompt || '');
                         setTaskType(content.task_type || 'task2');
+                        if (content.synonymsMap) {
+                            setSynonymsMap(content.synonymsMap);
+                        }
                         setIsSaved(true);
                     }
                 })
@@ -63,7 +66,7 @@ export default function WritingCorrectionPage() {
                     showToast(lang === 'zh' ? '加载记录失败' : 'Failed to load record', 'error');
                 });
         }
-    }, [recordId, lang]);
+    }, []); // Only run once on mount since recordId is now state
 
     const minWords = taskType === 'task1' ? 150 : 250;
     const supportsTask1ImageRecognition = provider.startsWith('gpt5');
@@ -150,8 +153,31 @@ export default function WritingCorrectionPage() {
                 body: payload,
             });
             setResult(res);
-            setIsSaved(false);
+            setIsSaved(true);
             showToast(t.writingCorrection.toastSuccess, 'success');
+
+            // Auto-save logic
+            try {
+                const saveRes = await api<{status: string, id: number}>('/writing/records', {
+                    method: 'POST',
+                    body: {
+                        service_type: 'correction',
+                        title: promptText ? (promptText.slice(0, 30) + '...') : (lang === 'zh' ? '无题作文批改' : 'Untitled Correction'),
+                        content: {
+                            result: res,
+                            text,
+                            prompt: promptText,
+                            task_type: taskType,
+                            synonymsMap
+                        },
+                    }
+                });
+                if (saveRes.status === 'success') {
+                    setRecordId(saveRes.id);
+                }
+            } catch (saveErr) {
+                console.error('Auto-save failed:', saveErr);
+            }
         } catch (err: unknown) {
             console.error('Submit writing correction error:', err);
             const error = err as { message?: string; title?: string };
@@ -161,42 +187,7 @@ export default function WritingCorrectionPage() {
         }
     };
 
-    const handleSaveResult = async () => {
-        if (!result || isSaved) return;
-        setIsSaving(true);
-        try {
-            const res = await api<{status: string, id: number}>('/writing/records', {
-                method: 'POST',
-                body: {
-                    service_type: 'correction',
-                    title: promptText ? (promptText.slice(0, 30) + '...') : (lang === 'zh' ? '无题作文批改' : 'Untitled Correction'),
-                    content: {
-                        result,
-                        text,
-                        prompt: promptText,
-                        task_type: taskType
-                    },
-                }
-            });
-            if (res.status === 'success') {
-                showToast(lang === 'zh' ? '保存成功！' : 'Saved successfully!', 'success');
-                setIsSaved(true);
-            } else {
-                showToast(lang === 'zh' ? '保存失败' : 'Failed to save', 'error');
-            }
-        } catch (e) {
-            showToast(lang === 'zh' ? '保存出错' : 'Error saving', 'error');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
     const handleBack = () => {
-        if (result && !isSaved && !recordId) {
-            if (!window.confirm(lang === 'zh' ? '尚未保存本次批改结果，退出将丢失该记录，是否确认退出？' : 'Result not saved. Exit without saving?')) {
-                return;
-            }
-        }
         navigate('/writing/ai-teachers');
     };
 
@@ -304,7 +295,11 @@ export default function WritingCorrectionPage() {
     }, [result, text]);
 
     const [synonymsMap, setSynonymsMap] = useState<Record<string, string[]>>({});
+    // Track whether this page was opened from a historical record (skip AI API calls)
+    const isHistoricalView = useRef(!!(location.state as { record_id?: number } | null)?.record_id);
     useEffect(() => {
+        // Skip synonyms API call entirely when viewing a saved historical record
+        if (isHistoricalView.current) return;
         if (repeatedWords.length > 0) {
             const wordsToFetch = repeatedWords.map(rw => rw[0]).filter(w => !synonymsMap[w]);
             if (wordsToFetch.length > 0) {
@@ -313,7 +308,16 @@ export default function WritingCorrectionPage() {
                     body: { words: wordsToFetch, context: text }
                 }).then(res => {
                     if (res.synonyms) {
-                        setSynonymsMap(prev => ({ ...prev, ...res.synonyms }));
+                        setSynonymsMap(prev => {
+                            const newMap = { ...prev, ...res.synonyms };
+                            if (isSaved && recordId) {
+                                api(`/writing/records/${recordId}`, {
+                                    method: 'PATCH',
+                                    body: { content: { synonymsMap: newMap } }
+                                }).catch(e => console.error('Failed to patch synonyms to db', e));
+                            }
+                            return newMap;
+                        });
                     }
                 }).catch(err => console.error('Failed to fetch synonyms', err));
             }
@@ -329,24 +333,6 @@ export default function WritingCorrectionPage() {
             onBack={handleBack}
             headerRight={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    {result && !isSaved && !recordId && (
-                        <button
-                            onClick={handleSaveResult}
-                            disabled={isSaving}
-                            style={{
-                                padding: '0.4rem 1rem',
-                                borderRadius: '8px',
-                                background: isSaving ? '#ccc' : 'var(--color-primary)',
-                                color: '#fff',
-                                border: 'none',
-                                cursor: isSaving ? 'not-allowed' : 'pointer',
-                                fontSize: '0.9rem',
-                                fontWeight: 500
-                            }}
-                        >
-                            {isSaving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '💾 保存结果' : '💾 Save')}
-                        </button>
-                    )}
                     {!recordId && <AiModelSelector variant="minimal" onModelChange={(nextProvider) => setProvider(nextProvider)} />}
                 </div>
             }
@@ -676,7 +662,7 @@ export default function WritingCorrectionPage() {
                 ) : (
                     <div className="wc-body">
                     {/* Left: Editor */}
-                    <div className="wc-editor-card">
+                    <div className="wc-editor-card wc-card-left">
 
                         {/* Scrollable content: type switcher + sections */}
                         <div className="wc-editor-scroll">
@@ -800,7 +786,7 @@ export default function WritingCorrectionPage() {
                     </div>
 
                     {/* Right: Essay Content */}
-                    <div className="wc-editor-card" style={{ position: 'relative', overflow: 'hidden' }}>
+                    <div className="wc-editor-card wc-card-right" style={{ position: 'relative', overflow: 'hidden' }}>
                         <div className="wc-editor-scroll">
                             {/* Essay */}
                             <div className="wc-section" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -830,7 +816,7 @@ export default function WritingCorrectionPage() {
                         {/* Submit footer — pinned at bottom */}
                         <div className="wc-footer">
                             <button
-                                className={`wc-eval-btn${isEvaluating ? ' loading' : ''}`}
+                                className={`wc-eval-btn premium-btn${isEvaluating ? ' loading' : ''}`}
                                 onClick={handleEvaluate}
                                 disabled={isEvaluating}
                             >

@@ -20,7 +20,7 @@ function validateLine(line: string): 'valid' | 'no-chinese' | 'no-english' | 'em
     return 'valid';
 }
 
-export default function VocabInput({ value, onChange, placeholder }: VocabInputProps) {
+export default function VocabInput({ value, onChange, placeholder, className }: VocabInputProps & { className?: string }) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const { translations: t } = useLang();
     const vi = t.components.vocabInput;
@@ -51,7 +51,7 @@ export default function VocabInput({ value, onChange, placeholder }: VocabInputP
     };
 
     return (
-        <div className="space-y-4">
+        <div className={`space-y-4 flex flex-col ${className || ''}`}>
             {/* 词汇计数行 */}
             <div className="flex flex-wrap items-center gap-2.5 mb-2">
                 <span className="text-[13px] text-stone-500">{vi.label}：</span>
@@ -67,7 +67,7 @@ export default function VocabInput({ value, onChange, placeholder }: VocabInputP
 
             <textarea
                 ref={textareaRef}
-                className="vocab-textarea w-full p-4 rounded-xl border border-stone-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all duration-200 text-stone-700 min-h-[200px] bg-white/50 backdrop-blur-sm shadow-inner"
+                className="vocab-textarea flex-1 w-full p-4 rounded-xl border border-stone-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all duration-200 text-stone-700 min-h-[200px] bg-white/50 backdrop-blur-sm shadow-inner"
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 onBlur={handleBlur}

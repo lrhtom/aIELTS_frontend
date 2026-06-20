@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../i18n/LanguageContext';
 import UserHome from '../components/profile/UserHome';
 import UserSettings from '../components/profile/UserSettings';
+import UserGoals from '../components/profile/UserGoals';
 import UserBackpack from '../components/profile/UserBackpack';
 import UserFeedback from '../components/profile/UserFeedback';
 import AdminFeedback from '../components/profile/AdminFeedback';
@@ -32,10 +33,11 @@ import {
   Coins,
   GitBranch,
   BarChart3,
+  Target,
 } from 'lucide-react';
 import '../styles/profile_page.css';
 
-type Tab = 'home' | 'analytics' | 'finance' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'manual';
+type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'manual';
 
 /** Shown when a non-admin tries to access an admin tab via DevTools state manipulation */
 function AccessDenied() {
@@ -68,6 +70,9 @@ export default function ProfilePage() {
             case 'home': return <UserHome />;
             case 'analytics': return <UserAnalytics />;
             case 'finance': return <UserFinance />;
+
+            case 'goals':
+                return <UserGoals />;
             case 'settings': return <UserSettings />;
             case 'backpack': return <UserBackpack onBack={() => setActiveTab('home')} />;
             case 'feedback': return <UserFeedback />;
@@ -87,6 +92,7 @@ export default function ProfilePage() {
     const menuItems: { tab: Tab; Icon: typeof LayoutDashboard; label: string }[] = [
         { tab: 'home', Icon: LayoutDashboard, label: t.profile.menu.home },
         { tab: 'analytics', Icon: BarChart3, label: t.profile.menu.analytics },
+        { tab: 'goals', Icon: Target, label: t.profile.goals?.title || '个人目标' },
         { tab: 'finance', Icon: Coins, label: t.profile.menu.finance },
         { tab: 'backpack', Icon: Backpack, label: t.profile.menu.backpack },
         { tab: 'settings', Icon: Settings, label: t.profile.menu.settings },

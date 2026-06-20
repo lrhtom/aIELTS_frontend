@@ -11,6 +11,10 @@ interface RecordItem {
     service_type: string;
     title: string;
     created_at: string;
+    subject_category_zh?: string;
+    question_type_zh?: string;
+    dynamism_zh?: string;
+    chart_category_zh?: string;
 }
 
 const SERVICE_TYPE_MAP: Record<string, string> = {
@@ -140,6 +144,22 @@ export default function WritingServiceRecordsPage() {
                                     </button>
                                 </div>
                                 <div className="wsr-card-title">{record.title}</div>
+                                
+                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.8rem' }}>
+                                    {record.service_type === 'task2_teacher' && (
+                                        <>
+                                            {record.subject_category_zh && <span style={{ padding: '0.1rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', backgroundColor: '#e0e7ff', color: '#4f46e5', fontWeight: 600 }}>{record.subject_category_zh}</span>}
+                                            {record.question_type_zh && <span style={{ padding: '0.1rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', backgroundColor: '#fae8ff', color: '#c026d3', fontWeight: 600 }}>{record.question_type_zh}</span>}
+                                        </>
+                                    )}
+                                    {record.service_type === 'task1_teacher' && (
+                                        <>
+                                            {record.dynamism_zh && <span style={{ padding: '0.1rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', backgroundColor: '#dbeafe', color: '#2563eb', fontWeight: 600 }}>{record.dynamism_zh}</span>}
+                                            {record.chart_category_zh && <span style={{ padding: '0.1rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', backgroundColor: '#fce7f3', color: '#db2777', fontWeight: 600 }}>{record.chart_category_zh}</span>}
+                                        </>
+                                    )}
+                                </div>
+
                                 <div className="wsr-card-date">{new Date(record.created_at).toLocaleString()}</div>
                             </div>
                         ))}

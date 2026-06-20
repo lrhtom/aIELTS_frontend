@@ -305,7 +305,7 @@ export default function Task2OpinionDrillDoingPage() {
             backText={t.task2OpinionDrill.backToSetup}
             pageTitle={t.task2OpinionDrill.heading}
             pageSubtitle={t.task2OpinionDrill.subheading}
-            headerRight={<AiModelSelector />}
+            headerRight={<AiModelSelector variant="minimal" />}
         >
             <div className="practice-container writing-selection-page">
 

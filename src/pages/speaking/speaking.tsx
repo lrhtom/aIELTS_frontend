@@ -1,4 +1,4 @@
-﻿import Layout from '../../components/layout/Layout';
+import Layout from '../../components/layout/Layout';
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
@@ -296,204 +296,215 @@ export default function Speaking() {
     backUrl='/practice/ai'
     backText={sc.backToAI}
 >
-            <div className="practice-container">
-                {/* ── Board 0: AI Model ── */}
-                <div className="config-card">
-                    <AiModelSelector />
-                </div>
-
-                {/* ── Board 1: Vocabulary ── */}
-                <div className="config-card">
-                    <div className="toggle-row">
-                        <div>
-                            <div className="label-text">{sc.vocabSettings.title}</div>
-                            <div className="label-desc">{sc.vocabSettings.desc}</div>
-                        </div>
-                        <label className="toggle-switch">
-                            <input
-                                type="checkbox"
-                                checked={useCustomVocab}
-                                onChange={e => setUseCustomVocab(e.target.checked)}
-                            />
-                            <span className="toggle-slider" />
-                        </label>
-                    </div>
-                    {useCustomVocab && (
-                        <>
-                            {plans.length > 0 && (
-                                <div className="plan-import-row">
-                                    <select
-                                        className="plan-import-select"
-                                        value={importPlanId}
-                                        onChange={e => setImportPlanId(Number(e.target.value))}
-                                    >
-                                        {plans.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
-                                    <button
-                                        className="plan-import-btn"
-                                        onClick={handleImportPlan}
-                                        disabled={importingPlan}
-                                    >
-                                        {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
-                                    </button>
+            <div className="config-page-wrap speaking-config bento-page-wrap">
+                <div className="reading-config-bento">
+                    {/* ── 左侧列：核心词汇区 ── */}
+                    <div className="bento-col-left">
+                        <div className="config-card bento-card-glass vocab-card">
+                            <div className="toggle-row">
+                                <div>
+                                    <div className="label-text">{sc.vocabSettings.title}</div>
+                                    <div className="label-desc">{sc.vocabSettings.desc}</div>
                                 </div>
-                            )}
-                            <VocabInput
-                                value={vocabInput}
-                                onChange={handleVocabChange}
-                            />
-                        </>
-                    )}
-                </div>
-
-                {/* ── Board 2: IELTS Part + Subtitles ── */}
-                <div className="config-card">
-                    <div className="sp-section-header">
-                        <h3>{sc.ieltsPart.title}</h3>
-                        {selectedMode !== 'exam' && (
-                            <span className="sp-locked-hint">{sc.ieltsPart.lockedHint}</span>
-                        )}
-                    </div>
-                    <div className={`speaking-parts${(selectedMode !== 'exam' && selectedMode !== 'fullTest') ? ' parts-disabled' : ''}`}>
-                        {selectedMode === 'fullTest' ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'linear-gradient(135deg, #f0fdf4, #ecfeff)', borderRadius: '10px', border: '1.5px solid #86efac' }}>
-                                <span style={{ fontSize: '20px' }}>📋</span>
-                                <span style={{ fontWeight: 600, color: '#166534' }}>Part 1 → Part 2 → Part 3 连续进行</span>
+                                <label className="toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={useCustomVocab}
+                                        onChange={e => setUseCustomVocab(e.target.checked)}
+                                    />
+                                    <span className="toggle-slider" />
+                                </label>
                             </div>
-                        ) : (
-                        PARTS.map(p => (
-                            <button
-                                key={p.id}
-                                className={`speaking-part-card${selectedPart === p.id && selectedMode === 'exam' ? ' selected' : ''}`}
-                                onClick={() => selectedMode === 'exam' && setSelectedPart(p.id)}
-                                disabled={selectedMode !== 'exam'}
-                            >
-                                <span className="sp-emoji">{p.emoji}</span>
-                                <span className="sp-title">{p.title}</span>
-                                <span className="sp-desc">{p.desc}</span>
-                            </button>
-                        ))
-                        )}
-                    </div>
-
-                    <div className="speaking-divider" />
-
-                    <div className="toggle-row">
-                        <div>
-                            <div className="label-text">{sc.subtitles.title}</div>
-                            <div className="label-desc">{sc.subtitles.desc}</div>
-                        </div>
-                        <label className="toggle-switch">
-                            <input
-                                type="checkbox"
-                                checked={showSubtitles}
-                                onChange={e => setShowSubtitles(e.target.checked)}
-                            />
-                            <span className="toggle-slider" />
-                        </label>
-                    </div>
-                </div>
-
-                {/* ── Board 3: Mode ── */}
-                <div className="config-card">
-                    <h3>{sc.modes.title}</h3>
-                    <div className="speaking-modes">
-                        {MODES.map(m => (
-                            <button
-                                key={m.id}
-                                className={`speaking-mode-card ${m.color}${selectedMode === m.id ? ' selected' : ''}`}
-                                onClick={() => setSelectedMode(m.id)}
-                            >
-                                <span className="sm-emoji">{m.emoji}</span>
-                                <span className="sm-title">{m.title}</span>
-                                <span className="sm-desc">{m.desc}</span>
-                                {selectedMode === m.id && (
-                                    <span className="sm-check">✓</span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* ── Board 4: Scenario Settings (Only for scenario mode) ── */}
-                {selectedMode === 'scenario' && (
-                    <div className="config-card fadeIn">
-                        <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                                <div className="label-text">{sc.scenarioSettings.title}</div>
-                                <div className="label-desc">{sc.scenarioSettings.desc}</div>
-                            </div>
-                            <button
-                                className="secondary-btn"
-                                onClick={handleRandomScenario}
-                                disabled={isGeneratingScenario}
-                                style={{ flexShrink: 0, marginLeft: '16px', fontSize: '0.9rem', padding: '6px 12px' }}
-                            >
-                                {isGeneratingScenario ? sc.scenarioSettings.generating : sc.scenarioSettings.randomBtn}
-                            </button>
-                        </div>
-                        <textarea
-                            className="vocab-textarea"
-                            rows={3}
-                            placeholder={sc.scenarioSettings.placeholder}
-                            value={scenarioInput}
-                            onChange={e => setScenarioInput(e.target.value)}
-                            style={{ width: '100%', resize: 'vertical' }}
-                        />
-
-                        <div className="sp-attachment-area">
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*,.pdf,.txt,.doc,.docx,.csv,.json,.md"
-                                multiple
-                                onChange={handleFileSelect}
-                                style={{ display: 'none' }}
-                            />
-                            <button
-                                className="sp-attach-btn"
-                                onClick={() => fileInputRef.current?.click()}
-                                type="button"
-                                title="上传图片或文件作为场景参考"
-                            >
-                                📎 上传参考文件/图片
-                            </button>
-                            <span className="sp-attach-hint">选做 — 可上传图片或文档帮助 AI 理解场景</span>
-                            {scenarioFiles.length > 0 && (
-                                <div className="sp-file-previews">
-                                    {scenarioFiles.map((f, i) => (
-                                        <div key={i} className="sp-file-chip">
-                                            <span className="sp-file-chip-name">
-                                                {f.type.startsWith('image/') ? '🖼️' : '📄'} {f.name}
-                                            </span>
-                                            <button
-                                                className="sp-file-chip-remove"
-                                                onClick={() => setScenarioFiles(prev => prev.filter((_, j) => j !== i))}
-                                                type="button"
+                            {useCustomVocab && (
+                                <div className="vocab-content-wrap">
+                                    {plans.length > 0 && (
+                                        <div className="plan-import-row">
+                                            <select
+                                                className="plan-import-select"
+                                                value={importPlanId}
+                                                onChange={e => setImportPlanId(Number(e.target.value))}
                                             >
-                                                ×
+                                                {plans.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                className="plan-import-btn"
+                                                onClick={handleImportPlan}
+                                                disabled={importingPlan}
+                                            >
+                                                {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
                                             </button>
                                         </div>
-                                    ))}
+                                    )}
+                                    <div className="vocab-textarea-container">
+                                        <VocabInput
+                                            value={vocabInput}
+                                            onChange={handleVocabChange}
+                                        />
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
-                )}
 
-                {/* ── Start Button ── */}
-                <div className="config-card">
-                    <button
-                        className="skill-btn speaking-start-btn"
-                        style={{ width: '100%', opacity: (isStartDisabled) ? 0.6 : 1 }}
-                        onClick={handleStart}
-                        disabled={isStartDisabled}
-                    >
-                        <span className="btn-icon">{isChecking ? '⏳' : '🗣️'}</span>
-                        {isChecking ? '正在准备...' : sc.startBtn}
-                    </button>
+                    {/* ── 右侧列：设置控制区 ── */}
+                    <div className="bento-col-right">
+                        {/* Board 0: AI Model */}
+                        <div className="config-card bento-card-glass">
+                            <h3>AI 模型 🧠</h3>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>选择后台出题和批改所使用的引擎</div>
+                            <AiModelSelector label="" description="" />
+                        </div>
+
+                        {/* Board 2: IELTS Part + Subtitles */}
+                        <div className="config-card bento-card-glass">
+                            <div className="sp-section-header">
+                                <h3>{sc.ieltsPart.title}</h3>
+                                {selectedMode !== 'exam' && (
+                                    <span className="sp-locked-hint">{sc.ieltsPart.lockedHint}</span>
+                                )}
+                            </div>
+                            <div className={`speaking-parts${(selectedMode !== 'exam' && selectedMode !== 'fullTest') ? ' parts-disabled' : ''}`}>
+                                {selectedMode === 'fullTest' ? (
+                                    <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'linear-gradient(135deg, #f0fdf4, #ecfeff)', borderRadius: '10px', border: '1.5px solid #86efac' }}>
+                                        <span style={{ fontSize: '20px' }}>📋</span>
+                                        <span style={{ fontWeight: 600, color: '#166534' }}>Part 1 → Part 2 → Part 3 连续进行</span>
+                                    </div>
+                                ) : (
+                                PARTS.map(p => (
+                                    <button
+                                        key={p.id}
+                                        className={`speaking-part-card${selectedPart === p.id && selectedMode === 'exam' ? ' selected' : ''}`}
+                                        onClick={() => selectedMode === 'exam' && setSelectedPart(p.id)}
+                                        disabled={selectedMode !== 'exam'}
+                                    >
+                                        <span className="sp-emoji">{p.emoji}</span>
+                                        <span className="sp-title">{p.title}</span>
+                                        <span className="sp-desc">{p.desc}</span>
+                                    </button>
+                                ))
+                                )}
+                            </div>
+
+                            <div className="speaking-divider" />
+
+                            <div className="toggle-row">
+                                <div>
+                                    <div className="label-text">{sc.subtitles.title}</div>
+                                    <div className="label-desc">{sc.subtitles.desc}</div>
+                                </div>
+                                <label className="toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={showSubtitles}
+                                        onChange={e => setShowSubtitles(e.target.checked)}
+                                    />
+                                    <span className="toggle-slider" />
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Board 3: Mode */}
+                        <div className="config-card bento-card-glass">
+                            <h3>{sc.modes.title}</h3>
+                            <div className="speaking-modes">
+                                {MODES.map(m => (
+                                    <button
+                                        key={m.id}
+                                        className={`speaking-mode-card ${m.color}${selectedMode === m.id ? ' selected' : ''}`}
+                                        onClick={() => setSelectedMode(m.id)}
+                                    >
+                                        <span className="sm-emoji">{m.emoji}</span>
+                                        <span className="sm-title">{m.title}</span>
+                                        <span className="sm-desc">{m.desc}</span>
+                                        {selectedMode === m.id && (
+                                            <span className="sm-check">✓</span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Board 4: Scenario Settings */}
+                        {selectedMode === 'scenario' && (
+                            <div className="config-card bento-card-glass fadeIn">
+                                <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <div className="label-text">{sc.scenarioSettings.title}</div>
+                                        <div className="label-desc">{sc.scenarioSettings.desc}</div>
+                                    </div>
+                                    <button
+                                        className="secondary-btn"
+                                        onClick={handleRandomScenario}
+                                        disabled={isGeneratingScenario}
+                                        style={{ flexShrink: 0, marginLeft: '16px', fontSize: '0.9rem', padding: '6px 12px' }}
+                                    >
+                                        {isGeneratingScenario ? sc.scenarioSettings.generating : sc.scenarioSettings.randomBtn}
+                                    </button>
+                                </div>
+                                <textarea
+                                    className="vocab-textarea"
+                                    rows={3}
+                                    placeholder={sc.scenarioSettings.placeholder}
+                                    value={scenarioInput}
+                                    onChange={e => setScenarioInput(e.target.value)}
+                                    style={{ width: '100%', resize: 'vertical' }}
+                                />
+
+                                <div className="sp-attachment-area">
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*,.pdf,.txt,.doc,.docx,.csv,.json,.md"
+                                        multiple
+                                        onChange={handleFileSelect}
+                                        style={{ display: 'none' }}
+                                    />
+                                    <button
+                                        className="sp-attach-btn"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        type="button"
+                                        title="上传图片或文件作为场景参考"
+                                    >
+                                        📎 上传参考文件/图片
+                                    </button>
+                                    <span className="sp-attach-hint">选做 — 可上传图片或文档帮助 AI 理解场景</span>
+                                    {scenarioFiles.length > 0 && (
+                                        <div className="sp-file-previews">
+                                            {scenarioFiles.map((f, i) => (
+                                                <div key={i} className="sp-file-chip">
+                                                    <span className="sp-file-chip-name">
+                                                        {f.type.startsWith('image/') ? '🖼️' : '📄'} {f.name}
+                                                    </span>
+                                                    <button
+                                                        className="sp-file-chip-remove"
+                                                        onClick={() => setScenarioFiles(prev => prev.filter((_, j) => j !== i))}
+                                                        type="button"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── Start Button ── */}
+                    <div className="bento-bottom">
+                        <button
+                            className="premium-start-btn"
+                            style={{ opacity: (isStartDisabled) ? 0.6 : 1 }}
+                            onClick={handleStart}
+                            disabled={isStartDisabled}
+                        >
+                            <span className="btn-icon">{isChecking ? '⏳' : '🗣️'}</span>
+                            {isChecking ? '正在准备...' : sc.startBtn}
+                        </button>
+                    </div>
                 </div>
             </div>
         </Layout>

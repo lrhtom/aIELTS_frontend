@@ -6,7 +6,7 @@ import translate from 'translate';
 import { cancelSpeak, speakText as speakTextUtil, speakWord } from '../../utils/speak';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { apiClient, fetchStream } from '../../api/client';
+import { apiClient, fetchStream, assistantApi } from '../../api/client';
 import { checkinApi } from '../../api/checkin';
 import { useLang } from '../../i18n/LanguageContext';
 import type { Translations } from '../../i18n/translations';
@@ -80,7 +80,7 @@ import { showToast } from './Toast';
 import '../../styles/global_assistant_ball.css';
 
 type DockSide = 'left' | 'right' | null;
-type AssistantAction = 'translate' | 'personal-agent' | 'todo' | null;
+type AssistantAction = 'translate' | 'personal-agent' | 'todo' | 'shortcuts' | null;
 type TranslateEngine = 'google' | 'deepl' | 'libre' | 'yandex';
 
 interface BrowserSpeechRecognitionResultAlternative {
@@ -212,10 +212,18 @@ interface DomContextElement {
 }
 
 interface TodoItem {
-    id: string;
+    id: string | number;
     text: string;
     done: boolean;
     createdAt: number;
+}
+
+interface ShortcutItem {
+    id: string | number;
+    title: string;
+    url: string;
+    createdAt: number;
+    openInNewTab?: boolean;
 }
 
 interface DomContextPayload {
@@ -237,6 +245,7 @@ const EDGE_REVEAL_GAP = 8;
 const SAFE_PADDING = 12;
 const PERSONAL_AGENT_STORAGE_KEY = 'aielts.personal_agent_profile_v1';
 const TODO_STORAGE_KEY = 'aielts.assistant_todos_v1';
+const SHORTCUT_STORAGE_KEY = 'aielts.assistant_shortcuts_v1';
 const AGENT_MESSAGE_COLLAPSE_THRESHOLD = 280;
 const DOM_CONTEXT_MAX_ELEMENTS = 120;
 const DOM_CONTEXT_MAX_TEXT = 120;
@@ -625,22 +634,8 @@ export default function GlobalAssistantBall() {
     const [isCheckingIn, setIsCheckingIn] = useState(false);
 
     // ── Todo list state ──
-    const [todos, setTodos] = useState<TodoItem[]>(() => {
-        try {
-            const raw = window.localStorage.getItem(TODO_STORAGE_KEY);
-            return raw ? (JSON.parse(raw) as TodoItem[]) : [];
-        } catch {
-            return [];
-        }
-    });
+    const [todos, setTodos] = useState<TodoItem[]>([]);
     const [todoInput, setTodoInput] = useState('');
-
-    const persistTodos = (items: TodoItem[]) => {
-        setTodos(items);
-        try {
-            window.localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(items));
-        } catch { /* ignore quota errors */ }
-    };
 
     const handleAddTodo = () => {
         const text = todoInput.trim();
@@ -651,23 +646,151 @@ export default function GlobalAssistantBall() {
             done: false,
             createdAt: Date.now(),
         };
-        persistTodos([item, ...todos]);
-        setTodoInput('');
+        setTodos([item, ...todos]); setTodoInput(''); assistantApi.createTodo(item.text).then(savedItem => setTodos(prev => prev.map(t => t.id === item.id ? { ...t, id: savedItem.id } : t))).catch(err => { console.error(err); showToast('Failed to save todo to cloud', 'error'); setTodos(prev => prev.filter(t => t.id !== item.id)); });
     };
 
-    const handleToggleTodo = (id: string) => {
-        persistTodos(todos.map(item => item.id === id ? { ...item, done: !item.done } : item));
-    };
+    const handleToggleTodo = (id: string | number) => { const item = todos.filter(t => t.id === id)[0]; if (!item) return; const newDone = !item.done; setTodos(todos.map(t => t.id === id ? { ...t, done: newDone } : t)); if (typeof id === 'number' || String(id).indexOf('todo-') !== 0) { assistantApi.updateTodo(id, { done: newDone }).catch(err => { console.error(err); showToast('Failed to sync todo state', 'error'); setTodos(todos); }); } };
 
-    const handleDeleteTodo = (id: string) => {
-        persistTodos(todos.filter(item => item.id !== id));
+    const handleDeleteTodo = (id: string | number) => {
+        const backup = [...todos];
+        setTodos(prev => prev.filter(item => item.id !== id));
+        if (typeof id === 'number' || String(id).indexOf('todo-') !== 0) {
+            assistantApi.deleteTodo(id).catch(err => {
+                console.error(err);
+                showToast('Failed to delete todo', 'error');
+                setTodos(backup);
+            });
+        }
     };
 
     const handleClearCompletedTodos = () => {
         const remaining = todos.filter(item => !item.done);
         if (remaining.length < todos.length) {
-            persistTodos(remaining);
+            setTodos(remaining); assistantApi.clearCompletedTodos().catch(err => { console.error(err); showToast('Failed to clear completed todos', 'error'); setTodos(todos); });
             showToast(t.assistant.todo.cleared, 'success');
+        }
+    };
+
+    
+    // ── Shortcut state ──
+    const [customShortcuts, setCustomShortcuts] = useState<ShortcutItem[]>([]);
+    
+    // ── Data Fetching ──
+    const [hasFetchedAssistantData, setHasFetchedAssistantData] = useState(false);
+
+    useEffect(() => {
+        if (menuOpen && !hasFetchedAssistantData) {
+            setHasFetchedAssistantData(true);
+            const loadData = async () => {
+                try {
+                    const [todosData, shortcutsData] = await Promise.all([
+                        assistantApi.getTodos(),
+                        assistantApi.getShortcuts()
+                    ]);
+                    // Map API data to our frontend interfaces
+                    const fetchedTodos = todosData.map((item: any) => ({
+                        id: item.id,
+                        text: item.text,
+                        done: item.done,
+                        createdAt: new Date(item.created_at).getTime()
+                    }));
+                    const fetchedShortcuts = shortcutsData.map((item: any) => ({
+                        id: item.id,
+                        title: item.title,
+                        url: item.url,
+                        openInNewTab: item.open_in_new_tab,
+                        createdAt: new Date(item.created_at).getTime()
+                    }));
+                    setTodos(fetchedTodos);
+                    setCustomShortcuts(fetchedShortcuts);
+                } catch (e) {
+                    console.error('Failed to fetch assistant data:', e);
+                }
+            };
+            void loadData();
+        }
+    }, [menuOpen, hasFetchedAssistantData]);
+const [shortcutTitleInput, setShortcutTitleInput] = useState('');
+    const [shortcutUrlInput, setShortcutUrlInput] = useState('');
+    const [shortcutNewTabInput, setShortcutNewTabInput] = useState(true);
+
+    const handleAddShortcut = () => {
+        const title = shortcutTitleInput.trim();
+        const url = shortcutUrlInput.trim();
+        if (!title || !url) return;
+        
+        // Basic URL validation
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            showToast(t.assistant.shortcuts.invalidUrl, 'error');
+            return;
+        }
+
+        const item: ShortcutItem = {
+            id: `sc-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+            title,
+            url,
+            createdAt: Date.now(),
+            openInNewTab: shortcutNewTabInput,
+        };
+        // Optimistic update
+        setCustomShortcuts(prev => [...prev, item]);
+        setShortcutTitleInput('');
+        setShortcutUrlInput('');
+        setShortcutNewTabInput(true);
+
+        // API Call
+        assistantApi.createShortcut({
+            title: item.title,
+            url: item.url,
+            open_in_new_tab: item.openInNewTab || false
+        }).then(savedItem => {
+            setCustomShortcuts(prev => prev.map(s => s.id === item.id ? { ...s, id: savedItem.id } : s));
+        }).catch(err => {
+            console.error(err);
+            showToast('Failed to save shortcut to cloud', 'error');
+            // Rollback optimistic update
+            setCustomShortcuts(prev => prev.filter(s => s.id !== item.id));
+        });
+    };
+
+    const handleDeleteShortcut = (id: string | number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const backup = [...customShortcuts];
+        setCustomShortcuts(prev => prev.filter(item => item.id !== id));
+        if (typeof id === 'number' || String(id).indexOf('sc-') !== 0) {
+            assistantApi.deleteShortcut(id).catch(err => {
+                console.error(err);
+                showToast('Failed to delete shortcut', 'error');
+                setCustomShortcuts(backup);
+            });
+        }
+    };
+
+    const handleToggleShortcutNewTab = (id: string | number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const itemToUpdate = customShortcuts.find(s => s.id === id);
+        if (!itemToUpdate) return;
+        
+        const newTabStatus = !itemToUpdate.openInNewTab;
+        
+        // Optimistic update
+        setCustomShortcuts(prev => prev.map(s => s.id === id ? { ...s, openInNewTab: newTabStatus } : s));
+        
+        if (typeof id === 'number' || String(id).indexOf('sc-') !== 0) {
+            assistantApi.updateShortcut(id, { open_in_new_tab: newTabStatus }).catch(err => {
+                console.error(err);
+                showToast('Failed to update shortcut', 'error');
+                // Rollback on failure
+                setCustomShortcuts(prev => prev.map(s => s.id === id ? { ...s, openInNewTab: !newTabStatus } : s));
+            });
+        }
+    };
+
+    const handleShortcutClick = (item: ShortcutItem) => {
+        if (item.openInNewTab !== false) {
+            window.open(item.url, '_blank', 'noopener,noreferrer');
+        } else {
+            window.location.href = item.url;
         }
     };
 
@@ -1688,6 +1811,13 @@ export default function GlobalAssistantBall() {
                         </button>
                         <button
                             type="button"
+                            className={`assistant-option-btn ${activeAction === 'shortcuts' ? 'is-active' : ''}`}
+                            onClick={() => setActiveAction(prev => (prev === 'shortcuts' ? null : 'shortcuts'))}
+                        >
+                            {t.assistant.actions.shortcuts}
+                        </button>
+                        <button
+                            type="button"
                             className="assistant-option-btn is-checkin-btn"
                             onClick={handleQuickCheckin}
                             disabled={isCheckingIn || hasCheckedInToday}
@@ -2048,6 +2178,9 @@ export default function GlobalAssistantBall() {
                                 </div>
                             )}
 
+                    
+
+
                             <div className="assistant-todo-list">
                                 {todos.length === 0 ? (
                                     <div className="assistant-todo-empty">{t.assistant.todo.empty}</div>
@@ -2076,6 +2209,85 @@ export default function GlobalAssistantBall() {
                                             </button>
                                         </div>
                                     ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+                                        {activeAction === 'shortcuts' && (
+                        <div className="assistant-shortcuts-panel">
+                            <div className="assistant-shortcuts-input-wrap">
+                                <input
+                                    type="text"
+                                    className="assistant-shortcut-input-title"
+                                    value={shortcutTitleInput}
+                                    onChange={e => setShortcutTitleInput(e.target.value)}
+                                    placeholder={t.assistant.shortcuts.titlePlaceholder}
+                                />
+                                <input
+                                    type="text"
+                                    className="assistant-shortcut-input-url"
+                                    value={shortcutUrlInput}
+                                    onChange={e => setShortcutUrlInput(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.nativeEvent.isComposing) return;
+                                        if (e.key === 'Enter') handleAddShortcut();
+                                    }}
+                                    placeholder={t.assistant.shortcuts.urlPlaceholder}
+                                />
+                                
+                                <div className="assistant-shortcut-options-row">
+                                    <label className="assistant-shortcut-newtab-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={shortcutNewTabInput}
+                                            onChange={e => setShortcutNewTabInput(e.target.checked)}
+                                        />
+                                        <span>{t.assistant.shortcuts.newTabLabel}</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        className="assistant-shortcut-add-btn"
+                                        onClick={handleAddShortcut}
+                                        disabled={!shortcutTitleInput.trim() || !shortcutUrlInput.trim()}
+                                    >
+                                        {t.assistant.shortcuts.addBtn}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="assistant-shortcuts-list">
+                                {customShortcuts.length === 0 ? (
+                                    <div className="assistant-shortcuts-empty">{t.assistant.shortcuts.empty}</div>
+                                ) : (
+                                    <div className="assistant-shortcuts-grid">
+                                        {customShortcuts.map(item => (
+                                            <div 
+                                                key={item.id} 
+                                                className="assistant-shortcut-card" 
+                                                onClick={() => handleShortcutClick(item)}
+                                                title={item.url}
+                                            >
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="assistant-shortcut-checkbox"
+                                                    checked={!!item.openInNewTab}
+                                                    onChange={() => {}}
+                                                    onClick={(e) => handleToggleShortcutNewTab(item.id, e)}
+                                                    title={t.assistant.shortcuts.newTabLabel}
+                                                />
+                                                <span className="shortcut-icon">🔗</span>
+                                                <span className="shortcut-label">{item.title}</span>
+                                                <button
+                                                    type="button"
+                                                    className="assistant-shortcut-delete-btn"
+                                                    onClick={(e) => handleDeleteShortcut(item.id, e)}
+                                                    aria-label={t.assistant.shortcuts.deleteAria}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </div>

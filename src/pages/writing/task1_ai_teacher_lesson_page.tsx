@@ -13,6 +13,8 @@ const SESSION_KEY = 'task1AiTeacherLesson';
 interface Task1LessonData {
     part1: {
         question_analysis: {
+            dynamism_zh?: string;
+            chart_category_zh?: string;
             chart_type_en: string; chart_type_zh: string;
             dynamic_or_static_en: string; dynamic_or_static_zh: string;
             time_period_en: string; time_period_zh: string;
@@ -146,44 +148,15 @@ export default function Task1AiTeacherLessonPage() {
     const [errorMsg, setErrorMsg] = useState('');
     const [currentSection, setCurrentSection] = useState(0);
     const [loadingStep, setLoadingStep] = useState(0);
-    const [isDownloading, setIsDownloading] = useState(false);
-    const [showTopic, setShowTopic] = useState(false);
+        const [showTopic, setShowTopic] = useState(false);
     const [isSaved, setIsSaved] = useState(!!recordId);
     const [isSaving, setIsSaving] = useState(false);
     const [activeTemplateContent, setActiveTemplateContent] = useState<any>(null);
 
     const contentRef = useRef<HTMLDivElement>(null);
-    const allSectionsRef = useRef<HTMLDivElement>(null);
-    const fetchingRef = useRef(false);
-
-    const handleSaveResult = async () => {
-        if (!data || isSaved) return;
-        setIsSaving(true);
-        try {
-            const res = await apiClient.post<{status: string, id: number}>('/writing/records', {
-                service_type: 'task1_teacher',
-                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : '小作文讲解',
-                content: { ...data, original_topic: topic },
-            });
-            if (res.data.status === 'success') {
-                showToast(lang === 'zh' ? '保存成功！' : 'Saved successfully!', 'success');
-                setIsSaved(true);
-            } else {
-                showToast(lang === 'zh' ? '保存失败' : 'Failed to save', 'error');
-            }
-        } catch (e: any) {
-            const msg = e.response?.data?.message || e.message; showToast((lang === 'zh' ? '保存出错: ' : 'Error saving: ') + msg, 'error');
-        } finally {
-            setIsSaving(false);
-        }
-    };
+        const fetchingRef = useRef(false);
 
     const handleBack = () => {
-        if (state === 'ready' && !isSaved && !recordId) {
-            if (!window.confirm(lang === 'zh' ? '尚未保存本次结果，退出将丢失该讲解记录，是否确认退出？' : 'Result not saved. Exit without saving?')) {
-                return;
-            }
-        }
         navigate('/writing/ai-teachers', { replace: true });
     };
 
@@ -297,6 +270,13 @@ export default function Task1AiTeacherLessonPage() {
                             setData(lessonData);
                             sessionStorage.setItem(SESSION_KEY, JSON.stringify({ topic, data: lessonData }));
                             setState('ready');
+
+                            // Auto-save logic
+                            apiClient.post<{status: string, id: number}>('/writing/records', {
+                                service_type: 'task1_teacher',
+                                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : '小作文讲解',
+                                content: { ...lessonData, original_topic: topic },
+                            }).catch(err => console.error("Auto-save failed", err));
                         }
                     } catch (parseErr: any) {
                         if (parseErr.message && !parseErr.message.includes('JSON')) {
@@ -327,29 +307,12 @@ export default function Task1AiTeacherLessonPage() {
     const goPrev = () => setCurrentSection(s => Math.max(0, s - 1));
     const goNext = () => setCurrentSection(s => Math.min(totalSections - 1, s + 1));
 
-    const handleDownload = async () => {
-        if (!allSectionsRef.current || isDownloading) return;
-        setIsDownloading(true);
-        try {
-            const { default: html2canvas } = await import('html2canvas');
-            const canvas = await html2canvas(allSectionsRef.current, {
-                backgroundColor: '#fafaf9',
-                scale: 2,
-                windowWidth: 1440,
-                logging: false,
-            });
-            const link = document.createElement('a');
-            link.download = `Task1-AI-Teacher-Lesson-${Date.now()}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        } catch {
-            showToast('Download failed', 'error');
-        } finally {
-            setIsDownloading(false);
-        }
-    };
-
+    
     // === Render Sections ===
+
+const DYNAMISM_CATEGORIES = ["动态图", "静态图"];
+const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", "🛶 横向图", "🧮 表格", "🔀 混合图", "🗺️ 地图题", "🔄 流程图"];
+
     const renderSection0 = (d: Task1LessonData) => {
         if (!d || !d.part1 || !d.part1.question_analysis) {
             return (
@@ -363,11 +326,46 @@ export default function Task1AiTeacherLessonPage() {
             );
         }
         const qa = d.part1.question_analysis;
+        
+        const renderCategoryBadges = (title: string, items: string[], activeItem: string = '') => (
+            <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>{title}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {items.map(item => {
+                        // For emoji categories, we need to match the text part
+                        const itemText = item.replace(/^[\s\S]+?\s/, ''); // remove emoji and space
+                        const isActive = activeItem ? (item === activeItem || itemText === activeItem || (itemText.includes(activeItem.replace(/题$/, '')) && activeItem.length > 2)) : false;
+                        return (
+                            <span key={item} style={{
+                                padding: '0.2rem 0.6rem',
+                                borderRadius: '20px',
+                                fontSize: '0.75rem',
+                                fontWeight: isActive ? 600 : 400,
+                                color: isActive ? '#fff' : '#64748b',
+                                background: isActive ? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' : '#f1f5f9',
+                                border: `1px solid ${isActive ? 'transparent' : '#e2e8f0'}`,
+                                boxShadow: isActive ? '0 2px 4px rgba(79, 70, 229, 0.3)' : 'none',
+                                transition: 'all 0.2s',
+                            }}>
+                                {item}
+                            </span>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+
         return (
             <div className="at-split-layout">
                 <div className="at-split-main" style={{ maxHeight: '75vh', overflowY: 'auto', paddingRight: '0.75rem' }}>
                     <div className="at-section-card" style={{ borderLeft: '4px solid var(--color-primary)' }}>
                         <h3>{lang === 'zh' ? '图表核心要素' : 'Chart Core Elements'}</h3>
+                        
+                        <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            {renderCategoryBadges(lang === 'zh' ? '动静图分类' : 'Dynamism', DYNAMISM_CATEGORIES, qa.dynamic_or_static_zh)}
+                            {renderCategoryBadges(lang === 'zh' ? '图表类型' : 'Chart Type', CHART_CATEGORIES, qa.chart_type_zh)}
+                        </div>
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                             <div style={{ padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px' }}>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Chart Type</div>
@@ -896,35 +894,7 @@ export default function Task1AiTeacherLessonPage() {
                             <button onClick={() => setShowTopic(true)} style={{ padding: '0.25rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '20px', background: 'rgba(59, 130, 246, 0.08)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
                                 📄 {lang === 'zh' ? '查看题目' : 'Topic'}
                             </button>
-                            <button onClick={handleDownload} disabled={isDownloading} style={{ padding: '0.25rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '20px', background: 'var(--color-surface, #fff)', color: 'var(--color-text)', border: '1px solid var(--color-border, #e2e8f0)', cursor: isDownloading ? 'not-allowed' : 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', whiteSpace: 'nowrap' }}>
-                                📸 {isDownloading ? '...' : (lang === 'zh' ? '保存长图' : 'Download')}
-                            </button>
                         </div>
-                    )}
-
-                    {state === 'ready' && !isSaved && !recordId && (
-                        <button
-                            onClick={handleSaveResult}
-                            disabled={isSaving}
-                            style={{
-                                padding: '0.25rem 1rem',
-                                borderRadius: '20px',
-                                background: isSaving ? '#cbd5e1' : 'var(--color-primary)',
-                                color: '#fff',
-                                border: 'none',
-                                cursor: isSaving ? 'not-allowed' : 'pointer',
-                                fontSize: '0.8rem',
-                                fontWeight: 600,
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                boxShadow: isSaving ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.2)',
-                                whiteSpace: 'nowrap'
-                            }}
-                        >
-                            {isSaving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '💾 收藏记录' : '💾 Save')}
-                        </button>
                     )}
                 </div>
             }
@@ -943,7 +913,7 @@ export default function Task1AiTeacherLessonPage() {
                             background: '#fafaf9', padding: '3rem', display: 'flex',
                             flexDirection: 'column', gap: '2rem', zIndex: -1
                         }}
-                        ref={allSectionsRef}
+                        
                     >
                         <div style={{ textAlign: 'center', marginBottom: '1rem', borderBottom: '2px solid var(--color-border, #e2e8f0)', paddingBottom: '2rem' }}>
                             <h1 style={{ fontSize: '2.5rem', color: 'var(--color-text)', margin: '0 0 1rem 0' }}>{lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}</h1>

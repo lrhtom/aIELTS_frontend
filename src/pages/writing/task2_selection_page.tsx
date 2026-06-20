@@ -90,7 +90,7 @@ export default function Task2SelectionPage() {
             backText={t.task2Selection.backToWriting}
             pageTitle={t.task2Selection.heading}
             pageSubtitle={t.task2Selection.subheading}
-            headerRight={<AiModelSelector />}
+            headerRight={<AiModelSelector variant="minimal" />}
         >
             <div className="practice-container writing-selection-page">
 

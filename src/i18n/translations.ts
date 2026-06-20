@@ -4,6 +4,14 @@
 export type Lang = 'zh' | 'en';
 
 export interface Translations {
+
+    navbar: {
+        goals: {
+            noGoal: string;
+            countdown: string;
+            examDay: string;
+        }
+    };
     nav: {
         home: string;
         practice: string;
@@ -144,6 +152,10 @@ export interface Translations {
             desc: string;
         };
         writing: {
+            title: string;
+            desc: string;
+        };
+        others: {
             title: string;
             desc: string;
         };
@@ -1319,6 +1331,12 @@ export interface Translations {
         attachFiles: string;
     };
     analytics: {
+
+        skillsAvg: {
+            task1: string;
+            task2: string;
+            target: string;
+        };
         title: string;
         subtitle: string;
         comingSoon: string;
@@ -1394,6 +1412,18 @@ export interface Translations {
             checkinDone: string;
             checking: string;
             todoList: string;
+            shortcuts: string;
+        };
+
+        shortcuts: {
+            heading: string;
+            addBtn: string;
+            titlePlaceholder: string;
+            urlPlaceholder: string;
+            empty: string;
+            deleteAria: string;
+            invalidUrl: string;
+            newTabLabel: string;
         };
         translate: {
             sourceLang: string;

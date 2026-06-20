@@ -37,6 +37,8 @@ interface LessonData {
 
 interface Part1Data {
     question_analysis: {
+        subject_category_zh?: string;
+        question_type_zh?: string;
         topic_type_en: string;
         topic_type_zh: string;
         focus_points_en: string[];
@@ -98,6 +100,13 @@ interface BilingualArg {
             label: string;
             en: string;
             zh: string;
+            grammar?: {
+                pattern: string;
+                subject: string;
+                verb: string;
+                object: string;
+                explanation_zh: string;
+            };
         }>;
     }>;
     example_en: string;
@@ -119,11 +128,17 @@ interface Part3Data {
 
 /* ── Normalize response: old single-lang fields → new bilingual fields ── */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function str(v: any, fallback = ''): string { return typeof v === 'string' ? v : (v ? String(v) : fallback); }
+function str(v: any, fallback = ''): string {
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    return fallback;
+}
 function arr(v: any): string[] { return Array.isArray(v) ? v : []; }
 
 function normQA(raw: any) {
     return {
+        subject_category_zh: str(raw.subject_category_zh, ''),
+        question_type_zh: str(raw.question_type_zh, ''),
         topic_type_en: str(raw.topic_type_en || raw.topic_type, 'Unknown'),
         topic_type_zh: str(raw.topic_type_zh, ''),
         focus_points_en: arr(raw.focus_points_en || raw.focus_points),
@@ -398,6 +413,17 @@ function ExplanationBlock({ arg }: { arg: BilingualArg }) {
                                                 <div style={{ padding: '0.6rem 0.8rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
                                                     <div style={{ color: '#334155', fontSize: '0.9rem', fontWeight: 400 }}>{clause.en}</div>
                                                     <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{clause.zh}</div>
+                                                    {clause.grammar && (
+                                                        <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.75rem' }}>
+                                                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
+                                                                <span style={{ background: '#e0e7ff', color: '#4f46e5', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>{clause.grammar.pattern}</span>
+                                                                <span style={{ background: '#fce7f3', color: '#db2777', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>主: {clause.grammar.subject}</span>
+                                                                <span style={{ background: '#dcfce7', color: '#16a34a', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>谓: {clause.grammar.verb}</span>
+                                                                <span style={{ background: '#fef3c7', color: '#d97706', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>宾/表: {clause.grammar.object}</span>
+                                                            </div>
+                                                            <div style={{ color: '#64748b', marginTop: '0.3rem' }}>💡 {clause.grammar.explanation_zh}</div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -456,7 +482,7 @@ export default function AiTeacherLessonPage() {
 
     const [topic, setTopic] = useState(() => (location.state as any)?.topic || '');
     const recordId = (location.state as any)?.record_id;
-    
+
     // 提取高级偏好设置
     const [viewpointEnabled] = useState(() => (location.state as any)?.viewpointEnabled || false);
     const [viewpoint] = useState(() => (location.state as any)?.viewpoint || '');
@@ -464,20 +490,23 @@ export default function AiTeacherLessonPage() {
 
     const [state, setState] = useState<PageState>(() => {
         if (recordId) return 'loading';
-        const cached = sessionStorage.getItem(SESSION_KEY);
-        return cached ? 'ready' : 'loading';
+        try {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            if (!raw) return 'loading';
+            const cached = JSON.parse(raw);
+            return cached.topic === topic ? 'ready' : 'loading';
+        } catch { return 'loading'; }
     });
 
     const [data, setData] = useState<LessonData | null>(() => {
         if (recordId) return null;
-        const cachedRaw = sessionStorage.getItem(SESSION_KEY);
-        if (cachedRaw) {
-            try {
-                const cached = JSON.parse(cachedRaw);
-                if (cached.topic === topic) return normalize(cached.data);
-            } catch {}
-        }
-        return null;
+        try {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            if (!raw) return null;
+            const cached = JSON.parse(raw);
+            if (cached.topic !== topic) return null;
+            return normalize(cached.data);
+        } catch { return null; }
     });
 
     const [errorMsg, setErrorMsg] = useState('');
@@ -490,37 +519,10 @@ export default function AiTeacherLessonPage() {
     const [activeTemplateContent, setActiveTemplateContent] = useState<any>(null);
 
     const contentRef = useRef<HTMLDivElement>(null);
-    const allSectionsRef = useRef<HTMLDivElement>(null);
+    const treeRef = useRef<HTMLDivElement>(null);
     const fetchingRef = useRef(false);
 
-    const handleSaveResult = async () => {
-        if (!data || isSaved) return;
-        setIsSaving(true);
-        try {
-            const res = await apiClient.post<{status: string, id: number}>('/writing/records', {
-                service_type: 'task2_teacher',
-                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : '大作文讲解',
-                content: { ...data, original_topic: topic },
-            });
-            if (res.data.status === 'success') {
-                showToast(lang === 'zh' ? '保存成功！' : 'Saved successfully!', 'success');
-                setIsSaved(true);
-            } else {
-                showToast(lang === 'zh' ? '保存失败' : 'Failed to save', 'error');
-            }
-        } catch (e: any) {
-            const msg = e.response?.data?.message || e.message; showToast((lang === 'zh' ? '保存出错: ' : 'Error saving: ') + msg, 'error');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
     const handleBack = () => {
-        if (state === 'ready' && !isSaved && !recordId) {
-            if (!window.confirm(lang === 'zh' ? '尚未保存本次结果，退出将丢失该讲解记录，是否确认退出？' : 'Result not saved. Exit without saving?')) {
-                return;
-            }
-        }
         navigate('/writing/ai-teachers', { replace: true });
     };
 
@@ -552,71 +554,102 @@ export default function AiTeacherLessonPage() {
             return;
         }
 
+        const abortController = new AbortController();
+        const streamTimeout = setTimeout(() => abortController.abort(), 600_000); // 10-minute timeout
+
         try {
             const res = await fetchStream('/writing/ai-teacher/generate', {
                 method: 'POST',
-                body: { 
+                body: {
                     topic,
                     viewpointEnabled,
                     viewpoint,
-                    customInstructions 
+                    customInstructions
                 },
+                signal: abortController.signal,
             });
-            
+
             if (!res.ok) {
                 let errorData = null;
                 try { errorData = await res.json(); } catch(e) {}
-                throw { response: { data: errorData } };
+                if (errorData?.error === 'INVALID_TOPIC') {
+                    showToast(lang === 'zh' ? '输入内容不合法或不是雅思作文题目！\n' + (errorData.reason || '') : 'Invalid topic or not an IELTS writing prompt!\n' + (errorData.reason || ''), 'error');
+                    navigate('/writing/ai-teacher', { replace: true });
+                    return;
+                }
+                throw new Error(errorData?.error || errorData?.detail || 'Generation failed');
             }
 
             const reader = res.body?.getReader();
             if (!reader) throw new Error('No stream body');
             const decoder = new TextDecoder();
             let buffer = '';
+            let receivedResult = false;
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                
+
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || '';
-                
+
                 for (const line of lines) {
                     if (!line.trim()) continue;
                     try {
                         const data = JSON.parse(line);
-                        
+
                         if (data.error) {
                             if (data.error === 'INVALID_TOPIC') {
                                 showToast(lang === 'zh' ? '输入内容不合法或不是雅思作文题目！\n' + (data.reason || '') : 'Invalid topic or not an IELTS writing prompt!\n' + (data.reason || ''), 'error');
                                 navigate('/writing/ai-teacher', { replace: true });
                                 return;
                             }
-                            throw { response: { data: data } };
+                            // Re-throw as real error — caught by outer catch
+                            throw new Error(data.detail || data.error);
                         }
-                        
+
                         if (data.step !== undefined) {
                             setLoadingStep(data.step);
                         }
-                        
+
                         if (data.result) {
                             const lessonData = normalize(data.result);
                             setData(lessonData);
                             sessionStorage.setItem(SESSION_KEY, JSON.stringify({ topic, data: lessonData }));
                             setState('ready');
+                            receivedResult = true;
+
+                            // Auto-save logic
+                            apiClient.post<{status: string, id: number}>('/writing/records', {
+                                service_type: 'task2_teacher',
+                                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : '大作文讲解',
+                                content: { ...lessonData, original_topic: topic },
+                            }).catch(err => console.error("Auto-save failed", err));
                         }
                     } catch (e: any) {
-                        // ignore unparseable lines (should not happen with valid NDJSON)
+                        // Only swallow JSON parse errors; re-throw everything else
+                        if (!(e instanceof SyntaxError)) throw e;
                     }
                 }
             }
+
+            if (!receivedResult) {
+                throw new Error('Stream ended without result');
+            }
         } catch (e: any) {
-            const msg = (e as { response?: { data?: { error?: string, detail?: string } } })?.response?.data?.error || t.writingAiTeacher.errorGen;
-            setErrorMsg(msg);
+            if ((e as Error).name === 'AbortError') {
+                setErrorMsg(lang === 'zh' ? '生成超时，请重试' : 'Generation timed out, please retry');
+            } else {
+                const msg = (e as { response?: { data?: { error?: string, detail?: string } } })?.response?.data?.error
+                    || (e as Error).message
+                    || t.writingAiTeacher.errorGen;
+                setErrorMsg(msg);
+            }
             setState('error');
+        } finally {
+            clearTimeout(streamTimeout);
             fetchingRef.current = false;
-            return;
         }
     }, [topic, navigate, lang, t]);
 
@@ -637,18 +670,69 @@ export default function AiTeacherLessonPage() {
     const goNext = () => setCurrentSection(s => Math.min(totalSections - 1, s + 1));
 
     const handleDownload = async () => {
-        if (!allSectionsRef.current || isDownloading) return;
+        if (!treeRef.current || isDownloading) return;
         setIsDownloading(true);
         try {
+            // Find real dimensions using SVG getBBox
+            const svgEl = treeRef.current.querySelector('svg');
+            let treeWidth = 3500;
+            let treeHeight = 2000;
+            let startY = 1000;
+            
+            if (svgEl) {
+                const gEl = svgEl.querySelector('g');
+                if (gEl && typeof gEl.getBBox === 'function') {
+                    const bbox = gEl.getBBox();
+                    treeWidth = Math.max(1200, bbox.width + 400); // 400px padding right/left
+                    treeHeight = Math.max(800, bbox.height + 400); // 400px padding top/bottom
+                    startY = treeHeight / 2; // Center vertically
+                }
+            }
+
+            // 1. Clone the tree container
+            const clone = treeRef.current.cloneNode(true) as HTMLDivElement;
+            
+            // 2. Set dynamic dimensions to prevent clipping and minimize blank space
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.top = '-9999px';
+            clone.style.width = `${treeWidth}px`;
+            clone.style.height = `${treeHeight}px`;
+            clone.style.flex = 'none';
+            clone.style.visibility = 'visible'; // Must be visible for html2canvas
+            clone.style.overflow = 'visible';
+            
+            // 3. Reset the SVG transform so it fits within the dynamic canvas perfectly
+            const gElement = clone.querySelector('g');
+            if (gElement) {
+                // translate(150, startY) centers it vertically
+                gElement.setAttribute('transform', `translate(150, ${startY}) scale(1)`);
+            }
+            
+            // 4. Append to same parent to preserve CSS specificity
+            if (treeRef.current.parentElement) {
+                treeRef.current.parentElement.appendChild(clone);
+            } else {
+                document.body.appendChild(clone);
+            }
+            
+            // 5. Capture
             const { default: html2canvas } = await import('html2canvas');
-            const canvas = await html2canvas(allSectionsRef.current, {
+            const canvas = await html2canvas(clone, {
                 backgroundColor: '#fafaf9',
-                scale: 2,
-                windowWidth: 1440,
+                scale: 1.5,
                 logging: false,
+                width: treeWidth,
+                height: treeHeight,
             });
+            
+            // 6. Cleanup clone
+            if (clone.parentElement) {
+                clone.parentElement.removeChild(clone);
+            }
+            
             const link = document.createElement('a');
-            link.download = `AI-IELTS-Teacher-Lesson-${Date.now()}.png`;
+            link.download = `AI-IELTS-Logic-Tree-${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         } catch {
@@ -665,8 +749,10 @@ export default function AiTeacherLessonPage() {
         // Calculate dynamic height based on text length
         const enLen = nodeDatum.attributes?.en ? nodeDatum.attributes.en.length : 0;
         const zhLen = nodeDatum.attributes?.zh ? nodeDatum.attributes.zh.length : 0;
-        const estLines = Math.max(1, Math.ceil(enLen / 35)) + Math.max(1, Math.ceil(zhLen / 15));
-        const finalHeight = Math.max(100, 40 + estLines * 22);
+        const hasGrammar = !!nodeDatum.attributes?.grammar_pattern;
+        const grammarLines = hasGrammar ? 3 : 0; // extra height for grammar
+        const estLines = Math.max(1, Math.ceil(enLen / 35)) + Math.max(1, Math.ceil(zhLen / 15)) + grammarLines;
+        const finalHeight = Math.max(hasGrammar ? 140 : 100, 40 + estLines * 22);
 
         return (
             <g onClick={toggleNode}>
@@ -678,6 +764,12 @@ export default function AiTeacherLessonPage() {
                         <div className="at-tree-node-content" style={{ flex: 1 }}>
                             {nodeDatum.attributes?.en && <div className="at-tree-node-en">{nodeDatum.attributes.en}</div>}
                             {nodeDatum.attributes?.zh && <div className="at-tree-node-zh">{nodeDatum.attributes.zh}</div>}
+                            {nodeDatum.attributes?.grammar_pattern && (
+                                <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.75rem' }}>
+                                    <span style={{ color: '#4f46e5', fontWeight: 600 }}>🏷️ {nodeDatum.attributes.grammar_pattern}</span>
+                                    <span style={{ color: '#64748b', wordBreak: 'break-all', whiteSpace: 'normal' }}>{nodeDatum.attributes.grammar_svo}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </foreignObject>
@@ -730,7 +822,14 @@ export default function AiTeacherLessonPage() {
                     attributes: { en: step.en, zh: step.zh },
                     children: (step.clauses || []).map((clause: any) => ({
                         name: clause.label,
-                        attributes: { en: clause.en, zh: clause.zh }
+                        attributes: { 
+                            en: clause.en, 
+                            zh: clause.zh,
+                            ...(clause.grammar ? { 
+                                grammar_pattern: clause.grammar.pattern,
+                                grammar_svo: `主: ${clause.grammar.subject} | 谓: ${clause.grammar.verb} | 宾/表: ${clause.grammar.object}`
+                            } : {})
+                        }
                     }))
                 }));
 
@@ -763,14 +862,51 @@ export default function AiTeacherLessonPage() {
         return root;
     };
 
+
+const SUBJECT_CATEGORIES = ["教育", "科技", "社会", "政府", "媒体", "国际", "犯罪", "文化", "旅游", "环境", "健康", "工作", "其他"];
+const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (Discuss both views)", "优缺点类 (Advantages & Disadvantages)", "利弊权衡类 (Do advantages outweigh disadvantages)", "积极消极类 (Positive or negative development)", "报告类 (Cause / Effect / Solution)", "混合提问类 (Mixed questions)", "其他 (Other)"];
+
     const renderSection0 = (d: LessonData) => {
         const qa = d.part1.question_analysis;
+        
+        const renderCategoryBadges = (title: string, items: string[], activeItem: string = '') => (
+            <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>{title}</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {items.map(item => {
+                        const isActive = activeItem ? (item === activeItem || (item.includes(activeItem.replace(/类$/, '')) && activeItem.length > 2)) : false;
+                        return (
+                            <span key={item} style={{
+                                padding: '0.2rem 0.6rem',
+                                borderRadius: '20px',
+                                fontSize: '0.75rem',
+                                fontWeight: isActive ? 600 : 400,
+                                color: isActive ? '#fff' : '#64748b',
+                                background: isActive ? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' : '#f1f5f9',
+                                border: `1px solid ${isActive ? 'transparent' : '#e2e8f0'}`,
+                                boxShadow: isActive ? '0 2px 4px rgba(79, 70, 229, 0.3)' : 'none',
+                                transition: 'all 0.2s',
+                            }}>
+                                {item}
+                            </span>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+
         return (
             <div className="at-split-layout">
                 <div className="at-split-main">
                     <div className="at-section-card">
                     <span className="at-topic-type">{qa.topic_type_en}</span>
                     <h3>{sectionNames[0]}</h3>
+                    
+                    <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        {renderCategoryBadges(lang === 'zh' ? '考察领域' : 'Subject Area', SUBJECT_CATEGORIES, qa.subject_category_zh)}
+                        {renderCategoryBadges(lang === 'zh' ? '提问类型' : 'Question Type', QUESTION_TYPES, qa.question_type_zh)}
+                    </div>
+
                     <SingleLangBlock en={qa.correct_approach_en} zh={qa.correct_approach_zh} />
 
                     <h4 style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>{lang === 'zh' ? '重点 (Key Focus Points)' : 'Key Focus Points'}</h4>
@@ -1072,25 +1208,28 @@ export default function AiTeacherLessonPage() {
     const renderSection6 = (d: LessonData) => {
         const treeData = buildLogicTree(d);
         return (
-            <div className="at-split-layout">
-                <div className="at-section-card" style={{ height: '70vh', width: '100%', position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-                        <h3 style={{ marginBottom: 0 }}>{sectionNames[6]}</h3>
-                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                            {lang === 'zh' ? '💡 提示：按住拖动可移动画布，鼠标滚轮可缩放，点击节点可折叠/展开' : '💡 Tip: Drag to move, scroll to zoom, click nodes to collapse/expand'}
-                        </div>
+            <div className="at-section-card" style={{ height: 'calc(100vh - 150px)', minHeight: '600px', width: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                    <h3 style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        {sectionNames[6]}
+                        <button onClick={handleDownload} disabled={isDownloading} style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', background: 'var(--color-surface, #fff)', color: 'var(--color-text)', border: '1px solid var(--color-border, #e2e8f0)', cursor: isDownloading ? 'not-allowed' : 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                            📸 {isDownloading ? '...' : (lang === 'zh' ? '导出导图' : 'Export')}
+                        </button>
+                    </h3>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                        {lang === 'zh' ? '💡 提示：按住拖动可移动画布，鼠标滚轮可缩放，点击节点可折叠/展开' : '💡 Tip: Drag to move, scroll to zoom, click nodes to collapse/expand'}
                     </div>
-                    <div style={{ width: '100%', height: 'calc(100% - 3rem)', background: '#f8fafc', borderRadius: '12px', overflow: 'hidden' }}>
-                        <Tree 
-                            data={treeData} 
-                            orientation="horizontal" 
-                            pathFunc="step" 
-                            translate={{ x: 150, y: 350 }}
-                            nodeSize={{ x: 420, y: 280 }}
-                            renderCustomNodeElement={renderCustomNodeElement}
-                            initialDepth={5}
-                        />
-                    </div>
+                </div>
+                <div ref={treeRef} style={{ width: '100%', flex: 1, background: '#f8fafc', borderRadius: '12px', overflow: 'hidden', padding: '1rem' }}>
+                    <Tree 
+                        data={treeData} 
+                        orientation="horizontal" 
+                        pathFunc="step" 
+                        translate={{ x: 150, y: 350 }}
+                        nodeSize={{ x: 420, y: 280 }}
+                        renderCustomNodeElement={renderCustomNodeElement}
+                        initialDepth={5}
+                    />
                 </div>
             </div>
         );
@@ -1212,47 +1351,31 @@ export default function AiTeacherLessonPage() {
             onBack={handleBack}
             headerRight={
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                    {state === 'ready' && !isSaved && !recordId && (
-                        <button
-                            onClick={handleSaveResult}
-                            disabled={isSaving}
-                            style={{
-                                padding: '0.4rem 1rem',
-                                borderRadius: '999px',
-                                background: isSaving ? '#ccc' : 'var(--color-primary)',
-                                color: '#fff',
-                                border: 'none',
-                                cursor: isSaving ? 'not-allowed' : 'pointer',
-                                fontSize: '0.9rem',
-                                fontWeight: 500,
-                                whiteSpace: 'nowrap'
-                            }}
-                        >
-                            {isSaving ? (lang === 'zh' ? '保存中...' : 'Saving...') : (lang === 'zh' ? '💾 保存记录' : '💾 Save')}
-                        </button>
+                    {state === 'ready' && data && (
+                        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-surface, #fff)', borderRadius: '20px', padding: '0.15rem', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', border: '1px solid var(--color-border, #e2e8f0)' }}>
+                            <button onClick={goPrev} disabled={currentSection === 0} style={{ border: 'none', background: currentSection === 0 ? 'transparent' : 'var(--color-bg, #f8fafc)', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: currentSection === 0 ? '#cbd5e1' : 'var(--color-text)', cursor: currentSection === 0 ? 'not-allowed' : 'pointer', fontSize: '0.9rem', transition: 'all 0.2s', flexShrink: 0 }}>
+                                &#8249;
+                            </button>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', minWidth: '80px', textAlign: 'center', padding: '0 0.4rem', userSelect: 'none', whiteSpace: 'nowrap' }}>
+                                {sectionNames[currentSection]} {currentSection + 1}/{totalSections}
+                            </div>
+                            <button onClick={goNext} disabled={currentSection === totalSections - 1} style={{ border: 'none', background: currentSection === totalSections - 1 ? 'transparent' : 'var(--color-bg, #f8fafc)', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', color: currentSection === totalSections - 1 ? '#cbd5e1' : 'var(--color-text)', cursor: currentSection === totalSections - 1 ? 'not-allowed' : 'pointer', fontSize: '0.9rem', transition: 'all 0.2s', flexShrink: 0 }}>
+                                &#8250;
+                            </button>
+                        </div>
+                    )}
+                    {state === 'ready' && data && (
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <button onClick={() => setShowTopic(true)} style={{ padding: '0.25rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '20px', background: 'rgba(59, 130, 246, 0.08)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
+                                📑 {lang === 'zh' ? '查看题目' : 'Topic'}
+                            </button>
+                            
+                        </div>
                     )}
                 </div>
             }
         >
             <div className="at-lesson-wrap">
-                <div className="at-section-nav">
-                    <button className="at-nav-btn" onClick={goPrev} disabled={currentSection === 0}>
-                        <span className="at-nav-arrow">&#8249;</span> {t.writingAiTeacher.prev}
-                    </button>
-                    <div className="at-nav-info">
-                        <div className="at-nav-title">{sectionNames[currentSection]}</div>
-                        <div className="at-nav-index">{currentSection + 1} / {totalSections}</div>
-                    </div>
-                    <button className="at-nav-btn" onClick={goNext} disabled={currentSection === totalSections - 1}>
-                        {t.writingAiTeacher.next} <span className="at-nav-arrow">&#8250;</span>
-                    </button>
-                    <button className="at-topic-btn" onClick={() => setShowTopic(true)} style={{ whiteSpace: 'nowrap', borderRadius: '999px', padding: '0.4rem 1rem', background: '#f1f5f9', color: '#475569', border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: '0.9rem' }}>
-                        {lang === 'zh' ? '查看题目' : 'View Topic'}
-                    </button>
-                    <button className="at-download-btn" onClick={handleDownload} disabled={isDownloading} style={{ whiteSpace: 'nowrap', borderRadius: '999px', padding: '0.4rem 1rem', background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', cursor: isDownloading ? 'not-allowed' : 'pointer', fontWeight: 500, fontSize: '0.9rem' }}>
-                        {isDownloading ? '...' : t.writingAiTeacher.download}
-                    </button>
-                </div>
 
                 <div ref={contentRef}>
                     {renderCurrentSection()}
@@ -1273,7 +1396,7 @@ export default function AiTeacherLessonPage() {
                             gap: '2rem',
                             zIndex: -1
                         }}
-                        ref={allSectionsRef}
+                        
                     >
                         <div style={{ textAlign: 'center', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '2rem' }}>
                             <h1 style={{ fontSize: '2.5rem', color: '#1e293b', margin: '0 0 1rem 0' }}>{t.writingAiTeacher.lessonTitle}</h1>
@@ -1295,18 +1418,6 @@ export default function AiTeacherLessonPage() {
                         </div>
                     </div>
                 )}
-
-                <div className="at-section-nav">
-                    <button className="at-nav-btn" onClick={goPrev} disabled={currentSection === 0}>
-                        <span className="at-nav-arrow">&#8249;</span> {t.writingAiTeacher.prev}
-                    </button>
-                    <div className="at-nav-info">
-                        <div className="at-nav-index">{currentSection + 1} / {totalSections}</div>
-                    </div>
-                    <button className="at-nav-btn" onClick={goNext} disabled={currentSection === totalSections - 1}>
-                        {t.writingAiTeacher.next} <span className="at-nav-arrow">&#8250;</span>
-                    </button>
-                </div>
             </div>
 
             {/* Topic Modal */}

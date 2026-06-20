@@ -292,3 +292,181 @@
     border-color: var(--color-primary);
     color: #fff;
 }
+
+/* 鈹€鈹€鈹€ BENTO BOX PREMIUM REDESIGN 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+
+.practice-hub-container {
+    max-width: 900px; /* Widened for bento layout */
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+}
+
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: minmax(180px, auto);
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.bento-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 24px;
+    padding: 32px 28px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    animation: slideUpFade 0.6s ease backwards;
+}
+
+/* Staggered entrance animation */
+.bento-card:nth-child(1) { animation-delay: 0.05s; }
+.bento-card:nth-child(2) { animation-delay: 0.1s; }
+.bento-card:nth-child(3) { animation-delay: 0.15s; }
+.bento-card:nth-child(4) { animation-delay: 0.2s; }
+.bento-card:nth-child(5) { animation-delay: 0.25s; }
+
+@keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card Sizes */
+.bento-reading {
+    grid-column: span 2;
+    grid-row: span 1;
+}
+
+.bento-speaking {
+    grid-column: span 1;
+    grid-row: span 2;
+    justify-content: space-between;
+}
+
+.bento-listening {
+    grid-column: span 1;
+    grid-row: span 1;
+}
+
+.bento-writing {
+    grid-column: span 1;
+    grid-row: span 1;
+}
+
+.bento-others {
+    grid-column: span 3;
+    grid-row: span 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 32px;
+}
+
+.bento-others .bento-content {
+    margin-bottom: 0;
+    max-width: 60%;
+}
+
+/* Inner Layouts */
+.bento-content {
+    position: relative;
+    z-index: 2;
+}
+
+.bento-icon {
+    font-size: 42px;
+    margin-bottom: 16px;
+    display: inline-block;
+    transition: transform 0.4s ease;
+}
+
+.bento-speaking .bento-icon {
+    font-size: 56px;
+    align-self: flex-end;
+}
+
+.bento-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+    color: var(--color-text);
+}
+
+.bento-desc {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+/* Glow Backgrounds */
+.bento-glow {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, var(--glow-color) 0%, transparent 50%);
+    opacity: 0.15;
+    z-index: 0;
+    transition: opacity 0.5s ease, transform 0.6s ease;
+    transform: translate(0, 0);
+    pointer-events: none;
+}
+
+.bento-reading { --glow-color: #10b981; } /* Emerald */
+.bento-listening { --glow-color: #8b5cf6; } /* Violet */
+.bento-speaking { --glow-color: #f97316; } /* Orange */
+.bento-writing { --glow-color: #3b82f6; } /* Blue */
+.bento-others { --glow-color: #64748b; } /* Slate */
+
+/* Hover Effects */
+.bento-card:hover {
+    transform: translateY(-6px) scale(1.01);
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 1);
+}
+
+.bento-card:hover .bento-glow {
+    opacity: 0.35;
+    transform: translate(5%, -5%);
+}
+
+.bento-card:hover .bento-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .bento-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .bento-reading, .bento-listening, .bento-speaking, .bento-writing, .bento-others {
+        grid-column: span 1;
+        grid-row: span 1;
+    }
+
+    .bento-speaking {
+        justify-content: flex-end;
+    }
+    
+    .bento-others {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .bento-others .bento-content {
+        max-width: 100%;
+    }
+}

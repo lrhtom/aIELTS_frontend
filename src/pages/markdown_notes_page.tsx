@@ -206,7 +206,7 @@ export default function MarkdownNotesPage() {
 
     /* ── Handlers ─────────────────────────────────────── */
 
-    const handleSaveToCloud = async () => {
+    const handleSaveToCloud = useCallback(async () => {
         if (!selectedNote || !dirty) return;
         setSaving(true);
         try {
@@ -220,7 +220,18 @@ export default function MarkdownNotesPage() {
         } finally {
             setSaving(false);
         }
-    };
+    }, [selectedNote, dirty, title, tags, content, t]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                handleSaveToCloud();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleSaveToCloud]);
 
     const handleSyncFromCloud = async () => {
         if (!selectedNote) return;

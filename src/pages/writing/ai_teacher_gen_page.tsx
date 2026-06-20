@@ -29,13 +29,13 @@ export default function AiTeacherGenPage() {
         }
         setSubmitting(true);
         sessionStorage.removeItem('aiTeacherLesson');
-        navigate('/writing/ai-teacher/lesson', { 
-            state: { 
+        navigate('/writing/ai-teacher/lesson', {
+            state: {
                 topic: trimmed,
                 viewpointEnabled: advancedOpen,
                 viewpoint,
                 customInstructions: customInstructions.trim()
-            } 
+            }
         });
     };
 

@@ -3,7 +3,7 @@ import { useLang } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../api/auth';
 
-export type AIProvider = 'deepseek' | 'gemini' | 'gpt5_4' | 'gpt5_mini';
+export type AIProvider = 'deepseek' | 'deepseek_flash' | 'gemini' | 'gpt5_4' | 'gpt5_mini';
 
 interface AiModelSelectorProps {
     onModelChange?: (provider: AIProvider) => void;
@@ -76,7 +76,8 @@ export default function AiModelSelector({ onModelChange, label, description, var
                     e.currentTarget.style.borderColor = 'var(--color-border)';
                 }}
             >
-                <option value="deepseek">DeepSeek v3.2</option>
+                <option value="deepseek">DeepSeek v4 Pro</option>
+                <option value="deepseek_flash">DeepSeek v4 Flash</option>
                 <option value="gemini">Gemini 3.0</option>
                 <option value="gpt5_4">GPT-5.4</option>
                 <option value="gpt5_mini">GPT-5.4 Mini</option>
@@ -105,7 +106,8 @@ export default function AiModelSelector({ onModelChange, label, description, var
                 value={provider}
                 onChange={(e) => handleProviderChange(e.target.value as AIProvider)}
             >
-                <option value="deepseek">DeepSeek v3.2</option>
+                <option value="deepseek">DeepSeek v4 Pro</option>
+                <option value="deepseek_flash">DeepSeek v4 Flash</option>
                 <option value="gemini">Gemini 3.0 Flash</option>
                 <option value="gpt5_4">GPT-5.4</option>
                 <option value="gpt5_mini">GPT-5.4 Mini</option>

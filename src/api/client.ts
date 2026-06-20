@@ -221,6 +221,7 @@ apiClient.interceptors.response.use(
 interface RequestOptions {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
     body?: unknown;
+    signal?: AbortSignal;
 }
 
 export interface ApiError extends Error {
@@ -254,7 +255,7 @@ export async function api<T = unknown>(path: string, options: RequestOptions = {
  * 注入 Authorization 和 X-AI-Provider 头。
  */
 export async function fetchStream(path: string, options: RequestOptions = {}): Promise<Response> {
-    const { method = 'GET', body } = options;
+    const { method = 'GET', body, signal } = options;
     const url = `${API_BASE}/api${path}`;
 
     const isPublicPath = PUBLIC_AUTH_PATHS.some(p => path.includes(p));
@@ -278,6 +279,7 @@ export async function fetchStream(path: string, options: RequestOptions = {}): P
             method,
             headers,
             body: body ? JSON.stringify(body) : undefined,
+            signal,
         });
     };
 
@@ -324,4 +326,44 @@ export async function fetchStream(path: string, options: RequestOptions = {}): P
     }
 
     return response;
+
 }
+
+// ── Assistant Todos ──
+export const assistantApi = {
+    async getTodos() {
+        const res = await apiClient.get('/assistant/todos/');
+        return res.data;
+    },
+    async createTodo(text: string) {
+        const res = await apiClient.post('/assistant/todos/', { text });
+        return res.data;
+    },
+    async updateTodo(id: number | string, data: { done?: boolean; text?: string }) {
+        const res = await apiClient.patch(`/assistant/todos/${id}/`, data);
+        return res.data;
+    },
+    async deleteTodo(id: number | string) {
+        await apiClient.delete(`/assistant/todos/${id}/`);
+    },
+    async clearCompletedTodos() {
+        await apiClient.post('/assistant/todos/clear-completed/');
+    },
+
+    // ── Assistant Shortcuts ──
+    async getShortcuts() {
+        const res = await apiClient.get('/assistant/shortcuts/');
+        return res.data;
+    },
+    async createShortcut(data: { title: string; url: string; open_in_new_tab: boolean }) {
+        const res = await apiClient.post('/assistant/shortcuts/', data);
+        return res.data;
+    },
+    async updateShortcut(id: number | string, data: { open_in_new_tab?: boolean; title?: string; url?: string }) {
+        const res = await apiClient.patch(`/assistant/shortcuts/${id}/`, data);
+        return res.data;
+    },
+    async deleteShortcut(id: number | string) {
+        await apiClient.delete(`/assistant/shortcuts/${id}/`);
+    }
+};

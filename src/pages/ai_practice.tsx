@@ -11,38 +11,66 @@ export default function AIPractice() {
     return (
         <Layout>
             <div className="practice-hub">
-                <div className="practice-hub-header">
-                    <Link to="/practice" className="back-link">{t.backToPractice}</Link>
-                    <h1>{t.heading}</h1>
-                    <p>{t.subheading}</p>
-                </div>
+                <div className="practice-hub-container">
+                    <div className="practice-hub-header">
+                        <Link to="/practice" className="back-link">{t.backToPractice}</Link>
+                        <h1>{t.heading}</h1>
+                        <p>{t.subheading}</p>
+                    </div>
 
-                <div className="skill-grid">
-                    <Link to="/practice/ai/reading" className="skill-entry reading">
-                        <span className="skill-icon">📖</span>
-                        <div className="skill-name">{t.reading.title}</div>
-                        <div className="skill-sub">{t.reading.desc}</div>
-                    </Link>
+                    <div className="bento-grid">
+                        
+                        {/* Reading - Spans 2 cols */}
+                        <Link to="/practice/ai/reading" className="bento-card bento-reading">
+                            <div className="bento-glow"></div>
+                            <div className="bento-content">
+                                <span className="bento-icon">📖</span>
+                                <div className="bento-title">{t.reading.title}</div>
+                                <div className="bento-desc">{t.reading.desc}</div>
+                            </div>
+                        </Link>
 
-                    <Link to="/practice/ai/listening" className="skill-entry listening">
-                        <span className="skill-icon">🎧</span>
-                        <div className="skill-name">{t.listening.title}</div>
-                        <div className="skill-sub">{t.listening.desc}</div>
-                    </Link>
+                        {/* Speaking - Tall card, spans 2 rows */}
+                        <Link to="/speaking" className="bento-card bento-speaking">
+                            <div className="bento-glow"></div>
+                            <div className="bento-content">
+                                <div className="bento-title">{t.speaking.title}</div>
+                                <div className="bento-desc">{t.speaking.desc}</div>
+                            </div>
+                            <span className="bento-icon">🗣️</span>
+                        </Link>
 
-                    <Link to="/speaking" className="skill-entry speaking">
-                        <span className="skill-icon">🗣️</span>
-                        <div className="skill-name">{t.speaking.title}</div>
-                        <div className="skill-sub">{t.speaking.desc}</div>
-                    </Link>
+                        {/* Listening - Square card */}
+                        <Link to="/practice/ai/listening" className="bento-card bento-listening">
+                            <div className="bento-glow"></div>
+                            <div className="bento-content">
+                                <span className="bento-icon">🎧</span>
+                                <div className="bento-title">{t.listening.title}</div>
+                                <div className="bento-desc">{t.listening.desc}</div>
+                            </div>
+                        </Link>
 
-                    <Link to="/writing" className="skill-entry writing">
-                        <span className="skill-icon">✍️</span>
-                        <div className="skill-name">{t.writing.title}</div>
-                        <div className="skill-sub">{t.writing.desc}</div>
-                    </Link>
+                        {/* Writing - Square card */}
+                        <Link to="/writing" className="bento-card bento-writing">
+                            <div className="bento-glow"></div>
+                            <div className="bento-content">
+                                <span className="bento-icon">✍️</span>
+                                <div className="bento-title">{t.writing.title}</div>
+                                <div className="bento-desc">{t.writing.desc}</div>
+                            </div>
+                        </Link>
 
+                        {/* Others - Wide bar at bottom */}
+                        <Link to="/practice/ai/others" className="bento-card bento-others">
+                            <div className="bento-glow"></div>
+                            <div className="bento-content">
+                                <div className="bento-title">{t.others.title}</div>
+                                <div className="bento-desc">{t.others.desc}</div>
+                            </div>
+                            <span className="bento-icon">🧩</span>
+                        </Link>
 
+                    </div>
                 </div>
             </div>
         </Layout>

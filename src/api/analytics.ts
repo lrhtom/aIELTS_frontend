@@ -41,3 +41,34 @@ export async function getScheduledWords(days: number, planId?: number): Promise<
     const res = await apiClient.get('/analytics/scheduled-words', { params: { days, plan_id: planId } });
     return res.data.words;
 }
+
+export interface WritingRecord {
+    id: number;
+    date: string;
+    overall: number;
+    tr: number | null;
+    cc: number | null;
+    lr: number | null;
+    gra: number | null;
+}
+
+export interface WritingSkillsAvg {
+    tr: number;
+    cc: number;
+    lr: number;
+    gra: number;
+}
+
+export interface WritingAnalytics {
+    task1_trend: WritingRecord[];
+    task2_trend: WritingRecord[];
+    task1_skills_avg: WritingSkillsAvg;
+    task2_skills_avg: WritingSkillsAvg;
+    total_corrections: number;
+}
+
+export async function getWritingAnalytics(): Promise<WritingAnalytics> {
+    const res = await apiClient.get('/analytics/writing');
+    return res.data;
+}
+

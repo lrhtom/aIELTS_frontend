@@ -1,6 +1,14 @@
 import type { Translations } from './translations';
 
 export const zh: Translations = {
+
+    navbar: {
+        goals: {
+            noGoal: '暂无目标',
+            countdown: '🎯 距离考试时间 {date} 还有 {days} 天 | 目标 {score} 分',
+            examDay: '🎯 今天是考试日，祝你屠鸭成功！ 🎉 | 目标 {score} 分',
+        }
+    },
     nav: {
         home: '主页',
         practice: '练习',
@@ -85,8 +93,8 @@ export const zh: Translations = {
         skills: {
             heading: '全科覆盖，精准提升',
             items: [
-                { title: '阅读', desc: 'AI 生成雅思阅读文章与题目，智能定位答案句，逐题解析。', link: '/reading' },
-                { title: '听力', desc: 'AI 生成听力音频与配套题目，支持多种口音和场景模拟。', link: '/listening' },
+                { title: '阅读', desc: 'AI 生成雅思阅读文章与题目，智能定位答案句，逐题解析。', link: '/practice/ai/reading' },
+                { title: '听力', desc: 'AI 生成听力音频与配套题目，支持多种口音和场景模拟。', link: '/practice/ai/listening' },
                 { title: '口语', desc: 'AI 语音对话练习，实时转录与评分，覆盖 Part 1-3 全部题型。', link: '/speaking' },
                 { title: '写作', desc: 'Task 1 图表题 + Task 2 议论文，AI 批改打分，给出修改建议。', link: '/writing' },
             ],
@@ -102,12 +110,12 @@ export const zh: Translations = {
         announcements: {
             heading: '最新动态',
             items: [
-                { date: '2024-03-20', tag: '新功能', content: 'AI 写作批改功能现已上线，支持实时反馈。' },
-                { date: '2024-03-15', tag: '优化', content: '提升了口语练习的语音识别准确度。' },
-                { date: '2024-03-10', tag: '活动', content: '加入备考群，与志同道合的同学一起努力。' },
+                { date: '2026-03-20', tag: '新功能', content: 'AI 写作批改功能现已上线，支持实时反馈。' },
+                { date: '2026-03-15', tag: '优化', content: '提升了口语练习的语音识别准确度。' },
+                { date: '2026-03-10', tag: '活动', content: '加入备考群，与志同道合的同学一起努力。' },
             ],
         },
-        footer: '© 2024 aIELTS. All rights reserved.',
+        footer: '© 2026 aIELTS. All rights reserved.',
         footerFeedback: '反馈建议',
         footerManual: '使用手册',
         checkin: {
@@ -156,6 +164,10 @@ export const zh: Translations = {
         writing: {
             title: 'AI写作板块',
             desc: '上传作文获取细致反馈',
+        },
+        others: {
+            title: '其他练习',
+            desc: '其他智能化练习模块',
         },
         comingSoon: '更多模块正在同步开发中...',
     },
@@ -455,7 +467,7 @@ export const zh: Translations = {
         lessonTitle: 'AI 作文精讲',
         sectionNames: ['审题分析', '文章结构', '起始段', '写作观点', '结尾段', '作文模板', '逻辑树', '总体作文'],
         loading: 'AI 正在全力为您生成雅思作文深度讲解...',
-        loadingSteps: ['分析题目类型...', '构建文章结构...', '撰写开头与观点...', '组织结尾段落...', '整合完整范文...'],
+        loadingSteps: ['校验题目有效性...', '构思文章大纲与结构...', '撰写段落主干内容...', '提炼易错避坑指南...', '整合最终高分范文...'],
         download: '下载保存',
         prev: '上一节',
         next: '下一节',
@@ -540,6 +552,25 @@ export const zh: Translations = {
         goToProfile: '前往个人主页',
     },
     profile: {
+
+        goals: {
+            title: '个人目标',
+            management: '个人目标管理',
+            desc: '设定并追踪你的雅思学习目标',
+            sectionTitle: '目标分数与日期',
+            sectionDesc: '设置你的雅思听说读写目标分数，以及预期的考试日期。系统将为你自动呈现进度并进行倒计时提醒。',
+            listening: '听力 (Listening)',
+            reading: '阅读 (Reading)',
+            writing: '写作 (Writing)',
+            speaking: '口语 (Speaking)',
+            calculatedOverall: '自动计算总分：',
+            examDate: '考试日期 (Exam Date)',
+            daysLeft: '距离考试还有 {days} 天',
+            saving: '保存中...',
+            saveBtn: '保存目标',
+            saveSuccess: '✓ 个人目标保存成功',
+            saveFail: '✗ 保存失败',
+        },
         heading: '个人主页',
         subheading: '您的个人仪表盘，记录学习点滴与成就',
         menu: {
@@ -1341,6 +1372,11 @@ export const zh: Translations = {
         attachFiles: '附加文件',
     },
     analytics: {
+        skillsAvg: {
+            task1: '小作文核心能力 (平均)',
+            task2: '大作文核心能力 (平均)',
+            target: 'Target'
+        },
         title: '学习分析',
         subtitle: '追踪你的词汇学习进度和记忆效果',
         comingSoon: '即将上线',
@@ -1359,6 +1395,12 @@ export const zh: Translations = {
         speakingTab: '口语',
         readingTab: '阅读',
         writingTab: '写作',
+        totalCorrections: '累计批改次数',
+        latestScore: '近期均分',
+        writingTrend: '写作分数趋势 (大/小作文)',
+        writingSkillsRadar: '四大核心能力雷达 (平均)',
+        task1: '小作文 (Task 1)',
+        task2: '大作文 (Task 2)',
         today: '今天',
         days: '天',
         overdue: '逾期',
@@ -1416,6 +1458,18 @@ export const zh: Translations = {
             checkinDone: '✅ 今日已签到',
             checking: '签到中...',
             todoList: '📋 待办事项',
+            shortcuts: '快捷访问',
+        },
+
+        shortcuts: {
+            heading: '快捷导航',
+            addBtn: '添加',
+            titlePlaceholder: '网站名称',
+            urlPlaceholder: 'https://...',
+            empty: '还没有快捷链接，快在上方添加一个吧！',
+            deleteAria: '删除链接',
+            invalidUrl: '请输入以 http:// 或 https:// 开头的有效网址',
+            newTabLabel: '在新标签页打开',
         },
         translate: {
             sourceLang: '源语言',

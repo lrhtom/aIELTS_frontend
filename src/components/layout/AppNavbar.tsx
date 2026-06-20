@@ -20,6 +20,51 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ba
     const location = useLocation();
     const isHome = location.pathname === '/';
 
+
+    const renderPersonalGoal = () => {
+        if (!user) return null;
+        if (!user.exam_date && !user.target_score) {
+            return (
+                <div style={{ marginRight: '1rem', fontSize: '0.85rem', color: 'var(--color-text-secondary)', padding: '0.4rem 0.8rem', background: 'var(--color-bg-alt)', borderRadius: '20px', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center' }}>
+                    {t.navbar.goals.noGoal}
+                </div>
+            );
+        }
+
+        let content = '';
+        const score = user.target_score ? user.target_score.toString() : '';
+
+        if (user.exam_date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const target = new Date(user.exam_date);
+            target.setHours(0, 0, 0, 0);
+            const diffTime = target.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays <= 0) {
+                content = t.navbar.goals.examDay.replace('{score}', score);
+            } else {
+                // Formatting date for zh vs en is tricky, but let's just use the raw YYYY-MM-DD for now
+                content = t.navbar.goals.countdown.replace('{date}', user.exam_date).replace('{days}', diffDays.toString()).replace('{score}', score);
+            }
+        } else if (score) {
+            // Just score
+            content = `🎯 Target ${score}`;
+        }
+        
+        // Remove trailing " | Target " or " | 目标 分" if score was empty
+        if (!score) {
+            content = content.replace(' | Target ', '').replace(' | 目标  分', '');
+        }
+
+        return (
+            <div style={{ marginRight: '1rem', fontSize: '0.85rem', color: 'var(--color-primary-dark)', padding: '0.4rem 0.8rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '20px', border: '1px solid rgba(59, 130, 246, 0.2)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap' }}>
+                <span>{content}</span>
+            </div>
+        );
+    };
+
     return (
         <nav className="navbar" aria-label="Top navigation">
             <div className="navbar-left">
@@ -66,7 +111,10 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ba
                 )}
             </div>
 
+
             <div className="navbar-right">
+                {renderPersonalGoal()}
+
                 {headerRight && <div className="navbar-header-right">{headerRight}</div>}
                 <div className="navbar-auth">
                 {user ? (

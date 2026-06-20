@@ -7,6 +7,10 @@ export interface User {
     nickname?: string;
     avatar_url?: string;
     target_score?: string | null;
+    target_listening?: string | null;
+    target_reading?: string | null;
+    target_writing?: string | null;
+    target_speaking?: string | null;
     current_score?: string | null;
     exam_date?: string | null;
     membership_tier?: string;
@@ -88,6 +92,11 @@ export const authApi = {
         target_vocab_name?: string;
         language_preference?: string;
         ai_provider?: string;
+        target_listening?: number | string | null;
+        target_reading?: number | string | null;
+        target_writing?: number | string | null;
+        target_speaking?: number | string | null;
+        exam_date?: string | null;
     }): Promise<User> => {
         const response = await apiClient.put('/auth/settings', settings);
         return response.data.user;

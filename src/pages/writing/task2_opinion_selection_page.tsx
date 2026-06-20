@@ -47,7 +47,7 @@ export default function Task2OpinionSelectionPage() {
             backText={t.task2OpinionSelection.backToTask2Selection}
             pageTitle={t.task2OpinionSelection.heading}
             pageSubtitle={t.task2OpinionSelection.subheading}
-            headerRight={<AiModelSelector />}
+            headerRight={<AiModelSelector variant="minimal" />}
         >
             <div className="practice-container">
 

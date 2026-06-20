@@ -1,6 +1,14 @@
 import type { Translations } from './translations';
 
 export const en: Translations = {
+
+    navbar: {
+        goals: {
+            noGoal: 'No Goal',
+            countdown: '🎯 {days} days left until exam on {date} | Target {score}',
+            examDay: '🎯 Today is the exam day, good luck! 🎉 | Target {score}',
+        }
+    },
     nav: {
         home: 'Home',
         practice: 'Practice',
@@ -83,12 +91,12 @@ export const en: Translations = {
             vocab: 'Vocabulary',
         },
         skills: {
-            heading: 'All Four Skills Covered',
+            heading: 'Comprehensive Coverage',
             items: [
-                { title: 'Reading', desc: 'AI generates IELTS reading passages and questions with answer-locating guidance and detailed explanations.', link: '/reading' },
-                { title: 'Listening', desc: 'AI generates listening audio with questions, supporting multiple accents and scenario simulations.', link: '/listening' },
-                { title: 'Speaking', desc: 'AI voice conversation practice with real-time transcription and scoring across all Part 1-3 question types.', link: '/speaking' },
-                { title: 'Writing', desc: 'Task 1 charts + Task 2 essays with AI scoring, correction, and improvement suggestions.', link: '/writing' },
+                { title: 'Reading', desc: 'AI-generated reading passages and questions with precise sentence location and detailed explanations.', link: '/practice/ai/reading' },
+                { title: 'Listening', desc: 'AI-generated listening audio and questions, supporting various accents and scenarios.', link: '/practice/ai/listening' },
+                { title: 'Speaking', desc: 'AI voice conversation practice with real-time transcription and scoring, covering Parts 1-3.', link: '/speaking' },
+                { title: 'Writing', desc: 'Task 1 charts + Task 2 essays, with AI scoring, corrections, and improvement suggestions.', link: '/writing' },
             ],
         },
         howItWorks: {
@@ -102,12 +110,12 @@ export const en: Translations = {
         announcements: {
             heading: 'Latest Updates',
             items: [
-                { date: '2024-03-20', tag: 'New', content: 'AI Writing correction is live with real-time feedback.' },
-                { date: '2024-03-15', tag: 'Optimization', content: 'Improved voice recognition for speaking practice.' },
-                { date: '2024-03-10', tag: 'Community', content: 'Join our study group and work together with peers.' },
+                { date: '2026-03-20', tag: 'New', content: 'AI Writing correction is live with real-time feedback.' },
+                { date: '2026-03-15', tag: 'Optimization', content: 'Improved voice recognition for speaking practice.' },
+                { date: '2026-03-10', tag: 'Community', content: 'Join our study group and work together with peers.' },
             ],
         },
-        footer: '© 2024 aIELTS. All rights reserved.',
+        footer: '© 2026 aIELTS. All rights reserved.',
         footerFeedback: 'Feedback',
         footerManual: 'User Manual',
         checkin: {
@@ -156,6 +164,10 @@ export const en: Translations = {
         writing: {
             title: 'AI Writing',
             desc: 'Get professional feedback on vocabulary, grammar, and coherence.',
+        },
+        others: {
+            title: 'Other Practice',
+            desc: 'Miscellaneous AI tasks',
         },
         comingSoon: 'More modules for preparation are in development...',
     },
@@ -327,6 +339,25 @@ export const en: Translations = {
         goToProfile: 'Go to Profile',
     },
     profile: {
+
+        goals: {
+            title: 'Goals',
+            management: 'Goal Management',
+            desc: 'Set and track your IELTS learning goals',
+            sectionTitle: 'Target Scores & Date',
+            sectionDesc: 'Set your IELTS target scores and exam date. The system will automatically present your progress and provide countdown reminders.',
+            listening: 'Listening',
+            reading: 'Reading',
+            writing: 'Writing',
+            speaking: 'Speaking',
+            calculatedOverall: 'Calculated Overall: ',
+            examDate: 'Exam Date',
+            daysLeft: '{days} days left until exam',
+            saving: 'Saving...',
+            saveBtn: 'Save Goals',
+            saveSuccess: '✓ Goals saved successfully',
+            saveFail: '✗ Save failed',
+        },
         heading: 'Profile Page',
         subheading: 'Your personal dashboard for tracking progress and achievements',
         menu: {
@@ -804,7 +835,7 @@ export const en: Translations = {
         lessonTitle: 'AI IELTS Teacher Lesson',
         sectionNames: ['Question Analysis', 'Essay Structure', 'Opening Paragraph', 'Writing Arguments', 'Closing Paragraph', 'Template Analysis', 'Logic Tree', 'Full Essay'],
         loading: 'AI is generating a deep analysis of your IELTS essay...',
-        loadingSteps: ['Analyzing question type...', 'Building essay structure...', 'Writing opening & arguments...', 'Organizing closing paragraph...', 'Combining full essay...'],
+        loadingSteps: ['Validating topic...', 'Building essay structure...', 'Writing main paragraphs...', 'Generating common mistakes...', 'Synthesizing full model essay...'],
         download: 'Download',
         prev: 'Previous',
         next: 'Next',
@@ -1329,6 +1360,11 @@ export const en: Translations = {
         attachFiles: 'Attach files',
     },
     analytics: {
+        skillsAvg: {
+            task1: 'Task 1 Core Skills (Average)',
+            task2: 'Task 2 Core Skills (Average)',
+            target: 'Target'
+        },
         title: 'Learning Analytics',
         subtitle: 'Track your vocabulary progress and memory retention',
         comingSoon: 'Coming Soon',
@@ -1347,6 +1383,12 @@ export const en: Translations = {
         speakingTab: 'Speaking',
         readingTab: 'Reading',
         writingTab: 'Writing',
+        totalCorrections: 'Total Corrections',
+        latestScore: 'Latest Avg Score',
+        writingTrend: 'Writing Score Trend (Task 1 & 2)',
+        writingSkillsRadar: 'Core Skills Radar (Average)',
+        task1: 'Task 1',
+        task2: 'Task 2',
         today: 'Today',
         days: 'd',
         overdue: 'overdue',
@@ -1404,6 +1446,18 @@ export const en: Translations = {
             checkinDone: '✅ Checked in today',
             checking: 'Checking in...',
             todoList: '📋 Todo List',
+            shortcuts: 'Shortcuts',
+        },
+
+        shortcuts: {
+            heading: 'Quick Access',
+            addBtn: 'Add',
+            titlePlaceholder: 'Link Title',
+            urlPlaceholder: 'https://...',
+            empty: 'No shortcuts yet. Add your first link above!',
+            deleteAria: 'Delete shortcut',
+            invalidUrl: 'Please enter a valid URL starting with http:// or https://',
+            newTabLabel: 'Open in new tab',
         },
         translate: {
             sourceLang: 'Source',

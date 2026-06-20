@@ -19,8 +19,12 @@ export const ERROR_TYPE_LABELS_ZH: Record<string, string> = {
     example_dump: '堆砌例子',
     memorized_template: '背诵模板',
     copy_prompt: '照抄原题',
+    copied_prompt: '照抄原题',
     unclear_position: '立场不清',
     too_broad: '背景太泛',
+    wordy_background: '背景冗长',
+    new_idea_in_conclusion: '结尾新观点',
+    vague_summary: '总结空泛',
 };
 
 export const ERROR_TYPE_LABELS_EN: Record<string, string> = {
@@ -32,8 +36,12 @@ export const ERROR_TYPE_LABELS_EN: Record<string, string> = {
     example_dump: 'Example Dumping',
     memorized_template: 'Memorized Template',
     copy_prompt: 'Copying Prompt',
+    copied_prompt: 'Copying Prompt',
     unclear_position: 'Unclear Position',
     too_broad: 'Too Broad',
+    wordy_background: 'Wordy Background',
+    new_idea_in_conclusion: 'New Idea in Conclusion',
+    vague_summary: 'Vague Summary',
 };
 
 interface BadExampleListProps {

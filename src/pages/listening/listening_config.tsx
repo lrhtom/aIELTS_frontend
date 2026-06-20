@@ -1,4 +1,4 @@
-﻿import Layout from '../../components/layout/Layout';
+import Layout from '../../components/layout/Layout';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
@@ -102,199 +102,209 @@ export default function ListeningConfig() {
     backUrl='/practice/ai'
     backText={t.backToAI}
 >
-            <div className="config-page-wrap listening-config">
-                {/* AI Model Selector */}
-                <div className="config-card">
-                    <AiModelSelector />
-                </div>
-
-                {/* Practice Type */}
-                <div className="config-card">
-                    <h3>{t.practiceType.label}</h3>
-                    <div className="practice-type-cards">
-                        <button
-                            className={`practice-type-card ${practiceType === 'article' ? 'selected' : ''}`}
-                            onClick={() => setPracticeType('article')}
-                        >
-                            <span className="pt-icon">📄</span>
-                            <div className="pt-text">
-                                <div className="pt-title">{t.practiceType.article.title}</div>
-                                <div className="pt-desc">{t.practiceType.article.desc}</div>
-                            </div>
-                        </button>
-                        <button
-                            className={`practice-type-card ${practiceType === 'sentence' ? 'selected' : ''}`}
-                            onClick={() => setPracticeType('sentence')}
-                        >
-                            <span className="pt-icon">✏️</span>
-                            <div className="pt-text">
-                                <div className="pt-title">{t.practiceType.sentence.title}</div>
-                                <div className="pt-desc">{t.practiceType.sentence.desc}</div>
-                            </div>
-                        </button>
-                        <button
-                            className={`practice-type-card ${practiceType === 'multiple_choice' ? 'selected' : ''}`}
-                            onClick={() => setPracticeType('multiple_choice')}
-                        >
-                            <span className="pt-icon">🎯</span>
-                            <div className="pt-text">
-                                <div className="pt-title">{t.practiceType.multipleChoice.title}</div>
-                                <div className="pt-desc">{t.practiceType.multipleChoice.desc}</div>
-                            </div>
-                        </button>
-                        <button
-                            className={`practice-type-card ${practiceType === 'map' ? 'selected' : ''}`}
-                            onClick={() => setPracticeType('map')}
-                        >
-                            <span className="pt-icon">🗺️</span>
-                            <div className="pt-text">
-                                <div className="pt-title">{t.practiceType.mapLabelling.title}</div>
-                                <div className="pt-desc">{t.practiceType.mapLabelling.desc}</div>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Difficulty */}
-                <div className="config-card">
-                    <h3>{t.targetScore}</h3>
-                    <div className="difficulty-options">
-                        {DIFFICULTIES.map(d => (
-                            <button
-                                key={d}
-                                className={`difficulty-btn ${difficulty === d ? 'selected' : ''}`}
-                                onClick={() => setDifficulty(d)}
-                            >
-                                Band {d}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Word Count Range (仅在非选择题模式下显示) */}
-                {practiceType !== 'multiple_choice' && practiceType !== 'map' && (
-                    <div className="config-card">
-                        <h3>{t.wordCount.label}</h3>
-                        <div className="wc-dual-sliders">
-                            {/* Min slider */}
-                            <div className="wc-slider-row">
-                                <span className="wc-slider-label">{t.wordCount.min}</span>
-                                <div className="wc-slider-track-wrap">
-                                    <input
-                                        type="range"
-                                        className="wc-single-range"
-                                        min={1} max={3} step={1}
-                                        value={wordCountMin}
-                                        style={{ '--pct': `${((wordCountMin - 1) / 2) * 100}%` } as React.CSSProperties}
-                                        onChange={e => handleMinChange(Number(e.target.value))}
-                                    />
-                                    <div className="wc-ticks">
-                                        {[1, 2, 3].map(n => (
-                                            <span key={n} className={`wc-tick${n <= wordCountMin ? ' active' : ''}`}>{n}</span>
-                                        ))}
-                                    </div>
+            <div className="config-page-wrap listening-config bento-page-wrap">
+                <div className="reading-config-bento">
+                    {/* ── 左侧列：核心词汇区 ── */}
+                    <div className="bento-col-left">
+                        <div className="config-card bento-card-glass vocab-card">
+                            <div className="toggle-row">
+                                <div>
+                                    <div className="label-text">{t.customVocab.label}</div>
+                                    <div className="label-desc">{t.customVocab.desc}</div>
                                 </div>
-                                <span className="wc-val-badge">{wordCountMin}</span>
-                            </div>
-                            {/* Max slider */}
-                            <div className="wc-slider-row">
-                                <span className="wc-slider-label">{t.wordCount.max}</span>
-                                <div className="wc-slider-track-wrap">
+                                <label className="toggle-switch">
                                     <input
-                                        type="range"
-                                        className="wc-single-range"
-                                        min={1} max={3} step={1}
-                                        value={wordCountMax}
-                                        style={{ '--pct': `${((wordCountMax - 1) / 2) * 100}%` } as React.CSSProperties}
-                                        onChange={e => handleMaxChange(Number(e.target.value))}
+                                        type="checkbox"
+                                        checked={useCustomVocab}
+                                        onChange={(e) => setUseCustomVocab(e.target.checked)}
                                     />
-                                    <div className="wc-ticks">
-                                        {[1, 2, 3].map(n => (
-                                            <span key={n} className={`wc-tick${n <= wordCountMax ? ' active' : ''}`}>{n}</span>
-                                        ))}
-                                    </div>
-                                </div>
-                                <span className="wc-val-badge">{wordCountMax}</span>
+                                    <span className="toggle-slider"></span>
+                                </label>
                             </div>
-                        </div>
-                        <p className="wc-hint">
-                            {wordCountMin === wordCountMax
-                                ? t.wordCount.hintExact.replace('{n}', String(wordCountMin))
-                                : t.wordCount.hintRange.replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
-                        </p>
-                    </div>
-                )}
 
-                {/* Custom Vocab Toggle */}
-                <div className="config-card">
-                    <div className="toggle-row">
-                        <div>
-                            <div className="label-text">{t.customVocab.label}</div>
-                            <div className="label-desc">{t.customVocab.desc}</div>
-                        </div>
-                        <label className="toggle-switch">
-                            <input
-                                type="checkbox"
-                                checked={useCustomVocab}
-                                onChange={(e) => setUseCustomVocab(e.target.checked)}
-                            />
-                            <span className="toggle-slider"></span>
-                        </label>
-                    </div>
-
-                    {useCustomVocab && (
-                        <>
-                            {plans.length > 0 && (
-                                <div className="plan-import-row">
-                                    <select
-                                        className="plan-import-select"
-                                        value={importPlanId}
-                                        onChange={e => setImportPlanId(Number(e.target.value))}
-                                    >
-                                        {plans.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
-                                    <button
-                                        className="plan-import-btn"
-                                        onClick={handleImportPlan}
-                                        disabled={importingPlan}
-                                    >
-                                        {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
-                                    </button>
+                            {useCustomVocab && (
+                                <div className="vocab-content-wrap">
+                                    {plans.length > 0 && (
+                                        <div className="plan-import-row">
+                                            <select
+                                                className="plan-import-select"
+                                                value={importPlanId}
+                                                onChange={e => setImportPlanId(Number(e.target.value))}
+                                            >
+                                                {plans.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                className="plan-import-btn"
+                                                onClick={handleImportPlan}
+                                                disabled={importingPlan}
+                                            >
+                                                {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className="vocab-textarea-container">
+                                        <VocabInput
+                                            value={vocabInput}
+                                            onChange={handleVocabChange}
+                                            className="h-full"
+                                        />
+                                    </div>
                                 </div>
                             )}
-                            <VocabInput
-                                value={vocabInput}
-                                onChange={handleVocabChange}
-                            />
-                        </>
-                    )}
-                </div>
-
-                {/* Absurd Mode Toggle */}
-                <div className="config-card">
-                    <div className="toggle-row">
-                        <div>
-                            <div className="label-text">{t.absurdMode.label}</div>
-                            <div className="label-desc">{t.absurdMode.desc}</div>
                         </div>
-                        <label className="toggle-switch">
-                            <input
-                                type="checkbox"
-                                checked={absurdMode}
-                                onChange={(e) => setAbsurdMode(e.target.checked)}
-                            />
-                            <span className="toggle-slider"></span>
-                        </label>
                     </div>
-                </div>
 
-                {/* Start Button */}
-                <div className="config-card">
-                    <button className="skill-btn listening" style={{ width: '100%' }} onClick={handleStart}>
-                        <span className="btn-icon">🎧</span> {t.startBtn}
-                    </button>
+                    {/* ── 右侧列：设置控制区 ── */}
+                    <div className="bento-col-right">
+                        {/* AI Model Selector */}
+                        <div className="config-card bento-card-glass">
+                            <h3>AI 模型 🧠</h3>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>选择后台出题和批改所使用的引擎</div>
+                            <AiModelSelector label="" description="" />
+                        </div>
+
+                        {/* Practice Type */}
+                        <div className="config-card bento-card-glass">
+                            <h3>{t.practiceType.label}</h3>
+                            <div className="practice-type-cards">
+                                <button
+                                    className={`practice-type-card ${practiceType === 'article' ? 'selected' : ''}`}
+                                    onClick={() => setPracticeType('article')}
+                                >
+                                    <span className="pt-icon">📄</span>
+                                    <div className="pt-text">
+                                        <div className="pt-title">{t.practiceType.article.title}</div>
+                                        <div className="pt-desc">{t.practiceType.article.desc}</div>
+                                    </div>
+                                </button>
+                                <button
+                                    className={`practice-type-card ${practiceType === 'sentence' ? 'selected' : ''}`}
+                                    onClick={() => setPracticeType('sentence')}
+                                >
+                                    <span className="pt-icon">✏️</span>
+                                    <div className="pt-text">
+                                        <div className="pt-title">{t.practiceType.sentence.title}</div>
+                                        <div className="pt-desc">{t.practiceType.sentence.desc}</div>
+                                    </div>
+                                </button>
+                                <button
+                                    className={`practice-type-card ${practiceType === 'multiple_choice' ? 'selected' : ''}`}
+                                    onClick={() => setPracticeType('multiple_choice')}
+                                >
+                                    <span className="pt-icon">🎯</span>
+                                    <div className="pt-text">
+                                        <div className="pt-title">{t.practiceType.multipleChoice.title}</div>
+                                        <div className="pt-desc">{t.practiceType.multipleChoice.desc}</div>
+                                    </div>
+                                </button>
+                                <button
+                                    className={`practice-type-card ${practiceType === 'map' ? 'selected' : ''}`}
+                                    onClick={() => setPracticeType('map')}
+                                >
+                                    <span className="pt-icon">🗺️</span>
+                                    <div className="pt-text">
+                                        <div className="pt-title">{t.practiceType.mapLabelling.title}</div>
+                                        <div className="pt-desc">{t.practiceType.mapLabelling.desc}</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Difficulty */}
+                        <div className="config-card bento-card-glass">
+                            <h3>{t.targetScore}</h3>
+                            <div className="difficulty-options">
+                                {DIFFICULTIES.map(d => (
+                                    <button
+                                        key={d}
+                                        className={`difficulty-btn ${difficulty === d ? 'selected' : ''}`}
+                                        onClick={() => setDifficulty(d)}
+                                    >
+                                        {d}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Word Count Range */}
+                        {practiceType !== 'multiple_choice' && practiceType !== 'map' && (
+                            <div className="config-card bento-card-glass">
+                                <h3>{t.wordCount.label}</h3>
+                                <div className="wc-dual-sliders">
+                                    <div className="wc-slider-row">
+                                        <span className="wc-slider-label">{t.wordCount.min}</span>
+                                        <div className="wc-slider-track-wrap">
+                                            <input
+                                                type="range"
+                                                className="wc-single-range"
+                                                min={1} max={3} step={1}
+                                                value={wordCountMin}
+                                                style={{ '--pct': `${((wordCountMin - 1) / 2) * 100}%` } as React.CSSProperties}
+                                                onChange={e => handleMinChange(Number(e.target.value))}
+                                            />
+                                            <div className="wc-ticks">
+                                                {[1, 2, 3].map(n => (
+                                                    <span key={n} className={`wc-tick${n <= wordCountMin ? ' active' : ''}`}>{n}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <span className="wc-val-badge">{wordCountMin}</span>
+                                    </div>
+                                    <div className="wc-slider-row">
+                                        <span className="wc-slider-label">{t.wordCount.max}</span>
+                                        <div className="wc-slider-track-wrap">
+                                            <input
+                                                type="range"
+                                                className="wc-single-range"
+                                                min={1} max={3} step={1}
+                                                value={wordCountMax}
+                                                style={{ '--pct': `${((wordCountMax - 1) / 2) * 100}%` } as React.CSSProperties}
+                                                onChange={e => handleMaxChange(Number(e.target.value))}
+                                            />
+                                            <div className="wc-ticks">
+                                                {[1, 2, 3].map(n => (
+                                                    <span key={n} className={`wc-tick${n <= wordCountMax ? ' active' : ''}`}>{n}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <span className="wc-val-badge">{wordCountMax}</span>
+                                    </div>
+                                </div>
+                                <p className="wc-hint">
+                                    {wordCountMin === wordCountMax
+                                        ? t.wordCount.hintExact.replace('{n}', String(wordCountMin))
+                                        : t.wordCount.hintRange.replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Absurd Mode Toggle */}
+                        <div className="config-card bento-card-glass">
+                            <div className="toggle-row">
+                                <div>
+                                    <div className="label-text">{t.absurdMode.label}</div>
+                                    <div className="label-desc">{t.absurdMode.desc}</div>
+                                </div>
+                                <label className="toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        checked={absurdMode}
+                                        onChange={(e) => setAbsurdMode(e.target.checked)}
+                                    />
+                                    <span className="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── 底部栏：全宽按钮 ── */}
+                    <div className="bento-bottom">
+                        <button className="premium-start-btn" style={{ background: 'linear-gradient(135deg, #f97316, #f59e0b)', boxShadow: '0 8px 24px rgba(249, 115, 22, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)' }} onClick={handleStart}>
+                            <span className="btn-icon">🎧</span> {t.startBtn}
+                        </button>
+                    </div>
                 </div>
             </div>
         </Layout>
