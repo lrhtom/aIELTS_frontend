@@ -1,11 +1,12 @@
 import Layout from '../../components/layout/Layout';
 import { useState, useMemo, useRef, useEffect, type ChangeEvent, type DragEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import translate from 'translate';
 translate.engine = 'google';
 import AiModelSelector, { type AIProvider } from '../../components/common/AiModelSelector';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
+import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -13,6 +14,16 @@ import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
 import '../../styles/writing_correction_result.css';
 import { type WritingTaskType, type CorrectionResponse } from '../../types/writing_page';
+
+interface BankAutoEvaluateState {
+    bankId?: number;
+    autoEvaluate?: boolean;
+    text?: string;
+    prompt?: string;
+    taskType?: WritingTaskType;
+    subtype?: string;
+    task1ImageDataUrl?: string;
+}
 
 const TASK1_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const TASK1_IMAGE_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
@@ -42,9 +53,18 @@ export default function WritingCorrectionPage() {
 
     const location = useLocation();
     const navigate = useNavigate();
-    const [recordId, setRecordId] = useState<number | undefined>((location.state as { record_id?: number } | null)?.record_id);
+    const [searchParams] = useSearchParams();
+    const bankIdParam = searchParams.get('bankId');
+    const bankIdFromUrl = bankIdParam ? Number(bankIdParam) : null;
+    const navState = (location.state || null) as (BankAutoEvaluateState & { record_id?: number }) | null;
+    const [recordId, setRecordId] = useState<number | undefined>(navState?.record_id);
+    const [bankId, setBankId] = useState<number | null>(bankIdFromUrl ?? navState?.bankId ?? null);
+    const [bankSubtype, setBankSubtype] = useState<string>(navState?.subtype || '');
     const [isSaved, setIsSaved] = useState(!!recordId);
     const [isSaving, setIsSaving] = useState(false);
+    // Trigger refs prevent the StrictMode double-mount from re-firing AI calls / bank load.
+    const hasLoadedBankRef = useRef<number | null>(null);
+    const hasAutoEvaluatedRef = useRef(false);
 
     useEffect(() => {
         if (recordId) {
@@ -67,6 +87,63 @@ export default function WritingCorrectionPage() {
                 });
         }
     }, []); // Only run once on mount since recordId is now state
+
+    // Bank mode: load saved correction by bankId query param
+    useEffect(() => {
+        if (!bankIdFromUrl) return;
+        if (hasLoadedBankRef.current === bankIdFromUrl) return;
+        hasLoadedBankRef.current = bankIdFromUrl;
+
+        getAIQuestion(bankIdFromUrl).then(detail => {
+            const content = (detail.content || {}) as { prompt?: string };
+            const inferredTaskType: WritingTaskType = (detail.subtype || '').startsWith('chart:') ? 'task1' : 'task2';
+            setPromptText(content.prompt || '');
+            setTaskType(inferredTaskType);
+            setBankId(bankIdFromUrl);
+            setBankSubtype(detail.subtype || '');
+            if (typeof detail.userAnswer === 'string') setText(detail.userAnswer);
+            const feedback = (detail.aiFeedback || null) as CorrectionResponse | null;
+            if (feedback && feedback.Overall_Band !== undefined) {
+                setResult(feedback);
+            }
+        }).catch(err => {
+            console.error('Bank correction load failed:', err);
+            showToast(lang === 'zh' ? '题库加载失败' : 'Failed to load bank item', 'error');
+            navigate('/practice/ai/bank');
+        });
+    }, [bankIdFromUrl, lang, navigate]);
+
+    // Auto-evaluate flow: practice page → correction page with prefilled essay
+    useEffect(() => {
+        if (!navState?.autoEvaluate) return;
+        if (hasAutoEvaluatedRef.current) return;
+        hasAutoEvaluatedRef.current = true;
+
+        const inferredTaskType: WritingTaskType = navState.taskType
+            || ((navState.subtype || '').startsWith('chart:') ? 'task1' : 'task2');
+        setText(navState.text || '');
+        setPromptText(navState.prompt || '');
+        setTaskType(inferredTaskType);
+        if (navState.task1ImageDataUrl) {
+            setTask1ImageDataUrl(navState.task1ImageDataUrl);
+            setTask1ImageName('chart.png');
+        }
+        if (navState.bankId) {
+            setBankId(navState.bankId);
+            setBankSubtype(navState.subtype || '');
+        }
+        const txt = (navState.text || '').trim();
+        if (!txt) return;
+        setTimeout(() => {
+            triggerEvaluate(
+                navState.text || '',
+                navState.prompt || '',
+                inferredTaskType,
+                navState.bankId || null,
+                navState.task1ImageDataUrl || null,
+            );
+        }, 0);
+    }, [navState]);
 
     const minWords = taskType === 'task1' ? 150 : 250;
     const supportsTask1ImageRecognition = provider.startsWith('gpt5');
@@ -128,8 +205,14 @@ export default function WritingCorrectionPage() {
         }
     };
 
-    const handleEvaluate = async () => {
-        if (!text.trim()) {
+    const triggerEvaluate = async (
+        essayText: string,
+        promptStr: string,
+        currentTaskType: WritingTaskType,
+        currentBankId: number | null,
+        overrideTask1ImageDataUrl: string | null = null,
+    ) => {
+        if (!essayText.trim()) {
             showToast(t.writingCorrection.toastEmpty, 'error');
             return;
         }
@@ -137,15 +220,15 @@ export default function WritingCorrectionPage() {
         setResult(null);
         try {
             const payload: Record<string, unknown> = {
-                text,
-                prompt: promptText,
-                task_type: taskType,
+                text: essayText,
+                prompt: promptStr,
+                task_type: currentTaskType,
                 lang,
             };
 
-            // Task 2 never sends image payload even if Task 1 image exists in local state.
-            if (taskType === 'task1' && showTask1ImageUpload && task1ImageDataUrl) {
-                payload.task1_image_data_url = task1ImageDataUrl;
+            const imageForTask1 = overrideTask1ImageDataUrl ?? (showTask1ImageUpload ? task1ImageDataUrl : '');
+            if (currentTaskType === 'task1' && imageForTask1) {
+                payload.task1_image_data_url = imageForTask1;
             }
 
             const res = await api<CorrectionResponse>('/writing/generate', {
@@ -156,18 +239,26 @@ export default function WritingCorrectionPage() {
             setIsSaved(true);
             showToast(t.writingCorrection.toastSuccess, 'success');
 
-            // Auto-save logic
+            if (currentBankId) {
+                submitAIQuestion(currentBankId, essayText, res).catch(err => {
+                    console.error('Bank submit failed:', err);
+                    showToast(lang === 'zh' ? '保存到题库失败，但批改已显示' : 'Failed to save to bank', 'error');
+                });
+                return;
+            }
+
+            // Non-bank path: auto-save to writing records
             try {
                 const saveRes = await api<{status: string, id: number}>('/writing/records', {
                     method: 'POST',
                     body: {
                         service_type: 'correction',
-                        title: promptText ? (promptText.slice(0, 30) + '...') : (lang === 'zh' ? '无题作文批改' : 'Untitled Correction'),
+                        title: promptStr ? (promptStr.slice(0, 30) + '...') : (lang === 'zh' ? '无题作文批改' : 'Untitled Correction'),
                         content: {
                             result: res,
-                            text,
-                            prompt: promptText,
-                            task_type: taskType,
+                            text: essayText,
+                            prompt: promptStr,
+                            task_type: currentTaskType,
                             synonymsMap
                         },
                     }
@@ -185,6 +276,16 @@ export default function WritingCorrectionPage() {
         } finally {
             setIsEvaluating(false);
         }
+    };
+
+    const handleEvaluate = () => {
+        triggerEvaluate(text, promptText, taskType, bankId);
+    };
+
+    const handleRedoFromBank = () => {
+        if (!bankId) return;
+        const isChart = bankSubtype.startsWith('chart:');
+        navigate(isChart ? `/writing/chart/doing?bankId=${bankId}` : `/writing/task2/doing?bankId=${bankId}`);
     };
 
     const handleBack = () => {
@@ -328,12 +429,22 @@ export default function WritingCorrectionPage() {
     return (
         <Layout
             pageTitle={t.writingCorrection.title}
-            backUrl={recordId ? "/writing/ai-teachers/records" : "/writing"}
-            backText={recordId ? (lang === 'zh' ? '返回记录' : 'Back to Records') : t.writingCorrection.backToHall}
-            onBack={handleBack}
+            backUrl={bankId ? '/practice/ai/bank' : (recordId ? "/writing/ai-teachers/records" : "/writing")}
+            backText={bankId ? (lang === 'zh' ? '返回 AI 题库' : 'Back to AI Bank') : (recordId ? (lang === 'zh' ? '返回记录' : 'Back to Records') : t.writingCorrection.backToHall)}
+            onBack={bankId ? () => navigate('/practice/ai/bank') : handleBack}
             headerRight={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    {!recordId && <AiModelSelector variant="minimal" onModelChange={(nextProvider) => setProvider(nextProvider)} />}
+                    {bankId && result && (
+                        <button
+                            type="button"
+                            className="wp-ghost-btn"
+                            onClick={handleRedoFromBank}
+                            style={{ padding: '6px 14px', fontSize: '0.85rem' }}
+                        >
+                            🔁 {lang === 'zh' ? '重新作答' : 'Redo'}
+                        </button>
+                    )}
+                    {!recordId && !bankId && <AiModelSelector variant="minimal" onModelChange={(nextProvider) => setProvider(nextProvider)} />}
                 </div>
             }
         >

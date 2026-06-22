@@ -1,19 +1,23 @@
 import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { createReadingState } from '../../store/reading_page_store';
 import type { VocabItem, QuizData } from '../../store/reading_page_store';
 import type { ReadingQuestionType, ReadingJudgementMode } from '../../store/reading_page_store';
 import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
+import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/reading_page.css';
 
 export default function Reading_page() {
     const { state } = useLocation();
+    const [searchParams] = useSearchParams();
+    const bankIdParam = searchParams.get('bankId');
+    const bankId = bankIdParam ? Number(bankIdParam) : null;
     const vocabInput: string = state?.vocabInput ?? '';
     const difficulty: string = state?.difficulty ?? '7.0';
     const navigate = useNavigate();
-    const onReturnHome = () => navigate('/');
+    const onReturnHome = () => navigate(bankId ? '/practice/ai/bank' : '/');
     const { translations: t } = useLang();
     const absurdMode: boolean = Boolean(state?.absurdMode);
     const questionType: ReadingQuestionType = state?.questionType === 'true_false' ? 'true_false' : 'multiple_choice';
@@ -39,6 +43,14 @@ export default function Reading_page() {
         if (hasRequested.current) return;
         hasRequested.current = true;
 
+        // 题库模式：从后端按 bankId 拉取，不再调用 AI 生成
+        if (bankId) {
+            sessionStorage.removeItem(CACHE_KEY);
+            setSt(createReadingState());
+            loadFromBank(bankId);
+            return;
+        }
+
         // 刷新恢复：优先从 sessionStorage 读取缓存数据
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) {
@@ -55,6 +67,52 @@ export default function Reading_page() {
         generateReading();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const loadFromBank = async (id: number) => {
+        set('isLoading', true);
+        try {
+            const detail = await getAIQuestion(id);
+            const content = (detail.content || {}) as Partial<QuizData>;
+            if (!content.passage || !Array.isArray(content.questions)) {
+                showToast('题目内容缺失，已删除或损坏', 'error');
+                navigate('/practice/ai/bank');
+                return;
+            }
+            const normalizedQuizData: QuizData = {
+                title: content.title || 'Reading Passage',
+                passage: content.passage,
+                questions: content.questions,
+                questionType: content.questionType || 'multiple_choice',
+                judgementMode: content.judgementMode ?? null,
+            } as QuizData;
+            setSt(s => ({
+                ...s,
+                quizData: normalizedQuizData,
+                vocabList: [],
+                isLoading: false,
+                searchQuery: '',
+                isLeftOpen: false,
+                isRightOpen: true,
+                startTime: Date.now(),
+                elapsedSeconds: 0,
+                step: 2,
+            }));
+
+            const saved = (detail.userAnswer || null) as Record<number, string> | null;
+            if (saved && typeof saved === 'object') {
+                userAnswersRef.current = { ...saved };
+                setSt(s => ({ ...s, step: 3 }));
+            } else {
+                userAnswersRef.current = {};
+            }
+        } catch (err: unknown) {
+            console.error('Bank load error:', err);
+            showToast('题库加载失败', 'error');
+            navigate('/practice/ai/bank');
+        } finally {
+            set('isLoading', false);
+        }
+    };
 
     const formatHighlight = (text: string): string => {
         if (!text) return '';
@@ -77,38 +135,17 @@ export default function Reading_page() {
 
         try {
             // 调用后端 API，不再直接调 AI
-            const parsedData = await api<QuizData>('/reading/generate', {
+            const parsedData = await api<QuizData & { aiQuestionId?: number | null }>('/reading/generate', {
                 method: 'POST',
                 body: { words, difficulty, absurdMode, questionType, judgementMode },
             });
 
-            const normalizedQuizData: QuizData = {
-                ...parsedData,
-                questionType: parsedData.questionType || questionType,
-                judgementMode: parsedData.judgementMode || (questionType === 'true_false' ? judgementMode : null),
-            };
-
-            set('quizData', normalizedQuizData);
-            // 缓存到 sessionStorage 以便刷新恢复
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
-                quizData: normalizedQuizData,
-                vocabList: parsedList,
-            }));
-            userAnswersRef.current = {};
-            set('searchQuery', '');
-            set('isLeftOpen', true);
-            set('isRightOpen', true);
-            set('startTime', Date.now());
-            set('elapsedSeconds', 0);
-
-            const pageEl = document.getElementById('reading-page-container');
-            const btnEl = document.getElementById('highlight-toggle-btn');
-            if (pageEl) pageEl.classList.remove('hide-highlights');
-            if (btnEl) {
-                btnEl.innerText = t.readingDetails.hideTargets;
-                btnEl.classList.remove('active');
-            }
-
+            // 生成成功后直接跳转到 AI 题库，由用户在题库内挑题作答
+            sessionStorage.removeItem(CACHE_KEY);
+            const justId = parsedData.aiQuestionId ?? null;
+            showToast('题目已生成并保存到 AI 题库', 'success');
+            navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
+            return;
         } catch (err: unknown) { // Changed 'any' to 'unknown'
             console.error("API Error:", err);
             const error = err as { message?: string, status?: number }; // Cast to a type that might have message and status
@@ -144,7 +181,23 @@ export default function Reading_page() {
         if (answeredQuestions < totalQuestions) {
             if (!window.confirm(t.readingDetails.submitConfirm)) return;
         }
+        if (bankId) {
+            submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
+                console.error('submit to bank failed:', err);
+                showToast('保存作答失败，但本次成绩已显示', 'error');
+            });
+        }
         set('step', 3);
+    };
+
+    const restartFromBank = () => {
+        userAnswersRef.current = {};
+        setSt(s => ({
+            ...s,
+            step: 2,
+            startTime: Date.now(),
+            elapsedSeconds: 0,
+        }));
     };
 
     // Timer helper
@@ -490,7 +543,10 @@ export default function Reading_page() {
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className="toggle-passage-btn">
                             {st.isPassageOpen ? `✕ ${t.results.hidePassage}` : `📖 ${t.results.showPassage}`}
                         </button>
-                        <button onClick={onReturnHome} className="tool-btn">🏠 {t.common.home}</button>
+                        {bankId && (
+                            <button onClick={restartFromBank} className="tool-btn">🔁 重新作答</button>
+                        )}
+                        <button onClick={onReturnHome} className="tool-btn">{bankId ? '📚 返回题库' : `🏠 ${t.common.home}`}</button>
                     </div>
                 </div>
 

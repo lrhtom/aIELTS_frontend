@@ -60,6 +60,16 @@ export default function AIPractice() {
                             </div>
                         </Link>
 
+                        {/* AI 题库 — 听/读/写 题库入口 */}
+                        <Link to="/practice/ai/bank" className="bento-card bento-bank">
+                            <div className="bento-glow"></div>
+                            <div className="bento-content">
+                                <div className="bento-title">AI 题库</div>
+                                <div className="bento-desc">查看、复做所有已生成的听 / 读 / 写题目</div>
+                            </div>
+                            <span className="bento-icon">📚</span>
+                        </Link>
+
                         {/* Others - Wide bar at bottom */}
                         <Link to="/practice/ai/others" className="bento-card bento-others">
                             <div className="bento-glow"></div>

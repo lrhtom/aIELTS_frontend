@@ -11,6 +11,7 @@ import { useAuth } from './contexts/AuthContext';
 import HomePage from './pages/home_page';
 import PracticeHub from './pages/practice_hub';
 import AIPractice from './pages/ai_practice';
+import AIBankPage from './pages/ai_bank_page';
 import OtherPracticePage from './pages/other_practice_page';
 
 import ProfilePage from './pages/profile_page';
@@ -117,6 +118,7 @@ export default function App() {
         {/* Protected Routes */}
         <Route path="/practice" element={<ProtectedRoute><PracticeHub /></ProtectedRoute>} />
         <Route path="/practice/ai" element={<ProtectedRoute><AIPractice /></ProtectedRoute>} />
+        <Route path="/practice/ai/bank" element={<ProtectedRoute><AIBankPage /></ProtectedRoute>} />
         <Route path="/practice/ai/others" element={<ProtectedRoute><OtherPracticePage /></ProtectedRoute>} />
         <Route path="/practice/ai/reading" element={<ProtectedRoute><WordSelection_page /></ProtectedRoute>} />
         <Route path="/practice/ai/listening" element={<ProtectedRoute><ListeningConfig /></ProtectedRoute>} />

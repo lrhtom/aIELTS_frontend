@@ -82,13 +82,11 @@ export const apiRouteTree: ApiRouteTreeNode = {
         },
         {
             name: 'writing',
-            attributes: { count: '7', module: 'routeVis.moduleNames.writing' },
+            attributes: { count: '5', module: 'routeVis.moduleNames.writing' },
             children: [
                 { name: 'POST /generate', attributes: { handler: 'generate_writing' } },
                 { name: 'POST /chart/generate', attributes: { handler: 'generate_chart' } },
-                { name: 'POST /chart/evaluate', attributes: { handler: 'evaluate_chart' } },
                 { name: 'POST /task2/generate', attributes: { handler: 'generate_task2' } },
-                { name: 'POST /task2/evaluate', attributes: { handler: 'evaluate_task2' } },
                 { name: 'POST /task2/opinion-drill/generate', attributes: { handler: 'generate_opinion_drill_questions' } },
                 { name: 'POST /task2/opinion-drill/evaluate', attributes: { handler: 'evaluate_opinion_drill_answer' } },
             ],

@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
+import { getAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import { type WritingStep } from '../../types/writing_page';
@@ -19,19 +20,6 @@ interface ChartData {
     pythonCode: string;
 }
 
-
-
-interface EvaluationResult {
-    scores: {
-        ta: number;
-        cc: number;
-        lr: number;
-        gra: number;
-    };
-    overall: number;
-    feedback: string;
-}
-
 export default function ChartPracticePage() {
     const navigate = useNavigate();
     const { lang } = useLang();
@@ -40,16 +28,16 @@ export default function ChartPracticePage() {
     const [searchParams] = useSearchParams();
     const type = searchParams.get('type') || 'line';
     const isMapType = type === 'map';
-    const cacheKey = `writing_task1_chart_session_${type}`;
+    const bankIdParam = searchParams.get('bankId');
+    const bankId = bankIdParam ? Number(bankIdParam) : null;
+    const cacheKey = bankId ? `writing_task1_chart_bank_${bankId}` : `writing_task1_chart_session_${type}`;
 
     const [step, setStep] = useState<WritingStep>('loading');
     const [chartData, setChartData] = useState<ChartData | null>(null);
     const [userAnswer, setUserAnswer] = useState('');
-    const [result, setResult] = useState<EvaluationResult | null>(null);
     const [previewImageSrc, setPreviewImageSrc] = useState<string | null>(null);
     const [previewHtml, setPreviewHtml] = useState<string | null>(null);
     const [previewMode, setPreviewMode] = useState<'image' | 'html'>('image');
-    const [isEvaluating, setIsEvaluating] = useState(false);
     // Guard against React StrictMode double-invocation and rapid re-mount
     const hasFetchedRef = useRef<string | null>(null);
 
@@ -63,13 +51,11 @@ export default function ChartPracticePage() {
                 step: WritingStep;
                 chartData: ChartData | null;
                 userAnswer: string;
-                result: EvaluationResult | null;
             };
 
             if (parsed.chartData && parsed.step !== 'loading') {
                 setChartData(parsed.chartData);
                 setUserAnswer(parsed.userAnswer || '');
-                setResult(parsed.result || null);
                 setStep(parsed.step);
             }
         } catch {
@@ -84,9 +70,8 @@ export default function ChartPracticePage() {
             step,
             chartData,
             userAnswer,
-            result,
         }));
-    }, [cacheKey, step, chartData, userAnswer, result]);
+    }, [cacheKey, step, chartData, userAnswer]);
 
     // Initial load - generate chart
     useEffect(() => {
@@ -102,37 +87,65 @@ export default function ChartPracticePage() {
             }
         }
 
-        // Prevent double-fire from React StrictMode or rapid re-mount
+        // Prevent double-fire from React StrictMode or rapid re-mount.
+        // NOTE: never reset hasFetchedRef in a cleanup — StrictMode's synthetic
+        // cleanup would otherwise let the second mount re-fire and trigger a
+        // duplicate AI generate + duplicate AIQuestion row in the bank.
         if (hasFetchedRef.current === cacheKey) return;
         hasFetchedRef.current = cacheKey;
 
-        let isMounted = true;
+        async function loadFromBank(id: number) {
+            setStep('loading');
+            try {
+                const detail = await getAIQuestion(id);
+                const content = (detail.content || {}) as Partial<ChartData>;
+                if (!content.prompt) {
+                    showToast('题目内容缺失', 'error');
+                    navigate('/practice/ai/bank');
+                    return;
+                }
+                setChartData({
+                    imageUrl: content.imageUrl ?? null,
+                    mermaidCode: content.mermaidCode ?? null,
+                    htmlContent: content.htmlContent ?? null,
+                    prompt: content.prompt,
+                    pythonCode: content.pythonCode ?? '',
+                });
+                const savedAnswer = typeof detail.userAnswer === 'string' ? detail.userAnswer : '';
+                if (savedAnswer) setUserAnswer(savedAnswer);
+                setStep('answering');
+            } catch (err: unknown) {
+                console.error('Bank load error:', err);
+                showToast('题库加载失败', 'error');
+                navigate('/practice/ai/bank');
+            }
+        }
 
         async function fetchChart() {
             setStep('loading');
             try {
-                const res = await api<ChartData>('/writing/chart/generate', {
+                const res = await api<ChartData & { aiQuestionId?: number | null }>('/writing/chart/generate', {
                     method: 'POST',
                     body: { type },
                 });
-                if (isMounted) {
-                    setChartData(res);
-                    setStep('answering');
-                }
+                sessionStorage.removeItem(cacheKey);
+                showToast('题目已生成并保存到 AI 题库', 'success');
+                const justId = res.aiQuestionId ?? null;
+                navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
             } catch (err: unknown) {
                 console.error('Generate chart error:', err);
                 const error = err as { message?: string };
                 showToast(error.message || t.practiceSandbox.toastFailGenChart, 'error');
-                if (isMounted) {
-                    hasFetchedRef.current = null; // allow retry on next mount
-                    navigate('/writing/chart');
-                }
+                navigate('/writing/chart');
             }
         }
-        fetchChart();
 
-        return () => { isMounted = false; hasFetchedRef.current = null; };
-    }, [type, navigate, cacheKey, t.practiceSandbox.toastFailGenChart]);
+        if (bankId) {
+            loadFromBank(bankId);
+        } else {
+            fetchChart();
+        }
+    }, [type, navigate, cacheKey, bankId, t.practiceSandbox.toastFailGenChart]);
 
     // Word count calculation
     const wordCount = useMemo(() => {
@@ -185,31 +198,44 @@ export default function ChartPracticePage() {
         setStep('settlement');
     };
 
-    const handleStartEvaluation = async () => {
-        if (!chartData || isEvaluating) return;
-        setIsEvaluating(true);
-        setStep('evaluating');
+    const fetchImageAsDataUrl = async (src: string): Promise<string | null> => {
+        if (src.startsWith('data:')) return src;
         try {
-            const res = await api<EvaluationResult>('/writing/chart/evaluate', {
-                method: 'POST',
-                body: {
-                    prompt: chartData.prompt,
-                    pythonCode: chartData.pythonCode,
-                    userAnswer: userAnswer,
-                    lang,
-                },
+            const resp = await fetch(src, { credentials: 'omit' });
+            if (!resp.ok) return null;
+            const blob = await resp.blob();
+            if (!/^image\/(png|jpe?g|webp)$/i.test(blob.type)) return null;
+            return await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('reader-failed'));
+                reader.onerror = () => reject(new Error('reader-failed'));
+                reader.readAsDataURL(blob);
             });
-            setResult(res);
-            setStep('result');
-            showToast(t.practiceSandbox.toastSuccess, 'success');
-        } catch (err: unknown) {
-            console.error('Evaluate chart error:', err);
-            const error = err as { message?: string };
-            showToast(error.message || t.practiceSandbox.toastFailEval, 'error');
-            setStep('settlement'); // fall back to allow retry
-        } finally {
-            setIsEvaluating(false);
+        } catch (err) {
+            console.warn('fetchImageAsDataUrl failed:', err);
+            return null;
         }
+    };
+
+    const handleStartEvaluation = async () => {
+        if (!chartData) return;
+        let task1ImageDataUrl: string | null = null;
+        if (resolvedImageSrc) {
+            task1ImageDataUrl = await fetchImageAsDataUrl(resolvedImageSrc);
+        }
+        sessionStorage.removeItem(cacheKey);
+        navigate('/writing/correction', {
+            state: {
+                text: userAnswer,
+                prompt: chartData.prompt,
+                taskType: 'task1',
+                autoEvaluate: true,
+                bankId: bankId || undefined,
+                subtype: bankId ? `chart:${type}` : undefined,
+                task1ImageDataUrl: task1ImageDataUrl || undefined,
+            },
+            replace: true,
+        });
     };
 
     // ─── Render functions ──────────────────────────────────────────────────
@@ -219,17 +245,6 @@ export default function ChartPracticePage() {
             <div className="spinner wp-loading-spinner"></div>
             <h2>{t.practiceSandbox.loadingTitleTask1}</h2>
             <p>{t.practiceSandbox.loadingDescTask1}</p>
-        </div>
-    );
-
-    const renderEvaluating = () => (
-        <div className="wp-state-wrap wp-state-wrap--evaluating">
-            <div className="spinner wp-loading-spinner wp-loading-spinner--lg"></div>
-            <h2>{t.practiceSandbox.evaluatingTitle}</h2>
-            <p>
-                {t.practiceSandbox.evaluatingDesc}<br />
-                {t.practiceSandbox.evaluatingDescLine2}
-            </p>
         </div>
     );
 
@@ -329,7 +344,6 @@ export default function ChartPracticePage() {
                     <button
                         className="primary-button"
                         onClick={handleStartEvaluation}
-                        disabled={isEvaluating}
                     >
                         <span>🎯</span> {t.practiceSandbox.callAiBtn}
                     </button>
@@ -341,88 +355,6 @@ export default function ChartPracticePage() {
                     </button>
                 </div>
             </div>
-        </div>
-    );
-
-    const renderResult = () => (
-        <div className="wp-split wp-split--result">
-            {/* Left: Replay */}
-            <div className="wp-panel">
-                <div className="wp-panel-header">
-                    <h3>📄 {t.practiceSandbox.reviewAndAnswer}</h3>
-                </div>
-                <div className="wp-panel-body">
-                    <div className="wp-prompt-block wp-prompt-block--compact">
-                        {chartData?.prompt}
-                    </div>
-                    {isMapType && sanitizedHtmlContent ? (
-                        <div style={{ marginBottom: '12px' }}>{renderMapScene()}</div>
-                    ) : chartData?.mermaidCode ? (
-                        <MermaidChart chart={chartData.mermaidCode} />
-                    ) : resolvedImageSrc ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', background: 'white', padding: '8px', borderRadius: '8px', border: '1px solid var(--color-border)', marginBottom: '12px' }}>
-                            <img
-                                src={resolvedImageSrc}
-                                alt="Generated Chart"
-                                onClick={() => openImagePreview(resolvedImageSrc)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        openImagePreview(resolvedImageSrc);
-                                    }
-                                }}
-                                role="button"
-                                tabIndex={0}
-                                aria-label="Open chart image preview"
-                                style={{ maxWidth: '100%', height: 'auto', maxHeight: '260px', objectFit: 'contain', cursor: 'zoom-in' }}
-                            />
-                        </div>
-                    ) : null}
-                    <div className="wp-essay-replay">{userAnswer}</div>
-                </div>
-                <div className="wp-panel-footer">
-                    <button className="back-link wp-result-back-btn" onClick={() => navigate('/writing/chart')}>
-                        {t.practiceSandbox.backToPracticeBtn}
-                    </button>
-                </div>
-            </div>
-
-            {/* Right: Scores */}
-            {result && (
-                <div className="wc-result-card">
-                    <div className="wc-band-display">
-                        <div className="wc-band-label">{t.practiceSandbox.overallBand}</div>
-                        <div className="wc-band-value">{result.overall.toFixed(1)}</div>
-                        <div className="wc-band-subtitle">{t.practiceSandbox.overallBandSubtitle}</div>
-                    </div>
-
-                    <div className="wc-scores-grid">
-                        {[
-                            { label: `🎯 ${t.practiceSandbox.taTask1}`, val: result.scores.ta },
-                            { label: `🔗 ${t.practiceSandbox.cc}`, val: result.scores.cc },
-                            { label: `📚 ${t.practiceSandbox.lr}`, val: result.scores.lr },
-                            { label: `📝 ${t.practiceSandbox.gra}`, val: result.scores.gra },
-                        ].map(({ label, val }) => (
-                            <div key={label} className="wc-score-item">
-                                <div className="wc-score-label">{label}</div>
-                                <div className="wc-score-val">{val.toFixed(1)}</div>
-                                <div className="wc-score-bar">
-                                    <div className="wc-score-bar-fill" style={{ width: `${(val / 9) * 100}%` }} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="wc-feedback-box">
-                        <h3>💡 {t.practiceSandbox.examinerReport}</h3>
-                        <div className="wc-feedback-content">
-                            {result.feedback.split('\n').map((line, idx) => (
-                                <p key={idx}>{line}</p>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 
@@ -442,10 +374,6 @@ export default function ChartPracticePage() {
                         {renderSettlement()}
                     </>
                 )}
-
-                {step === 'evaluating' && renderEvaluating()}
-
-                {step === 'result' && renderResult()}
             </div>
 
             {previewImageSrc && (

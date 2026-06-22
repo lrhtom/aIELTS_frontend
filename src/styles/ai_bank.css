@@ -1,0 +1,346 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+/* Main Wrapper with Animated Gradient Mesh */
+.ai-bank-wrap {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+    min-height: calc(100vh - 80px);
+    position: relative;
+    z-index: 1;
+}
+
+/* Add a beautiful ambient background pseudo-element to the body or wrap */
+.ai-bank-wrap::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 15% 50%, rgba(13, 148, 136, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(99, 102, 241, 0.08), transparent 25%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Header Section */
+.ai-bank-header {
+    margin-bottom: 40px;
+    text-align: center;
+    animation: fadeDown 0.6s ease-out forwards;
+}
+
+.ai-bank-header .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-bank-header .back-link:hover {
+    background: #fff;
+    color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15);
+}
+
+.ai-bank-header h1 {
+    margin: 0 0 16px;
+    font-size: 42px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+}
+
+.ai-bank-subtitle {
+    margin: 0;
+    color: #64748b;
+    font-size: 16px;
+    font-weight: 400;
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Glassmorphism Tabs */
+.ai-bank-tabs {
+    display: flex;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 24px;
+    padding: 6px;
+    gap: 8px;
+    margin: 0 auto 40px;
+    width: fit-content;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    animation: fadeIn 0.6s ease-out 0.2s both;
+}
+
+.ai-bank-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 18px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-bank-tab input { display: none; }
+
+.ai-bank-tab:hover {
+    color: #334155;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.ai-bank-tab.is-active {
+    background: var(--color-primary);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(13, 148, 136, 0.25);
+    transform: scale(1.02);
+}
+
+.ai-bank-tab-emoji { 
+    font-size: 18px; 
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* Empty State */
+.ai-bank-empty {
+    border: 2px dashed rgba(203, 213, 225, 0.6);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
+    padding: 80px 24px;
+    text-align: center;
+    color: #94a3b8;
+    animation: fadeIn 0.6s ease-out 0.4s both;
+}
+
+.ai-bank-empty-title { 
+    font-size: 20px; 
+    font-weight: 600;
+    color: #475569; 
+    margin-bottom: 12px; 
+}
+
+.ai-bank-empty-hint { 
+    font-size: 15px; 
+}
+
+/* Grid Layout */
+.ai-bank-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    perspective: 1000px;
+}
+
+/* Premium Card Design */
+.ai-bank-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    display: flex;
+    flex-direction: column;
+    animation: scaleIn 0.5s ease-out backwards;
+}
+
+/* Stagger card animations */
+.ai-bank-grid > div:nth-child(1) { animation-delay: 0.1s; }
+.ai-bank-grid > div:nth-child(2) { animation-delay: 0.15s; }
+.ai-bank-grid > div:nth-child(3) { animation-delay: 0.2s; }
+.ai-bank-grid > div:nth-child(4) { animation-delay: 0.25s; }
+.ai-bank-grid > div:nth-child(5) { animation-delay: 0.3s; }
+.ai-bank-grid > div:nth-child(n+6) { animation-delay: 0.35s; }
+
+.ai-bank-card:hover {
+    transform: translateY(-6px) scale(1.01);
+    border-color: rgba(13, 148, 136, 0.3);
+    box-shadow: 0 20px 40px rgba(13, 148, 136, 0.08), 0 0 0 1px rgba(13, 148, 136, 0.1) inset;
+}
+
+.ai-bank-card.is-just {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2), 0 20px 40px rgba(13, 148, 136, 0.1);
+}
+
+.ai-bank-card.is-just::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary), #34d399);
+}
+
+.ai-bank-card-head {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+/* Status Badges */
+.ai-bank-status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ai-bank-status.pending {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #d97706;
+    border: 1px solid rgba(252, 211, 77, 0.4);
+}
+.ai-bank-status.pending::before { content: '⏳'; font-size: 10px; }
+
+.ai-bank-status.answered {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    color: #059669;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+}
+.ai-bank-status.answered::before { content: '✓'; font-size: 10px; font-weight: 800; }
+
+.ai-bank-status.redone {
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    color: #4f46e5;
+    border: 1px solid rgba(129, 140, 248, 0.3);
+}
+.ai-bank-status.redone::before { content: '↻'; font-size: 12px; font-weight: 800; }
+
+.ai-bank-subtype {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    text-transform: capitalize;
+}
+
+/* Card Content */
+.ai-bank-card-title {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.6;
+    color: #1e293b;
+    margin-bottom: 20px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.ai-bank-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    font-size: 13px;
+    color: #94a3b8;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.ai-bank-card-delete {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    transform: scale(1);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    z-index: 2;
+}
+
+@media (max-width: 768px) {
+    .ai-bank-card-delete {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+}
+
+.ai-bank-card:hover .ai-bank-card-delete {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.ai-bank-card-delete:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #ef4444;
+    transform: scale(1.15) !important;
+    box-shadow: 0 8px 16px rgba(239, 68, 68, 0.15);
+}
+
+.ai-bank-card-delete svg {
+    stroke: currentColor;
+    transition: stroke 0.3s ease;
+}
+
+/* Animations */
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}

@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
+import { getAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import { type WritingStep } from '../../types/writing_page';
@@ -13,17 +14,6 @@ import '../../styles/writing_correction.css';
 
 interface Task2Data {
     prompt: string;
-}
-
-interface EvaluationResult {
-    scores: {
-        ta: number;
-        cc: number;
-        lr: number;
-        gra: number;
-    };
-    overall: number;
-    feedback: string;
 }
 
 function PromptMarkdown({ prompt }: { prompt?: string }) {
@@ -46,13 +36,13 @@ export default function Task2PracticePage() {
     const [searchParams] = useSearchParams();
     const type = searchParams.get('type') || 'opinion';
     const topicCategory = (searchParams.get('topic') || 'all').trim().toLowerCase() || 'all';
-    const cacheKey = `writing_task2_session_${type}_${topicCategory}`;
+    const bankIdParam = searchParams.get('bankId');
+    const bankId = bankIdParam ? Number(bankIdParam) : null;
+    const cacheKey = bankId ? `writing_task2_bank_${bankId}` : `writing_task2_session_${type}_${topicCategory}`;
 
     const [step, setStep] = useState<WritingStep>('loading');
     const [taskData, setTaskData] = useState<Task2Data | null>(null);
     const [userAnswer, setUserAnswer] = useState('');
-    const [result, setResult] = useState<EvaluationResult | null>(null);
-    const [isEvaluating, setIsEvaluating] = useState(false);
     const hasFetchedRef = useRef<string | null>(null);
 
     // Refresh recovery: restore in-progress session first.
@@ -65,13 +55,11 @@ export default function Task2PracticePage() {
                 step: WritingStep;
                 taskData: Task2Data | null;
                 userAnswer: string;
-                result: EvaluationResult | null;
             };
 
             if (parsed.taskData && parsed.step !== 'loading') {
                 setTaskData(parsed.taskData);
                 setUserAnswer(parsed.userAnswer || '');
-                setResult(parsed.result || null);
                 setStep(parsed.step);
             }
         } catch {
@@ -79,18 +67,17 @@ export default function Task2PracticePage() {
         }
     }, [cacheKey]);
 
-    // Persist answering/evaluation state for refresh recovery.
+    // Persist answering state for refresh recovery.
     useEffect(() => {
         if (!taskData || step === 'loading') return;
         sessionStorage.setItem(cacheKey, JSON.stringify({
             step,
             taskData,
             userAnswer,
-            result,
         }));
-    }, [cacheKey, step, taskData, userAnswer, result]);
+    }, [cacheKey, step, taskData, userAnswer]);
 
-    // Initial load - generate prompt
+    // Initial load - generate prompt or load from bank
     useEffect(() => {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
@@ -104,40 +91,63 @@ export default function Task2PracticePage() {
             }
         }
 
-        // Prevent double-fire from React StrictMode or rapid re-mount
+        // Prevent double-fire from React StrictMode or rapid re-mount.
+        // NOTE: never reset hasFetchedRef in a cleanup — StrictMode's synthetic
+        // cleanup would otherwise let the second mount re-fire and trigger a
+        // duplicate AI generate + duplicate AIQuestion row in the bank.
         if (hasFetchedRef.current === cacheKey) return;
         hasFetchedRef.current = cacheKey;
 
-        let isMounted = true;
+        async function loadFromBank(id: number) {
+            setStep('loading');
+            try {
+                const detail = await getAIQuestion(id);
+                const content = (detail.content || {}) as { prompt?: string };
+                if (!content.prompt) {
+                    showToast('题目内容缺失', 'error');
+                    navigate('/practice/ai/bank');
+                    return;
+                }
+                setTaskData({ prompt: content.prompt });
+                const savedAnswer = typeof detail.userAnswer === 'string' ? detail.userAnswer : '';
+                if (savedAnswer) setUserAnswer(savedAnswer);
+                setStep('answering');
+            } catch (err: unknown) {
+                console.error('Bank load error:', err);
+                showToast('题库加载失败', 'error');
+                navigate('/practice/ai/bank');
+            }
+        }
 
         async function fetchPrompt() {
             setStep('loading');
             try {
-                const res = await api<Task2Data>('/writing/task2/generate', {
+                const res = await api<Task2Data & { aiQuestionId?: number | null }>('/writing/task2/generate', {
                     method: 'POST',
                     body: {
                         type,
                         topic_category: topicCategory,
                     },
                 });
-                if (isMounted) {
-                    setTaskData(res);
-                    setStep('answering');
-                }
+                // 生成后直接进入 AI 题库
+                sessionStorage.removeItem(cacheKey);
+                showToast('题目已生成并保存到 AI 题库', 'success');
+                const justId = res.aiQuestionId ?? null;
+                navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
             } catch (err: unknown) {
                 console.error('Generate task2 error:', err);
                 const error = err as { message?: string };
                 showToast(error.message || t.practiceSandbox.toastFailGenTask2, 'error');
-                if (isMounted) {
-                    hasFetchedRef.current = null; // allow retry on next mount
-                    navigate(-1);
-                }
+                navigate(-1);
             }
         }
-        fetchPrompt();
 
-        return () => { isMounted = false; hasFetchedRef.current = null; };
-    }, [type, topicCategory, navigate, cacheKey, t.practiceSandbox.toastFailGenTask2]);
+        if (bankId) {
+            loadFromBank(bankId);
+        } else {
+            fetchPrompt();
+        }
+    }, [type, topicCategory, navigate, cacheKey, bankId, t.practiceSandbox.toastFailGenTask2]);
 
     // Word count calculation
     const wordCount = useMemo(() => {
@@ -159,30 +169,20 @@ export default function Task2PracticePage() {
         setStep('settlement');
     };
 
-    const handleStartEvaluation = async () => {
-        if (!taskData || isEvaluating) return;
-        setIsEvaluating(true);
-        setStep('evaluating');
-        try {
-            const res = await api<EvaluationResult>('/writing/task2/evaluate', {
-                method: 'POST',
-                body: {
-                    prompt: taskData.prompt,
-                    userAnswer: userAnswer,
-                    lang,
-                },
-            });
-            setResult(res);
-            setStep('result');
-            showToast(t.practiceSandbox.toastSuccess, 'success');
-        } catch (err: unknown) {
-            console.error('Evaluate task2 error:', err);
-            const error = err as { message?: string };
-            showToast(error.message || t.practiceSandbox.toastFailEval, 'error');
-            setStep('settlement');
-        } finally {
-            setIsEvaluating(false);
-        }
+    const handleStartEvaluation = () => {
+        if (!taskData) return;
+        sessionStorage.removeItem(cacheKey);
+        navigate('/writing/correction', {
+            state: {
+                text: userAnswer,
+                prompt: taskData.prompt,
+                taskType: 'task2',
+                autoEvaluate: true,
+                bankId: bankId || undefined,
+                subtype: bankId ? `task2:${type}` : undefined,
+            },
+            replace: true,
+        });
     };
 
     const typeNameMap: Record<string, string> = {
@@ -257,7 +257,6 @@ export default function Task2PracticePage() {
                 <button
                     className="primary-button"
                     onClick={handleStartEvaluation}
-                    disabled={isEvaluating}
                 >
                     <span>🎯</span> {t.practiceSandbox.callAiBtn}
                 </button>
@@ -271,75 +270,6 @@ export default function Task2PracticePage() {
             </div>
         </div>
     );
-
-    const renderEvaluating = () => (
-        <div className="wp-state-wrap wp-state-wrap--evaluating">
-            <div className="spinner wp-loading-spinner wp-loading-spinner--lg"></div>
-            <h2>{t.practiceSandbox.evaluatingTitle}</h2>
-            <p>
-                {t.practiceSandbox.evaluatingDesc}<br />
-                {t.practiceSandbox.evaluatingDescLine2}
-            </p>
-        </div>
-    );
-
-    const renderResult = () => {
-        if (!result) return null;
-        return (
-            <div className="wp-split wp-split--result">
-                {/* Left: Essay replay */}
-                <div className="wp-panel">
-                    <div className="wp-panel-header">
-                        <h3>📄 {t.practiceSandbox.reviewOriginal}</h3>
-                        <button className="back-link wp-result-back-btn" onClick={() => navigate('/writing/task2')}>
-                            {t.practiceSandbox.backToPracticeBtn}
-                        </button>
-                    </div>
-                    <div className="wp-panel-body">
-                        <div className="wp-prompt-block wp-prompt-block--compact">
-                            <PromptMarkdown prompt={taskData?.prompt} />
-                        </div>
-                        <div className="wp-essay-replay">{userAnswer}</div>
-                    </div>
-                </div>
-
-                {/* Right: Scores */}
-                <div className="wc-result-card">
-                    <div className="wc-band-display">
-                        <div className="wc-band-label">{t.practiceSandbox.overallBand}</div>
-                        <div className="wc-band-value">{result.overall.toFixed(1)}</div>
-                        <div className="wc-band-subtitle">{t.practiceSandbox.overallBandSubtitle}</div>
-                    </div>
-
-                    <div className="wc-scores-grid">
-                        {[
-                            { label: `🎯 ${t.practiceSandbox.taTask2}`, val: result.scores.ta },
-                            { label: `🔗 ${t.practiceSandbox.cc}`, val: result.scores.cc },
-                            { label: `📚 ${t.practiceSandbox.lr}`, val: result.scores.lr },
-                            { label: `📝 ${t.practiceSandbox.gra}`, val: result.scores.gra },
-                        ].map(({ label, val }) => (
-                            <div key={label} className="wc-score-item">
-                                <div className="wc-score-label">{label}</div>
-                                <div className="wc-score-val">{val.toFixed(1)}</div>
-                                <div className="wc-score-bar">
-                                    <div className="wc-score-bar-fill" style={{ width: `${(val / 9) * 100}%` }} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="wc-feedback-box">
-                        <h3>💡 {t.practiceSandbox.examinerReport}</h3>
-                        <div className="wc-feedback-content">
-                            {result.feedback.split('\n').map((line, idx) => (
-                                <p key={idx}>{line}</p>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    };
 
     return (
         <Layout
@@ -357,8 +287,6 @@ export default function Task2PracticePage() {
                         {renderSettlement()}
                     </>
                 )}
-                {step === 'evaluating' && renderEvaluating()}
-                {step === 'result' && renderResult()}
             </div>
         </Layout>
     );

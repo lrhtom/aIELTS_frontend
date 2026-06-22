@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { createListeningState } from '../../store/listen_page_store';
 import type { VocabItem, ListeningData, MapLandmark, MapDecoration } from '../../store/listen_page_store';
 import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
+import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/listening_page.css';
 import '../../styles/reading_page.css';
@@ -35,13 +36,16 @@ function checkAnswer(userAns: string, acceptableAnswers: string[]): boolean {
 
 export default function ListeningPage() {
     const { state } = useLocation();
+    const [searchParams] = useSearchParams();
+    const bankIdParam = searchParams.get('bankId');
+    const bankId = bankIdParam ? Number(bankIdParam) : null;
     const vocabInput: string = state?.vocabInput ?? '';
     const difficulty: string = state?.difficulty ?? '7.0';
     const wordCountMin: number = state?.wordCountMin ?? 1;
     const wordCountMax: number = state?.wordCountMax ?? 2;
     const practiceType: 'article' | 'sentence' | 'multiple_choice' | 'map' = state?.practiceType ?? 'article';
     const navigate = useNavigate();
-    const onReturnHome = () => navigate('/');
+    const onReturnHome = () => navigate(bankId ? '/practice/ai/bank' : '/');
     const { translations: t } = useLang();
     const [absurdMode] = useState<boolean>(Boolean(state?.absurdMode));
 
@@ -77,6 +81,14 @@ export default function ListeningPage() {
         if (hasRequested.current) return;
         hasRequested.current = true;
 
+        // 题库模式：按 bankId 拉取题目，不调用 AI 生成
+        if (bankId) {
+            sessionStorage.removeItem(CACHE_KEY);
+            setSt(createListeningState());
+            loadFromBank(bankId);
+            return;
+        }
+
         // 刷新恢复：优先从 sessionStorage 读取缓存数据
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) {
@@ -99,6 +111,72 @@ export default function ListeningPage() {
         generateListening();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const fetchAudioForPassage = async (passage: string) => {
+        const introText = 'The IELTS listening test is about to begin. Please listen carefully.';
+        const fullText = `${introText}\n\n\n\n${stripMarkers(passage)}`;
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : '',
+            },
+            body: JSON.stringify({ text: fullText }),
+        });
+        if (!res.ok) {
+            console.warn(`Failed to generate audio: ${res.statusText}`);
+            return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => { setTtsSpeaking(false); setTtsStarted(false); };
+        audio.onerror = () => { console.error('Audio playback error'); setTtsSpeaking(false); setTtsStarted(false); };
+    };
+
+    const loadFromBank = async (id: number) => {
+        set('isLoading', true);
+        try {
+            const detail = await getAIQuestion(id);
+            const content = (detail.content || {}) as Partial<ListeningData>;
+            if (!content.passage || !Array.isArray(content.questions)) {
+                showToast('题目内容缺失，已删除或损坏', 'error');
+                navigate('/practice/ai/bank');
+                return;
+            }
+            const listeningData = content as ListeningData;
+            setSt(s => ({
+                ...s,
+                listeningData,
+                vocabList: [],
+                isLoading: false,
+                isRightOpen: listeningData.type === 'article',
+                step: 2,
+            }));
+
+            const saved = (detail.userAnswer || null) as Record<number, string> | null;
+            if (saved && typeof saved === 'object') {
+                userAnswersRef.current = { ...saved };
+                setSt(s => ({ ...s, step: 3 }));
+            } else {
+                userAnswersRef.current = {};
+            }
+
+            setAudioLoading(true);
+            await fetchAudioForPassage(listeningData.passage);
+            setAudioLoading(false);
+        } catch (err: unknown) {
+            console.error('Bank load error:', err);
+            showToast('题库加载失败', 'error');
+            navigate('/practice/ai/bank');
+        } finally {
+            set('isLoading', false);
+            setAudioLoading(false);
+        }
+    };
 
     const formatHighlight = (text: string): string => {
         if (!text) return '';
@@ -125,71 +203,24 @@ export default function ListeningPage() {
         const words = parsedList.map(v => v.word);
 
         try {
-            const parsedData = await api<ListeningData>('/listening/generate', {
+            const parsedData = await api<ListeningData & { aiQuestionId?: number | null }>('/listening/generate', {
                 method: 'POST',
                 body: { words, difficulty, wordCountMin, wordCountMax, practiceType, absurdMode },
             });
 
-            // 获取文本之后立马生成音频
-            const passageText = stripMarkers(parsedData.passage);
-            const introText = 'The IELTS listening test is about to begin. Please listen carefully.';
-            const fullText = `${introText}\n\n\n\n${passageText}`;
-
-            // Show audio loading indicator
-            setAudioLoading(true);
-            set('isLoading', false); // Show content but with audio spinner
-
-            const token = localStorage.getItem('access_token');
-            const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : ''
-                },
-                body: JSON.stringify({ text: fullText })
-
-            });
-
-            if (!res.ok) {
-                console.warn(`Failed to generate audio: ${res.statusText}`);
-                // 即使音频生成失败，也把题目展示出来，但不打断流程
-            } else {
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                setAudioUrl(url);
-
-                const audio = new Audio(url);
-                audioRef.current = audio;
-
-                audio.onended = () => {
-                    setTtsSpeaking(false);
-                    setTtsStarted(false); // 允许重播
-                };
-
-                audio.onerror = () => {
-                    console.error("Audio playback error");
-                    setTtsSpeaking(false);
-                    setTtsStarted(false);
-                };
-            }
-            setAudioLoading(false);
-
-            set('listeningData', parsedData);
-            // 缓存到 sessionStorage 以便刷新恢复
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
-                listeningData: parsedData,
-                vocabList: parsedList,
-            }));
             // 前端防御：确保 questions 存在
             if (!parsedData.questions || parsedData.questions.length === 0) {
                 showToast(t.listeningDetails.noQuestions, 'error');
                 onReturnHome();
                 return;
             }
-            userAnswersRef.current = {};
-            if (practiceType === 'article') {
-                set('isRightOpen', true);
-            }
+
+            // 生成成功后跳转到 AI 题库，由用户在题库内挑题作答
+            sessionStorage.removeItem(CACHE_KEY);
+            const justId = parsedData.aiQuestionId ?? null;
+            showToast('题目已生成并保存到 AI 题库', 'success');
+            navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
+            return;
         } catch (err: unknown) {
             console.error("API Error:", err);
             const error = err as { message?: string, status?: number };
@@ -212,7 +243,18 @@ export default function ListeningPage() {
             audioRef.current.pause();
         }
         setTtsSpeaking(false);
+        if (bankId) {
+            submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
+                console.error('submit to bank failed:', err);
+                showToast('保存作答失败，但本次成绩已显示', 'error');
+            });
+        }
         set('step', 3);
+    };
+
+    const restartFromBank = () => {
+        userAnswersRef.current = {};
+        setSt(s => ({ ...s, step: 2 }));
     };
 
     // 播放已经预提取的音频
@@ -657,7 +699,10 @@ export default function ListeningPage() {
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className="toggle-passage-btn">
                             {st.isPassageOpen ? `✕ ${t.results.hidePassage}` : `📖 ${t.results.showPassage}`}
                         </button>
-                        <button onClick={onReturnHome} className="tool-btn">🏠 {t.common.home}</button>
+                        {bankId && (
+                            <button onClick={restartFromBank} className="tool-btn">🔁 重新作答</button>
+                        )}
+                        <button onClick={onReturnHome} className="tool-btn">{bankId ? '📚 返回题库' : `🏠 ${t.common.home}`}</button>
                     </div>
                 </div>
 
