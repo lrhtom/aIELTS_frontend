@@ -7,6 +7,7 @@ export const en: Translations = {
             noGoal: 'No Goal',
             countdown: '🎯 {days} days left until exam on {date} | Target {score}',
             examDay: '🎯 Today is the exam day, good luck! 🎉 | Target {score}',
+            examPassed: '🎯 Congratulations on completing your exam! 🎉 | Target {score}',
         }
     },
     nav: {
@@ -353,6 +354,8 @@ export const en: Translations = {
             calculatedOverall: 'Calculated Overall: ',
             examDate: 'Exam Date',
             daysLeft: '{days} days left until exam',
+            examToday: 'Today is the exam day! Best of luck! 🎉',
+            examPassed: 'Congratulations on completing your exam!',
             saving: 'Saving...',
             saveBtn: 'Save Goals',
             saveSuccess: '✓ Goals saved successfully',

@@ -7,6 +7,7 @@ export const zh: Translations = {
             noGoal: '暂无目标',
             countdown: '🎯 距离考试时间 {date} 还有 {days} 天 | 目标 {score} 分',
             examDay: '🎯 今天是考试日，祝你屠鸭成功！ 🎉 | 目标 {score} 分',
+            examPassed: '🎯 恭喜上岸！ 🎉 | 目标 {score} 分',
         }
     },
     nav: {
@@ -566,6 +567,8 @@ export const zh: Translations = {
             calculatedOverall: '自动计算总分：',
             examDate: '考试日期 (Exam Date)',
             daysLeft: '距离考试还有 {days} 天',
+            examToday: '今天是考试日，祝你屠鸭成功！ 🎉',
+            examPassed: '恭喜上岸',
             saving: '保存中...',
             saveBtn: '保存目标',
             saveSuccess: '✓ 个人目标保存成功',

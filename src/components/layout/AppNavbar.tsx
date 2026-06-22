@@ -42,8 +42,10 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ba
             const diffTime = target.getTime() - today.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             
-            if (diffDays <= 0) {
+            if (diffDays === 0) {
                 content = t.navbar.goals.examDay.replace('{score}', score);
+            } else if (diffDays < 0) {
+                content = t.navbar.goals.examPassed.replace('{score}', score);
             } else {
                 // Formatting date for zh vs en is tricky, but let's just use the raw YYYY-MM-DD for now
                 content = t.navbar.goals.countdown.replace('{date}', user.exam_date).replace('{days}', diffDays.toString()).replace('{score}', score);

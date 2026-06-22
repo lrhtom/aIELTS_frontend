@@ -43,7 +43,7 @@ export default function UserGoals() {
         target.setHours(0, 0, 0, 0);
         const diffTime = target.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays >= 0 ? diffDays : 0;
+        return diffDays;
     };
 
     const handleUpdateGoals = async () => {
@@ -144,9 +144,13 @@ export default function UserGoals() {
                                 onChange={(e) => setExamDate(e.target.value)}
                                 style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-alt)', color: 'var(--color-text)' }}
                             />
-                            {examDate && (
+                            {examDate && getDaysLeft() !== null && (
                                 <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                                    {t.profile.goals.daysLeft.replace('{days}', getDaysLeft().toString())}
+                                    {getDaysLeft() === 0
+                                        ? t.profile.goals.examToday
+                                        : getDaysLeft()! < 0
+                                        ? t.profile.goals.examPassed
+                                        : t.profile.goals.daysLeft.replace('{days}', getDaysLeft()!.toString())}
                                 </span>
                             )}
                         </div>

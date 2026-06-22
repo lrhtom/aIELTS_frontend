@@ -10,6 +10,7 @@ export interface Translations {
             noGoal: string;
             countdown: string;
             examDay: string;
+            examPassed: string;
         }
     };
     nav: {
