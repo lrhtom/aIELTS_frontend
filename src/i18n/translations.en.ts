@@ -257,6 +257,7 @@ export const en: Translations = {
         ieltsPart: {
             title: '🎯 IELTS Part',
             lockedHint: '🔒 Only available in Exam Mode',
+            fullTestHint: 'Part 1 → Part 2 → Part 3 Continuously',
             parts: {
                 part1: { title: 'Part 1', desc: 'Personal Topic Q&A' },
                 part2: { title: 'Part 2', desc: '2-Minute Monologue' },
@@ -370,8 +371,63 @@ export const en: Translations = {
             title: 'Avatar Settings',
             description: 'Click on the avatar to upload a new image',
         },
-        movedMessage: 'Settings have been moved to Profile page. Please click the button below to access your Profile.',
+        movedMessage: 'Settings have moved to the new architecture. Please visit your profile.',
         goToProfile: 'Go to Profile',
+    },
+    prompts: {
+        pageTitle: 'Prompt Hub',
+        pageSubtitle: 'Share and discover the best AI IELTS prompts to help you conquer the exam',
+        backToPractice: 'AI Practice',
+        badges: {
+            community: 'Community',
+            likeAndFav: 'Like & Save',
+            copy: 'One-click Copy',
+        },
+        tabs: {
+            community: 'Community Prompts',
+            create: 'Publish Prompt',
+        },
+        community: {
+            totalCount: '{count} Prompts',
+            sortLatest: 'Latest',
+            sortPopular: 'Popular',
+            emptyTitle: 'No prompts yet. Be the first to publish!',
+            untitled: 'Untitled Prompt',
+            copyBtn: 'Copy',
+            copiedBtn: 'Copied',
+            anonymous: 'Anonymous',
+        },
+        pagination: {
+            first: '« First',
+            prev: '‹ Prev',
+            next: 'Next ›',
+            last: 'Last »',
+            goto: 'Go to',
+            page: 'Page',
+            goBtn: 'GO',
+        },
+        create: {
+            title: 'Share Your Inspiration',
+            subtitle: 'Share your effective IELTS prompts with the community to help others score high!',
+            promptTitle: 'Prompt Title',
+            promptTitlePlaceholder: 'Give your prompt a catchy name...',
+            promptContent: 'Prompt Content',
+            promptContentPlaceholder: 'Paste your magic prompt here, the more detailed the better...',
+            publishAs: 'Publish as {name}',
+            anonymousAs: 'Anonymous',
+            publishBtn: 'Publish Prompt',
+            publishingBtn: 'Publishing...',
+        },
+        toast: {
+            fetchFailed: 'Failed to fetch prompts',
+            actionFailed: 'Action failed',
+            copied: 'Copied to clipboard!',
+            emptyTitle: 'Title cannot be empty!',
+            emptyContent: 'Content cannot be empty!',
+            publishSuccess: 'Published successfully!',
+            publishFailed: 'Failed to publish',
+            invalidPage: 'Please enter a valid page number between 1 and {max}',
+        },
     },
     profile: {
 
@@ -740,6 +796,38 @@ export const en: Translations = {
         perspective: {
             title: '🎯 Perspective Training',
             desc: 'Enter an IELTS writing topic and AI will generate a high-scoring opinion and a common mistake version to improve your expression quality.'
+        },
+        teachersHub: {
+            pageTitle: 'AI Writing Teachers',
+            pageSubtitle: 'Choose your AI writing tutoring mode',
+            task1Title: 'Task 1 AI Teacher',
+            task1Desc: 'Smart chart trend extraction and data comparison guidance',
+            task2Title: 'Task 2 AI Teacher',
+            task2Desc: 'Rapid decoding and paragraph-level deep guidance',
+            recordsTitle: 'Service Records',
+            recordsDesc: 'Review past corrections and AI lessons'
+        },
+        records: {
+            pageTitle: 'Service Records',
+            pageSubtitle: 'Review your past writing practices and AI feedback',
+            backToHub: 'Back to Hub',
+            searchPlaceholder: 'Search titles...',
+            allTypes: 'All Types',
+            loading: 'Loading...',
+            empty: 'No service records found',
+            deleteConfirm: 'Are you sure to delete this record?',
+            deleteSuccess: 'Deleted successfully',
+            deleteFail: 'Delete failed',
+            loadFail: 'Failed to load records',
+            error: 'Error loading records',
+            viewerNotSupported: 'Viewer not supported for this type',
+            serviceTypes: {
+                correction: '📝 Correction',
+                task1_teacher: '📊 Task 1 Teacher',
+                task2_teacher: '🧠 Task 2 Teacher',
+                opinion_drill: '💡 Opinion Drill',
+                typing_chat: '💬 Typing Chat'
+            }
         }
     },
     task1Selection: {

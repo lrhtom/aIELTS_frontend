@@ -257,6 +257,7 @@ export const zh: Translations = {
         ieltsPart: {
             title: '🎯 雅思题型',
             lockedHint: '🔒 仅考试模式可选',
+            fullTestHint: 'Part 1 → Part 2 → Part 3 连续进行',
             parts: {
                 part1: { title: 'Part 1', desc: '个人话题问答' },
                 part2: { title: 'Part 2', desc: '2分钟主题演讲' },
@@ -358,6 +359,38 @@ export const zh: Translations = {
         perspective: {
             title: '🎯 观点表达训练',
             desc: '输入一道雅思写作题目，AI 会给出高分观点范例和常见错误观点，帮你提升观点表达质量。'
+        },
+        teachersHub: {
+            pageTitle: 'AI 写作老师',
+            pageSubtitle: '选择您的 AI 写作辅导模式',
+            task1Title: '小作文 AI 老师',
+            task1Desc: '智能看图提取趋势与数据对比指导',
+            task2Title: '大作文 AI 老师',
+            task2Desc: '极速解题与段落级深度指导',
+            recordsTitle: '服务记录',
+            recordsDesc: '回顾所有作文批改与 AI 解析'
+        },
+        records: {
+            pageTitle: '服务记录',
+            pageSubtitle: '回顾您过去的写作练习与 AI 解析',
+            backToHub: '返回大厅',
+            searchPlaceholder: '搜索标题...',
+            allTypes: '所有类型',
+            loading: '加载中...',
+            empty: '暂无服务记录',
+            deleteConfirm: '确定要删除这条记录吗？',
+            deleteSuccess: '删除成功',
+            deleteFail: '删除失败',
+            loadFail: '加载记录失败',
+            error: '加载出错',
+            viewerNotSupported: '该记录类型的查看页面暂未支持',
+            serviceTypes: {
+                correction: '📝 作文批改',
+                task1_teacher: '📊 小作文老师',
+                task2_teacher: '🧠 大作文老师',
+                opinion_drill: '💡 观点特训',
+                typing_chat: '💬 打字聊天'
+            }
         }
     },
     task1Selection: {
@@ -583,8 +616,63 @@ export const zh: Translations = {
             title: '头像设置',
             description: '点击头像上传新的图片',
         },
-        movedMessage: '设置功能已迁移到个人主页。请点击下方按钮访问个人主页。',
-        goToProfile: '前往个人主页',
+        movedMessage: '设置已移至新版架构，请前往个人中心。',
+        goToProfile: '前往个人中心',
+    },
+    prompts: {
+        pageTitle: 'Prompt Hub',
+        pageSubtitle: '分享与查找最绝赞的 AI IELTS 高分提示词密码，助力你征服考场',
+        backToPractice: 'AI Practice',
+        badges: {
+            community: '社区共建',
+            likeAndFav: '点赞收藏',
+            copy: '一键复制',
+        },
+        tabs: {
+            community: '社区提示词',
+            create: '发布提示词',
+        },
+        community: {
+            totalCount: '共 {count} 条提示词',
+            sortLatest: '最新',
+            sortPopular: '最热',
+            emptyTitle: '暂无提示词，快来做第一个发布者吧！',
+            untitled: '未命名提示词',
+            copyBtn: '复制',
+            copiedBtn: '已复制',
+            anonymous: 'Anonymous',
+        },
+        pagination: {
+            first: '« 首页',
+            prev: '‹ 上一页',
+            next: '下一页 ›',
+            last: '末页 »',
+            goto: '前往',
+            page: '页',
+            goBtn: 'GO',
+        },
+        create: {
+            title: '贡献你的灵感',
+            subtitle: '将你摸索出的高效 IELTS 提示词分享给社区，帮助更多人取得高分！',
+            promptTitle: '提示词标题',
+            promptTitlePlaceholder: '给你的提示词起个响亮的名字...',
+            promptContent: '提示词内容',
+            promptContentPlaceholder: '在这里粘贴你的魔法提示词，描述越详细效果越好...',
+            publishAs: '以 {name} 身份发布',
+            anonymousAs: '匿名身份',
+            publishBtn: '发布提示词',
+            publishingBtn: '发布中...',
+        },
+        toast: {
+            fetchFailed: '获取提示词失败',
+            actionFailed: '操作失败',
+            copied: '已复制到剪贴板！',
+            emptyTitle: '标题不能为空！',
+            emptyContent: '内容不能为空！',
+            publishSuccess: '发布成功！',
+            publishFailed: '发布失败',
+            invalidPage: '请输入 1 到 {max} 之间的有效页码',
+        },
     },
     profile: {
 

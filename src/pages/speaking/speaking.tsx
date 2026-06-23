@@ -289,224 +289,196 @@ export default function Speaking() {
         }
     };
 
+    const getSummaryText = () => {
+        const mode = MODES.find(m => m.id === selectedMode);
+        let text = `${mode?.emoji} ${mode?.title}`;
+        if (selectedMode === 'exam' || selectedMode === 'fullTest') {
+            const part = PARTS.find(p => p.id === selectedPart);
+            if (selectedMode === 'exam') {
+                text += ` · ${part?.title}`;
+            }
+        }
+        return text;
+    };
+
     return (
         <Layout
-    pageTitle={sc.heading}
-    pageSubtitle={sc.subheading}
-    backUrl='/practice/ai'
-    backText={sc.backToAI}
->
-            <div className="config-page-wrap speaking-config bento-page-wrap">
-                <div className="reading-config-bento">
-                    {/* ── 左侧列：核心词汇区 ── */}
-                    <div className="bento-col-left">
-                        <div className="config-card bento-card-glass vocab-card">
-                            <div className="toggle-row">
-                                <div>
-                                    <div className="label-text">{sc.vocabSettings.title}</div>
-                                    <div className="label-desc">{sc.vocabSettings.desc}</div>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={useCustomVocab}
-                                        onChange={e => setUseCustomVocab(e.target.checked)}
-                                    />
-                                    <span className="toggle-slider" />
-                                </label>
-                            </div>
-                            {useCustomVocab && (
-                                <div className="vocab-content-wrap">
-                                    {plans.length > 0 && (
-                                        <div className="plan-import-row">
-                                            <select
-                                                className="plan-import-select"
-                                                value={importPlanId}
-                                                onChange={e => setImportPlanId(Number(e.target.value))}
-                                            >
-                                                {plans.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name}</option>
+            pageTitle={sc.heading}
+            pageSubtitle={sc.subheading}
+            backUrl='/practice/ai'
+            backText={sc.backToAI}
+        >
+            <div className="uc-console">
+                {/* ── 1. 左侧：模式切换列 (Sidebar) ── */}
+                <div className="uc-sidebar">
+                        <div className="uc-sidebar-title">{sc.modes.title}</div>
+                        <nav className="uc-sidebar-nav">
+                            {MODES.map(m => (
+                                <button
+                                    key={m.id}
+                                    className={`uc-nav-item ${selectedMode === m.id ? 'active' : ''}`}
+                                    onClick={() => setSelectedMode(m.id)}
+                                >
+                                    <span className="nav-icon">{m.emoji}</span>
+                                    <span className="nav-text">{m.title}</span>
+                                </button>
+                            ))}
+                        </nav>
+                    </div>
+
+                    {/* ── 2. 右侧：配置明细区 (Main Content) ── */}
+                    <div className="uc-main-content">
+                        <div className="uc-main-header">
+                            <h2>{MODES.find(m => m.id === selectedMode)?.title}</h2>
+                            <p>{sc.modes.items?.[selectedMode as keyof typeof sc.modes.items]?.desc}</p>
+                        </div>
+
+                        <div className="uc-settings-list">
+                            {/* IELTS Part Segmented Control */}
+                            {(selectedMode === 'exam' || selectedMode === 'fullTest') && (
+                                <div className="uc-list-row">
+                                    <div className="uc-row-label">
+                                        <span className="row-title">{sc.ieltsPart.title}</span>
+                                    </div>
+                                    <div className="uc-row-control">
+                                        {selectedMode === 'fullTest' ? (
+                                            <span className="ft-inline-text">📋 {sc.ieltsPart.fullTestHint}</span>
+                                        ) : (
+                                            <div className="uc-segmented-control">
+                                                {PARTS.map(p => (
+                                                    <button
+                                                        key={p.id}
+                                                        className={`seg-btn ${selectedPart === p.id ? 'active' : ''}`}
+                                                        onClick={() => setSelectedPart(p.id)}
+                                                    >
+                                                        {p.title}
+                                                    </button>
                                                 ))}
-                                            </select>
-                                            <button
-                                                className="plan-import-btn"
-                                                onClick={handleImportPlan}
-                                                disabled={importingPlan}
-                                            >
-                                                {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
-                                            </button>
-                                        </div>
-                                    )}
-                                    <div className="vocab-textarea-container">
-                                        <VocabInput
-                                            value={vocabInput}
-                                            onChange={handleVocabChange}
-                                        />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    </div>
 
-                    {/* ── 右侧列：设置控制区 ── */}
-                    <div className="bento-col-right">
-                        {/* Board 0: AI Model */}
-                        <div className="config-card bento-card-glass">
-                            <h3>AI 模型 🧠</h3>
-                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>选择后台出题和批改所使用的引擎</div>
-                            <AiModelSelector label="" description="" />
-                        </div>
-
-                        {/* Board 2: IELTS Part + Subtitles */}
-                        <div className="config-card bento-card-glass">
-                            <div className="sp-section-header">
-                                <h3>{sc.ieltsPart.title}</h3>
-                                {selectedMode !== 'exam' && (
-                                    <span className="sp-locked-hint">{sc.ieltsPart.lockedHint}</span>
-                                )}
-                            </div>
-                            <div className={`speaking-parts${(selectedMode !== 'exam' && selectedMode !== 'fullTest') ? ' parts-disabled' : ''}`}>
-                                {selectedMode === 'fullTest' ? (
-                                    <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'linear-gradient(135deg, #f0fdf4, #ecfeff)', borderRadius: '10px', border: '1.5px solid #86efac' }}>
-                                        <span style={{ fontSize: '20px' }}>📋</span>
-                                        <span style={{ fontWeight: 600, color: '#166534' }}>Part 1 → Part 2 → Part 3 连续进行</span>
+                            {/* Scenario */}
+                            {selectedMode === 'scenario' && (
+                                <div className="uc-list-group">
+                                    <div className="uc-list-row uc-row-vertical">
+                                        <div className="uc-row-label-flex">
+                                            <span className="row-title">{sc.scenarioSettings.title}</span>
+                                            <button className="secondary-btn-console" onClick={handleRandomScenario} disabled={isGeneratingScenario}>
+                                                {isGeneratingScenario ? sc.scenarioSettings.generating : sc.scenarioSettings.randomBtn}
+                                            </button>
+                                        </div>
+                                        <textarea
+                                            className="uc-console-textarea"
+                                            rows={3}
+                                            placeholder={sc.scenarioSettings.placeholder}
+                                            value={scenarioInput}
+                                            onChange={e => setScenarioInput(e.target.value)}
+                                        />
                                     </div>
-                                ) : (
-                                PARTS.map(p => (
-                                    <button
-                                        key={p.id}
-                                        className={`speaking-part-card${selectedPart === p.id && selectedMode === 'exam' ? ' selected' : ''}`}
-                                        onClick={() => selectedMode === 'exam' && setSelectedPart(p.id)}
-                                        disabled={selectedMode !== 'exam'}
-                                    >
-                                        <span className="sp-emoji">{p.emoji}</span>
-                                        <span className="sp-title">{p.title}</span>
-                                        <span className="sp-desc">{p.desc}</span>
-                                    </button>
-                                ))
-                                )}
-                            </div>
-
-                            <div className="speaking-divider" />
-
-                            <div className="toggle-row">
-                                <div>
-                                    <div className="label-text">{sc.subtitles.title}</div>
-                                    <div className="label-desc">{sc.subtitles.desc}</div>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={showSubtitles}
-                                        onChange={e => setShowSubtitles(e.target.checked)}
-                                    />
-                                    <span className="toggle-slider" />
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Board 3: Mode */}
-                        <div className="config-card bento-card-glass">
-                            <h3>{sc.modes.title}</h3>
-                            <div className="speaking-modes">
-                                {MODES.map(m => (
-                                    <button
-                                        key={m.id}
-                                        className={`speaking-mode-card ${m.color}${selectedMode === m.id ? ' selected' : ''}`}
-                                        onClick={() => setSelectedMode(m.id)}
-                                    >
-                                        <span className="sm-emoji">{m.emoji}</span>
-                                        <span className="sm-title">{m.title}</span>
-                                        <span className="sm-desc">{m.desc}</span>
-                                        {selectedMode === m.id && (
-                                            <span className="sm-check">✓</span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Board 4: Scenario Settings */}
-                        {selectedMode === 'scenario' && (
-                            <div className="config-card bento-card-glass fadeIn">
-                                <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <div>
-                                        <div className="label-text">{sc.scenarioSettings.title}</div>
-                                        <div className="label-desc">{sc.scenarioSettings.desc}</div>
+                                    <div className="uc-list-row">
+                                        <div className="uc-row-label">
+                                            <span className="row-title">参考附件</span>
+                                            <span className="row-desc">上传图片或文档 (选做)</span>
+                                        </div>
+                                        <div className="uc-row-control">
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*,.pdf,.txt,.doc,.docx,.csv,.json,.md"
+                                                multiple
+                                                onChange={handleFileSelect}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <button className="secondary-btn-console" onClick={() => fileInputRef.current?.click()}>
+                                                📎 选择文件
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button
-                                        className="secondary-btn"
-                                        onClick={handleRandomScenario}
-                                        disabled={isGeneratingScenario}
-                                        style={{ flexShrink: 0, marginLeft: '16px', fontSize: '0.9rem', padding: '6px 12px' }}
-                                    >
-                                        {isGeneratingScenario ? sc.scenarioSettings.generating : sc.scenarioSettings.randomBtn}
-                                    </button>
-                                </div>
-                                <textarea
-                                    className="vocab-textarea"
-                                    rows={3}
-                                    placeholder={sc.scenarioSettings.placeholder}
-                                    value={scenarioInput}
-                                    onChange={e => setScenarioInput(e.target.value)}
-                                    style={{ width: '100%', resize: 'vertical' }}
-                                />
-
-                                <div className="sp-attachment-area">
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*,.pdf,.txt,.doc,.docx,.csv,.json,.md"
-                                        multiple
-                                        onChange={handleFileSelect}
-                                        style={{ display: 'none' }}
-                                    />
-                                    <button
-                                        className="sp-attach-btn"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        type="button"
-                                        title="上传图片或文件作为场景参考"
-                                    >
-                                        📎 上传参考文件/图片
-                                    </button>
-                                    <span className="sp-attach-hint">选做 — 可上传图片或文档帮助 AI 理解场景</span>
                                     {scenarioFiles.length > 0 && (
-                                        <div className="sp-file-previews">
-                                            {scenarioFiles.map((f, i) => (
-                                                <div key={i} className="sp-file-chip">
-                                                    <span className="sp-file-chip-name">
-                                                        {f.type.startsWith('image/') ? '🖼️' : '📄'} {f.name}
-                                                    </span>
-                                                    <button
-                                                        className="sp-file-chip-remove"
-                                                        onClick={() => setScenarioFiles(prev => prev.filter((_, j) => j !== i))}
-                                                        type="button"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ))}
+                                        <div className="uc-list-row" style={{ borderTop: 'none', paddingTop: 0 }}>
+                                            <div className="uc-file-previews-console">
+                                                {scenarioFiles.map((f, i) => (
+                                                    <div key={i} className="uc-file-chip-console">
+                                                        <span>{f.type.startsWith('image/') ? '🖼️' : '📄'} {f.name}</span>
+                                                        <button onClick={(e) => { e.stopPropagation(); setScenarioFiles(prev => prev.filter((_, j) => j !== i)); }}>×</button>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
 
-                    {/* ── Start Button ── */}
-                    <div className="bento-bottom">
-                        <button
-                            className="premium-start-btn"
-                            style={{ opacity: (isStartDisabled) ? 0.6 : 1 }}
-                            onClick={handleStart}
-                            disabled={isStartDisabled}
-                        >
-                            <span className="btn-icon">{isChecking ? '⏳' : '🗣️'}</span>
-                            {isChecking ? '正在准备...' : sc.startBtn}
-                        </button>
+                            {/* AI Model */}
+                            <div className="uc-list-row">
+                                <div className="uc-row-label">
+                                    <span className="row-title">AI 模型</span>
+                                </div>
+                                <div className="uc-row-control console-model-selector">
+                                    <AiModelSelector label="" description="" />
+                                </div>
+                            </div>
+
+                            {/* Subtitles */}
+                            <div className="uc-list-row">
+                                <div className="uc-row-label">
+                                    <span className="row-title">{sc.subtitles.title}</span>
+                                    <span className="row-desc">{sc.subtitles.desc}</span>
+                                </div>
+                                <div className="uc-row-control">
+                                    <label className="toggle-switch-console">
+                                        <input type="checkbox" checked={showSubtitles} onChange={e => setShowSubtitles(e.target.checked)} />
+                                        <span className="toggle-slider-console" />
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {/* Vocab Accordion */}
+                            <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`}>
+                                <div className="uc-list-row" style={{ borderBottom: 'none' }}>
+                                    <div className="uc-row-label">
+                                        <span className="row-title">{sc.vocabSettings.title}</span>
+                                        <span className="row-desc">{sc.vocabSettings.desc}</span>
+                                    </div>
+                                    <div className="uc-row-control">
+                                        <label className="toggle-switch-console">
+                                            <input type="checkbox" checked={useCustomVocab} onChange={e => setUseCustomVocab(e.target.checked)} />
+                                            <span className="toggle-slider-console" />
+                                        </label>
+                                    </div>
+                                </div>
+                                {useCustomVocab && (
+                                    <div className="uc-vocab-body">
+                                        {plans.length > 0 && (
+                                            <div className="uc-vocab-toolbar">
+                                                <select className="console-select" value={importPlanId} onChange={e => setImportPlanId(Number(e.target.value))}>
+                                                    {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                </select>
+                                                <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
+                                                    {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
+                                                </button>
+                                            </div>
+                                        )}
+                                        <VocabInput value={vocabInput} onChange={handleVocabChange} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="uc-console-footer">
+                            <button
+                                className={`uc-console-start-btn ${isStartDisabled ? 'disabled' : ''}`}
+                                onClick={handleStart}
+                                disabled={isStartDisabled}
+                            >
+                                {isChecking ? '⏳ 正在准备...' : `🗣️ 开始练习`}
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
         </Layout>
     );
 }

@@ -8,6 +8,7 @@ interface LayoutProps {
   children: React.ReactNode;
   pageTitle?: React.ReactNode;
   pageSubtitle?: React.ReactNode;
+  titleAction?: React.ReactNode;
   backUrl?: string;
   onBack?: () => void;
   backText?: string;
@@ -15,7 +16,7 @@ interface LayoutProps {
   fullScreen?: boolean;
 }
 
-export default function Layout({ children, pageTitle, pageSubtitle, backUrl, onBack, backText, headerRight, fullScreen }: LayoutProps) {
+export default function Layout({ children, pageTitle, pageSubtitle, titleAction, backUrl, onBack, backText, headerRight, fullScreen }: LayoutProps) {
   const { pathname } = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => sessionStorage.getItem('sidebar_open') !== 'true'
@@ -50,6 +51,7 @@ export default function Layout({ children, pageTitle, pageSubtitle, backUrl, onB
           onToggleSidebar={() => setSidebar(!sidebarCollapsed)} 
           pageTitle={pageTitle}
           pageSubtitle={pageSubtitle}
+          titleAction={titleAction}
           backUrl={backUrl}
           onBack={onBack}
           backText={backText}

@@ -8,8 +8,8 @@ export default function AiTeachersHubPage() {
 
     return (
         <Layout
-            pageTitle={lang === 'zh' ? 'AI 写作老师' : 'AI Writing Teachers'}
-            pageSubtitle={lang === 'zh' ? '选择您的 AI 写作辅导模式' : 'Choose your AI writing tutoring mode'}
+            pageTitle={t.writingHub?.teachersHub?.pageTitle || 'AI Writing Teachers'}
+            pageSubtitle={t.writingHub?.teachersHub?.pageSubtitle || 'Choose your AI writing tutoring mode'}
             backUrl="/writing"
             backText={t.writingHub?.backToPractice || 'Back'}
         >
@@ -76,9 +76,9 @@ export default function AiTeachersHubPage() {
                         onClick={() => navigate('/writing/task1-ai-teacher')}
                     >
                         <span style={{ fontSize: '24px' }}>📈</span>
-                        <div style={{ fontSize: '18px', fontWeight: '600' }}>小作文 AI 老师</div>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub?.teachersHub?.task1Title || 'Task 1 AI Teacher'}</div>
                         <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                            智能看图提取趋势与数据对比指导
+                            {t.writingHub?.teachersHub?.task1Desc || 'Smart chart trend extraction and data comparison guidance'}
                         </div>
                     </button>
 
@@ -107,9 +107,9 @@ export default function AiTeachersHubPage() {
                         onClick={() => navigate('/writing/ai-teacher')}
                     >
                         <span style={{ fontSize: '24px' }}>👨‍🏫</span>
-                        <div style={{ fontSize: '18px', fontWeight: '600' }}>大作文 AI 老师</div>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub?.teachersHub?.task2Title || 'Task 2 AI Teacher'}</div>
                         <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                            极速解题与段落级深度指导
+                            {t.writingHub?.teachersHub?.task2Desc || 'Rapid decoding and paragraph-level deep guidance'}
                         </div>
                     </button>
 
@@ -137,9 +137,9 @@ export default function AiTeachersHubPage() {
                         onClick={() => navigate('/writing/ai-teachers/records')}
                     >
                         <span style={{ fontSize: '24px' }}>📂</span>
-                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{lang === 'zh' ? '服务记录' : 'Service Records'}</div>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub?.teachersHub?.recordsTitle || 'Service Records'}</div>
                         <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                            {lang === 'zh' ? '回顾所有作文批改与 AI 解析' : 'Review past corrections and AI lessons'}
+                            {t.writingHub?.teachersHub?.recordsDesc || 'Review past corrections and AI lessons'}
                         </div>
                     </button>
                 </div>

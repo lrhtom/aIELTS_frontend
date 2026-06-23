@@ -8,13 +8,14 @@ interface AppNavbarProps {
     onToggleSidebar?: () => void;
     pageTitle?: React.ReactNode;
     pageSubtitle?: React.ReactNode;
+    titleAction?: React.ReactNode;
     backUrl?: string;
     onBack?: () => void;
     backText?: string;
     headerRight?: React.ReactNode;
 }
 
-export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, backUrl, onBack, backText, headerRight }: AppNavbarProps) {
+export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, titleAction, backUrl, onBack, backText, headerRight }: AppNavbarProps) {
     const { translations: t } = useLang();
     const { user } = useAuth();
     const location = useLocation();
@@ -104,9 +105,12 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ba
                 {isHome ? (
                     <Link to="/" className="navbar-logo"><span>aIELTS</span></Link>
                 ) : (
-                    (pageTitle || pageSubtitle) && (
+                    (pageTitle || pageSubtitle || titleAction) && (
                         <div className="navbar-title-group">
-                            {pageTitle && <h1 className="navbar-page-title">{pageTitle}</h1>}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {pageTitle && <h1 className="navbar-page-title">{pageTitle}</h1>}
+                                {titleAction && <div className="navbar-title-action">{titleAction}</div>}
+                            </div>
                             {pageSubtitle && <span className="navbar-page-subtitle">{pageSubtitle}</span>}
                         </div>
                     )

@@ -74,11 +74,7 @@ export default function UserFeedback() {
     }
 
     return (
-        <div className="user-feedback">
-            <div className="feedback-header">
-                <h2>🐛 {t.profile.feedback.title}</h2>
-                <p className="feedback-subtitle">{t.profile.feedback.desc}</p>
-            </div>
+        <div className="user-feedback" style={{paddingTop: '20px'}}>
 
             <form className="feedback-form" onSubmit={handleSubmit}>
                 <div className="form-group">

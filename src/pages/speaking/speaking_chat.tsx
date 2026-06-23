@@ -1041,7 +1041,9 @@ function SpeakingChatPage() {
                 </div>
 
                 <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid var(--color-border)', marginBottom: '1rem' }}>
-                    <AiModelSelector label="当前模型" description="" />
+                    <div className="control-group">
+                        <AiModelSelector label={translations[lang].components.aiModel.label} description="" />
+                    </div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: 'var(--color-text-secondary)', marginTop: '1rem' }}>
                         <input type="checkbox" checked={showTimer} onChange={e => setShowTimer(e.target.checked)} />
                         在录音时显示计时器

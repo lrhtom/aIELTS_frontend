@@ -247,6 +247,7 @@ export interface Translations {
         ieltsPart: {
             title: string;
             lockedHint: string;
+            fullTestHint: string;
             parts: {
                 part1: { title: string; desc: string };
                 part2: { title: string; desc: string };
@@ -348,6 +349,38 @@ export interface Translations {
         perspective: {
             title: string;
             desc: string;
+        };
+        teachersHub: {
+            pageTitle: string;
+            pageSubtitle: string;
+            task1Title: string;
+            task1Desc: string;
+            task2Title: string;
+            task2Desc: string;
+            recordsTitle: string;
+            recordsDesc: string;
+        };
+        records: {
+            pageTitle: string;
+            pageSubtitle: string;
+            backToHub: string;
+            searchPlaceholder: string;
+            allTypes: string;
+            loading: string;
+            empty: string;
+            deleteConfirm: string;
+            deleteSuccess: string;
+            deleteFail: string;
+            loadFail: string;
+            error: string;
+            viewerNotSupported: string;
+            serviceTypes: {
+                correction: string;
+                task1_teacher: string;
+                task2_teacher: string;
+                opinion_drill: string;
+                typing_chat: string;
+            };
         };
     };
     writingPerspective: {
@@ -660,6 +693,61 @@ export interface Translations {
         };
         movedMessage: string;
         goToProfile: string;
+    };
+    prompts: {
+        pageTitle: string;
+        pageSubtitle: string;
+        backToPractice: string;
+        badges: {
+            community: string;
+            likeAndFav: string;
+            copy: string;
+        };
+        tabs: {
+            community: string;
+            create: string;
+        };
+        community: {
+            totalCount: string;
+            sortLatest: string;
+            sortPopular: string;
+            emptyTitle: string;
+            untitled: string;
+            copyBtn: string;
+            copiedBtn: string;
+            anonymous: string;
+        };
+        pagination: {
+            first: string;
+            prev: string;
+            next: string;
+            last: string;
+            goto: string;
+            page: string;
+            goBtn: string;
+        };
+        create: {
+            title: string;
+            subtitle: string;
+            promptTitle: string;
+            promptTitlePlaceholder: string;
+            promptContent: string;
+            promptContentPlaceholder: string;
+            publishAs: string;
+            anonymousAs: string;
+            publishBtn: string;
+            publishingBtn: string;
+        };
+        toast: {
+            fetchFailed: string;
+            actionFailed: string;
+            copied: string;
+            emptyTitle: string;
+            emptyContent: string;
+            publishSuccess: string;
+            publishFailed: string;
+            invalidPage: string;
+        };
     };
     profile: {
         goals: {

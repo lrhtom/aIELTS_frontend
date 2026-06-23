@@ -98,45 +98,62 @@ export default function FlashcardMode({
                     </div>
 
                     <div className="fc-face fc-face--back">
-                        <div className="fc-back-word">
-                            {currentCard.word}
-                            <button
-                                type="button"
-                                className="fc-speak-btn fc-speak-btn--inline"
-                                onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                                aria-label="朗读发音"
-                            ><Volume2 size={18} /></button>
+                        <div className="fc-back-header">
+                            <div className="fc-back-word-group">
+                                <h3 className="fc-back-word">{currentCard.word}</h3>
+                                <button
+                                    type="button"
+                                    className="fc-speak-btn fc-speak-btn--inline"
+                                    onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
+                                    aria-label="朗读发音"
+                                ><Volume2 size={18} /></button>
+                            </div>
+                            {currentCard.phonetic && (
+                                <div className="fc-phonetic-back">{currentCard.phonetic}</div>
+                            )}
                         </div>
-                        {currentCard.phonetic && (
-                            <div className="fc-phonetic">{currentCard.phonetic}</div>
-                        )}
-                        <div className="fc-meaning">{currentCard.zh}</div>
-                        {currentCard.grammar && (
-                            <div className="fc-grammar">{currentCard.grammar}</div>
-                        )}
-                        {currentCard.definitions && currentCard.definitions.length > 0 && (
-                            <div className="fc-definitions">
-                                {currentCard.definitions.map((d, i) => (
-                                    <div key={i} className="fc-def-item">
-                                        {d.pos && <span className="fc-def-pos">{d.pos}</span>}
-                                        <span className="fc-def-meaning">{d.meaning}</span>
+
+                        <div className="fc-back-body">
+                            {currentCard.definitions && currentCard.definitions.length > 0 ? (
+                                <div className="fc-definitions-rich">
+                                    {currentCard.definitions.map((d, i) => (
+                                        <div key={i} className="fc-def-row">
+                                            {d.pos && <span className="fc-pos-badge" data-pos={d.pos.replace('.', '').toLowerCase()}>{d.pos}</span>}
+                                            <span className="fc-def-text">{d.meaning}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="fc-definitions-rich">
+                                    <div className="fc-def-row">
+                                        {currentCard.grammar && (
+                                            <span className="fc-pos-badge" data-pos={currentCard.grammar.replace('.', '').toLowerCase()}>
+                                                {currentCard.grammar}
+                                            </span>
+                                        )}
+                                        <span className="fc-def-text">{currentCard.zh}</span>
                                     </div>
-                                ))}
+                                </div>
+                            )}
+
+                            {currentCard.examples && currentCard.examples.length > 0 && (
+                                <div className="fc-examples-rich">
+                                    {currentCard.examples.map((ex, i) => (
+                                        <div key={i} className="fc-example-card">
+                                            <div className="fc-example-en">{ex.en}</div>
+                                            {ex.zh && <div className="fc-example-zh">{ex.zh}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="fc-back-footer">
+                            <div className="fc-state-pill">
+                                <span className="fc-state-dot" data-state={currentCard.state}></span>
+                                <span>{STATE_LABELS[currentCard.state]}</span>
+                                {currentCard.stability > 0 && <span className="fc-stability">· {t.vocab.stability} {currentCard.stability.toFixed(1)}</span>}
                             </div>
-                        )}
-                        {currentCard.examples && currentCard.examples.length > 0 && (
-                            <div className="fc-examples">
-                                {currentCard.examples.map((ex, i) => (
-                                    <div key={i} className="fc-example-item">
-                                        <div className="fc-example-en">{ex.en}</div>
-                                        {ex.zh && <div className="fc-example-zh">{ex.zh}</div>}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="fc-state-label">
-                            {STATE_LABELS[currentCard.state]}
-                            {currentCard.stability > 0 && ` · ${t.vocab.stability} ${currentCard.stability.toFixed(1)}`}
                         </div>
                     </div>
                 </div>

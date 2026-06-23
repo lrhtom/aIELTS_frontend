@@ -102,207 +102,158 @@ export default function ListeningConfig() {
     backUrl='/practice/ai'
     backText={t.backToAI}
 >
-            <div className="config-page-wrap listening-config bento-page-wrap">
-                <div className="reading-config-bento">
-                    {/* ── 左侧列：核心词汇区 ── */}
-                    <div className="bento-col-left">
-                        <div className="config-card bento-card-glass vocab-card">
-                            <div className="toggle-row">
-                                <div>
-                                    <div className="label-text">{t.customVocab.label}</div>
-                                    <div className="label-desc">{t.customVocab.desc}</div>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={useCustomVocab}
-                                        onChange={(e) => setUseCustomVocab(e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </div>
+            <div className="uc-console">
+                {/* ── 1. 左侧：模式切换列 (Sidebar) ── */}
+                <div className="uc-sidebar">
+                    <div className="uc-sidebar-title">{t.practiceType.label}</div>
+                    <nav className="uc-sidebar-nav">
+                        <button className={`uc-nav-item ${practiceType === 'article' ? 'active' : ''}`} onClick={() => setPracticeType('article')}>
+                            <span className="nav-icon">📄</span><span className="nav-text">{t.practiceType.article.title}</span>
+                        </button>
+                        <button className={`uc-nav-item ${practiceType === 'sentence' ? 'active' : ''}`} onClick={() => setPracticeType('sentence')}>
+                            <span className="nav-icon">✏️</span><span className="nav-text">{t.practiceType.sentence.title}</span>
+                        </button>
+                        <button className={`uc-nav-item ${practiceType === 'multiple_choice' ? 'active' : ''}`} onClick={() => setPracticeType('multiple_choice')}>
+                            <span className="nav-icon">🎯</span><span className="nav-text">{t.practiceType.multipleChoice.title}</span>
+                        </button>
+                        <button className={`uc-nav-item ${practiceType === 'map' ? 'active' : ''}`} onClick={() => setPracticeType('map')}>
+                            <span className="nav-icon">🗺️</span><span className="nav-text">{t.practiceType.mapLabelling.title}</span>
+                        </button>
+                    </nav>
+                </div>
 
-                            {useCustomVocab && (
-                                <div className="vocab-content-wrap">
-                                    {plans.length > 0 && (
-                                        <div className="plan-import-row">
-                                            <select
-                                                className="plan-import-select"
-                                                value={importPlanId}
-                                                onChange={e => setImportPlanId(Number(e.target.value))}
-                                            >
-                                                {plans.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                className="plan-import-btn"
-                                                onClick={handleImportPlan}
-                                                disabled={importingPlan}
-                                            >
-                                                {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
-                                            </button>
-                                        </div>
-                                    )}
-                                    <div className="vocab-textarea-container">
-                                        <VocabInput
-                                            value={vocabInput}
-                                            onChange={handleVocabChange}
-                                            className="h-full"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                {/* ── 2. 右侧：配置明细区 (Main Content) ── */}
+                <div className="uc-main-content">
+                    <div className="uc-main-header">
+                        <h2>
+                            {practiceType === 'article' ? t.practiceType.article.title :
+                             practiceType === 'sentence' ? t.practiceType.sentence.title :
+                             practiceType === 'multiple_choice' ? t.practiceType.multipleChoice.title : t.practiceType.mapLabelling.title}
+                        </h2>
+                        <p>
+                            {practiceType === 'article' ? t.practiceType.article.desc :
+                             practiceType === 'sentence' ? t.practiceType.sentence.desc :
+                             practiceType === 'multiple_choice' ? t.practiceType.multipleChoice.desc : t.practiceType.mapLabelling.desc}
+                        </p>
                     </div>
 
-                    {/* ── 右侧列：设置控制区 ── */}
-                    <div className="bento-col-right">
+                    <div className="uc-settings-list">
                         {/* AI Model Selector */}
-                        <div className="config-card bento-card-glass">
-                            <h3>AI 模型 🧠</h3>
-                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>选择后台出题和批改所使用的引擎</div>
-                            <AiModelSelector label="" description="" />
-                        </div>
-
-                        {/* Practice Type */}
-                        <div className="config-card bento-card-glass">
-                            <h3>{t.practiceType.label}</h3>
-                            <div className="practice-type-cards">
-                                <button
-                                    className={`practice-type-card ${practiceType === 'article' ? 'selected' : ''}`}
-                                    onClick={() => setPracticeType('article')}
-                                >
-                                    <span className="pt-icon">📄</span>
-                                    <div className="pt-text">
-                                        <div className="pt-title">{t.practiceType.article.title}</div>
-                                        <div className="pt-desc">{t.practiceType.article.desc}</div>
-                                    </div>
-                                </button>
-                                <button
-                                    className={`practice-type-card ${practiceType === 'sentence' ? 'selected' : ''}`}
-                                    onClick={() => setPracticeType('sentence')}
-                                >
-                                    <span className="pt-icon">✏️</span>
-                                    <div className="pt-text">
-                                        <div className="pt-title">{t.practiceType.sentence.title}</div>
-                                        <div className="pt-desc">{t.practiceType.sentence.desc}</div>
-                                    </div>
-                                </button>
-                                <button
-                                    className={`practice-type-card ${practiceType === 'multiple_choice' ? 'selected' : ''}`}
-                                    onClick={() => setPracticeType('multiple_choice')}
-                                >
-                                    <span className="pt-icon">🎯</span>
-                                    <div className="pt-text">
-                                        <div className="pt-title">{t.practiceType.multipleChoice.title}</div>
-                                        <div className="pt-desc">{t.practiceType.multipleChoice.desc}</div>
-                                    </div>
-                                </button>
-                                <button
-                                    className={`practice-type-card ${practiceType === 'map' ? 'selected' : ''}`}
-                                    onClick={() => setPracticeType('map')}
-                                >
-                                    <span className="pt-icon">🗺️</span>
-                                    <div className="pt-text">
-                                        <div className="pt-title">{t.practiceType.mapLabelling.title}</div>
-                                        <div className="pt-desc">{t.practiceType.mapLabelling.desc}</div>
-                                    </div>
-                                </button>
+                        <div className="uc-list-row">
+                            <div className="uc-row-label">
+                                <span className="row-title">AI 模型</span>
+                                <span className="row-desc">选择后台出题和批改所使用的引擎</span>
+                            </div>
+                            <div className="uc-row-control console-model-selector">
+                                <AiModelSelector label="" description="" />
                             </div>
                         </div>
 
                         {/* Difficulty */}
-                        <div className="config-card bento-card-glass">
-                            <h3>{t.targetScore}</h3>
-                            <div className="difficulty-options">
-                                {DIFFICULTIES.map(d => (
-                                    <button
-                                        key={d}
-                                        className={`difficulty-btn ${difficulty === d ? 'selected' : ''}`}
-                                        onClick={() => setDifficulty(d)}
-                                    >
-                                        {d}
-                                    </button>
-                                ))}
+                        <div className="uc-list-row">
+                            <div className="uc-row-label">
+                                <span className="row-title">{t.targetScore}</span>
+                            </div>
+                            <div className="uc-row-control">
+                                <div className="uc-segmented-control">
+                                    {DIFFICULTIES.map(d => (
+                                        <button key={d} className={`seg-btn ${difficulty === d ? 'active' : ''}`} onClick={() => setDifficulty(d)}>
+                                            {d}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
                         {/* Word Count Range */}
                         {practiceType !== 'multiple_choice' && practiceType !== 'map' && (
-                            <div className="config-card bento-card-glass">
-                                <h3>{t.wordCount.label}</h3>
-                                <div className="wc-dual-sliders">
+                            <div className="uc-list-row uc-row-vertical">
+                                <div className="uc-row-label-flex">
+                                    <span className="row-title">{t.wordCount.label}</span>
+                                    <span className="row-desc" style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                                        {wordCountMin === wordCountMax
+                                            ? t.wordCount.hintExact.replace('{n}', String(wordCountMin))
+                                            : t.wordCount.hintRange.replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
+                                    </span>
+                                </div>
+                                <div className="wc-dual-sliders" style={{ padding: '8px 0', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', padding: '16px' }}>
                                     <div className="wc-slider-row">
                                         <span className="wc-slider-label">{t.wordCount.min}</span>
                                         <div className="wc-slider-track-wrap">
-                                            <input
-                                                type="range"
-                                                className="wc-single-range"
-                                                min={1} max={3} step={1}
-                                                value={wordCountMin}
+                                            <input type="range" className="wc-single-range" min={1} max={3} step={1} value={wordCountMin}
                                                 style={{ '--pct': `${((wordCountMin - 1) / 2) * 100}%` } as React.CSSProperties}
-                                                onChange={e => handleMinChange(Number(e.target.value))}
-                                            />
+                                                onChange={e => handleMinChange(Number(e.target.value))} />
                                             <div className="wc-ticks">
-                                                {[1, 2, 3].map(n => (
-                                                    <span key={n} className={`wc-tick${n <= wordCountMin ? ' active' : ''}`}>{n}</span>
-                                                ))}
+                                                {[1, 2, 3].map(n => <span key={n} className={`wc-tick${n <= wordCountMin ? ' active' : ''}`}>{n}</span>)}
                                             </div>
                                         </div>
                                         <span className="wc-val-badge">{wordCountMin}</span>
                                     </div>
-                                    <div className="wc-slider-row">
+                                    <div className="wc-slider-row" style={{ marginTop: '12px' }}>
                                         <span className="wc-slider-label">{t.wordCount.max}</span>
                                         <div className="wc-slider-track-wrap">
-                                            <input
-                                                type="range"
-                                                className="wc-single-range"
-                                                min={1} max={3} step={1}
-                                                value={wordCountMax}
+                                            <input type="range" className="wc-single-range" min={1} max={3} step={1} value={wordCountMax}
                                                 style={{ '--pct': `${((wordCountMax - 1) / 2) * 100}%` } as React.CSSProperties}
-                                                onChange={e => handleMaxChange(Number(e.target.value))}
-                                            />
+                                                onChange={e => handleMaxChange(Number(e.target.value))} />
                                             <div className="wc-ticks">
-                                                {[1, 2, 3].map(n => (
-                                                    <span key={n} className={`wc-tick${n <= wordCountMax ? ' active' : ''}`}>{n}</span>
-                                                ))}
+                                                {[1, 2, 3].map(n => <span key={n} className={`wc-tick${n <= wordCountMax ? ' active' : ''}`}>{n}</span>)}
                                             </div>
                                         </div>
                                         <span className="wc-val-badge">{wordCountMax}</span>
                                     </div>
                                 </div>
-                                <p className="wc-hint">
-                                    {wordCountMin === wordCountMax
-                                        ? t.wordCount.hintExact.replace('{n}', String(wordCountMin))
-                                        : t.wordCount.hintRange.replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
-                                </p>
                             </div>
                         )}
 
                         {/* Absurd Mode Toggle */}
-                        <div className="config-card bento-card-glass">
-                            <div className="toggle-row">
-                                <div>
-                                    <div className="label-text">{t.absurdMode.label}</div>
-                                    <div className="label-desc">{t.absurdMode.desc}</div>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={absurdMode}
-                                        onChange={(e) => setAbsurdMode(e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
+                        <div className="uc-list-row">
+                            <div className="uc-row-label">
+                                <span className="row-title">{t.absurdMode.label}</span>
+                                <span className="row-desc">{t.absurdMode.desc}</span>
+                            </div>
+                            <div className="uc-row-control">
+                                <label className="toggle-switch-console">
+                                    <input type="checkbox" checked={absurdMode} onChange={e => setAbsurdMode(e.target.checked)} />
+                                    <span className="toggle-slider-console" />
                                 </label>
                             </div>
                         </div>
+
+                        {/* Vocab Accordion */}
+                        <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`}>
+                            <div className="uc-list-row" style={{ borderBottom: 'none' }}>
+                                <div className="uc-row-label">
+                                    <span className="row-title">{t.customVocab.label}</span>
+                                    <span className="row-desc">{t.customVocab.desc}</span>
+                                </div>
+                                <div className="uc-row-control">
+                                    <label className="toggle-switch-console">
+                                        <input type="checkbox" checked={useCustomVocab} onChange={e => setUseCustomVocab(e.target.checked)} />
+                                        <span className="toggle-slider-console" />
+                                    </label>
+                                </div>
+                            </div>
+                            {useCustomVocab && (
+                                <div className="uc-vocab-body">
+                                    {plans.length > 0 && (
+                                        <div className="uc-vocab-toolbar">
+                                            <select className="console-select" value={importPlanId} onChange={e => setImportPlanId(Number(e.target.value))}>
+                                                {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                            </select>
+                                            <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
+                                                {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
+                                            </button>
+                                        </div>
+                                    )}
+                                    <VocabInput value={vocabInput} onChange={handleVocabChange} />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    {/* ── 底部栏：全宽按钮 ── */}
-                    <div className="bento-bottom">
-                        <button className="premium-start-btn" style={{ background: 'linear-gradient(135deg, #f97316, #f59e0b)', boxShadow: '0 8px 24px rgba(249, 115, 22, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)' }} onClick={handleStart}>
-                            <span className="btn-icon">🎧</span> {t.startBtn}
+                    <div className="uc-console-footer">
+                        <button className="uc-console-start-btn" onClick={handleStart}>
+                            🎧 {t.startBtn}
                         </button>
                     </div>
                 </div>

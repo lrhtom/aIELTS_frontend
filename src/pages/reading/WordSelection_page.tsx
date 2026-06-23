@@ -92,155 +92,146 @@ export default function WordSelection_page() {
     backUrl='/practice/ai'
     backText={t.backToAI}
 >
-            <div className="config-page-wrap reading-config bento-page-wrap">
-                <div className="reading-config-bento">
-                    {/* ── 左侧列：核心词汇区 ── */}
-                    <div className="bento-col-left">
-                        <div className="config-card bento-card-glass vocab-card">
-                            <div className="toggle-row">
-                                <div>
-                                    <div className="label-text">{t.customVocab.label}</div>
-                                    <div className="label-desc">{t.customVocab.desc}</div>
+            <div className="uc-console">
+                {/* ── 1. 左侧：模式切换列 (Sidebar) ── */}
+                <div className="uc-sidebar">
+                    <div className="uc-sidebar-title">{t.questionType.label}</div>
+                    <nav className="uc-sidebar-nav">
+                        <button
+                            type="button"
+                            className={`uc-nav-item ${questionType === 'multiple_choice' ? 'active' : ''}`}
+                            onClick={() => setQuestionType('multiple_choice')}
+                        >
+                            <span className="nav-icon">🎯</span>
+                            <span className="nav-text">{t.questionType.multipleChoice.title}</span>
+                        </button>
+                        <button
+                            type="button"
+                            className={`uc-nav-item ${questionType === 'true_false' ? 'active' : ''}`}
+                            onClick={() => setQuestionType('true_false')}
+                        >
+                            <span className="nav-icon">✅</span>
+                            <span className="nav-text">{t.questionType.trueFalse.title}</span>
+                        </button>
+                    </nav>
+                </div>
+
+                {/* ── 2. 右侧：配置明细区 (Main Content) ── */}
+                <div className="uc-main-content">
+                    <div className="uc-main-header">
+                        <h2>{questionType === 'multiple_choice' ? t.questionType.multipleChoice.title : t.questionType.trueFalse.title}</h2>
+                        <p>{questionType === 'multiple_choice' ? t.questionType.multipleChoice.desc : t.questionType.trueFalse.desc}</p>
+                    </div>
+
+                    <div className="uc-settings-list">
+                        {/* AI Model */}
+                        <div className="uc-list-row">
+                            <div className="uc-row-label">
+                                <span className="row-title">AI 模型</span>
+                                <span className="row-desc">选择后台出题和批改所使用的引擎</span>
+                            </div>
+                            <div className="uc-row-control console-model-selector">
+                                <AiModelSelector label="" description="" />
+                            </div>
+                        </div>
+
+                        {/* Difficulty */}
+                        <div className="uc-list-row">
+                            <div className="uc-row-label">
+                                <span className="row-title">{t.targetScore}</span>
+                            </div>
+                            <div className="uc-row-control">
+                                <div className="uc-segmented-control">
+                                    {DIFFICULTIES.map(d => (
+                                        <button
+                                            key={d}
+                                            className={`seg-btn ${difficulty === d ? 'active' : ''}`}
+                                            onClick={() => setDifficulty(d)}
+                                        >
+                                            {d}
+                                        </button>
+                                    ))}
                                 </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={useCustomVocab}
-                                        onChange={(e) => setUseCustomVocab(e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
+                            </div>
+                        </div>
+
+                        {/* Judgement Mode (only for true_false) */}
+                        {questionType === 'true_false' && (
+                            <div className="uc-list-row">
+                                <div className="uc-row-label">
+                                    <span className="row-title">{t.judgementMode.label}</span>
+                                </div>
+                                <div className="uc-row-control">
+                                    <div className="uc-segmented-control">
+                                        <button
+                                            className={`seg-btn ${judgementMode === 'easy' ? 'active' : ''}`}
+                                            onClick={() => setJudgementMode('easy')}
+                                        >
+                                            {t.judgementMode.easy.title}
+                                        </button>
+                                        <button
+                                            className={`seg-btn ${judgementMode === 'normal' ? 'active' : ''}`}
+                                            onClick={() => setJudgementMode('normal')}
+                                        >
+                                            {t.judgementMode.normal.title}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Absurd Mode Toggle */}
+                        <div className="uc-list-row">
+                            <div className="uc-row-label">
+                                <span className="row-title">{t.absurdMode.label}</span>
+                                <span className="row-desc">{t.absurdMode.desc}</span>
+                            </div>
+                            <div className="uc-row-control">
+                                <label className="toggle-switch-console">
+                                    <input type="checkbox" checked={absurdMode} onChange={e => setAbsurdMode(e.target.checked)} />
+                                    <span className="toggle-slider-console" />
                                 </label>
                             </div>
+                        </div>
 
+                        {/* Vocab Accordion */}
+                        <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`}>
+                            <div className="uc-list-row" style={{ borderBottom: 'none' }}>
+                                <div className="uc-row-label">
+                                    <span className="row-title">{t.customVocab.label}</span>
+                                    <span className="row-desc">{t.customVocab.desc}</span>
+                                </div>
+                                <div className="uc-row-control">
+                                    <label className="toggle-switch-console">
+                                        <input type="checkbox" checked={useCustomVocab} onChange={e => setUseCustomVocab(e.target.checked)} />
+                                        <span className="toggle-slider-console" />
+                                    </label>
+                                </div>
+                            </div>
                             {useCustomVocab && (
-                                <div className="vocab-content-wrap">
+                                <div className="uc-vocab-body">
                                     {plans.length > 0 && (
-                                        <div className="plan-import-row">
-                                            <select
-                                                className="plan-import-select"
-                                                value={importPlanId}
-                                                onChange={e => setImportPlanId(Number(e.target.value))}
-                                            >
-                                                {plans.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                ))}
+                                        <div className="uc-vocab-toolbar">
+                                            <select className="console-select" value={importPlanId} onChange={e => setImportPlanId(Number(e.target.value))}>
+                                                {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                             </select>
-                                            <button
-                                                className="plan-import-btn"
-                                                onClick={handleImportPlan}
-                                                disabled={importingPlan}
-                                            >
+                                            <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
                                                 {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
                                             </button>
                                         </div>
                                     )}
-                                    <div className="vocab-textarea-container">
-                                        <VocabInput
-                                            value={vocabInput}
-                                            onChange={handleVocabChange}
-                                            className="h-full"
-                                        />
-                                    </div>
+                                    <VocabInput value={vocabInput} onChange={handleVocabChange} />
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* ── 右侧列：设置控制区 ── */}
-                    <div className="bento-col-right">
-                        {/* AI Model */}
-                        <div className="config-card bento-card-glass">
-                            <h3>AI 模型 🧠</h3>
-                            <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>选择后台出题和批改所使用的引擎</div>
-                            <AiModelSelector label="" description="" />
-                        </div>
-
-                        {/* Difficulty */}
-                        <div className="config-card bento-card-glass">
-                            <h3>{t.targetScore}</h3>
-                            <div className="difficulty-options">
-                                {DIFFICULTIES.map(d => (
-                                    <button
-                                        key={d}
-                                        className={`difficulty-btn ${difficulty === d ? 'selected' : ''}`}
-                                        onClick={() => setDifficulty(d)}
-                                    >
-                                        {d}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Question Type */}
-                        <div className="config-card bento-card-glass">
-                            <h3>{t.questionType.label}</h3>
-                            <div className="reading-mode-grid">
-                                <button
-                                    type="button"
-                                    className={`reading-mode-card ${questionType === 'multiple_choice' ? 'active' : ''}`}
-                                    onClick={() => setQuestionType('multiple_choice')}
-                                >
-                                    <div className="reading-mode-card-title">{t.questionType.multipleChoice.title}</div>
-                                    <div className="reading-mode-card-desc">{t.questionType.multipleChoice.desc}</div>
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`reading-mode-card ${questionType === 'true_false' ? 'active' : ''}`}
-                                    onClick={() => setQuestionType('true_false')}
-                                >
-                                    <div className="reading-mode-card-title">{t.questionType.trueFalse.title}</div>
-                                    <div className="reading-mode-card-desc">{t.questionType.trueFalse.desc}</div>
-                                </button>
-                            </div>
-                        </div>
-
-                        {questionType === 'true_false' && (
-                            <div className="config-card bento-card-glass">
-                                <h3>{t.judgementMode.label}</h3>
-                                <div className="reading-mode-grid">
-                                    <button
-                                        type="button"
-                                        className={`reading-mode-card ${judgementMode === 'easy' ? 'active' : ''}`}
-                                        onClick={() => setJudgementMode('easy')}
-                                    >
-                                        <div className="reading-mode-card-title">{t.judgementMode.easy.title}</div>
-                                        <div className="reading-mode-card-desc">{t.judgementMode.easy.desc}</div>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`reading-mode-card ${judgementMode === 'normal' ? 'active' : ''}`}
-                                        onClick={() => setJudgementMode('normal')}
-                                    >
-                                        <div className="reading-mode-card-title">{t.judgementMode.normal.title}</div>
-                                        <div className="reading-mode-card-desc">{t.judgementMode.normal.desc}</div>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Absurd Mode */}
-                        <div className="config-card bento-card-glass">
-                            <div className="toggle-row">
-                                <div>
-                                    <div className="label-text">{t.absurdMode.label}</div>
-                                    <div className="label-desc">{t.absurdMode.desc}</div>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={absurdMode}
-                                        onChange={(e) => setAbsurdMode(e.target.checked)}
-                                    />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ── 底部栏：全宽按钮 ── */}
-                    <div className="bento-bottom">
-                        <button className="premium-start-btn" onClick={handleStart}>
-                            <span className="btn-icon">📖</span> {t.startBtn}
+                    <div className="uc-console-footer">
+                        <button
+                            className="uc-console-start-btn"
+                            onClick={handleStart}
+                        >
+                            📖 {t.startBtn}
                         </button>
                     </div>
                 </div>
@@ -248,3 +239,6 @@ export default function WordSelection_page() {
     </Layout>
     );
 }
+ 
+// force reload
+

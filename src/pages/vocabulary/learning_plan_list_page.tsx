@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
@@ -252,27 +252,24 @@ export default function LearningPlanListPage() {
 
     return (
         <Layout
-    pageTitle={t.vocab.plans.title}
-    pageSubtitle={t.vocab.plans.subtitle}
-    backUrl='/vocabulary'
-    backText={`${t.common.back} ${t.vocab.hub.title}`}
->
-            <div className="config-page-wrap" style={{ maxWidth: 760 }}>
-                {/* ── Header ── */}
-                <div className="lp-list-header">
-                    <div className="lp-list-header-text">
-                        <h2>{t.vocab.plans.title}</h2>
-                        <p>{t.vocab.plans.subtitle}</p>
-                    </div>
-                    <button
-                        className={`lp-new-btn${canCreate ? '' : ' disabled'}`}
-                        onClick={() => canCreate && setModal({ name: '', daily_count: 20, entry_mode: 'word' })}
-                        disabled={!canCreate}
-                        title={!canCreate ? t.vocab.plans.maxPlansHint.replace('{n}', String(MAX_PLANS)) : t.vocab.plans.newPlan}
-                    >
-                        + {t.vocab.plans.newPlan}
-                    </button>
-                </div>
+            pageTitle={t.vocab.plans.title}
+            pageSubtitle={t.vocab.plans.subtitle}
+            backUrl='/vocabulary'
+            backText={`${t.common.back} ${t.vocab.hub.title}`}
+            titleAction={
+                <button
+                    className={`lp-new-btn${canCreate ? '' : ' disabled'}`}
+                    style={{ padding: '4px 10px', fontSize: '13px', borderRadius: '8px', minHeight: 'unset', height: 'fit-content' }}
+                    onClick={() => canCreate && setModal({ name: '', daily_count: 20, entry_mode: 'word' })}
+                    disabled={!canCreate}
+                    title={!canCreate ? t.vocab.plans.maxPlansHint.replace('{n}', String(MAX_PLANS)) : t.vocab.plans.newPlan}
+                >
+                    + {t.vocab.plans.newPlan}
+                </button>
+            }
+        >
+            <div className="config-page-wrap" style={{ maxWidth: 760, paddingTop: '20px' }}>
+
 
                 {/* ── Plan list ── */}
                 {loading ? (
