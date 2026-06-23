@@ -1,16 +1,11 @@
 import Layout from '../components/layout/Layout';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { listAIQuestions, deleteAIQuestion, type AIQuestionSkill, type AIQuestionSummary } from '../api/ai_question';
 import { showToast } from '../components/common/Toast';
-import { Trash } from 'lucide-react';
+import { useLang } from '../i18n/LanguageContext';
+import { translations } from '../i18n/translations';
 import '../styles/ai_bank.css';
-
-const SKILL_TABS: { key: AIQuestionSkill; label: string; emoji: string }[] = [
-    { key: 'listening', label: '听力', emoji: '🎧' },
-    { key: 'reading',   label: '阅读', emoji: '📖' },
-    { key: 'writing',   label: '写作', emoji: '✍️' },
-];
 
 function resolveAnswerRoute(item: AIQuestionSummary): string {
     const id = item.id;
@@ -43,8 +38,16 @@ function formatDate(value: string | null): string {
 
 export default function AIBankPage() {
     const navigate = useNavigate();
+    const { lang } = useLang();
+    const t = translations[lang].aiBank;
     const [searchParams] = useSearchParams();
     const justId = searchParams.get('just');
+
+    const SKILL_TABS: { key: AIQuestionSkill; label: string; emoji: string }[] = [
+        { key: 'listening', label: t.tabs.listening, emoji: '🎧' },
+        { key: 'reading',   label: t.tabs.reading,   emoji: '📖' },
+        { key: 'writing',   label: t.tabs.writing,   emoji: '✍️' },
+    ];
 
     const [activeSkill, setActiveSkill] = useState<AIQuestionSkill>(() => {
         const stored = sessionStorage.getItem('ai_bank_active_skill');
@@ -60,10 +63,10 @@ export default function AIBankPage() {
         setLoading(true);
         listAIQuestions({ skill: activeSkill })
             .then(r => { if (!cancelled) setItems(r.items); })
-            .catch(() => { if (!cancelled) showToast('题库加载失败', 'error'); })
+            .catch(() => { if (!cancelled) showToast(t.loadFail, 'error'); })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
-    }, [activeSkill]);
+    }, [activeSkill, t.loadFail]);
 
     const sortedItems = useMemo(() => {
         const just = justId ? Number(justId) : NaN;
@@ -79,22 +82,23 @@ export default function AIBankPage() {
 
     const handleDelete = async (e: React.MouseEvent, item: AIQuestionSummary) => {
         e.stopPropagation();
-        if (!confirm(`删除「${item.title || '该题目'}」吗？删除后无法恢复。`)) return;
+        const title = item.title || t.untitled;
+        if (!confirm(t.deleteConfirm.replace('{title}', title))) return;
         try {
             await deleteAIQuestion(item.id);
             setItems(prev => prev.filter(it => it.id !== item.id));
-            showToast('已删除', 'success');
+            showToast(t.deleteSuccess, 'success');
         } catch {
-            showToast('删除失败', 'error');
+            showToast(t.deleteFail, 'error');
         }
     };
 
     return (
         <Layout
             backUrl="/practice/ai"
-            backText="返回 AI 练习"
-            pageTitle="AI 题库"
-            pageSubtitle="已生成的听 / 读 / 写题目都会保存在这里，随时复做。"
+            backText={t.backToAI}
+            pageTitle={t.pageTitle}
+            pageSubtitle={t.pageSubtitle}
         >
             <div className="ai-bank-wrap" style={{ paddingTop: '16px' }}>
                 <div className="ai-bank-tabs" role="tablist">
@@ -117,11 +121,11 @@ export default function AIBankPage() {
                 </div>
 
                 {loading ? (
-                    <div className="ai-bank-empty">加载中…</div>
+                    <div className="ai-bank-empty">{t.loading}</div>
                 ) : sortedItems.length === 0 ? (
                     <div className="ai-bank-empty">
-                        <div className="ai-bank-empty-title">还没有 {SKILL_TABS.find(t => t.key === activeSkill)?.label} 题目</div>
-                        <div className="ai-bank-empty-hint">先去生成一份吧。</div>
+                        <div className="ai-bank-empty-title">{t.emptyTitle.replace('{label}', SKILL_TABS.find(tab => tab.key === activeSkill)?.label || '')}</div>
+                        <div className="ai-bank-empty-hint">{t.emptyHint}</div>
                     </div>
                 ) : (
                     <div className="ai-bank-grid">
@@ -135,22 +139,22 @@ export default function AIBankPage() {
                                 >
                                     <div className="ai-bank-card-head">
                                         <span className={`ai-bank-status ${item.isAnswered ? (isRedone(item) ? 'redone' : 'answered') : 'pending'}`}>
-                                            {item.isAnswered ? (isRedone(item) ? '已重做' : '已作答') : '未作答'}
+                                            {item.isAnswered ? (isRedone(item) ? t.statusRedone : t.statusAnswered) : t.statusPending}
                                         </span>
                                         {item.subtype && <span className="ai-bank-subtype">{item.subtype}</span>}
                                     </div>
-                                    <div className="ai-bank-card-title">{item.title || '（未命名题目）'}</div>
+                                    <div className="ai-bank-card-title">{item.title || t.unnamedFallback}</div>
                                     <div className="ai-bank-card-meta">
-                                        <span>生成于 {formatDate(item.createdAt)}</span>
-                                        {item.lastAttemptAt && <span>· 上次作答 {formatDate(item.lastAttemptAt)}</span>}
+                                        <span>{t.generatedAt.replace('{time}', formatDate(item.createdAt))}</span>
+                                        {item.lastAttemptAt && <span>{t.lastAttemptAt.replace('{time}', formatDate(item.lastAttemptAt))}</span>}
                                     </div>
                                     <button
                                         type="button"
                                         className="ai-bank-card-delete"
                                         onClick={(e) => handleDelete(e, item)}
-                                        aria-label="删除题目"
+                                        aria-label={t.deleteAriaLabel}
                                     >
-                                        <span>删除</span>
+                                        <span>{t.deleteBtn}</span>
                                     </button>
                                 </div>
                             );

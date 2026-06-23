@@ -491,7 +491,7 @@ function ScheduledDistLine({ data, maxCount, t, onDayClick }: { data: ScheduledB
         setTip({ x: ev.clientX, y: ev.clientY, lines: [
             `${formatDayLabel(d.days, t)} · ${dateStr}`, 
             `${d.count} ${t.wordsUnit}`,
-            t.clickToViewDetails || '点击查看详情'
+            t.clickToViewDetails
         ] });
     }, [t]);
 
@@ -569,7 +569,7 @@ function ScheduledDistBar({ data, maxCount, t, onDayClick }: { data: ScheduledBu
         setTip({ x: ev.clientX, y: ev.clientY, lines: [
             `${formatDayLabel(d.days, t)} · ${dateStr}`, 
             `${d.count} ${t.wordsUnit}`,
-            t.clickToViewDetails || '点击查看详情'
+            t.clickToViewDetails
         ] });
     }, [t]);
 
@@ -800,7 +800,7 @@ function ForgettingCurveChart({ data, t }: { data: { day: number; words: number 
 
 
 /* ── Writing Analytics Components ── */
-import { getWritingAnalytics, type WritingAnalytics } from '../../api/analytics';
+import { getWritingAnalytics, type WritingAnalytics, type WritingSkillsAvg } from '../../api/analytics';
 
 function WritingAnalyticsPanel({ t }: { t: any }) {
     const { lang } = useLang();
@@ -825,11 +825,18 @@ function WritingAnalyticsPanel({ t }: { t: any }) {
     }
 
     if (!data || (data.task1_trend.length === 0 && data.task2_trend.length === 0)) {
-        return <div className="analytics-empty">{t.noData || '暂无写作数据'}</div>;
+        return <div className="analytics-empty">{t.noData}</div>;
     }
 
-    const latestT2 = data.task2_trend[data.task2_trend.length - 1]?.overall;
-    const latestT1 = data.task1_trend[data.task1_trend.length - 1]?.overall;
+    const validTask2Trend = data.task2_trend.filter(d => d.overall > 0);
+    const validTask1Trend = data.task1_trend.filter(d => d.overall > 0);
+
+    if (validTask1Trend.length === 0 && validTask2Trend.length === 0) {
+        return <div className="analytics-empty">{t.noData}</div>;
+    }
+
+    const latestT2 = validTask2Trend.length > 0 ? validTask2Trend[validTask2Trend.length - 1].overall : null;
+    const latestT1 = validTask1Trend.length > 0 ? validTask1Trend[validTask1Trend.length - 1].overall : null;
     const latestScore = latestT2 ?? latestT1 ?? 0;
 
     return (
@@ -837,40 +844,40 @@ function WritingAnalyticsPanel({ t }: { t: any }) {
             <div className="analytics-stats" style={{ marginBottom: '24px', display: 'flex', gap: '16px' }}>
                 <div className="analytics-stat-card" style={{ flex: 1 }}>
                     <span className="analytics-stat-num">{data.total_corrections}</span>
-                    <span className="analytics-stat-label">{t.totalCorrections || '累计批改次数'}</span>
+                    <span className="analytics-stat-label">{t.totalCorrections}</span>
                 </div>
                 <div className="analytics-stat-card" style={{ flex: 1 }}>
                     <span className="analytics-stat-num">{latestScore.toFixed(1)}</span>
-                    <span className="analytics-stat-label">{t.latestScore || '近期得分'}</span>
+                    <span className="analytics-stat-label">{t.latestScore}</span>
                 </div>
             </div>
 
-            {data.task2_trend.length > 0 && (
+            {validTask2Trend.length > 0 && (
                 <div className="analytics-chart-card">
-                    <h3 className="analytics-chart-title">{t.task2Trend || '大作文趋势 (Task 2)'}</h3>
-                    <WritingScoreLineChart data={data.task2_trend} taskLabel={t.task2 || "大作文 (Task 2)"} color="#f59e0b" t={t} targetScore={user?.target_writing || null} />
+                    <h3 className="analytics-chart-title">{t.task2Trend}</h3>
+                    <WritingScoreLineChart data={validTask2Trend} taskLabel={t.task2} color="#f59e0b" t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
                 </div>
             )}
 
-            {data.task1_trend.length > 0 && (
+            {validTask1Trend.length > 0 && (
                 <div className="analytics-chart-card">
-                    <h3 className="analytics-chart-title">{t.task1Trend || '小作文趋势 (Task 1)'}</h3>
-                    <WritingScoreLineChart data={data.task1_trend} taskLabel={t.task1 || "小作文 (Task 1)"} color="#3b82f6" t={t} targetScore={user?.target_writing || null} />
+                    <h3 className="analytics-chart-title">{t.task1Trend}</h3>
+                    <WritingScoreLineChart data={validTask1Trend} taskLabel={t.task1} color="#3b82f6" t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
                 </div>
             )}
 
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                {data.task2_trend.length > 0 && (
+                {validTask2Trend.length > 0 && data.task2_skills_avg && (
                     <div className="analytics-chart-card" style={{ flex: '1 1 300px' }}>
                         <h3 className="analytics-chart-title">{t.skillsAvg.task2}</h3>
-                        <WritingSkillsRadarChart skills={data.task2_skills_avg} t={t} targetScore={user?.target_writing || null} />
+                        <WritingSkillsRadarChart skills={data.task2_skills_avg} t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
                     </div>
                 )}
                 
-                {data.task1_trend.length > 0 && (
+                {validTask1Trend.length > 0 && data.task1_skills_avg && (
                     <div className="analytics-chart-card" style={{ flex: '1 1 300px' }}>
                         <h3 className="analytics-chart-title">{t.skillsAvg.task1}</h3>
-                        <WritingSkillsRadarChart skills={data.task1_skills_avg} t={t} targetScore={user?.target_writing || null} />
+                        <WritingSkillsRadarChart skills={data.task1_skills_avg} t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
                     </div>
                 )}
             </div>
@@ -928,7 +935,7 @@ function WritingScoreLineChart({ data, taskLabel, color, t, targetScore }: { dat
         for (let i = 0; i < xLabelCount; i++) {
             const idx = Math.round((i / (xLabelCount - 1 || 1)) * (data.length - 1));
             // Show only MM-DD to save space or full if few
-            const labelStr = data[idx].date.split(' ')[0]; // just MM-DD
+            const labelStr = (data[idx].date || '').split(' ')[0]; // just MM-DD
             xLabels.push({ idx, label: labelStr, x: getX(idx) });
         }
     }
@@ -942,7 +949,7 @@ function WritingScoreLineChart({ data, taskLabel, color, t, targetScore }: { dat
         const lines: React.ReactNode[] = [
             <div key="date" style={{fontWeight: 'bold', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '4px', marginBottom: '4px'}}>{d.date}</div>,
             <div key="overall" style={{display: 'flex', justifyContent: 'space-between', gap: '16px'}}>
-                <span>Overall:</span> <strong style={{color: color}}>{d.overall.toFixed(1)}</strong>
+                <span>{t.overallScore}:</span> <strong style={{color: color}}>{d.overall.toFixed(1)}</strong>
             </div>
         ];
         if (showTr && d.tr !== null) lines.push(<div key="tr" style={{display: 'flex', justifyContent: 'space-between', gap: '16px'}}><span>TR/TA:</span> <strong style={{color: cTr}}>{d.tr.toFixed(1)}</strong></div>);
@@ -958,7 +965,7 @@ function WritingScoreLineChart({ data, taskLabel, color, t, targetScore }: { dat
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '0.85rem', position: 'relative', zIndex: 1, padding: '0 10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div style={{ width: '12px', height: '3px', backgroundColor: color, borderRadius: '2px' }}></div>
-                    <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>Overall Score</span>
+                    <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>{t.overallScore}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <ChartLegendToggle label="TR/TA" color={cTr} checked={showTr} onChange={() => setShowTr(!showTr)} />
@@ -1029,7 +1036,7 @@ function WritingScoreLineChart({ data, taskLabel, color, t, targetScore }: { dat
     );
 }
 
-function WritingSkillsRadarChart({ skills, t, targetScore }: { skills: WritingAnalytics['skills_avg']; t: any; targetScore?: number | null }) {
+function WritingSkillsRadarChart({ skills, t, targetScore }: { skills: WritingSkillsAvg; t: any; targetScore?: number | null }) {
     const W = 420;
     const H = 360;
     const cx = W / 2;
@@ -1047,7 +1054,8 @@ function WritingSkillsRadarChart({ skills, t, targetScore }: { skills: WritingAn
     const angles = [ -Math.PI/2, 0, Math.PI/2, Math.PI ];
 
     const getPoint = (score: number, index: number) => {
-        const r = (score / maxScore) * radius;
+        const safeScore = (typeof score === 'number' && !isNaN(score)) ? score : 0;
+        const r = (safeScore / maxScore) * radius;
         return {
             x: cx + r * Math.cos(angles[index]),
             y: cy + r * Math.sin(angles[index])
@@ -1114,10 +1122,11 @@ function WritingSkillsRadarChart({ skills, t, targetScore }: { skills: WritingAn
                 const textOffset = 28;
                 const x = cx + (radius + textOffset) * Math.cos(angles[i]);
                 const y = cy + (radius + textOffset) * Math.sin(angles[i]);
+                const displayScore = (typeof d.score === 'number' && !isNaN(d.score)) ? d.score.toFixed(1) : '-';
                 
                 return (
                     <text key={i} x={x} y={y} textAnchor="middle" alignmentBaseline="middle" fontSize="14" fontWeight="600" fill="var(--color-text)">
-                        {d.label} <tspan fill="var(--color-primary)">({d.score.toFixed(1)})</tspan>
+                        {d.label} <tspan fill="var(--color-primary)">({displayScore})</tspan>
                     </text>
                 );
             })}

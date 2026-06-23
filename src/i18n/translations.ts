@@ -160,7 +160,41 @@ export interface Translations {
             title: string;
             desc: string;
         };
+        bank: {
+            title: string;
+            desc: string;
+        };
         comingSoon: string;
+    };
+    aiBank: {
+        pageTitle: string;
+        pageSubtitle: string;
+        backToAI: string;
+        tabs: {
+            listening: string;
+            reading: string;
+            writing: string;
+        };
+        statusPending: string;
+        statusAnswered: string;
+        statusRedone: string;
+        untitled: string;
+        unnamedFallback: string;
+        loading: string;
+        emptyTitle: string;
+        emptyHint: string;
+        generatedAt: string;
+        lastAttemptAt: string;
+        deleteBtn: string;
+        deleteAriaLabel: string;
+        deleteConfirm: string;
+        deleteSuccess: string;
+        deleteFail: string;
+        loadFail: string;
+        toastGeneratedSaved: string;
+        toastMissingContent: string;
+        backToBank: string;
+        redoBtn: string;
     };
     readingConfig: {
         backToAI: string;
@@ -628,6 +662,26 @@ export interface Translations {
         goToProfile: string;
     };
     profile: {
+        goals: {
+            title: string;
+            management: string;
+            desc: string;
+            sectionTitle: string;
+            sectionDesc: string;
+            listening: string;
+            reading: string;
+            writing: string;
+            speaking: string;
+            calculatedOverall: string;
+            examDate: string;
+            daysLeft: string;
+            examToday: string;
+            examPassed: string;
+            saving: string;
+            saveBtn: string;
+            saveSuccess: string;
+            saveFail: string;
+        };
         heading: string;
         subheading: string;
         menu: {
@@ -1338,6 +1392,14 @@ export interface Translations {
             task2: string;
             target: string;
         };
+        clickToViewDetails: string;
+        totalCorrections: string;
+        latestScore: string;
+        task1Trend: string;
+        task2Trend: string;
+        task1: string;
+        task2: string;
+        overallScore: string;
         title: string;
         subtitle: string;
         comingSoon: string;
@@ -1356,6 +1418,8 @@ export interface Translations {
         speakingTab: string;
         readingTab: string;
         writingTab: string;
+        writingTrend: string;
+        writingSkillsRadar: string;
         today: string;
         days: string;
         overdue: string;

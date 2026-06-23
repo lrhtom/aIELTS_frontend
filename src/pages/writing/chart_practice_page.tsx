@@ -100,7 +100,7 @@ export default function ChartPracticePage() {
                 const detail = await getAIQuestion(id);
                 const content = (detail.content || {}) as Partial<ChartData>;
                 if (!content.prompt) {
-                    showToast('题目内容缺失', 'error');
+                    showToast(translations[lang].aiBank.toastMissingContent, 'error');
                     navigate('/practice/ai/bank');
                     return;
                 }
@@ -116,7 +116,7 @@ export default function ChartPracticePage() {
                 setStep('answering');
             } catch (err: unknown) {
                 console.error('Bank load error:', err);
-                showToast('题库加载失败', 'error');
+                showToast(translations[lang].aiBank.loadFail, 'error');
                 navigate('/practice/ai/bank');
             }
         }
@@ -129,7 +129,7 @@ export default function ChartPracticePage() {
                     body: { type },
                 });
                 sessionStorage.removeItem(cacheKey);
-                showToast('题目已生成并保存到 AI 题库', 'success');
+                showToast(translations[lang].aiBank.toastGeneratedSaved, 'success');
                 const justId = res.aiQuestionId ?? null;
                 navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
             } catch (err: unknown) {

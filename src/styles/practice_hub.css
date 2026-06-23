@@ -362,6 +362,20 @@
     grid-row: span 1;
 }
 
+.bento-bank {
+    grid-column: span 3;
+    grid-row: span 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 32px;
+}
+
+.bento-bank .bento-content {
+    margin-bottom: 0;
+    max-width: 60%;
+}
+
 .bento-others {
     grid-column: span 3;
     grid-row: span 1;
@@ -428,6 +442,7 @@
 .bento-listening { --glow-color: #8b5cf6; } /* Violet */
 .bento-speaking { --glow-color: #f97316; } /* Orange */
 .bento-writing { --glow-color: #3b82f6; } /* Blue */
+.bento-bank { --glow-color: #ec4899; } /* Pink */
 .bento-others { --glow-color: #64748b; } /* Slate */
 
 /* Hover Effects */
@@ -453,7 +468,7 @@
         grid-template-columns: 1fr;
     }
     
-    .bento-reading, .bento-listening, .bento-speaking, .bento-writing, .bento-others {
+    .bento-reading, .bento-listening, .bento-speaking, .bento-writing, .bento-bank, .bento-others {
         grid-column: span 1;
         grid-row: span 1;
     }
@@ -462,11 +477,11 @@
         justify-content: flex-end;
     }
     
-    .bento-others {
+    .bento-bank, .bento-others {
         flex-direction: column;
         align-items: flex-start;
     }
-    .bento-others .bento-content {
+    .bento-bank .bento-content, .bento-others .bento-content {
         max-width: 100%;
     }
 }

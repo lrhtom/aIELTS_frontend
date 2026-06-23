@@ -74,7 +74,7 @@ export default function Reading_page() {
             const detail = await getAIQuestion(id);
             const content = (detail.content || {}) as Partial<QuizData>;
             if (!content.passage || !Array.isArray(content.questions)) {
-                showToast('题目内容缺失，已删除或损坏', 'error');
+                showToast(translations[lang].aiBank.toastMissingContent, 'error');
                 navigate('/practice/ai/bank');
                 return;
             }
