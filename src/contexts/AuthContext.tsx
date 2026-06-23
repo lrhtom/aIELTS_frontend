@@ -66,7 +66,9 @@ export function resetBackground() {
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (tokens: { access: string, refresh: string }, userData: User) => void;
+    /** Called after `authApi.login(...)` / `authApi.register(...)` — auth cookies
+     *  have already been planted by the server, so this just syncs local state. */
+    login: (userData: User) => void;
     logout: () => void;
     updateUser: (userData: User) => void;
 }
@@ -86,26 +88,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const initAuth = async () => {
             if (hasInitRef.current) return;
             hasInitRef.current = true;
-            
-            const token = localStorage.getItem('access_token');
-            if (token) {
-                try {
-                    const userData = await authApi.getProfile();
-                    setUser(userData);
-                    applyUserBackground(userData);   // ← 恢复会话时应用背景
-                    if (userData.languagePreference && userData.languagePreference !== lang) {
-                        setLang(userData.languagePreference as Lang, false);
-                    }
 
-                    if (userData.aiProvider) {
-                        localStorage.setItem('ai_provider', userData.aiProvider);
-                    }
-                } catch (error) {
-                    console.error('Failed to restore session:', error);
-                    // On failure, clear tokens to prevent further loop attempts
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
+            // Always try to fetch the profile — the browser will auto-attach
+            // any httpOnly auth cookies; a 401 means "not logged in" and we
+            // simply land on the public state.
+            try {
+                const userData = await authApi.getProfile();
+                setUser(userData);
+                applyUserBackground(userData);
+                if (userData.languagePreference && userData.languagePreference !== lang) {
+                    setLang(userData.languagePreference as Lang, false);
                 }
+                if (userData.aiProvider) {
+                    localStorage.setItem('ai_provider', userData.aiProvider);
+                }
+            } catch {
+                // 401 / network failure → leave user=null. No client-side token
+                // state to clean up; cookies are managed entirely by the server.
             }
             setIsLoading(false);
         };
@@ -114,9 +113,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const handleLogout = () => {
             setUser(null);
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            resetBackground();   // ← 登出时清除背景
+            resetBackground();
         };
 
         const handleATConsumed = (event: Event) => {
@@ -136,11 +133,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
     }, [lang, setLang, user]);
 
-    const login = (tokens: { access: string; refresh: string }, userData: User) => {
-        localStorage.setItem('access_token', tokens.access);
-        localStorage.setItem('refresh_token', tokens.refresh);
+    const login = (userData: User) => {
         setUser(userData);
-        applyUserBackground(userData);   // ← 登录时应用背景
+        applyUserBackground(userData);
         if (userData.languagePreference && userData.languagePreference !== lang) {
             setLang(userData.languagePreference as Lang, false);
         }
@@ -153,15 +148,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const logout = () => {
+        // Fire-and-forget: server clears cookies + rotates jwt_token_id. If
+        // the server is unreachable we still reset local state so the UI doesn't
+        // pretend the user is still signed in.
+        void authApi.logout();
         setUser(null);
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        resetBackground();   // ← 登出时清除背景
+        resetBackground();
     };
 
     const updateUser = useCallback((userData: User) => {
         setUser(userData);
-        applyUserBackground(userData);   // ← 更新用户资料时同步背景
+        applyUserBackground(userData);
     }, []);
 
     return (

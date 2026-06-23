@@ -286,13 +286,14 @@ function SpeakingChatPage() {
                 }
 
                 // Initial TTS welcome
-                const token = localStorage.getItem('access_token') || '';
+                const csrfWelcome = document.cookie.split('; ').find(c => c.startsWith('aielts_csrf='))?.split('=')[1];
                 const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
                     method: 'POST',
+                    credentials: 'include',
                     signal: controller.signal,
                     headers: {
                         'Content-Type': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        ...(csrfWelcome ? { 'X-CSRF-Token': decodeURIComponent(csrfWelcome) } : {}),
                     },
                     body: JSON.stringify({
                         text: finalWelcome,
@@ -408,11 +409,12 @@ function SpeakingChatPage() {
                 formData.append('reference_text', text);
             }
 
-            const token = localStorage.getItem('access_token') || '';
+            const csrfTrans = document.cookie.split('; ').find(c => c.startsWith('aielts_csrf='))?.split('=')[1];
             const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/speaking/transcribe`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    ...(csrfTrans ? { 'X-CSRF-Token': decodeURIComponent(csrfTrans) } : {}),
                 },
                 body: formData,
             });
@@ -611,13 +613,14 @@ function SpeakingChatPage() {
             const controller = new AbortController();
             ttsAbortControllerRef.current = controller;
 
-            const token = localStorage.getItem('access_token') || '';
+            const csrfTts = document.cookie.split('; ').find(c => c.startsWith('aielts_csrf='))?.split('=')[1];
             const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
                 method: 'POST',
+                credentials: 'include',
                 signal: controller.signal,
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    ...(csrfTts ? { 'X-CSRF-Token': decodeURIComponent(csrfTts) } : {}),
                 },
                 body: JSON.stringify({
                     text: text,

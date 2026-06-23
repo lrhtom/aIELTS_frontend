@@ -6,6 +6,7 @@ import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
+import { sanitize } from '../../utils/safe_html';
 import '../../styles/listening_page.css';
 import '../../styles/reading_page.css';
 
@@ -115,12 +116,14 @@ export default function ListeningPage() {
     const fetchAudioForPassage = async (passage: string) => {
         const introText = 'The IELTS listening test is about to begin. Please listen carefully.';
         const fullText = `${introText}\n\n\n\n${stripMarkers(passage)}`;
-        const token = localStorage.getItem('access_token');
+        // Auth travels via httpOnly cookie now → credentials: 'include' instead of Bearer header.
+        const csrf = document.cookie.split('; ').find(c => c.startsWith('aielts_csrf='))?.split('=')[1];
         const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/listening/audio`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '',
+                ...(csrf ? { 'X-CSRF-Token': decodeURIComponent(csrf) } : {}),
             },
             body: JSON.stringify({ text: fullText }),
         });
@@ -711,10 +714,10 @@ export default function ListeningPage() {
                     {/* Passage Sidebar */}
                     <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="listeningPassageSidebar">
                         <h3>{t.results.originalPassage}</h3>
-                        <h4 dangerouslySetInnerHTML={{ __html: formatHighlight(st.listeningData.title) }}></h4>
+                        <h4 dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(st.listeningData.title)) }}></h4>
                         <div className="passage-text">
                             {passageParagraphs.map((p, idx) => (
-                                <p key={idx} dangerouslySetInnerHTML={{ __html: formatHighlight(p) }}></p>
+                                <p key={idx} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(p)) }}></p>
                             ))}
                         </div>
                         {st.vocabList.length > 0 && (

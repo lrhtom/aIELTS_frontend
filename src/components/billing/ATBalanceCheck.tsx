@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
 import { calculateCost } from '../../config/ai_cost';
 import { formatATBalance } from '../../utils/format';
+import { sanitize } from '../../utils/safe_html';
 import '../../styles/atBalanceCheck.css';
 
 interface ATBalanceCheckProps {
@@ -78,14 +79,14 @@ export default function ATBalanceCheck({
                     <span className="warning-title">{t.billing.insufficientBalance}</span>
                 </div>
                 <div className="warning-content">
-                    <p dangerouslySetInnerHTML={{ 
-                        __html: t.billing.estimateCost
+                    <p dangerouslySetInnerHTML={{
+                        __html: sanitize(t.billing.estimateCost
                             .replace('{service}', service)
-                            .replace('{estimatedCost}', estimatedCost.toString()) 
+                            .replace('{estimatedCost}', estimatedCost.toString())),
                     }} />
-                    <p dangerouslySetInnerHTML={{ 
-                        __html: t.billing.currentBalance
-                            .replace('{balance}', formatATBalance(user?.atBalance).toString()) 
+                    <p dangerouslySetInnerHTML={{
+                        __html: sanitize(t.billing.currentBalance
+                            .replace('{balance}', formatATBalance(user?.atBalance).toString())),
                     }} />
                     <div className="warning-actions">
                         <button

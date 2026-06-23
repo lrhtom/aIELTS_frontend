@@ -9,14 +9,14 @@ export default function AIPractice() {
     const t = translations[lang].aiPractice;
 
     return (
-        <Layout>
+        <Layout
+            pageTitle={t.heading}
+            pageSubtitle={t.subheading}
+            backUrl="/practice"
+            backText={t.backToPractice}
+        >
             <div className="practice-hub">
-                <div className="practice-hub-container">
-                    <div className="practice-hub-header">
-                        <Link to="/practice" className="back-link">{t.backToPractice}</Link>
-                        <h1>{t.heading}</h1>
-                        <p>{t.subheading}</p>
-                    </div>
+                <div className="practice-hub-container" style={{paddingTop: '20px'}}>
 
                     <div className="bento-grid">
                         {/* AI 题库 — 听/读/写 题库入口 */}

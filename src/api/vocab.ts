@@ -56,3 +56,26 @@ export async function submitReview(
     });
     return resp.data as { card: VocabCard };
 }
+
+/**
+ * Submit a review, but tolerate a 409 (server-side optimistic-lock conflict).
+ * On conflict the server has a fresher state, so we skip the local FSRS sync
+ * and return a null card to signal "no local update".
+ */
+export async function submitReviewSafe(
+    word:             string,
+    rating:           number,
+    clientLastReview: string | null,
+    planId?:          number,
+): Promise<{ card: VocabCard | null }> {
+    try {
+        return await submitReview(word, rating, clientLastReview, planId);
+    } catch (err: unknown) {
+        const axiosErr = err as { response?: { status?: number } };
+        if (axiosErr?.response?.status === 409) {
+            console.warn(`Word ${word} already updated on server, skipping local FSRS sync.`);
+            return { card: null };
+        }
+        throw err;
+    }
+}

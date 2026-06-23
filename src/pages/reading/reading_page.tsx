@@ -7,6 +7,7 @@ import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
+import { sanitize } from '../../utils/safe_html';
 import '../../styles/reading_page.css';
 
 export default function Reading_page() {
@@ -388,14 +389,14 @@ export default function Reading_page() {
         const passageParagraphs = st.quizData.passage.split('\n\n');
         return (
             <div className="main-content">
-                <h2 style={{ marginTop: 0 }} dangerouslySetInnerHTML={{ __html: formatHighlight(st.quizData.title) }}></h2>
+                <h2 style={{ marginTop: 0 }} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(st.quizData.title)) }}></h2>
                 <div
                     id="articleContent"
                     style={{ outline: 'none', WebkitTouchCallout: 'none' }}
                     onContextMenu={(e) => e.preventDefault()}
                 >
                     {passageParagraphs.map((p, idx) => (
-                        <p key={idx} dangerouslySetInnerHTML={{ __html: formatHighlight(p) }}></p>
+                        <p key={idx} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(p)) }}></p>
                     ))}
                 </div>
             </div>
@@ -408,7 +409,7 @@ export default function Reading_page() {
             <div id="questionsForm" style={{ outline: 'none', WebkitTouchCallout: 'none' }} onContextMenu={(e) => e.preventDefault()}>
                 {st.quizData.questions.map((q) => (
                     <div key={q.id} className="question-block">
-                        <div className="question-text" dangerouslySetInnerHTML={{ __html: `${q.id}. ${formatHighlight(q.question)}` }}></div>
+                        <div className="question-text" dangerouslySetInnerHTML={{ __html: sanitize(`${q.id}. ${formatHighlight(q.question)}`) }}></div>
                         {Object.entries(q.options).map(([key, value]) => (
                             <label key={key} className="option-label">
                                 <input
@@ -416,7 +417,7 @@ export default function Reading_page() {
                                     defaultChecked={userAnswersRef.current[q.id] === key}
                                     onChange={() => { userAnswersRef.current[q.id] = key; }}
                                 />
-                                <strong>{key.length === 1 ? `${key}.` : key}</strong> <span dangerouslySetInnerHTML={{ __html: formatHighlight(value) }}></span>
+                                <strong>{key.length === 1 ? `${key}.` : key}</strong> <span dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(value)) }}></span>
                             </label>
                         ))}
                     </div>
@@ -555,10 +556,10 @@ export default function Reading_page() {
                     {/* Passage Sidebar */}
                     <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="passageSidebar">
                         <h3>{t.results.originalPassage}</h3>
-                        <h4 dangerouslySetInnerHTML={{ __html: formatHighlight(st.quizData.title) }}></h4>
+                        <h4 dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(st.quizData.title)) }}></h4>
                         <div className="passage-text">
                             {passageParagraphs.map((p, idx) => (
-                                <p key={idx} dangerouslySetInnerHTML={{ __html: formatHighlight(p) }}></p>
+                                <p key={idx} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(p)) }}></p>
                             ))}
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 // @ts-ignore
 import { v4 as uuidv4 } from 'uuid';
+import { sanitizeSvg } from '../utils/safe_html';
 
 interface MermaidChartProps {
     chart: string;
@@ -121,7 +122,7 @@ export default function MermaidChart({ chart }: MermaidChartProps) {
                 minHeight: '200px',
                 overflowX: 'auto'
             }}
-            dangerouslySetInnerHTML={{ __html: svgContent }}
+            dangerouslySetInnerHTML={{ __html: sanitizeSvg(svgContent) }}
         />
     );
 }

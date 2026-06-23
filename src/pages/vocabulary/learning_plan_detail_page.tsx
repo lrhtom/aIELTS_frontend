@@ -6,6 +6,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { retryWithBackoff } from '../../utils/retry';
 import { type StudyMode, type MasterySetting } from '../../utils/vocab_flashcard_utils';
 import { useLang } from '../../i18n/LanguageContext';
+import { sanitize } from '../../utils/safe_html';
 import { listNotebooks, type Notebook } from '../../api/notebook';
 import {
     listPlanWords, addWord, updatePlanWord, removePlanWord,
@@ -1133,9 +1134,9 @@ export default function LearningPlanDetailPage() {
                 <div className="lp-word-section">
                     <div className="lp-word-section-header">
                         
-                    <h4 dangerouslySetInnerHTML={{ __html: t.vocab.details.listTitle
+                    <h4 dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.details.listTitle
                         .replace('{learned}', String(entries.filter(e => e.fsrs_state !== 0).length))
-                        .replace('{total}', String(entries.length)) 
+                        .replace('{total}', String(entries.length)))
                     }} />
 
                         <div className="lp-sort-controls">

@@ -14,6 +14,7 @@ import {
     type CustomMemoryDeck,
 } from '../../api/custom_memory';
 import { useLang } from '../../i18n/LanguageContext';
+import { sanitize } from '../../utils/safe_html';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_learning_plan_list.css';
 
@@ -304,12 +305,12 @@ export default function LearningPlanListPage() {
                                     <div className="lp-plan-meta">
                                         <span className="lp-meta-item">
                                             <span className="lp-meta-dot" />
-                                            <span dangerouslySetInnerHTML={{ __html: t.vocab.plans.cardDaily.replace('{n}', String(plan.daily_count)) }} />
+                                            <span dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardDaily.replace('{n}', String(plan.daily_count))) }} />
                                         </span>
                                         <span className="lp-meta-sep">·</span>
-                                        <span className="lp-meta-item" dangerouslySetInnerHTML={{ __html: t.vocab.plans.cardTotal.replace('{n}', String(plan.word_count)) }} />
+                                        <span className="lp-meta-item" dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardTotal.replace('{n}', String(plan.word_count))) }} />
                                         <span className="lp-meta-sep">·</span>
-                                        <span className={`lp-meta-item ${plan.studied_today > 0 ? 'lp-today-badge' : ''}`} dangerouslySetInnerHTML={{ __html: t.vocab.plans.cardStudied.replace('{n}', String(plan.studied_today)) }} />
+                                        <span className={`lp-meta-item ${plan.studied_today > 0 ? 'lp-today-badge' : ''}`} dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardStudied.replace('{n}', String(plan.studied_today))) }} />
                                     </div>
                                     <div className="lp-plan-actions">
                                         <button

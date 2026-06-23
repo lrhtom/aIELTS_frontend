@@ -9,13 +9,14 @@ export default function PracticeHub() {
     const t = translations[lang].practiceHub;
 
     return (
-        <Layout>
-            <div className="practice-hub-container">
-                <div className="practice-hub-header">
-                    <Link to="/" className="back-link">{t.backToHome}</Link>
-                    <h1>{t.heading}</h1>
-                    <p>{t.subheading}</p>
-                </div>
+        <Layout
+            pageTitle={t.heading}
+            pageSubtitle={t.subheading}
+            backUrl="/"
+            backText={t.backToHome}
+        >
+            <div className="practice-hub">
+                <div className="practice-hub-container" style={{paddingTop: '20px'}}>
 
                 <div className="mode-cards">
                     {/* Real Practice — coming soon */}
@@ -32,6 +33,7 @@ export default function PracticeHub() {
                         <div className="mode-title">{t.aiPractice.title}</div>
                         <div className="mode-desc">{t.aiPractice.desc}</div>
                     </Link>
+                </div>
                 </div>
             </div>
         </Layout>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
@@ -17,9 +17,18 @@ const LoginPage: React.FC = () => {
     const [resetNewPassword, setResetNewPassword] = useState('');
     const [resetMsg, setResetMsg] = useState('');
 
-    const { login } = useAuth();
+    const { login, user, isLoading } = useAuth();
     const navigate = useNavigate();
     const { translations: t } = useLang();
+
+    // Already-logged-in users have no business on /login. Wait for auth init
+    // (httpOnly cookies → profile fetch) before redirecting so we don't bounce
+    // back during the brief moment user=null on first paint.
+    useEffect(() => {
+        if (!isLoading && user) {
+            navigate('/profile', { replace: true });
+        }
+    }, [isLoading, user, navigate]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,10 +37,8 @@ const LoginPage: React.FC = () => {
 
         try {
             const response = await authApi.login(username, password);
-            if (response.tokens) {
-                login(response.tokens, response.user);
-                navigate('/profile');
-            }
+            login(response.user);
+            navigate('/profile');
         } catch (err: unknown) {
             const e = err as { response?: { status?: number }; message?: string };
             console.error('Login error:', err);

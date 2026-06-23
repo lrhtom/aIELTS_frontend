@@ -24,12 +24,19 @@ const RegisterPage: React.FC = () => {
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, user, isLoading } = useAuth();
     const { translations: t } = useLang();
 
     useEffect(() => {
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, []);
+
+    // Logged-in users skip the register flow entirely.
+    useEffect(() => {
+        if (!isLoading && user) {
+            navigate('/profile', { replace: true });
+        }
+    }, [isLoading, user, navigate]);
 
     const startCooldown = () => {
         setCooldown(RESEND_COOLDOWN);
@@ -104,8 +111,10 @@ const RegisterPage: React.FC = () => {
 
             const response = await authApi.register(registerData);
 
-            if (response.tokens) {
-                login(response.tokens, response.user);
+            if (response.user) {
+                // Cookies were planted by the server on this response — login()
+                // just syncs the React state.
+                login(response.user);
                 navigate('/profile');
             } else {
                 navigate('/login?registered=true');

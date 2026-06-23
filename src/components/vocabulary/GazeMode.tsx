@@ -15,6 +15,8 @@ interface Props {
     onFlip: () => void;
     onRating: (rating: number) => void;
     estimateInterval: (card: VocabCard, rating: number) => string;
+    /** Returns the formatted absolute date (e.g. "06-25" / "今天") the card will next surface at after this rating. */
+    previewNextDueLabel?: (card: VocabCard, rating: number) => string;
     simpleMode?: boolean;
 }
 
@@ -39,6 +41,7 @@ export default function GazeMode({
     onFlip,
     onRating,
     estimateInterval,
+    previewNextDueLabel,
     simpleMode,
 }: Props) {
     const { translations: t } = useLang();
@@ -616,7 +619,7 @@ export default function GazeMode({
                 </div>
             </div>
 
-            <div className={`fc-rating-row${!isFlipped ? ' locked' : ''}`}>
+            <div className={`fc-rating-row${!isFlipped && !simpleMode ? ' locked' : ''}`}>
                 {RATING_INFO.map((info, i) => (
                     <button
                         key={info.id}
@@ -624,11 +627,14 @@ export default function GazeMode({
                         ref={el => { ratingRefs.current[i] = el; }}
                         className={`fc-btn ${info.cls}`}
                         onClick={() => onRating(info.id)}
-                        disabled={!isFlipped || submitting}
+                        disabled={(!isFlipped && !simpleMode) || submitting}
                     >
                         <span className="btn-label">{info.label}</span>
                         <span className="btn-key">[{info.key}]</span>
                         <span className="btn-interval">{estimateInterval(currentCard, info.id)}</span>
+                        {previewNextDueLabel && (
+                            <span className="btn-due-date">{previewNextDueLabel(currentCard, info.id)}</span>
+                        )}
                     </button>
                 ))}
             </div>

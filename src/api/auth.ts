@@ -35,6 +35,8 @@ export interface User {
 export interface AuthResponse {
     message?: string;
     user: User;
+    // `tokens` is retained for the register flow (server still echoes them in the
+    // body) but no longer used for auth — the cookies set alongside are authoritative.
     tokens?: {
         access: string;
         refresh: string;
@@ -43,25 +45,28 @@ export interface AuthResponse {
 
 export const authApi = {
     login: async (username: string, password: string): Promise<AuthResponse> => {
-        const response = await apiClient.post('/auth/login', { username, password });
-        // The backend DRF simplejwt token_obtain_pair view returns { access, refresh } by default
-        // We might want to fetch the profile right after to get the user object
-        const tokens = response.data;
-        const profileResponse = await apiClient.get('/auth/profile', {
-            headers: {
-                Authorization: `Bearer ${tokens.access}`,
-            },
-        });
-
-        return {
-            user: profileResponse.data.user,
-            tokens: tokens
-        };
+        // POST /auth/login plants httpOnly access/refresh + non-httpOnly csrf cookies.
+        // We don't need to read the tokens client-side any more; the next profile
+        // call authenticates via the freshly-set cookies.
+        await apiClient.post('/auth/login', { username, password });
+        const profileResponse = await apiClient.get('/auth/profile');
+        return { user: profileResponse.data.user };
     },
 
     register: async (data: Record<string, string>): Promise<AuthResponse> => {
+        // Backend already set auth cookies on this response.
         const response = await apiClient.post('/auth/register', data);
         return response.data;
+    },
+
+    logout: async (): Promise<void> => {
+        // Best-effort: server clears cookies + rotates jwt_token_id. Failures
+        // are swallowed because the local state reset must still happen.
+        try {
+            await apiClient.post('/auth/logout');
+        } catch {
+            /* ignore */
+        }
     },
 
     sendVerificationCode: async (email: string, username: string): Promise<void> => {

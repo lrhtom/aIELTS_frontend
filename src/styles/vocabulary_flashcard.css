@@ -138,12 +138,14 @@
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* 背面旋转 180° 并左对齐 */
+/* 背面旋转 180° 并左对齐。padding 较正面更紧凑，因为内容分 header/body/footer 三段，
+   内部 .fc-back-body 自己负责滚动，所以 .fc-face--back 自身不再 overflow-y. */
 .fc-face--back {
     transform: rotateY(180deg);
-    align-items: flex-start;
+    align-items: stretch;
     justify-content: flex-start;
-    overflow-y: auto;
+    overflow: hidden;
+    padding: 28px 32px;
 }
 
 /* 非翻牌模式（choice/write/copy）：仅单面，卡片自适应内容高度 */
@@ -182,7 +184,7 @@
     gap: 5px;
 }
 
-/* ── 背面内容 ────────────────────────────────────────────────────────────── */
+/* ── 背面内容 (legacy classes — still used by GazeMode) ──────────────────── */
 .fc-back-word {
     font-size: 20px;
     font-weight: 700;
@@ -206,6 +208,186 @@
     border-radius: 99px;
     padding: 3px 10px;
     align-self: flex-start;
+}
+
+/* ── 背面内容 (rich layout — FlashcardMode) ───────────────────────────────
+   Three-region layout: header (word + phonetic), body (defs + examples,
+   scrollable), footer (state pill). Designed to look composed at any height
+   between 320px and ~600px. */
+.fc-face--back .fc-back-header {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.fc-face--back .fc-back-word-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.fc-face--back .fc-back-word {
+    /* Override the legacy .fc-back-word size used by GazeMode. */
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--color-text);
+    letter-spacing: -0.3px;
+    line-height: 1.15;
+    margin-bottom: 0;
+}
+
+.fc-face--back .fc-phonetic-back {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    opacity: 0.85;
+}
+
+.fc-face--back .fc-back-body {
+    flex: 1 1 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    padding-right: 6px;
+    min-height: 0;
+}
+
+.fc-face--back .fc-back-body::-webkit-scrollbar { width: 6px; }
+.fc-face--back .fc-back-body::-webkit-scrollbar-thumb {
+    background: var(--color-border); border-radius: 4px;
+}
+
+/* Definitions — one row per part-of-speech */
+.fc-face--back .fc-definitions-rich {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fc-face--back .fc-def-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--color-bg);
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
+}
+
+.fc-face--back .fc-meaning-simple {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.fc-face--back .fc-def-text {
+    font-size: 16px;
+    color: var(--color-text);
+    line-height: 1.5;
+    flex: 1;
+}
+
+/* Part-of-speech badge — base + per-POS palette */
+.fc-face--back .fc-pos-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    font-style: italic;
+    line-height: 1.4;
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+.fc-face--back .fc-pos-badge[data-pos="v"],
+.fc-face--back .fc-pos-badge[data-pos="vt"],
+.fc-face--back .fc-pos-badge[data-pos="vi"]   { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+.fc-face--back .fc-pos-badge[data-pos="n"]    { background:#e0e7ff; color:#3730a3; border-color:#c7d2fe; }
+.fc-face--back .fc-pos-badge[data-pos="adj"],
+.fc-face--back .fc-pos-badge[data-pos="a"]    { background:#dcfce7; color:#166534; border-color:#bbf7d0; }
+.fc-face--back .fc-pos-badge[data-pos="adv"]  { background:#fce7f3; color:#9d174d; border-color:#fbcfe8; }
+.fc-face--back .fc-pos-badge[data-pos="prep"] { background:#e0f2fe; color:#075985; border-color:#bae6fd; }
+
+/* Examples — compact card per sentence */
+.fc-face--back .fc-examples-rich {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fc-face--back .fc-example-card {
+    padding: 8px 12px;
+    background: rgba(13, 148, 136, 0.04);
+    border-left: 3px solid var(--color-primary);
+    border-radius: 0 8px 8px 0;
+}
+
+.fc-face--back .fc-example-en {
+    font-size: 14px;
+    color: var(--color-text);
+    font-style: italic;
+    line-height: 1.45;
+}
+
+.fc-face--back .fc-example-zh {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+/* Footer — state pill with state-coloured dot */
+.fc-face--back .fc-back-footer {
+    width: 100%;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-start;
+}
+
+.fc-face--back .fc-state-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 99px;
+    padding: 4px 10px;
+}
+
+.fc-face--back .fc-state-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #94a3b8;
+    flex-shrink: 0;
+}
+.fc-face--back .fc-state-dot[data-state="0"] { background:#94a3b8; }    /* New */
+.fc-face--back .fc-state-dot[data-state="1"] { background:#f59e0b; }    /* Learning */
+.fc-face--back .fc-state-dot[data-state="2"] { background:#10b981; }    /* Review */
+.fc-face--back .fc-state-dot[data-state="3"] { background:#ef4444; }    /* Relearning */
+
+.fc-face--back .fc-stability {
+    color: var(--color-text-secondary);
+    opacity: 0.75;
+    font-weight: 500;
 }
 
 /* ── 评分按钮行 ──────────────────────────────────────────────────────────── */
@@ -266,6 +448,7 @@
 .fc-btn .btn-label    { font-size: 14px; font-weight: 700; }
 .fc-btn .btn-key      { font-size: 11px; opacity: 0.5; font-weight: 500; }
 .fc-btn .btn-interval { font-size: 11px; opacity: 0.65; font-weight: 500; }
+.fc-btn .btn-due-date { font-size: 10px; opacity: 0.8; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.2px; }
 
 /* 翻牌前灰色遮罩提示 */
 .fc-rating-row.locked .fc-btn {

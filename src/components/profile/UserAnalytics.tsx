@@ -835,9 +835,18 @@ function WritingAnalyticsPanel({ t }: { t: any }) {
         return <div className="analytics-empty">{t.noData}</div>;
     }
 
-    const latestT2 = validTask2Trend.length > 0 ? validTask2Trend[validTask2Trend.length - 1].overall : null;
-    const latestT1 = validTask1Trend.length > 0 ? validTask1Trend[validTask1Trend.length - 1].overall : null;
-    const latestScore = latestT2 ?? latestT1 ?? 0;
+    // Pick the truly latest record across both tasks by date string (backend formats as 'MM-DD HH:MM' and
+    // returns records pre-sorted, so the last of the chronologically-merged list wins).
+    const lastT1 = validTask1Trend[validTask1Trend.length - 1];
+    const lastT2 = validTask2Trend[validTask2Trend.length - 1];
+    let latestScore: number | null = null;
+    if (lastT1 && lastT2) {
+        latestScore = (lastT1.date >= lastT2.date ? lastT1.overall : lastT2.overall);
+    } else if (lastT1) {
+        latestScore = lastT1.overall;
+    } else if (lastT2) {
+        latestScore = lastT2.overall;
+    }
 
     return (
         <div className="analytics-charts">
@@ -847,7 +856,7 @@ function WritingAnalyticsPanel({ t }: { t: any }) {
                     <span className="analytics-stat-label">{t.totalCorrections}</span>
                 </div>
                 <div className="analytics-stat-card" style={{ flex: 1 }}>
-                    <span className="analytics-stat-num">{latestScore.toFixed(1)}</span>
+                    <span className="analytics-stat-num">{latestScore !== null ? latestScore.toFixed(1) : '—'}</span>
                     <span className="analytics-stat-label">{t.latestScore}</span>
                 </div>
             </div>
@@ -855,14 +864,14 @@ function WritingAnalyticsPanel({ t }: { t: any }) {
             {validTask2Trend.length > 0 && (
                 <div className="analytics-chart-card">
                     <h3 className="analytics-chart-title">{t.task2Trend}</h3>
-                    <WritingScoreLineChart data={validTask2Trend} taskLabel={t.task2} color="#f59e0b" t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
+                    <WritingScoreLineChart data={validTask2Trend} color="#f59e0b" t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
                 </div>
             )}
 
             {validTask1Trend.length > 0 && (
                 <div className="analytics-chart-card">
                     <h3 className="analytics-chart-title">{t.task1Trend}</h3>
-                    <WritingScoreLineChart data={validTask1Trend} taskLabel={t.task1} color="#3b82f6" t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
+                    <WritingScoreLineChart data={validTask1Trend} color="#3b82f6" t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
                 </div>
             )}
 
@@ -897,7 +906,7 @@ function ChartLegendToggle({ label, color, checked, onChange }: { label: string,
     );
 }
 
-function WritingScoreLineChart({ data, taskLabel, color, t, targetScore }: { data: WritingRecord[]; taskLabel: string; color: string; t: any; targetScore?: number | null }) {
+function WritingScoreLineChart({ data, color, t, targetScore }: { data: WritingRecord[]; color: string; t: any; targetScore?: number | null }) {
     const [tip, setTip] = useState<{ x: number; y: number; lines: React.ReactNode[] } | null>(null);
     const hide = useCallback(() => setTip(null), []);
 
@@ -915,8 +924,18 @@ function WritingScoreLineChart({ data, taskLabel, color, t, targetScore }: { dat
     const graphW = W - padL - padR;
     const graphH = H - padT - padB;
 
+    // Adaptive Y range: floor at 4 so the common 5–9 chart isn't squashed, but expand downward
+    // (in 0.5 increments) if any score dips below 4 — sub-bandscore data must remain on-chart.
     const maxScore = 9;
-    const minScore = 4;
+    const minScore = useMemo(() => {
+        let lo = 4;
+        for (const d of data) {
+            for (const v of [d.overall, d.tr, d.cc, d.lr, d.gra]) {
+                if (typeof v === 'number' && v > 0 && v < lo) lo = Math.floor(v * 2) / 2;
+            }
+        }
+        return Math.max(0, Math.min(lo, maxScore - 1));
+    }, [data]);
 
     const getX = (idx: number) => padL + (data.length > 1 ? (idx / (data.length - 1)) * graphW : graphW / 2);
     const getY = (score: number) => padT + graphH - ((score - minScore) / (maxScore - minScore)) * graphH;
@@ -927,18 +946,32 @@ function WritingScoreLineChart({ data, taskLabel, color, t, targetScore }: { dat
     const lrPoints = showLr ? data.map((d, i) => d.lr !== null ? `${getX(i)},${getY(d.lr)}` : null).filter(Boolean) as string[] : [];
     const graPoints = showGra ? data.map((d, i) => d.gra !== null ? `${getX(i)},${getY(d.gra)}` : null).filter(Boolean) as string[] : [];
 
-    const yTicks = [4, 5, 6, 7, 8, 9];
+    // Build Y ticks dynamically from [minScore..maxScore] so the axis matches the adaptive range above.
+    const yTicks = useMemo(() => {
+        const step = (maxScore - minScore) >= 5 ? 1 : 0.5;
+        const out: number[] = [];
+        for (let v = minScore; v <= maxScore + 1e-6; v += step) out.push(Math.round(v * 2) / 2);
+        return out;
+    }, [minScore]);
 
-    const xLabelCount = Math.min(8, data.length);
-    const xLabels: { idx: number; label: string; x: number }[] = [];
-    if (data.length > 0) {
+    // Pick up to 8 evenly-spaced indexes for x labels, then drop labels whose date string would
+    // repeat the previous label — multiple corrections on the same day used to render as
+    // "06-23 06-23 06-23 06-23" stacked together.
+    const xLabels: { idx: number; label: string; x: number }[] = useMemo(() => {
+        if (data.length === 0) return [];
+        const xLabelCount = Math.min(8, data.length);
+        const picked: { idx: number; label: string; x: number }[] = [];
+        let lastLabel = '';
         for (let i = 0; i < xLabelCount; i++) {
             const idx = Math.round((i / (xLabelCount - 1 || 1)) * (data.length - 1));
-            // Show only MM-DD to save space or full if few
-            const labelStr = (data[idx].date || '').split(' ')[0]; // just MM-DD
-            xLabels.push({ idx, label: labelStr, x: getX(idx) });
+            const labelStr = (data[idx].date || '').split(' ')[0]; // MM-DD
+            if (labelStr === lastLabel) continue;
+            picked.push({ idx, label: labelStr, x: getX(idx) });
+            lastLabel = labelStr;
         }
-    }
+        return picked;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data]);
 
     const cTr = '#10b981';
     const cCc = '#8b5cf6';

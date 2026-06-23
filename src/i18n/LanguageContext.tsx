@@ -22,8 +22,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const setLang = (newLang: Lang, syncToServer = true) => {
         setLangState(newLang);
         localStorage.setItem('ielts_lang', newLang);
-        
-        if (syncToServer && localStorage.getItem('access_token')) {
+
+        // Server-side sync is best-effort: the non-httpOnly `aielts_csrf` cookie
+        // is the cheapest signal of "user is logged in" we have client-side now
+        // that JWTs live in httpOnly cookies. If the cookie is absent we skip
+        // the call to avoid burning a guaranteed 401 on every guest visitor.
+        if (syncToServer && document.cookie.includes('aielts_csrf=')) {
             import('../api/client').then(({ apiClient }) => {
                 apiClient.put('/auth/settings', { language_preference: newLang }).catch(console.error);
             });

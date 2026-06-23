@@ -9,6 +9,7 @@ import { api } from '../../api/client';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
+import { sanitize } from '../../utils/safe_html';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
@@ -343,7 +344,7 @@ export default function WritingCorrectionPage() {
         });
 
         return annotatedHtml.split(/\n\n+/).map((para, idx) => (
-            <p key={idx} className="wc-essay-paragraph" dangerouslySetInnerHTML={{ __html: para }} />
+            <p key={idx} className="wc-essay-paragraph" dangerouslySetInnerHTML={{ __html: sanitize(para) }} />
         ));
     };
 
