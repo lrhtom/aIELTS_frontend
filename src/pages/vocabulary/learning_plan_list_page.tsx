@@ -62,6 +62,7 @@ export default function LearningPlanListPage() {
     const [saving,   setSaving]   = useState(false);
     const [starting, setStarting] = useState<number | null>(null);
     const [startingCustom, setStartingCustom] = useState<number | null>(null);
+    const [activeTab, setActiveTab] = useState<'plans' | 'custom'>('plans');
 
     useEffect(() => {
         const loadAll = async () => {
@@ -253,156 +254,186 @@ export default function LearningPlanListPage() {
     return (
         <Layout
             pageTitle={t.vocab.plans.title}
-            pageSubtitle={t.vocab.plans.subtitle}
             backUrl='/vocabulary'
             backText={`${t.common.back} ${t.vocab.hub.title}`}
             titleAction={
-                <button
-                    className={`lp-new-btn${canCreate ? '' : ' disabled'}`}
-                    style={{ padding: '4px 10px', fontSize: '13px', borderRadius: '8px', minHeight: 'unset', height: 'fit-content' }}
-                    onClick={() => canCreate && setModal({ name: '', daily_count: 20, entry_mode: 'word' })}
-                    disabled={!canCreate}
-                    title={!canCreate ? t.vocab.plans.maxPlansHint.replace('{n}', String(MAX_PLANS)) : t.vocab.plans.newPlan}
-                >
-                    + {t.vocab.plans.newPlan}
-                </button>
+                <>
+                    {activeTab === 'plans' && (
+                        <button
+                            className={`uc-console-start-btn ${canCreate ? '' : 'disabled'}`}
+                            style={{ padding: '6px 12px', fontSize: '13px', width: 'auto', marginLeft: 16 }}
+                            onClick={() => canCreate && setModal({ name: '', daily_count: 20, entry_mode: 'word' })}
+                            disabled={!canCreate}
+                            title={!canCreate ? t.vocab.plans.maxPlansHint.replace('{n}', String(MAX_PLANS)) : t.vocab.plans.newPlan}
+                        >
+                            + {t.vocab.plans.newPlan}
+                        </button>
+                    )}
+                    {activeTab === 'custom' && (
+                        <button
+                            className="uc-console-start-btn"
+                            style={{ padding: '6px 12px', fontSize: '13px', width: 'auto', marginLeft: 16 }}
+                            onClick={() => setModal({ name: '', daily_count: 20, entry_mode: 'custom' })}
+                        >
+                            + 新建卡组
+                        </button>
+                    )}
+                </>
             }
         >
-            <div className="config-page-wrap" style={{ maxWidth: 760, paddingTop: '20px' }}>
-
-
-                {/* ── Plan list ── */}
-                {loading ? (
-                    <div className="lp-empty">{t.common.loading}</div>
-                ) : plans.length === 0 ? (
-                    <div className="lp-empty-state">
-                        <div className="lp-empty-icon">🃏</div>
-                        <p className="lp-empty-title">{t.vocab.plans.emptyTitle}</p>
-                        <p className="lp-empty-sub">{t.vocab.plans.emptySub}</p>
-                    </div>
-                ) : (
-                    <div className="lp-plan-list">
-                        {plans.map((plan, idx) => (
-                            <div key={plan.id} className="lp-plan-card" data-idx={idx}>
-                                {/* Color accent bar */}
-                                <div className="lp-plan-accent" />
-
-                                {/* Content */}
-                                <div className="lp-plan-body">
-                                    <div className="lp-plan-top">
-                                        <span className="lp-plan-name">{plan.name}</span>
-                                        <button
-                                            className="lp-plan-del"
-                                            onClick={(e) => handleDelete(e, plan)}
-                                            title="x"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                    <div className="lp-plan-meta">
-                                        <span className="lp-meta-item">
-                                            <span className="lp-meta-dot" />
-                                            <span dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardDaily.replace('{n}', String(plan.daily_count))) }} />
-                                        </span>
-                                        <span className="lp-meta-sep">·</span>
-                                        <span className="lp-meta-item" dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardTotal.replace('{n}', String(plan.word_count))) }} />
-                                        <span className="lp-meta-sep">·</span>
-                                        <span className={`lp-meta-item ${plan.studied_today > 0 ? 'lp-today-badge' : ''}`} dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardStudied.replace('{n}', String(plan.studied_today))) }} />
-                                    </div>
-                                    <div className="lp-plan-actions">
-                                        <button
-                                            className="lp-plan-btn secondary"
-                                            onClick={() => navigate(`/vocabulary/plans/${plan.id}`)}
-                                        >
-                                            {t.vocab.plans.editPlan}
-                                        </button>
-                                        <button
-                                            className="lp-plan-btn primary"
-                                            onClick={(e) => handleStart(e, plan)}
-                                            disabled={starting === plan.id}
-                                        >
-                                            {starting === plan.id
-                                                ? t.vocab.plans.preparing
-                                                : shouldStartReview(plan)
-                                                    ? t.vocab.plans.startReview
-                                                    : t.vocab.plans.startStudy}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-
-                        {/* Placeholder slots */}
-                        {plans.length < MAX_PLANS && (
-                            <button className="lp-plan-add-slot" onClick={() => setModal({ name: '', daily_count: 20, entry_mode: 'word' })}>
-                                <span className="lp-slot-plus">+</span>
-                                <span>{t.vocab.plans.newPlan}</span>
-                                <span className="lp-slot-hint">{plans.length} / {MAX_PLANS}</span>
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                <div className="lp-list-header" style={{ marginTop: 28 }}>
-                    <div className="lp-list-header-text">
-                        <h2>自定义记忆卡</h2>
-                        <p>这里会显示你创建并同步到后端的自定义卡组。</p>
-                    </div>
+            <div className="uc-console">
+                {/* ── 1. 左侧：分类导航 (Sidebar) ── */}
+                <div className="uc-sidebar">
+                    <div className="uc-sidebar-title">词汇库</div>
+                    <nav className="uc-sidebar-nav">
+                        <button
+                            type="button"
+                            className={`uc-nav-item ${activeTab === 'plans' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('plans')}
+                        >
+                            <span className="nav-icon">📚</span>
+                            <span className="nav-text">常规背单词</span>
+                        </button>
+                        <button
+                            type="button"
+                            className={`uc-nav-item ${activeTab === 'custom' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('custom')}
+                        >
+                            <span className="nav-icon">🃏</span>
+                            <span className="nav-text">自定义记忆卡</span>
+                        </button>
+                    </nav>
                 </div>
 
-                {customDecks.length === 0 ? (
-                    <div className="lp-empty">暂无自定义记忆卡</div>
-                ) : (
-                    <div className="lp-plan-list">
-                        {customDecks.map((deck, idx) => (
-                            <div key={deck.id} className="lp-plan-card" data-idx={idx}>
-                                <div className="lp-plan-accent" />
-                                <div className="lp-plan-body">
-                                    <div className="lp-plan-top">
-                                        <span className="lp-plan-name">{deck.title}</span>
+                {/* ── 2. 右侧：列表明细区 (Main Content) ── */}
+                <div className="uc-main-content">
+                    <div style={{ padding: '24px 32px' }}>
+                        {activeTab === 'plans' && (
+                            <>
+                                {loading ? (
+                                    <div className="lp-empty">{t.common.loading}</div>
+                                ) : plans.length === 0 ? (
+                                    <div className="lp-empty-state">
+                                        <div className="lp-empty-icon">📚</div>
+                                        <p className="lp-empty-title">{t.vocab.plans.emptyTitle}</p>
+                                        <p className="lp-empty-sub">{t.vocab.plans.emptySub}</p>
                                     </div>
-                                    <div className="lp-plan-meta">
-                                        <span className="lp-meta-item">
-                                            <span className="lp-meta-dot" />
-                                            <span>每日学习 <strong>{deck.daily_count}</strong> 张</span>
-                                        </span>
-                                        <span className="lp-meta-sep">·</span>
-                                        <span className="lp-meta-item">卡片总数 <strong>{deck.card_count}</strong></span>
-                                        <span className="lp-meta-sep">·</span>
-                                        <span className={`lp-meta-item ${deck.studied_today > 0 ? 'lp-today-badge' : ''}`}>
-                                            今日学习计划 <strong>{deck.studied_today}</strong> / <strong>{getCustomTodayTarget(deck)}</strong>
-                                        </span>
+                                ) : (
+                                    <div className="lp-plan-list">
+                                        {plans.map((plan, idx) => (
+                                            <div key={plan.id} className="lp-plan-card" data-idx={idx}>
+                                                <div className="lp-plan-accent" />
+                                                <div className="lp-plan-body">
+                                                    <div className="lp-plan-top">
+                                                        <span className="lp-plan-name">{plan.name}</span>
+                                                        <button
+                                                            className="lp-plan-del"
+                                                            onClick={(e) => handleDelete(e, plan)}
+                                                            title="删除"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                    <div className="lp-plan-meta">
+                                                        <span className="lp-meta-item">
+                                                            <span className="lp-meta-dot" />
+                                                            <span dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardDaily.replace('{n}', String(plan.daily_count))) }} />
+                                                        </span>
+                                                        <span className="lp-meta-sep">·</span>
+                                                        <span className="lp-meta-item" dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardTotal.replace('{n}', String(plan.word_count))) }} />
+                                                        <span className="lp-meta-sep">·</span>
+                                                        <span className={`lp-meta-item ${plan.studied_today > 0 ? 'lp-today-badge' : ''}`} dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardStudied.replace('{n}', String(plan.studied_today))) }} />
+                                                    </div>
+                                                    <div className="lp-plan-actions">
+                                                        <button
+                                                            className="lp-plan-btn secondary"
+                                                            onClick={() => navigate(`/vocabulary/plans/${plan.id}`)}
+                                                        >
+                                                            {t.vocab.plans.editPlan}
+                                                        </button>
+                                                        <button
+                                                            className="lp-plan-btn primary"
+                                                            onClick={(e) => handleStart(e, plan)}
+                                                            disabled={starting === plan.id}
+                                                        >
+                                                            {starting === plan.id
+                                                                ? t.vocab.plans.preparing
+                                                                : shouldStartReview(plan)
+                                                                    ? t.vocab.plans.startReview
+                                                                    : t.vocab.plans.startStudy}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div className="lp-plan-actions">
-                                        <button
-                                            className="lp-plan-btn secondary"
-                                            onClick={() => navigate('/vocabulary/custom-cards', {
-                                                state: {
-                                                    prefillDeckId: deck.id,
-                                                    prefillTitle: deck.title,
-                                                    prefillDailyCount: deck.daily_count,
-                                                },
-                                            })}
-                                        >
-                                            添加卡片
-                                        </button>
-                                        <button
-                                            className="lp-plan-btn primary"
-                                            onClick={() => handleStartCustom(deck)}
-                                            disabled={startingCustom === deck.id}
-                                        >
-                                            {startingCustom === deck.id
-                                                ? t.vocab.plans.preparing
-                                                : shouldStartCustomReview(deck)
-                                                    ? t.vocab.plans.startReview
-                                                    : t.vocab.plans.startStudy}
-                                        </button>
+                                )}
+                            </>
+                        )}
+
+                        {activeTab === 'custom' && (
+                            <>
+                                {customDecks.length === 0 ? (
+                                    <div className="lp-empty-state">
+                                        <div className="lp-empty-icon">🃏</div>
+                                        <p className="lp-empty-title">暂无自定义记忆卡</p>
+                                        <p className="lp-empty-sub">点击右上角新建卡组，创建属于你自己的闪卡</p>
                                     </div>
-                                </div>
-                            </div>
-                        ))}
+                                ) : (
+                                    <div className="lp-plan-list">
+                                        {customDecks.map((deck, idx) => (
+                                            <div key={deck.id} className="lp-plan-card" data-idx={idx}>
+                                                <div className="lp-plan-accent" />
+                                                <div className="lp-plan-body">
+                                                    <div className="lp-plan-top">
+                                                        <span className="lp-plan-name">{deck.title}</span>
+                                                    </div>
+                                                    <div className="lp-plan-meta">
+                                                        <span className="lp-meta-item">
+                                                            <span className="lp-meta-dot" />
+                                                            <span>每日学习 <strong>{deck.daily_count}</strong> 张</span>
+                                                        </span>
+                                                        <span className="lp-meta-sep">·</span>
+                                                        <span className="lp-meta-item">卡片总数 <strong>{deck.card_count}</strong></span>
+                                                        <span className="lp-meta-sep">·</span>
+                                                        <span className={`lp-meta-item ${deck.studied_today > 0 ? 'lp-today-badge' : ''}`}>
+                                                            今日学习计划 <strong>{deck.studied_today}</strong> / <strong>{getCustomTodayTarget(deck)}</strong>
+                                                        </span>
+                                                    </div>
+                                                    <div className="lp-plan-actions">
+                                                        <button
+                                                            className="lp-plan-btn secondary"
+                                                            onClick={() => navigate('/vocabulary/custom-cards', {
+                                                                state: {
+                                                                    prefillDeckId: deck.id,
+                                                                    prefillTitle: deck.title,
+                                                                    prefillDailyCount: deck.daily_count,
+                                                                },
+                                                            })}
+                                                        >
+                                                            添加卡片
+                                                        </button>
+                                                        <button
+                                                            className="lp-plan-btn primary"
+                                                            onClick={() => handleStartCustom(deck)}
+                                                            disabled={startingCustom === deck.id}
+                                                        >
+                                                            {startingCustom === deck.id
+                                                                ? t.vocab.plans.preparing
+                                                                : shouldStartCustomReview(deck)
+                                                                    ? t.vocab.plans.startReview
+                                                                    : t.vocab.plans.startStudy}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
 
             {/* ── Create modal ── */}

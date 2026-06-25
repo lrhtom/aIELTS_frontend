@@ -857,6 +857,7 @@
     right: 12px;
     background: var(--color-bg);
     border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
     border-radius: 8px;
     font-size: 16px;
     line-height: 1;

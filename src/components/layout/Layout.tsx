@@ -14,9 +14,10 @@ interface LayoutProps {
   backText?: string;
   headerRight?: React.ReactNode;
   fullScreen?: boolean;
+  noPadding?: boolean;
 }
 
-export default function Layout({ children, pageTitle, pageSubtitle, titleAction, backUrl, onBack, backText, headerRight, fullScreen }: LayoutProps) {
+export default function Layout({ children, pageTitle, pageSubtitle, titleAction, backUrl, onBack, backText, headerRight, fullScreen, noPadding }: LayoutProps) {
   const { pathname } = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => sessionStorage.getItem('sidebar_open') !== 'true'
@@ -57,7 +58,7 @@ export default function Layout({ children, pageTitle, pageSubtitle, titleAction,
           backText={backText}
           headerRight={headerRight}
       />
-      <main className={`layout-content ${pathname === '/writing/correction' ? 'no-padding' : ''}`}>
+      <main className={`layout-content ${pathname === '/writing/correction' || noPadding ? 'no-padding' : ''}`}>
         {children}
       </main>
     </div>

@@ -146,6 +146,14 @@ export default function LearningPlanDetailPage() {
 
     // Starting session
     const [starting, setStarting] = useState(false);
+    
+    // Disable body scroll strictly for this fullscreen-like layout
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
     const [studyMode, setStudyMode] = useState<StudyMode>(
         () => (localStorage.getItem(`lp_study_mode_${planId}`) as StudyMode) || 'flashcard'
     );
@@ -193,6 +201,37 @@ export default function LearningPlanDetailPage() {
     const [bookQ, setBookQ] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [deletingEntry, setDeletingEntry] = useState<PlanEntry | null>(null);
+
+    // Resizer State
+    const [leftWidth, setLeftWidth] = useState(800);
+    const isDraggingRef = useRef(false);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        isDraggingRef.current = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    }, []);
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isDraggingRef.current) return;
+            setLeftWidth(Math.max(400, Math.min(e.clientX, window.innerWidth - 300)));
+        };
+        const handleMouseUp = () => {
+            if (isDraggingRef.current) {
+                isDraggingRef.current = false;
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = '';
+            }
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, []);
 
     // ── Load plan + words ──────────────────────────────────────────────────
     useEffect(() => {
@@ -709,24 +748,137 @@ export default function LearningPlanDetailPage() {
 
     // ──────────────────────────────────────────────────────────────────────
     return (
-        <Layout>
-            <div className="config-page-wrap">
-                {/* ── Header ── */}
-                <div className="lp-detail-header">
-                    <button className="btn" style={{ marginRight: 4 }} onClick={() => navigate('/vocabulary/plans')}>
-                        ← 返回
-                    </button>
-                    <input
-                        className="lp-name-input"
-                        value={planName}
-                        maxLength={50}
-                        onChange={e => setPlanName(e.target.value)}
-                        onBlur={saveName}
-                        onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    />
-                    <div className="lp-daily-box">
-                        <div className="lp-daily-wrap">
-                            {t.vocab.details.dailyPrefix}
+        <Layout backUrl="/vocabulary/plans" backText="返回词汇库" noPadding={true}>
+            <div className="uc-console" style={{ margin: 0, height: 'calc(100vh - 60px)' }}>
+                {/* ── Left Pane: Study Modes ── */}
+                <div className="uc-sidebar" style={{ width: leftWidth, flex: 'none', borderRight: 'none', overflowY: 'hidden', minHeight: 0 }}>
+                    <div style={{ padding: "24px 24px 0 24px" }}>
+<div className="uc-sidebar-title" style={{ marginTop: 8 }}>学习模式</div>
+                    <nav className="uc-sidebar-nav" style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                        {STUDY_MODES.map(([m, label]) => (
+                            <button
+                                key={m}
+                                type="button"
+                                className={`uc-nav-item ${studyMode === m ? 'active' : ''}`}
+                                onClick={() => {
+                                    setStudyMode(m);
+                                    localStorage.setItem(`lp_study_mode_${planId}`, m);
+                                    updatePlan(planId, { default_mode: m }).catch(() => { });
+                                }}
+                            >
+                                <span className="nav-icon">
+                                    {m === 'flashcard' ? '🃏' : m === 'choice' ? '🎯' : m === 'write' ? '✍️' : m === 'copy' ? '📝' : m === 'article_copy' ? '📄' : '🍿'}
+                                </span>
+                                <span className="nav-text">{label}</span>
+                            </button>
+                        ))}
+                    </nav>
+
+                    <div style={{ padding: '16px' }}>
+                        {studyMode === 'copy' && (
+                            <div className="uc-settings-list">
+                                <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '16px 0' }}>
+                                    <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
+                                        <div className="uc-row-title">每个单词抄写几遍</div>
+                                        <div className="uc-row-desc" style={{ marginTop: 4 }}>必须完全正确。每次抄完一遍按规则重新插入</div>
+                                    </div>
+                                    <div className="uc-row-control" style={{ width: '100%' }}>
+                                        <input
+                                            type="number"
+                                            min={1} max={20}
+                                            value={copyRepetitions}
+                                            onChange={(e) => setCopyRepetitions(Number(e.target.value))}
+                                            onBlur={saveCopyConfig}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                            className="console-select"
+                                            style={{ width: '100%', paddingLeft: 12 }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '16px 0', borderBottom: 'none' }}>
+                                    <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
+                                        <div className="uc-row-title">增加复习间隔（天）</div>
+                                        <div className="uc-row-desc" style={{ marginTop: 4 }}>
+                                            完成后额外增加 {copyReviewDays} 天
+                                            {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>（今日已学，明日生效）</span>}
+                                        </div>
+                                    </div>
+                                    <div className="uc-row-control" style={{ width: '100%' }}>
+                                        <input
+                                            type="number"
+                                            min={0} max={365}
+                                            value={copyReviewDays}
+                                            disabled={isTodayConfigLocked}
+                                            onChange={(e) => setCopyReviewDays(Number(e.target.value))}
+                                            onBlur={saveCopyConfig}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                            className="console-select"
+                                            style={{ width: '100%', paddingLeft: 12 }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {studyMode === 'article_copy' && (
+                            <div className="uc-settings-list">
+                                <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '16px 0' }}>
+                                    <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
+                                        <div className="uc-row-title">增加复习间隔（天）</div>
+                                        <div className="uc-row-desc" style={{ marginTop: 4 }}>
+                                            AI 生成短文，抄写完成后所有单词标记已学，增加相应天数
+                                            {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>（今日已学，明日生效）</span>}
+                                        </div>
+                                    </div>
+                                    <div className="uc-row-control" style={{ width: '100%' }}>
+                                        <input
+                                            type="number"
+                                            min={0} max={365}
+                                            value={articleReviewDays}
+                                            disabled={isTodayConfigLocked}
+                                            onChange={(e) => setArticleReviewDays(Number(e.target.value))}
+                                            onBlur={saveArticleConfig}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                            className="console-select"
+                                            style={{ width: '100%', paddingLeft: 12 }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '16px 0', borderBottom: 'none' }}>
+                                    <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
+                                        <div className="uc-row-title">重新生成文章</div>
+                                        <div className="uc-row-desc" style={{ marginTop: 4 }}>如果不满意可让 AI 重写</div>
+                                    </div>
+                                    <div className="uc-row-control" style={{ width: '100%' }}>
+                                        <button
+                                            type="button"
+                                            className="uc-console-start-btn"
+                                            style={{ width: '100%', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '8px 12px', fontSize: 13 }}
+                                            disabled={articleRegenerating}
+                                            onClick={handleRegenerateArticle}
+                                        >
+                                            {articleRegenerating ? '生成中...' : '重新生成文章'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+</div>
+<div style={{ padding: "0 24px 24px 24px" }}>
+<div className="uc-main-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
+                        <input
+                            className="uc-title-input"
+                            value={planName}
+                            maxLength={50}
+                            onChange={e => setPlanName(e.target.value)}
+                            onBlur={saveName}
+                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                            style={{ fontSize: '24px', fontWeight: 'bold', border: 'none', background: 'transparent', outline: 'none', width: '100%' }}
+                        />
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '14px', color: 'var(--color-text-secondary)', width: '100%' }}>
+                            <span>{t.vocab.details.dailyPrefix}</span>
                             <input
                                 type="number"
                                 min={1} max={200}
@@ -736,138 +888,25 @@ export default function LearningPlanDetailPage() {
                                 onChange={e => setDailyCount(Number(e.target.value))}
                                 onBlur={saveDaily}
                                 onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                style={{ width: 60, padding: '4px 8px', borderRadius: 4, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', color: 'var(--color-text)' }}
                             />
-                            {t.vocab.details.dailySuffix}
+                            <span>{t.vocab.details.dailySuffix}</span>
+                            {isTodayConfigLocked && (
+                                <span style={{ color: 'var(--color-warning)', fontSize: '12px', marginLeft: 8 }}>今日已锁定</span>
+                            )}
                         </div>
-                        {isTodayConfigLocked && (
-                            <div className="lp-daily-lock-hint">今日已学习过单词，今日不能修改每日词数，请明天再调整。</div>
-                        )}
-                    </div>
-                    <button
-                        className="lp-start-btn"
-                        onClick={handleStart}
-                        disabled={starting || entries.length === 0}
-                    >
-                        {starting ? t.vocab.plans.preparing : isQuotaDone ? t.vocab.plans.startReview : t.vocab.plans.startStudy}
-                    </button>
-                </div>
 
-                {/* ── Study mode selector ── */}
-                <div className="lp-mode-selector">
-                    <span className="lp-mode-selector-label">{t.vocab.details.modeLabel}</span>
-                    <div className="lp-mode-tabs">
-                        {STUDY_MODES.map(([m]) => (
-                            <button
-                                key={m}
-                                className={`lp-mode-tab${studyMode === m ? ' active' : ''}`}
-                                onClick={() => {
-                                    setStudyMode(m);
-                                    localStorage.setItem(`lp_study_mode_${planId}`, m);
-                                    updatePlan(planId, { default_mode: m }).catch(() => { });
-                                }}
-                            >
-                                {m === 'flashcard'
-                                    ? t.vocab.modes.flashcard
-                                    : m === 'choice'
-                                        ? t.vocab.modes.choice
-                                        : m === 'write'
-                                            ? t.vocab.modes.write
-                                            : m === 'copy'
-                                                ? t.vocab.modes.copy
-                                                : m === 'article_copy'
-                                                        ? '文章抄写'
-                                                        : '追剧背词'}
-                            </button>
-                        ))}
+                        <button
+                            className="uc-console-start-btn"
+                            onClick={handleStart}
+                            disabled={starting || entries.length === 0}
+                            style={{ width: '100%', padding: '12px 16px', fontSize: '15px', marginTop: 8 }}
+                        >
+                            {starting ? t.vocab.plans.preparing : isQuotaDone ? t.vocab.plans.startReview : t.vocab.plans.startStudy}
+                        </button>
                     </div>
-                </div>
-
-                {studyMode === 'copy' && (
-                    <div className="lp-copy-config-card">
-                        <div className="lp-copy-config-row">
-                            <label htmlFor="lp-copy-repetitions">每个单词抄写几遍</label>
-                            <input
-                                id="lp-copy-repetitions"
-                                type="number"
-                                min={1}
-                                max={20}
-                                value={copyRepetitions}
-                                onChange={(e) => setCopyRepetitions(Number(e.target.value))}
-                                onBlur={saveCopyConfig}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        (e.target as HTMLInputElement).blur();
-                                    }
-                                }}
-                            />
-                        </div>
-                        <div className="lp-copy-config-row">
-                            <label htmlFor="lp-copy-review-days">该词抄写完成后，在当前复习间隔基础上增加几天</label>
-                            <input
-                                id="lp-copy-review-days"
-                                type="number"
-                                min={0}
-                                max={365}
-                                value={copyReviewDays}
-                                disabled={isTodayConfigLocked}
-                                title={isTodayConfigLocked ? '今日已学习，明天可调整复习天数' : ''}
-                                onChange={(e) => setCopyReviewDays(Number(e.target.value))}
-                                onBlur={saveCopyConfig}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        (e.target as HTMLInputElement).blur();
-                                    }
-                                }}
-                            />
-                        </div>
-                        {isTodayConfigLocked && (
-                            <div className="lp-daily-lock-hint">今日已学习过单词，今日不能修改“完成后几天复习”，请明天再调整。</div>
-                        )}
-                        <p className="lp-copy-config-hint">
-                            抄写提交必须完全正确。每次抄完一遍会按学习队列重排规则重新插入，直到该词次数耗尽后从队列移除。完成后会在当前复习间隔基础上额外增加 {copyReviewDays} 天。
-                        </p>
-                    </div>
-                )}
-
-                {studyMode === 'article_copy' && (
-                    <div className="lp-copy-config-card">
-                        <div className="lp-copy-config-row">
-                            <label htmlFor="lp-article-review-days">文章抄写完成后，所有单词复习间隔增加几天（相对今天）</label>
-                            <input
-                                id="lp-article-review-days"
-                                type="number"
-                                min={0}
-                                max={365}
-                                value={articleReviewDays}
-                                disabled={isTodayConfigLocked}
-                                title={isTodayConfigLocked ? '今日已学习，明天可调整复习天数' : ''}
-                                onChange={(e) => setArticleReviewDays(Number(e.target.value))}
-                                onBlur={saveArticleConfig}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        (e.target as HTMLInputElement).blur();
-                                    }
-                                }}
-                            />
-                        </div>
-                        {isTodayConfigLocked && (
-                            <div className="lp-daily-lock-hint">今日已学习过单词，今日不能修改完成后几天复习，请明天再调整。</div>
-                        )}
-                        <p className="lp-copy-config-hint">
-                            AI 会生成一篇包含今日所有学习单词的短文。逐字抄写全文直到完成，完成后所有单词统一标记为已学习，复习间隔在当天基础上增加 {articleReviewDays} 天。
-                        </p>
-                        <div className="lp-copy-config-row">
-                            <button
-                                type="button"
-                                className="lp-regenerate-btn"
-                                disabled={articleRegenerating}
-                                onClick={handleRegenerateArticle}
-                            >
-                                {articleRegenerating ? '重新生成中...' : '重新生成文章'}
-                            </button>
-                        </div>
-                    </div>
-                )}
+                    
+                    <div style={{ padding: '16px 24px' }}>
 
                 {/* ── Today's studied words ── */}
                 {plan && (
@@ -1130,7 +1169,27 @@ export default function LearningPlanDetailPage() {
                     )}
                 </div>
 
-                {/* ── Word list ── */}
+                    </div>
+                </div>
+                </div>
+                {/* ── Resizer ── */}
+                <div 
+                    onMouseDown={handleMouseDown}
+                    style={{ 
+                        width: 4, 
+                        cursor: 'col-resize', 
+                        backgroundColor: 'transparent', 
+                        zIndex: 10,
+                        borderLeft: '1px solid var(--color-border)',
+                        transition: 'background-color 0.2s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-primary)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                />
+
+                {/* ── Right Pane: Main List ── */}
+                <div className="uc-main-content" style={{ flex: 1, minWidth: 400, borderLeft: 'none', overflowY: 'auto', minHeight: 0 }}>
+                                    {/* ── Word list ── */}
                 <div className="lp-word-section">
                     <div className="lp-word-section-header">
                         
@@ -1243,6 +1302,8 @@ export default function LearningPlanDetailPage() {
                         </>
                     )}
                 </div>
+                </div>
+
             </div>
 
             <ConfirmDialog
