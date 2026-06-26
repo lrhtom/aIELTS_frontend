@@ -262,7 +262,7 @@ export default function Task2PracticePage() {
                 </button>
                 <button
                     className="wp-ghost-btn"
-                    onClick={() => navigate('/writing/task2')}
+                    onClick={() => navigate(bankId ? '/practice/ai/bank' : '/writing/task2')}
                 >
                     {t.practiceSandbox.backBtn}
                 </button>

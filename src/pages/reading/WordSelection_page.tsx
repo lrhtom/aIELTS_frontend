@@ -124,105 +124,123 @@ export default function WordSelection_page() {
                     </div>
 
                     <div className="uc-settings-list">
-                        {/* AI Model */}
-                        <div className="uc-list-row">
-                            <div className="uc-row-label">
-                                <span className="row-title">AI 模型</span>
-                                <span className="row-desc">选择后台出题和批改所使用的引擎</span>
-                            </div>
-                            <div className="uc-row-control console-model-selector">
-                                <AiModelSelector label="" description="" />
-                            </div>
-                        </div>
-
-                        {/* Difficulty */}
-                        <div className="uc-list-row">
-                            <div className="uc-row-label">
-                                <span className="row-title">{t.targetScore}</span>
-                            </div>
-                            <div className="uc-row-control">
-                                <div className="uc-segmented-control">
-                                    {DIFFICULTIES.map(d => (
-                                        <button
-                                            key={d}
-                                            className={`seg-btn ${difficulty === d ? 'active' : ''}`}
-                                            onClick={() => setDifficulty(d)}
-                                        >
-                                            {d}
-                                        </button>
-                                    ))}
+                        <div className="uc-card-group">
+                            {/* AI Model */}
+                            <div className="uc-list-row">
+                                <div className="uc-row-label-flex">
+                                    <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
+                                        <span className="row-title">AI 模型</span>
+                                    </div>
+                                </div>
+                                <div className="uc-row-control console-model-selector">
+                                    <AiModelSelector label="" description="" />
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Judgement Mode (only for true_false) */}
-                        {questionType === 'true_false' && (
+                            {/* Difficulty */}
                             <div className="uc-list-row">
-                                <div className="uc-row-label">
-                                    <span className="row-title">{t.judgementMode.label}</span>
+                                <div className="uc-row-label-flex">
+                                    <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📊</span>
+                                        <span className="row-title">{t.targetScore}</span>
+                                    </div>
                                 </div>
                                 <div className="uc-row-control">
                                     <div className="uc-segmented-control">
-                                        <button
-                                            className={`seg-btn ${judgementMode === 'easy' ? 'active' : ''}`}
-                                            onClick={() => setJudgementMode('easy')}
-                                        >
-                                            {t.judgementMode.easy.title}
-                                        </button>
-                                        <button
-                                            className={`seg-btn ${judgementMode === 'normal' ? 'active' : ''}`}
-                                            onClick={() => setJudgementMode('normal')}
-                                        >
-                                            {t.judgementMode.normal.title}
-                                        </button>
+                                        {DIFFICULTIES.map(d => (
+                                            <button
+                                                key={d}
+                                                className={`seg-btn ${difficulty === d ? 'active' : ''}`}
+                                                onClick={() => setDifficulty(d)}
+                                            >
+                                                {d}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
-                        )}
 
-                        {/* Absurd Mode Toggle */}
-                        <div className="uc-list-row">
-                            <div className="uc-row-label">
-                                <span className="row-title">{t.absurdMode.label}</span>
-                                <span className="row-desc">{t.absurdMode.desc}</span>
-                            </div>
-                            <div className="uc-row-control">
-                                <label className="toggle-switch-console">
-                                    <input type="checkbox" checked={absurdMode} onChange={e => setAbsurdMode(e.target.checked)} />
-                                    <span className="toggle-slider-console" />
-                                </label>
-                            </div>
+                            {/* Judgement Mode (only for true_false) */}
+                            {questionType === 'true_false' && (
+                                <div className="uc-list-row">
+                                    <div className="uc-row-label-flex">
+                                        <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>⚖️</span>
+                                            <span className="row-title">{t.judgementMode.label}</span>
+                                        </div>
+                                    </div>
+                                    <div className="uc-row-control">
+                                        <div className="uc-segmented-control">
+                                            <button
+                                                className={`seg-btn ${judgementMode === 'easy' ? 'active' : ''}`}
+                                                onClick={() => setJudgementMode('easy')}
+                                            >
+                                                {t.judgementMode.easy.title}
+                                            </button>
+                                            <button
+                                                className={`seg-btn ${judgementMode === 'normal' ? 'active' : ''}`}
+                                                onClick={() => setJudgementMode('normal')}
+                                            >
+                                                {t.judgementMode.normal.title}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Vocab Accordion */}
-                        <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`}>
-                            <div className="uc-list-row" style={{ borderBottom: 'none' }}>
+                        <div className="uc-card-group">
+                            {/* Absurd Mode Toggle */}
+                            <div className="uc-list-row">
                                 <div className="uc-row-label">
-                                    <span className="row-title">{t.customVocab.label}</span>
-                                    <span className="row-desc">{t.customVocab.desc}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#ec4899', background: '#fce7f3' }}>🎲</span>
+                                        <span className="row-title">{t.absurdMode.label}</span>
+                                    </div>
+                                    <span className="row-desc" style={{ marginLeft: '40px' }}>{t.absurdMode.desc}</span>
                                 </div>
                                 <div className="uc-row-control">
                                     <label className="toggle-switch-console">
-                                        <input type="checkbox" checked={useCustomVocab} onChange={e => setUseCustomVocab(e.target.checked)} />
+                                        <input type="checkbox" checked={absurdMode} onChange={e => setAbsurdMode(e.target.checked)} />
                                         <span className="toggle-slider-console" />
                                     </label>
                                 </div>
                             </div>
-                            {useCustomVocab && (
-                                <div className="uc-vocab-body">
-                                    {plans.length > 0 && (
-                                        <div className="uc-vocab-toolbar">
-                                            <select className="console-select" value={importPlanId} onChange={e => setImportPlanId(Number(e.target.value))}>
-                                                {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                            </select>
-                                            <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
-                                                {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
-                                            </button>
+
+                            {/* Vocab Accordion */}
+                            <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`} style={{ borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: 0 }}>
+                                <div className="uc-list-row" style={{ borderBottom: 'none' }}>
+                                    <div className="uc-row-label">
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <span className="uc-row-icon" style={{ color: '#f43f5e', background: '#ffe4e6' }}>📚</span>
+                                            <span className="row-title">{t.customVocab.label}</span>
                                         </div>
-                                    )}
-                                    <VocabInput value={vocabInput} onChange={handleVocabChange} />
+                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{t.customVocab.desc}</span>
+                                    </div>
+                                    <div className="uc-row-control">
+                                        <label className="toggle-switch-console">
+                                            <input type="checkbox" checked={useCustomVocab} onChange={e => setUseCustomVocab(e.target.checked)} />
+                                            <span className="toggle-slider-console" />
+                                        </label>
+                                    </div>
                                 </div>
-                            )}
+                                {useCustomVocab && (
+                                    <div className="uc-vocab-body">
+                                        {plans.length > 0 && (
+                                            <div className="uc-vocab-toolbar">
+                                                <select className="console-select" value={importPlanId} onChange={e => setImportPlanId(Number(e.target.value))}>
+                                                    {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                </select>
+                                                <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
+                                                    {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
+                                                </button>
+                                            </div>
+                                        )}
+                                        <VocabInput value={vocabInput} onChange={handleVocabChange} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 

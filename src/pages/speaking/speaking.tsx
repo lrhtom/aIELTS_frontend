@@ -334,12 +334,16 @@ export default function Speaking() {
                         </div>
 
                         <div className="uc-settings-list">
-                            {/* IELTS Part Segmented Control */}
-                            {(selectedMode === 'exam' || selectedMode === 'fullTest') && (
-                                <div className="uc-list-row">
-                                    <div className="uc-row-label">
-                                        <span className="row-title">{sc.ieltsPart.title}</span>
-                                    </div>
+                            <div className="uc-card-group">
+                                {/* IELTS Part Segmented Control */}
+                                {(selectedMode === 'exam' || selectedMode === 'fullTest') && (
+                                    <div className="uc-list-row">
+                                        <div className="uc-row-label-flex">
+                                            <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📝</span>
+                                                <span className="row-title">{sc.ieltsPart.title}</span>
+                                            </div>
+                                        </div>
                                     <div className="uc-row-control">
                                         {selectedMode === 'fullTest' ? (
                                             <span className="ft-inline-text">📋 {sc.ieltsPart.fullTestHint}</span>
@@ -360,16 +364,19 @@ export default function Speaking() {
                                 </div>
                             )}
 
-                            {/* Scenario */}
-                            {selectedMode === 'scenario' && (
-                                <div className="uc-list-group">
-                                    <div className="uc-list-row uc-row-vertical">
-                                        <div className="uc-row-label-flex">
-                                            <span className="row-title">{sc.scenarioSettings.title}</span>
-                                            <button className="secondary-btn-console" onClick={handleRandomScenario} disabled={isGeneratingScenario}>
-                                                {isGeneratingScenario ? sc.scenarioSettings.generating : sc.scenarioSettings.randomBtn}
-                                            </button>
-                                        </div>
+                                {/* Scenario */}
+                                {selectedMode === 'scenario' && (
+                                    <div className="uc-list-group">
+                                        <div className="uc-list-row uc-row-vertical">
+                                            <div className="uc-row-label-flex">
+                                                <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>🎭</span>
+                                                    <span className="row-title">{sc.scenarioSettings.title}</span>
+                                                </div>
+                                                <button className="secondary-btn-console" onClick={handleRandomScenario} disabled={isGeneratingScenario}>
+                                                    {isGeneratingScenario ? sc.scenarioSettings.generating : sc.scenarioSettings.randomBtn}
+                                                </button>
+                                            </div>
                                         <textarea
                                             className="uc-console-textarea"
                                             rows={3}
@@ -412,22 +419,30 @@ export default function Speaking() {
                                 </div>
                             )}
 
-                            {/* AI Model */}
-                            <div className="uc-list-row">
-                                <div className="uc-row-label">
-                                    <span className="row-title">AI 模型</span>
-                                </div>
-                                <div className="uc-row-control console-model-selector">
-                                    <AiModelSelector label="" description="" />
+                                {/* AI Model */}
+                                <div className="uc-list-row">
+                                    <div className="uc-row-label-flex">
+                                        <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
+                                            <span className="row-title">AI 模型</span>
+                                        </div>
+                                    </div>
+                                    <div className="uc-row-control console-model-selector">
+                                        <AiModelSelector label="" description="" />
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Subtitles */}
-                            <div className="uc-list-row">
-                                <div className="uc-row-label">
-                                    <span className="row-title">{sc.subtitles.title}</span>
-                                    <span className="row-desc">{sc.subtitles.desc}</span>
-                                </div>
+                            <div className="uc-card-group">
+                                {/* Subtitles */}
+                                <div className="uc-list-row">
+                                    <div className="uc-row-label">
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <span className="uc-row-icon" style={{ color: '#10b981', background: '#d1fae5' }}>👁️</span>
+                                            <span className="row-title">{sc.subtitles.title}</span>
+                                        </div>
+                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{sc.subtitles.desc}</span>
+                                    </div>
                                 <div className="uc-row-control">
                                     <label className="toggle-switch-console">
                                         <input type="checkbox" checked={showSubtitles} onChange={e => setShowSubtitles(e.target.checked)} />
@@ -436,13 +451,16 @@ export default function Speaking() {
                                 </div>
                             </div>
                             
-                            {/* Vocab Accordion */}
-                            <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`}>
-                                <div className="uc-list-row" style={{ borderBottom: 'none' }}>
-                                    <div className="uc-row-label">
-                                        <span className="row-title">{sc.vocabSettings.title}</span>
-                                        <span className="row-desc">{sc.vocabSettings.desc}</span>
-                                    </div>
+                                {/* Vocab Accordion */}
+                                <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`} style={{ borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: 0 }}>
+                                    <div className="uc-list-row" style={{ borderBottom: 'none' }}>
+                                        <div className="uc-row-label">
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <span className="uc-row-icon" style={{ color: '#f43f5e', background: '#ffe4e6' }}>📚</span>
+                                                <span className="row-title">{sc.vocabSettings.title}</span>
+                                            </div>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{sc.vocabSettings.desc}</span>
+                                        </div>
                                     <div className="uc-row-control">
                                         <label className="toggle-switch-console">
                                             <input type="checkbox" checked={useCustomVocab} onChange={e => setUseCustomVocab(e.target.checked)} />
@@ -465,6 +483,7 @@ export default function Speaking() {
                                         <VocabInput value={vocabInput} onChange={handleVocabChange} />
                                     </div>
                                 )}
+                            </div>
                             </div>
                         </div>
 

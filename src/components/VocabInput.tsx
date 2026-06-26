@@ -51,9 +51,9 @@ export default function VocabInput({ value, onChange, placeholder, className }: 
     };
 
     return (
-        <div className={`space-y-4 flex flex-col ${className || ''}`}>
+        <div className={`space-y-3 ${className || ''}`}>
             {/* 词汇计数行 */}
-            <div className="flex flex-wrap items-center gap-2.5 mb-2">
+            <div className="flex flex-wrap items-center gap-2.5">
                 <span className="text-[13px] text-stone-500">{vi.label}：</span>
                 <span className="bg-gradient-to-br from-indigo-500 to-violet-500 text-white rounded-full px-3 py-0.5 text-[13px] font-bold min-w-[32px] text-center shadow-sm">
                     {validCount}
@@ -67,7 +67,7 @@ export default function VocabInput({ value, onChange, placeholder, className }: 
 
             <textarea
                 ref={textareaRef}
-                className="vocab-textarea flex-1 w-full p-4 rounded-xl border border-stone-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all duration-200 text-stone-700 min-h-[200px] bg-white/50 backdrop-blur-sm shadow-inner"
+                className="vocab-textarea w-full p-4 rounded-xl border border-stone-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all duration-200 text-stone-700 min-h-[200px] bg-stone-50 shadow-inner"
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 onBlur={handleBlur}

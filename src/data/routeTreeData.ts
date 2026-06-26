@@ -73,7 +73,7 @@ export const frontendRouteTree: RouteTreeNode = {
                 { name: '/writing/task2/opinion-drill/generating', attributes: { component: 'Task2OpinionDrillGeneratingPage', guard: 'Protected' } },
                 { name: '/writing/task2/opinion-drill/doing', attributes: { component: 'Task2OpinionDrillDoingPage', guard: 'Protected' } },
                 { name: '/writing/task2/doing', attributes: { component: 'Task2PracticePage', guard: 'Protected' } },
-                { name: '/writing/chart', attributes: { component: 'ChartSelectionPage', guard: 'Protected' } },
+                { name: '/writing/chart', attributes: { component: 'Navigate→/writing/task1', guard: 'Redirect' } },
                 { name: '/writing/chart/doing', attributes: { component: 'ChartPracticePage', guard: 'Protected' } },
             ],
         },

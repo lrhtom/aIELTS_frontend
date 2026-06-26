@@ -138,7 +138,7 @@ const FRONTEND_ROUTES: FlatRoute[] = [
     { path: '/writing/task2/opinion-drill/generating', component: 'Task2OpinionDrillGeneratingPage', guard: 'Protected', module: 'routeVis.moduleNames.writing' },
     { path: '/writing/task2/opinion-drill/doing',    component: 'Task2OpinionDrillDoingPage',      guard: 'Protected', module: 'routeVis.moduleNames.writing' },
     { path: '/writing/task2/doing',                  component: 'Task2PracticePage',               guard: 'Protected', module: 'routeVis.moduleNames.writing' },
-    { path: '/writing/chart',                        component: 'ChartSelectionPage',              guard: 'Protected', module: 'routeVis.moduleNames.writing' },
+    { path: '/writing/chart',                        component: 'Navigate→/writing/task1',         guard: 'Redirect', module: 'routeVis.moduleNames.writing' },
     { path: '/writing/chart/doing',                  component: 'ChartPracticePage',               guard: 'Protected', module: 'routeVis.moduleNames.writing' },
     // ── Creative Workshop ────────────────────────────────────
     { path: '/creative-workshop',           component: 'CreativeWorkshopPage',          guard: 'Protected', module: 'routeVis.moduleNames.creative' },

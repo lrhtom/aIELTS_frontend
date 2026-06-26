@@ -26,7 +26,7 @@ export default function Task2SelectionPage() {
     const { lang } = useLang();
     const t = translations[lang];
 
-    const [selectedType, setSelectedType] = useState<string | null>(null);
+    const [selectedType, setSelectedType] = useState<string>('opinion');
     const [selectedTopicCategory, setSelectedTopicCategory] = useState<Task2TopicCategory>('all');
 
     const taskTypes = [
@@ -52,15 +52,14 @@ export default function Task2SelectionPage() {
         { id: 'innovation', label: t.task2Selection.topics.innovation },
     ];
 
+    const selected = taskTypes.find(x => x.id === selectedType) ?? taskTypes[0];
     const topicQuery = `topic=${encodeURIComponent(selectedTopicCategory)}`;
 
     const handleStart = () => {
-        if (!selectedType) return;
-        
         if (selectedType === 'random') {
             const mainPool = ['opinion', 'report', 'mixed', 'innovation'];
             const randomMain = mainPool[Math.floor(Math.random() * mainPool.length)];
-            
+
             if (randomMain === 'opinion') {
                 const opinionPool = ['opinion_agree', 'opinion_discuss', 'opinion_advantages'];
                 const randomOpinion = opinionPool[Math.floor(Math.random() * opinionPool.length)];
@@ -73,7 +72,7 @@ export default function Task2SelectionPage() {
             return;
         }
 
-        const target = taskTypes.find(t => t.id === selectedType);
+        const target = taskTypes.find(x => x.id === selectedType);
         if (target) {
             if (target.id === 'opinion') {
                 navigate(`/writing/task2/opinion?${topicQuery}`);
@@ -90,59 +89,76 @@ export default function Task2SelectionPage() {
             backText={t.task2Selection.backToWriting}
             pageTitle={t.task2Selection.heading}
             pageSubtitle={t.task2Selection.subheading}
-            headerRight={<AiModelSelector variant="minimal" />}
         >
-            <div className="practice-container writing-selection-page">
-
-                <div className="config-card writing-selection-card">
-                    <div className="task2-topic-single-wrap">
-                        <div className="task2-topic-single-head">
-                            <h3>{t.task2Selection.topicLabel}</h3>
-                            <p>{t.task2Selection.topicHint}</p>
-                        </div>
-                        <div className="task2-topic-single-grid" role="radiogroup" aria-label={t.task2Selection.topicLabel}>
-                            {topicChoices.map(topic => (
-                                <button
-                                    key={topic.id}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={selectedTopicCategory === topic.id}
-                                    className={`task2-topic-chip ${selectedTopicCategory === topic.id ? 'active' : ''}`}
-                                    onClick={() => setSelectedTopicCategory(topic.id)}
-                                >
-                                    {topic.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="writing-selection-grid">
+            <div className="uc-console">
+                <div className="uc-sidebar">
+                    <div className="uc-sidebar-title">{t.task2Selection.heading}</div>
+                    <nav className="uc-sidebar-nav">
                         {taskTypes.map(typeItem => (
                             <button
                                 key={typeItem.id}
                                 type="button"
-                                className={`writing-choice-card ${selectedType === typeItem.id ? 'active' : ''}`}
+                                className={`uc-nav-item ${selectedType === typeItem.id ? 'active' : ''}`}
                                 onClick={() => setSelectedType(typeItem.id)}
                             >
-                                <div className="writing-choice-icon">{typeItem.icon}</div>
-                                <div className="writing-choice-content">
-                                    <div className="writing-choice-title">
-                                        {lang === 'zh' ? typeItem.nameZh : typeItem.nameEn}
-                                    </div>
-                                    <div className="writing-choice-subtitle">{lang === 'zh' ? typeItem.nameEn : typeItem.nameZh}</div>
-                                    <div className="writing-choice-desc">{typeItem.desc}</div>
-                                </div>
+                                <span className="nav-icon">{typeItem.icon}</span>
+                                <span className="nav-text">{lang === 'zh' ? typeItem.nameZh : typeItem.nameEn}</span>
                             </button>
                         ))}
+                    </nav>
+                </div>
+
+                <div className="uc-main-content">
+                    <div className="uc-main-header">
+                        <h2>{lang === 'zh' ? selected.nameZh : selected.nameEn}</h2>
+                        <p>{selected.desc}</p>
                     </div>
 
-                    <div className="writing-selection-actions">
-                        <button
-                            className="primary-button writing-selection-start-btn"
-                            onClick={handleStart}
-                            disabled={!selectedType}
-                        >
-                            {t.task2Selection.startBtn}
+                    <div className="uc-settings-list">
+                        <div className="uc-card-group">
+                            <div className="uc-list-row">
+                                <div className="uc-row-label-flex">
+                                    <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
+                                        <span className="row-title">AI 模型</span>
+                                    </div>
+                                </div>
+                                <div className="uc-row-control console-model-selector">
+                                    <AiModelSelector label="" description="" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="uc-card-group">
+                            <div className="uc-list-row uc-row-vertical">
+                                <div className="uc-row-label-flex">
+                                    <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>🏷️</span>
+                                        <span className="row-title">{t.task2Selection.topicLabel}</span>
+                                    </div>
+                                    <span className="row-desc">{t.task2Selection.topicHint}</span>
+                                </div>
+                                <div className="task2-topic-single-grid" role="radiogroup" aria-label={t.task2Selection.topicLabel} style={{ marginTop: 4 }}>
+                                    {topicChoices.map(topic => (
+                                        <button
+                                            key={topic.id}
+                                            type="button"
+                                            role="radio"
+                                            aria-checked={selectedTopicCategory === topic.id}
+                                            className={`task2-topic-chip ${selectedTopicCategory === topic.id ? 'active' : ''}`}
+                                            onClick={() => setSelectedTopicCategory(topic.id)}
+                                        >
+                                            {topic.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="uc-console-footer">
+                        <button className="uc-console-start-btn" onClick={handleStart}>
+                            {selected.icon} {t.task2Selection.startBtn}
                         </button>
                     </div>
                 </div>

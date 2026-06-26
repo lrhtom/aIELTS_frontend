@@ -136,7 +136,7 @@ export default function ChartPracticePage() {
                 console.error('Generate chart error:', err);
                 const error = err as { message?: string };
                 showToast(error.message || t.practiceSandbox.toastFailGenChart, 'error');
-                navigate('/writing/chart');
+                navigate('/writing/task1');
             }
         }
 
@@ -349,7 +349,7 @@ export default function ChartPracticePage() {
                     </button>
                     <button
                         className="wp-ghost-btn"
-                        onClick={() => navigate('/writing')}
+                        onClick={() => navigate(bankId ? '/practice/ai/bank' : '/writing')}
                     >
                         {t.practiceSandbox.backBtn}
                     </button>

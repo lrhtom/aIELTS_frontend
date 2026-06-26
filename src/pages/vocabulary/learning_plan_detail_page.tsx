@@ -776,89 +776,105 @@ export default function LearningPlanDetailPage() {
 
                     <div style={{ padding: '16px' }}>
                         {studyMode === 'copy' && (
-                            <div className="uc-settings-list">
-                                <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '16px 0' }}>
-                                    <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
-                                        <div className="uc-row-title">每个单词抄写几遍</div>
-                                        <div className="uc-row-desc" style={{ marginTop: 4 }}>必须完全正确。每次抄完一遍按规则重新插入</div>
-                                    </div>
-                                    <div className="uc-row-control" style={{ width: '100%' }}>
-                                        <input
-                                            type="number"
-                                            min={1} max={20}
-                                            value={copyRepetitions}
-                                            onChange={(e) => setCopyRepetitions(Number(e.target.value))}
-                                            onBlur={saveCopyConfig}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                                            className="console-select"
-                                            style={{ width: '100%', paddingLeft: 12 }}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '16px 0', borderBottom: 'none' }}>
-                                    <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
-                                        <div className="uc-row-title">增加复习间隔（天）</div>
-                                        <div className="uc-row-desc" style={{ marginTop: 4 }}>
-                                            完成后额外增加 {copyReviewDays} 天
-                                            {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>（今日已学，明日生效）</span>}
+                            <div className="uc-settings-list" style={{ padding: 0 }}>
+                                <div className="uc-card-group">
+                                    <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                                        <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📝</span>
+                                                <span className="row-title">每个单词抄写几遍</span>
+                                            </div>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>必须完全正确。每次抄完一遍按规则重新插入</span>
+                                        </div>
+                                        <div className="uc-row-control" style={{ width: '100%' }}>
+                                            <input
+                                                type="number"
+                                                min={1} max={20}
+                                                value={copyRepetitions}
+                                                onChange={(e) => setCopyRepetitions(Number(e.target.value))}
+                                                onBlur={saveCopyConfig}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                                className="console-select"
+                                                style={{ width: '100%', paddingLeft: 12 }}
+                                            />
                                         </div>
                                     </div>
-                                    <div className="uc-row-control" style={{ width: '100%' }}>
-                                        <input
-                                            type="number"
-                                            min={0} max={365}
-                                            value={copyReviewDays}
-                                            disabled={isTodayConfigLocked}
-                                            onChange={(e) => setCopyReviewDays(Number(e.target.value))}
-                                            onBlur={saveCopyConfig}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                                            className="console-select"
-                                            style={{ width: '100%', paddingLeft: 12 }}
-                                        />
+                                    <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                                        <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>📅</span>
+                                                <span className="row-title">增加复习间隔（天）</span>
+                                            </div>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>
+                                                完成后额外增加 {copyReviewDays} 天
+                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>（今日已学，明日生效）</span>}
+                                            </span>
+                                        </div>
+                                        <div className="uc-row-control" style={{ width: '100%' }}>
+                                            <input
+                                                type="number"
+                                                min={0} max={365}
+                                                value={copyReviewDays}
+                                                disabled={isTodayConfigLocked}
+                                                onChange={(e) => setCopyReviewDays(Number(e.target.value))}
+                                                onBlur={saveCopyConfig}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                                className="console-select"
+                                                style={{ width: '100%', paddingLeft: 12 }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
                         {studyMode === 'article_copy' && (
-                            <div className="uc-settings-list">
-                                <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '16px 0' }}>
-                                    <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
-                                        <div className="uc-row-title">增加复习间隔（天）</div>
-                                        <div className="uc-row-desc" style={{ marginTop: 4 }}>
-                                            AI 生成短文，抄写完成后所有单词标记已学，增加相应天数
-                                            {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>（今日已学，明日生效）</span>}
+                            <div className="uc-settings-list" style={{ padding: 0 }}>
+                                <div className="uc-card-group">
+                                    <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                                        <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>📅</span>
+                                                <span className="row-title">增加复习间隔（天）</span>
+                                            </div>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>
+                                                AI 生成短文，抄写完成后所有单词标记已学，增加相应天数
+                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>（今日已学，明日生效）</span>}
+                                            </span>
+                                        </div>
+                                        <div className="uc-row-control" style={{ width: '100%' }}>
+                                            <input
+                                                type="number"
+                                                min={0} max={365}
+                                                value={articleReviewDays}
+                                                disabled={isTodayConfigLocked}
+                                                onChange={(e) => setArticleReviewDays(Number(e.target.value))}
+                                                onBlur={saveArticleConfig}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                                className="console-select"
+                                                style={{ width: '100%', paddingLeft: 12 }}
+                                            />
                                         </div>
                                     </div>
-                                    <div className="uc-row-control" style={{ width: '100%' }}>
-                                        <input
-                                            type="number"
-                                            min={0} max={365}
-                                            value={articleReviewDays}
-                                            disabled={isTodayConfigLocked}
-                                            onChange={(e) => setArticleReviewDays(Number(e.target.value))}
-                                            onBlur={saveArticleConfig}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                                            className="console-select"
-                                            style={{ width: '100%', paddingLeft: 12 }}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '16px 0', borderBottom: 'none' }}>
-                                    <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
-                                        <div className="uc-row-title">重新生成文章</div>
-                                        <div className="uc-row-desc" style={{ marginTop: 4 }}>如果不满意可让 AI 重写</div>
-                                    </div>
-                                    <div className="uc-row-control" style={{ width: '100%' }}>
-                                        <button
-                                            type="button"
-                                            className="uc-console-start-btn"
-                                            style={{ width: '100%', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '8px 12px', fontSize: 13 }}
-                                            disabled={articleRegenerating}
-                                            onClick={handleRegenerateArticle}
-                                        >
-                                            {articleRegenerating ? '生成中...' : '重新生成文章'}
-                                        </button>
+                                    <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                                        <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>✨</span>
+                                                <span className="row-title">重新生成文章</span>
+                                            </div>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>如果不满意可让 AI 重写</span>
+                                        </div>
+                                        <div className="uc-row-control" style={{ width: '100%' }}>
+                                            <button
+                                                type="button"
+                                                className="uc-console-start-btn"
+                                                style={{ width: '100%', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '8px 12px', fontSize: 13 }}
+                                                disabled={articleRegenerating}
+                                                onClick={handleRegenerateArticle}
+                                            >
+                                                {articleRegenerating ? '生成中...' : '重新生成文章'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

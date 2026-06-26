@@ -12,7 +12,8 @@ function resolveAnswerRoute(item: AIQuestionSummary): string {
     if (item.skill === 'reading') return `/reading?bankId=${id}`;
     if (item.skill === 'listening') return `/listening?bankId=${id}`;
     if (item.skill === 'writing') {
-        // 作文题始终进入答题界面（预填上次作答），点"批改"才跳到批改页
+        // 已批改且未重做 → 看批改结果；其余（pending 或 redone）→ 进答题页
+        if (item.isAnswered && !isRedone(item)) return `/writing/correction?bankId=${id}`;
         if (item.subtype.startsWith('chart:')) return `/writing/chart/doing?bankId=${id}`;
         return `/writing/task2/doing?bankId=${id}`;
     }

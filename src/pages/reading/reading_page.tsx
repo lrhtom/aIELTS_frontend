@@ -455,27 +455,42 @@ export default function Reading_page() {
 
                 <div id="reading-page-container" className="page">
                     <div className="toolbar-area">
-                        <div>
-                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (leftSidebarRef.current) { leftSidebarRef.current.classList.remove('no-transition'); leftSidebarRef.current.style.width = ''; } set('isLeftOpen', !st.isLeftOpen); }}>☰ {t.readingDetails.dictionary}</button> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
-                            <span style={{ margin: '0 5px' }}></span>
-                            <button onClick={() => { if ((window as any).__didDragSidebar) return; if (rightSidebarRef.current) { rightSidebarRef.current.classList.remove('no-transition'); rightSidebarRef.current.style.width = ''; } set('isRightOpen', !st.isRightOpen); }}>✎ {t.readingDetails.questions}</button> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
+                        <div className="toolbar-left-group">
+                            <button className={`toolbar-btn ${st.isLeftOpen ? 'active' : ''}`} onClick={() => { if ((window as any).__didDragSidebar) return; if (leftSidebarRef.current) { leftSidebarRef.current.classList.remove('no-transition'); leftSidebarRef.current.style.width = ''; } set('isLeftOpen', !st.isLeftOpen); }}> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
+                                <span className="btn-icon">📚</span> {t.readingDetails.dictionary}
+                            </button>
+                            <button className={`toolbar-btn ${st.isRightOpen ? 'active' : ''}`} onClick={() => { if ((window as any).__didDragSidebar) return; if (rightSidebarRef.current) { rightSidebarRef.current.classList.remove('no-transition'); rightSidebarRef.current.style.width = ''; } set('isRightOpen', !st.isRightOpen); }}> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
+                                <span className="btn-icon">📝</span> {t.readingDetails.questions}
+                            </button>
                         </div>
                         <div className="reading-timer">
-                            <span className="timer-icon">🕐</span>
-                            <span className="timer-label">{t.readingDetails.time}</span>
-                            <span className="timer-digit">{formatTime(st.elapsedSeconds).h}</span>
-                            <span className="timer-sep">:</span>
-                            <span className="timer-digit">{formatTime(st.elapsedSeconds).m}</span>
-                            <span className="timer-sep">:</span>
-                            <span className="timer-digit">{formatTime(st.elapsedSeconds).s}</span>
+                            <span className="timer-icon">⏳</span>
+                            {formatTime(st.elapsedSeconds).h !== '00' && (
+                                <span className="timer-digit">
+                                    {formatTime(st.elapsedSeconds).h}<span className="timer-unit">h</span>
+                                </span>
+                            )}
+                            <span className="timer-digit">
+                                {formatTime(st.elapsedSeconds).m}<span className="timer-unit">m</span>
+                            </span>
+                            <span className="timer-digit">
+                                {formatTime(st.elapsedSeconds).s}<span className="timer-unit">s</span>
+                            </span>
                         </div>
-                        <div>
+                        <div className="toolbar-right-group">
                             <button
                                 id="highlight-toggle-btn"
-                                className="tool-btn"
+                                className="toolbar-btn toolbar-btn-outline"
                                 onClick={toggleHighlightsPureDOM}
                             >
-                                {t.readingDetails.hideTargets}
+                                <span className="btn-icon">💡</span> {t.readingDetails.hideTargets}
+                            </button>
+                            <button className="toolbar-btn toolbar-btn-danger" onClick={() => {
+                                if (window.confirm('确定要退出练习吗？未提交的进度可能会丢失。')) {
+                                    onReturnHome();
+                                }
+                            }}>
+                                <span className="btn-icon">🚪</span> 退出练习
                             </button>
                         </div>
                     </div>
@@ -541,13 +556,13 @@ export default function Reading_page() {
                             <div className="score-number">{score}<span className="score-total">/{total}</span></div>
                             <div className="score-pct">{pct}%</div>
                         </div>
-                        <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className="toggle-passage-btn">
-                            {st.isPassageOpen ? `✕ ${t.results.hidePassage}` : `📖 ${t.results.showPassage}`}
+                        <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
+                            <span className="btn-icon">{st.isPassageOpen ? '✕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
                         </button>
                         {bankId && (
-                            <button onClick={restartFromBank} className="tool-btn">🔁 重新作答</button>
+                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> 重新作答</button>
                         )}
-                        <button onClick={onReturnHome} className="tool-btn">{bankId ? '📚 返回题库' : `🏠 ${t.common.home}`}</button>
+                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{bankId ? '📚' : '🏠'}</span> {bankId ? '返回题库' : t.common.home}</button>
                     </div>
                 </div>
 

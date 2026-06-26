@@ -138,116 +138,134 @@ export default function ListeningConfig() {
                     </div>
 
                     <div className="uc-settings-list">
-                        {/* AI Model Selector */}
-                        <div className="uc-list-row">
-                            <div className="uc-row-label">
-                                <span className="row-title">AI 模型</span>
-                                <span className="row-desc">选择后台出题和批改所使用的引擎</span>
-                            </div>
-                            <div className="uc-row-control console-model-selector">
-                                <AiModelSelector label="" description="" />
-                            </div>
-                        </div>
-
-                        {/* Difficulty */}
-                        <div className="uc-list-row">
-                            <div className="uc-row-label">
-                                <span className="row-title">{t.targetScore}</span>
-                            </div>
-                            <div className="uc-row-control">
-                                <div className="uc-segmented-control">
-                                    {DIFFICULTIES.map(d => (
-                                        <button key={d} className={`seg-btn ${difficulty === d ? 'active' : ''}`} onClick={() => setDifficulty(d)}>
-                                            {d}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Word Count Range */}
-                        {practiceType !== 'multiple_choice' && practiceType !== 'map' && (
-                            <div className="uc-list-row uc-row-vertical">
+                        <div className="uc-card-group">
+                            {/* AI Model Selector */}
+                            <div className="uc-list-row">
                                 <div className="uc-row-label-flex">
-                                    <span className="row-title">{t.wordCount.label}</span>
-                                    <span className="row-desc" style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                                        {wordCountMin === wordCountMax
-                                            ? t.wordCount.hintExact.replace('{n}', String(wordCountMin))
-                                            : t.wordCount.hintRange.replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
-                                    </span>
+                                    <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
+                                        <span className="row-title">AI 模型</span>
+                                    </div>
                                 </div>
-                                <div className="wc-dual-sliders" style={{ padding: '8px 0', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', padding: '16px' }}>
-                                    <div className="wc-slider-row">
-                                        <span className="wc-slider-label">{t.wordCount.min}</span>
-                                        <div className="wc-slider-track-wrap">
-                                            <input type="range" className="wc-single-range" min={1} max={3} step={1} value={wordCountMin}
-                                                style={{ '--pct': `${((wordCountMin - 1) / 2) * 100}%` } as React.CSSProperties}
-                                                onChange={e => handleMinChange(Number(e.target.value))} />
-                                            <div className="wc-ticks">
-                                                {[1, 2, 3].map(n => <span key={n} className={`wc-tick${n <= wordCountMin ? ' active' : ''}`}>{n}</span>)}
-                                            </div>
-                                        </div>
-                                        <span className="wc-val-badge">{wordCountMin}</span>
-                                    </div>
-                                    <div className="wc-slider-row" style={{ marginTop: '12px' }}>
-                                        <span className="wc-slider-label">{t.wordCount.max}</span>
-                                        <div className="wc-slider-track-wrap">
-                                            <input type="range" className="wc-single-range" min={1} max={3} step={1} value={wordCountMax}
-                                                style={{ '--pct': `${((wordCountMax - 1) / 2) * 100}%` } as React.CSSProperties}
-                                                onChange={e => handleMaxChange(Number(e.target.value))} />
-                                            <div className="wc-ticks">
-                                                {[1, 2, 3].map(n => <span key={n} className={`wc-tick${n <= wordCountMax ? ' active' : ''}`}>{n}</span>)}
-                                            </div>
-                                        </div>
-                                        <span className="wc-val-badge">{wordCountMax}</span>
-                                    </div>
+                                <div className="uc-row-control console-model-selector">
+                                    <AiModelSelector label="" description="" />
                                 </div>
                             </div>
-                        )}
 
-                        {/* Absurd Mode Toggle */}
-                        <div className="uc-list-row">
-                            <div className="uc-row-label">
-                                <span className="row-title">{t.absurdMode.label}</span>
-                                <span className="row-desc">{t.absurdMode.desc}</span>
+                            {/* Difficulty */}
+                            <div className="uc-list-row">
+                                <div className="uc-row-label-flex">
+                                    <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📊</span>
+                                        <span className="row-title">{t.targetScore}</span>
+                                    </div>
+                                </div>
+                                <div className="uc-row-control">
+                                    <div className="uc-segmented-control">
+                                        {DIFFICULTIES.map(d => (
+                                            <button key={d} className={`seg-btn ${difficulty === d ? 'active' : ''}`} onClick={() => setDifficulty(d)}>
+                                                {d}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="uc-row-control">
-                                <label className="toggle-switch-console">
-                                    <input type="checkbox" checked={absurdMode} onChange={e => setAbsurdMode(e.target.checked)} />
-                                    <span className="toggle-slider-console" />
-                                </label>
-                            </div>
+
+                            {/* Word Count Range */}
+                            {practiceType !== 'multiple_choice' && practiceType !== 'map' && (
+                                <div className="uc-list-row uc-row-vertical">
+                                    <div className="uc-row-label-flex">
+                                        <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <span className="uc-row-icon" style={{ color: '#6366f1', background: '#eef2ff' }}>🔢</span>
+                                            <span className="row-title">{t.wordCount.label}</span>
+                                        </div>
+                                        <span className="row-desc" style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                                            {wordCountMin === wordCountMax
+                                                ? t.wordCount.hintExact.replace('{n}', String(wordCountMin))
+                                                : t.wordCount.hintRange.replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
+                                        </span>
+                                    </div>
+                                    <div className="wc-dual-sliders" style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc' }}>
+                                        <div className="wc-slider-row">
+                                            <span className="wc-slider-label">{t.wordCount.min}</span>
+                                            <div className="wc-slider-track-wrap">
+                                                <input type="range" className="wc-single-range" min={1} max={3} step={1} value={wordCountMin}
+                                                    style={{ '--pct': `${((wordCountMin - 1) / 2) * 100}%` } as React.CSSProperties}
+                                                    onChange={e => handleMinChange(Number(e.target.value))} />
+                                                <div className="wc-ticks">
+                                                    {[1, 2, 3].map(n => <span key={n} className={`wc-tick${n <= wordCountMin ? ' active' : ''}`}>{n}</span>)}
+                                                </div>
+                                            </div>
+                                            <span className="wc-val-badge">{wordCountMin}</span>
+                                        </div>
+                                        <div className="wc-slider-row" style={{ marginTop: '12px' }}>
+                                            <span className="wc-slider-label">{t.wordCount.max}</span>
+                                            <div className="wc-slider-track-wrap">
+                                                <input type="range" className="wc-single-range" min={1} max={3} step={1} value={wordCountMax}
+                                                    style={{ '--pct': `${((wordCountMax - 1) / 2) * 100}%` } as React.CSSProperties}
+                                                    onChange={e => handleMaxChange(Number(e.target.value))} />
+                                                <div className="wc-ticks">
+                                                    {[1, 2, 3].map(n => <span key={n} className={`wc-tick${n <= wordCountMax ? ' active' : ''}`}>{n}</span>)}
+                                                </div>
+                                            </div>
+                                            <span className="wc-val-badge">{wordCountMax}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Vocab Accordion */}
-                        <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`}>
-                            <div className="uc-list-row" style={{ borderBottom: 'none' }}>
+                        <div className="uc-card-group">
+                            {/* Absurd Mode Toggle */}
+                            <div className="uc-list-row">
                                 <div className="uc-row-label">
-                                    <span className="row-title">{t.customVocab.label}</span>
-                                    <span className="row-desc">{t.customVocab.desc}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#ec4899', background: '#fce7f3' }}>🎲</span>
+                                        <span className="row-title">{t.absurdMode.label}</span>
+                                    </div>
+                                    <span className="row-desc" style={{ marginLeft: '40px' }}>{t.absurdMode.desc}</span>
                                 </div>
                                 <div className="uc-row-control">
                                     <label className="toggle-switch-console">
-                                        <input type="checkbox" checked={useCustomVocab} onChange={e => setUseCustomVocab(e.target.checked)} />
+                                        <input type="checkbox" checked={absurdMode} onChange={e => setAbsurdMode(e.target.checked)} />
                                         <span className="toggle-slider-console" />
                                     </label>
                                 </div>
                             </div>
-                            {useCustomVocab && (
-                                <div className="uc-vocab-body">
-                                    {plans.length > 0 && (
-                                        <div className="uc-vocab-toolbar">
-                                            <select className="console-select" value={importPlanId} onChange={e => setImportPlanId(Number(e.target.value))}>
-                                                {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                            </select>
-                                            <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
-                                                {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
-                                            </button>
+
+                            {/* Vocab Accordion */}
+                            <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`} style={{ borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: 0 }}>
+                                <div className="uc-list-row" style={{ borderBottom: 'none' }}>
+                                    <div className="uc-row-label">
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <span className="uc-row-icon" style={{ color: '#f43f5e', background: '#ffe4e6' }}>📚</span>
+                                            <span className="row-title">{t.customVocab.label}</span>
                                         </div>
-                                    )}
-                                    <VocabInput value={vocabInput} onChange={handleVocabChange} />
+                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{t.customVocab.desc}</span>
+                                    </div>
+                                    <div className="uc-row-control">
+                                        <label className="toggle-switch-console">
+                                            <input type="checkbox" checked={useCustomVocab} onChange={e => setUseCustomVocab(e.target.checked)} />
+                                            <span className="toggle-slider-console" />
+                                        </label>
+                                    </div>
                                 </div>
-                            )}
+                                {useCustomVocab && (
+                                    <div className="uc-vocab-body">
+                                        {plans.length > 0 && (
+                                            <div className="uc-vocab-toolbar">
+                                                <select className="console-select" value={importPlanId} onChange={e => setImportPlanId(Number(e.target.value))}>
+                                                    {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                </select>
+                                                <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
+                                                    {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
+                                                </button>
+                                            </div>
+                                        )}
+                                        <VocabInput value={vocabInput} onChange={handleVocabChange} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 

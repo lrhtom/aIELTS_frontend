@@ -632,10 +632,10 @@ export default function ListeningPage() {
                 </div>
                 <div className="page listening-page">
                     <div className="toolbar-area">
-                        <div>
+                        <div className="toolbar-left-group">
                             {!ttsStarted ? (
-                                <button className="tts-start-btn" onClick={startTTS}>
-                                    🔊 {t.listeningDetails.startAudio}
+                                <button className="toolbar-btn toolbar-btn-primary" onClick={startTTS}>
+                                    <span className="btn-icon">🔊</span> {t.listeningDetails.startAudio}
                                 </button>
                             ) : (
                                 <span className={`tts-status ${ttsSpeaking ? 'speaking' : 'done'}`}>
@@ -654,6 +654,16 @@ export default function ListeningPage() {
                                         : `${wordCountMin}–${wordCountMax} ${t.listeningDetails.wordUnit}`}
                                 </span>
                             )}
+                        </div>
+                        <div className="toolbar-right-group">
+                            <button className="toolbar-btn toolbar-btn-danger" onClick={() => {
+                                if (window.confirm('确定要退出练习吗？未提交的进度可能会丢失。')) {
+                                    if (audioRef.current) audioRef.current.pause();
+                                    onReturnHome();
+                                }
+                            }}>
+                                <span className="btn-icon">🚪</span> 退出练习
+                            </button>
                         </div>
                     </div>
 
@@ -699,13 +709,13 @@ export default function ListeningPage() {
                             <div className="score-number">{score}<span className="score-total">/{total}</span></div>
                             <div className="score-pct">{pct}%</div>
                         </div>
-                        <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className="toggle-passage-btn">
-                            {st.isPassageOpen ? `✕ ${t.results.hidePassage}` : `📖 ${t.results.showPassage}`}
+                        <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
+                            <span className="btn-icon">{st.isPassageOpen ? '✕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
                         </button>
                         {bankId && (
-                            <button onClick={restartFromBank} className="tool-btn">🔁 重新作答</button>
+                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> 重新作答</button>
                         )}
-                        <button onClick={onReturnHome} className="tool-btn">{bankId ? '📚 返回题库' : `🏠 ${t.common.home}`}</button>
+                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{bankId ? '📚' : '🏠'}</span> {bankId ? '返回题库' : t.common.home}</button>
                     </div>
                 </div>
 
