@@ -27,19 +27,26 @@ export default function ChartPracticePage() {
 
     const [searchParams] = useSearchParams();
     const type = searchParams.get('type') || 'line';
-    const isMapType = type === 'map';
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
     const cacheKey = bankId ? `writing_task1_chart_bank_${bankId}` : `writing_task1_chart_session_${type}`;
 
     const [step, setStep] = useState<WritingStep>('loading');
     const [chartData, setChartData] = useState<ChartData | null>(null);
+    // Derive map-mode from URL type *or* from loaded htmlContent (only maps set it).
+    // This keeps bank-restored sessions working even if URL lacks `?type=map`.
+    const isMapType = type === 'map' || !!chartData?.htmlContent;
     const [userAnswer, setUserAnswer] = useState('');
     const [previewImageSrc, setPreviewImageSrc] = useState<string | null>(null);
     const [previewHtml, setPreviewHtml] = useState<string | null>(null);
     const [previewMode, setPreviewMode] = useState<'image' | 'html'>('image');
     // Guard against React StrictMode double-invocation and rapid re-mount
     const hasFetchedRef = useRef<string | null>(null);
+    // Map renders as fixed-pixel HTML; we scale it to fit the panel like an image.
+    const mapWrapRef = useRef<HTMLDivElement | null>(null);
+    const mapInnerRef = useRef<HTMLDivElement | null>(null);
+    const [mapBoxHeight, setMapBoxHeight] = useState<number | null>(null);
+    const [mapScale, setMapScale] = useState(1);
 
     // Refresh recovery: if local session exists, restore and skip loading state.
     useEffect(() => {
@@ -248,24 +255,95 @@ export default function ChartPracticePage() {
         </div>
     );
 
+    // Treat the map block as an image: scale-to-fit the panel width,
+    // cap visual height, click to open the fullscreen preview.
+    // Tall enough to show stacked before/after at a legible scale.
+    const MAP_MAX_HEIGHT = 620;
+
+    useEffect(() => {
+        if (!isMapType || !sanitizedHtmlContent) return;
+        const wrap = mapWrapRef.current;
+        const inner = mapInnerRef.current;
+        if (!wrap || !inner) return;
+
+        const recompute = () => {
+            const wrapW = wrap.clientWidth;
+            const naturalW = inner.scrollWidth;
+            const naturalH = inner.scrollHeight;
+            if (!wrapW || !naturalW || !naturalH) return;
+            const fitW = wrapW / naturalW;
+            const fitH = MAP_MAX_HEIGHT / naturalH;
+            const scale = Math.min(1, fitW, fitH);
+            setMapScale(scale);
+            setMapBoxHeight(Math.ceil(naturalH * scale));
+        };
+
+        recompute();
+        const ro = new ResizeObserver(recompute);
+        ro.observe(wrap);
+        ro.observe(inner);
+        return () => ro.disconnect();
+    }, [isMapType, sanitizedHtmlContent]);
+
     const renderMapScene = () => {
         if (!isMapType || !sanitizedHtmlContent) return null;
 
         return (
-            <div 
-                className="wp-map-scene" 
-                style={{ 
-                    width: '100%', 
-                    overflowX: 'auto', 
-                    background: 'white', 
-                    padding: '16px', 
+            <div
+                ref={mapWrapRef}
+                className="wp-map-scene"
+                style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: mapBoxHeight != null ? `${mapBoxHeight}px` : 'auto',
+                    background: 'white',
                     borderRadius: '8px',
                     border: '1px solid var(--color-border)',
-                    cursor: 'zoom-in'
+                    cursor: 'zoom-in',
+                    overflow: 'hidden',
                 }}
-                dangerouslySetInnerHTML={{ __html: sanitizedHtmlContent }}
                 onClick={openMapPreview}
-            />
+                role="button"
+                tabIndex={0}
+                aria-label="Map preview — click to enlarge"
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openMapPreview();
+                    }
+                }}
+            >
+                <div
+                    ref={mapInnerRef}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        transform: `scale(${mapScale})`,
+                        transformOrigin: 'top left',
+                        width: 'max-content',
+                        pointerEvents: 'none',
+                    }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedHtmlContent }}
+                />
+                <div
+                    style={{
+                        position: 'absolute',
+                        bottom: 8,
+                        right: 10,
+                        fontSize: 11,
+                        color: '#1e293b',
+                        background: 'rgba(255,255,255,0.9)',
+                        border: '1px solid #cbd5e1',
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        pointerEvents: 'none',
+                        fontFamily: 'system-ui',
+                    }}
+                >
+                    🔍 {lang === 'zh' ? '点击放大' : 'Click to zoom'}
+                </div>
+            </div>
         );
     };
 
@@ -376,12 +454,12 @@ export default function ChartPracticePage() {
                 )}
             </div>
 
-            {previewImageSrc && (
+            {(previewImageSrc || previewHtml) && (
                 <div
                     onClick={closePreview}
                     role="button"
                     tabIndex={0}
-                    aria-label="Close chart image preview"
+                    aria-label="Close chart preview"
                     onKeyDown={(e) => {
                         if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
@@ -405,21 +483,22 @@ export default function ChartPracticePage() {
                         cursor: 'zoom-out',
                     }}
                 >
-                    {previewMode === 'html' && isMapType && previewHtml ? (
+                    {previewMode === 'html' && previewHtml ? (
                         <div
                             onClick={(e) => e.stopPropagation()}
                             style={{
-                                width: 'min(94vw, 1400px)',
-                                maxHeight: '88vh',
+                                width: 'min(94vw, 1600px)',
+                                maxHeight: '92vh',
                                 overflow: 'auto',
                                 background: 'white',
                                 padding: '24px',
                                 borderRadius: '12px',
                                 cursor: 'default',
+                                boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45)',
                             }}
                             dangerouslySetInnerHTML={{ __html: previewHtml }}
                         />
-                    ) : (
+                    ) : previewImageSrc ? (
                         <img
                             src={previewImageSrc}
                             alt="Full preview chart"
@@ -434,7 +513,7 @@ export default function ChartPracticePage() {
                                 boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45)',
                             }}
                         />
-                    )}
+                    ) : null}
                 </div>
             )}
 

@@ -797,6 +797,10 @@ export const en: Translations = {
             title: '🎯 Perspective Training',
             desc: 'Enter an IELTS writing topic and AI will generate a high-scoring opinion and a common mistake version to improve your expression quality.'
         },
+        aiTeacher: {
+            title: 'AI Writing Teacher',
+            desc: 'Includes AI grading and 1-on-1 tutoring for Task 1 and Task 2.'
+        },
         teachersHub: {
             pageTitle: 'AI Writing Teachers',
             pageSubtitle: 'Choose your AI writing tutoring mode',
@@ -966,9 +970,21 @@ export const en: Translations = {
         next: 'Next',
         badExample: 'Bad Example',
         fullEssay: 'Full Model Essay',
-        sectionSummary: 'Section Summary',
-        errorGen: 'Failed to generate lesson, please try again',
-        errorTopic: 'Please enter an essay topic',
+        sectionSummary: 'Paragraph Key Points',
+        errorGen: 'Failed to generate lesson. Please try again later.',
+        errorTopic: 'Please enter an essay topic.',
+        advancedSettings: {
+            title: 'Advanced Settings / Custom Requirements (Optional)',
+            viewpointLabel: 'Essay Stance Preference:',
+            viewpointOptions: {
+                none: 'Unspecified (AI decides)',
+                positive: 'Positive (Agree/Advantages outweigh)',
+                negative: 'Negative (Disagree/Disadvantages outweigh)',
+                both: 'Discuss both sides (Neutral/Balanced)'
+            },
+            instructionsLabel: 'Additional Writing Instructions:',
+            instructionsPlaceholder: 'e.g., use passive voice frequently, try to use C1 vocabulary, give a specific example about AI...'
+        }
     },
     writingPerspective: {
         heading: '🎯 Writing Perspective Training',

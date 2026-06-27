@@ -14,7 +14,12 @@ function resolveAnswerRoute(item: AIQuestionSummary): string {
     if (item.skill === 'writing') {
         // 已批改且未重做 → 看批改结果；其余（pending 或 redone）→ 进答题页
         if (item.isAnswered && !isRedone(item)) return `/writing/correction?bankId=${id}`;
-        if (item.subtype.startsWith('chart:')) return `/writing/chart/doing?bankId=${id}`;
+        if (item.subtype.startsWith('chart:')) {
+            // 把子类型带进 URL，否则 chart_practice_page 默认 type='line'，
+            // map 题进来时 isMapType 判错，地图区域不会渲染。
+            const chartSubtype = item.subtype.slice('chart:'.length);
+            return `/writing/chart/doing?bankId=${id}&type=${encodeURIComponent(chartSubtype)}`;
+        }
         return `/writing/task2/doing?bankId=${id}`;
     }
     return '/practice/ai/bank';

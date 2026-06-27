@@ -802,6 +802,9 @@
     font-size: 1.05rem;
     line-height: 1.65;
     color: var(--color-text);
+    /* never collapse the prompt when a sibling (map/chart) declares a fixed height */
+    flex-shrink: 0;
+    white-space: pre-wrap;
 }
 
 .wp-prompt-markdown > *:first-child {

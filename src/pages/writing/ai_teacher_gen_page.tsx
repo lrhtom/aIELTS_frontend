@@ -70,41 +70,42 @@ export default function AiTeacherGenPage() {
 
                     <div style={{ marginTop: 16, marginBottom: 16, textAlign: 'left' }}>
                         <div 
+                            className="at-gen-advanced-toggle"
                             onClick={() => setAdvancedOpen(!advancedOpen)}
-                            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--color-primary)', fontWeight: 600, userSelect: 'none' }}
                         >
                             <span>{advancedOpen ? '▼' : '▶'}</span>
-                            高级设置 / 自定义要求 (可选)
+                            {t.writingAiTeacher.advancedSettings?.title || '高级设置 / 自定义要求 (可选)'}
                         </div>
                         
                         {advancedOpen && (
-                            <div style={{ marginTop: 12, padding: 16, background: 'var(--color-surface-hover)', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div className="at-gen-advanced-panel">
                                 <div>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', marginBottom: 8 }}>文章立场偏好：</div>
-                                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: 'var(--color-text)' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                                    <div className="at-gen-advanced-label">{t.writingAiTeacher.advancedSettings?.viewpointLabel || '文章立场偏好：'}</div>
+                                    <div className="at-gen-radio-group">
+                                        <label className={`at-gen-radio-label ${viewpoint === '' ? 'is-active' : ''}`}>
                                             <input type="radio" name="vp" checked={viewpoint === ''} onChange={() => setViewpoint('')} /> 
-                                            不指定 (AI决定)
+                                            {t.writingAiTeacher.advancedSettings?.viewpointOptions?.none || '不指定 (AI决定)'}
                                         </label>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                                        <label className={`at-gen-radio-label ${viewpoint === 'positive' ? 'is-active' : ''}`}>
                                             <input type="radio" name="vp" checked={viewpoint === 'positive'} onChange={() => setViewpoint('positive')} /> 
-                                            正面 (支持/利大于弊)
+                                            {t.writingAiTeacher.advancedSettings?.viewpointOptions?.positive || '正面 (支持/利大于弊)'}
                                         </label>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                                        <label className={`at-gen-radio-label ${viewpoint === 'negative' ? 'is-active' : ''}`}>
                                             <input type="radio" name="vp" checked={viewpoint === 'negative'} onChange={() => setViewpoint('negative')} /> 
-                                            反面 (反对/弊大于利)
+                                            {t.writingAiTeacher.advancedSettings?.viewpointOptions?.negative || '反面 (反对/弊大于利)'}
                                         </label>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                                        <label className={`at-gen-radio-label ${viewpoint === 'both' ? 'is-active' : ''}`}>
                                             <input type="radio" name="vp" checked={viewpoint === 'both'} onChange={() => setViewpoint('both')} /> 
-                                            探讨双方 (中立/分情况)
+                                            {t.writingAiTeacher.advancedSettings?.viewpointOptions?.both || '探讨双方 (中立/分情况)'}
                                         </label>
                                     </div>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', marginBottom: 8 }}>额外写作指令：</div>
+                                    <div className="at-gen-advanced-label">{t.writingAiTeacher.advancedSettings?.instructionsLabel || '额外写作指令：'}</div>
                                     <textarea 
-                                        style={{ width: '100%', height: 80, padding: 12, borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 13, resize: 'none' }}
-                                        placeholder="例如：多用被动语态、尽量使用 C1 级别词汇、举一个关于人工智能的具体例子..."
+                                        className="at-gen-textarea"
+                                        style={{ minHeight: '80px', height: '80px' }}
+                                        placeholder={t.writingAiTeacher.advancedSettings?.instructionsPlaceholder || "例如：多用被动语态、尽量使用 C1 级别词汇、举一个关于人工智能的具体例子..."}
                                         value={customInstructions}
                                         onChange={e => setCustomInstructions(e.target.value)}
                                         maxLength={500}

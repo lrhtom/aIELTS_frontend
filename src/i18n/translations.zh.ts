@@ -360,6 +360,10 @@ export const zh: Translations = {
             title: '🎯 观点表达训练',
             desc: '输入一道雅思写作题目，AI 会给出高分观点范例和常见错误观点，帮你提升观点表达质量。'
         },
+        aiTeacher: {
+            title: 'AI 写作老师',
+            desc: '包含 AI 批改、小作文与大作文一对一辅导'
+        },
         teachersHub: {
             pageTitle: 'AI 写作老师',
             pageSubtitle: '选择您的 AI 写作辅导模式',
@@ -544,6 +548,18 @@ export const zh: Translations = {
         sectionSummary: '段落要点',
         errorGen: '生成讲解失败，请稍后重试',
         errorTopic: '请输入作文题目',
+        advancedSettings: {
+            title: '高级设置 / 自定义要求 (可选)',
+            viewpointLabel: '文章立场偏好：',
+            viewpointOptions: {
+                none: '不指定 (AI决定)',
+                positive: '正面 (支持/利大于弊)',
+                negative: '反面 (反对/弊大于利)',
+                both: '探讨双方 (中立/分情况)'
+            },
+            instructionsLabel: '额外写作指令：',
+            instructionsPlaceholder: '例如：多用被动语态、尽量使用 C1 级别词汇、举一个关于人工智能的具体例子...'
+        }
     },
     writingPerspective: {
         heading: '🎯 写作观点训练',

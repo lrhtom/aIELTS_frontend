@@ -101,6 +101,84 @@
     background: var(--color-surface);
 }
 
+/* ── Advanced Settings ── */
+.at-gen-advanced-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--color-primary);
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background-color 0.2s, color 0.2s;
+    margin-left: -12px;
+}
+.at-gen-advanced-toggle:hover {
+    background-color: rgba(13, 148, 136, 0.1);
+}
+
+.at-gen-advanced-panel {
+    margin-top: 12px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.at-gen-advanced-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    letter-spacing: 0.3px;
+}
+
+.at-gen-radio-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.at-gen-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--color-text);
+    padding: 8px 16px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.at-gen-radio-label:hover {
+    border-color: var(--color-primary);
+    background: rgba(13, 148, 136, 0.05);
+}
+
+.at-gen-radio-label.is-active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+}
+
+.at-gen-radio-label input[type="radio"] {
+    display: none;
+}
+
 /* ── AI Essay Teacher: Lesson Page ── */
 .at-lesson-wrap {
     max-width: 1440px;
