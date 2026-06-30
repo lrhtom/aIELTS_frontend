@@ -612,7 +612,9 @@
 .lc-cal-graph {
     display: flex;
     flex-direction: column;
-    width: 100%;
+    width: max-content; /* Match width of cells so months align perfectly */
+    margin: 0 auto;
+    padding-right: 2px; /* ensure space at the end when scrolled */
 }
 
 /* ── Grid wrapper ── */
@@ -621,36 +623,18 @@
     width: 100%;
 }
 
-/* Row labels (一 / 三 / 五) */
-.lc-cal-rows {
-    display: grid;
-    grid-template-rows: repeat(7, 13px);
-    gap: 3px;
-    width: 20px;
-    flex-shrink: 0;
-    padding-right: 6px;
-}
-
-.lc-cal-rows span {
-    font-size: 10px;
-    color: var(--color-text-secondary);
-    line-height: 13px;
-    display: flex;
-    align-items: center;
-}
 
 /* 53×7 dot grid */
 .lc-cal-cells {
     display: grid;
-    grid-template-rows: repeat(7, 13px);
+    grid-template-rows: repeat(7, 10.5px);
     gap: 3px;
-    flex: 1;   /* fill remaining width after the row-label column */
 }
 
 .lc-dot {
-    width: 13px;
-    height: 13px;
-    border-radius: 3px;
+    width: 10.5px;
+    height: 10.5px;
+    border-radius: 2px;
     cursor: default;
 }
 
@@ -683,23 +667,11 @@
     box-shadow: 0 0 0 1px #00eeff;
 }
 
-/* ── Top X-axis month labels (absolute-positioned inside relative wrapper) ── */
-.lc-cal-xaxis {
-    position: relative;
-    height: 16px;
-    margin-bottom: 4px;
-    /* indent to align with the cells (skip the row-label column: 20px labels + 6px gap = 26px) */
-    margin-left: 26px;
-}
 
 .lc-cal-xlabel {
-    position: absolute;
-    top: 0;
     font-size: 10px;
     color: var(--color-text-secondary);
     white-space: nowrap;
-    /* nudge slightly so text starts at the left edge of the column */
-    transform: translateX(-2px);
 }
 
 /* ── Legend ── */
@@ -707,8 +679,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-top: 8px;
-    padding-left: 26px;
+    margin-top: 12px;
     font-size: 10px;
     color: var(--color-text-secondary);
 }
@@ -720,8 +691,9 @@
 
 /* ── Hover Tooltip ── */
 .lc-cal-body {
-    overflow: visible;   /* no scrollbar */
-    padding-bottom: 2px;
+    overflow-x: auto;   /* allow horizontal scroll on narrow screens */
+    overflow-y: hidden;
+    padding-bottom: 8px; /* space for scrollbar */
 }
 
 .lc-tooltip {
