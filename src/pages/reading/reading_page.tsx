@@ -44,7 +44,7 @@ export default function Reading_page() {
         if (hasRequested.current) return;
         hasRequested.current = true;
 
-        // 题库模式：从后端�?bankId 拉取，不再调�?AI 生成
+        // 题库模式：从后端按 bankId 拉取，不再调用 AI 生成
         if (bankId) {
             sessionStorage.removeItem(CACHE_KEY);
             setSt(createReadingState());
@@ -144,7 +144,7 @@ export default function Reading_page() {
             // 生成成功后直接跳转到 AI 题库，由用户在题库内挑题作答
             sessionStorage.removeItem(CACHE_KEY);
             const justId = parsedData.aiQuestionId ?? null;
-            showToast('题目已生成并保存�?AI 题库', 'success');
+            showToast('题目已生成并保存到 AI 题库', 'success');
             navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
             return;
         } catch (err: unknown) { // Changed 'any' to 'unknown'
@@ -185,7 +185,7 @@ export default function Reading_page() {
         if (bankId) {
             submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
                 console.error('submit to bank failed:', err);
-                showToast('保存作答失败，但本次成绩已显�?, 'error');
+                showToast('保存作答失败，但本次成绩已显示', 'error');
             });
         }
         set('step', 3);
@@ -259,7 +259,7 @@ export default function Reading_page() {
             if (isResizingLeft || isResizingRight) {
                 // @ts-expect-error window globals
                 window.__didDragSidebar = true;
-                // 拖动结束后禁�?transition 防止跳动
+                // 拖动结束后禁用 transition 防止跳动
                 if (isResizingLeft && leftSidebarRef.current) leftSidebarRef.current.classList.add('no-transition');
                 if (isResizingRight && rightSidebarRef.current) rightSidebarRef.current.classList.add('no-transition');
                 isResizingLeft = false; isResizingRight = false;
@@ -464,7 +464,7 @@ export default function Reading_page() {
                             </button>
                         </div>
                         <div className="reading-timer">
-                            <span className="timer-icon">�?/span>
+                            <span className="timer-icon">⏱️</span>
                             {formatTime(st.elapsedSeconds).h !== '00' && (
                                 <span className="timer-digit">
                                     {formatTime(st.elapsedSeconds).h}<span className="timer-unit">h</span>
@@ -486,11 +486,11 @@ export default function Reading_page() {
                                 <span className="btn-icon">💡</span> {t.readingDetails.hideTargets}
                             </button>
                             <button className="toolbar-btn toolbar-btn-danger" onClick={() => {
-                                if (window.confirm('确定要退出练习吗？未提交的进度可能会丢失�?)) {
+                                if (window.confirm('确定要退出练习吗？未提交的进度可能会丢失')) {
                                     onReturnHome();
                                 }
                             }}>
-                                <span className="btn-icon">🚪</span> 退出练�?                            </button>
+                                <span className="btn-icon">🚪</span> 退出练习</button>
                         </div>
                     </div>
 
@@ -556,7 +556,7 @@ export default function Reading_page() {
                             <div className="score-pct">{pct}%</div>
                         </div>
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
-                            <span className="btn-icon">{st.isPassageOpen ? '�? : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
+                            <span className="btn-icon">{st.isPassageOpen ? '📕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
                         </button>
                         {bankId && (
                             <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> 重新作答</button>
@@ -592,7 +592,7 @@ export default function Reading_page() {
                                     <div className="question-text">{q.id}. {q.question.replace(/\*\*/g, '')}</div>
                                     <p>{t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.correctAnswer}: <strong>{q.answer}</strong></p>
                                     <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                        {isCorrect ? `�?${t.results.statusCorrect}` : `�?${t.results.statusIncorrect}`}
+                                        {isCorrect ? `✅ ${t.results.statusCorrect}` : `❌ ${t.results.statusIncorrect}`}
                                     </p>
                                     <div className="explanation">
                                         <strong>{t.results.explanation}:</strong> {q.explanation}
