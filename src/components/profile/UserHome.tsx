@@ -292,7 +292,7 @@ export default function UserHome() {
                                         <div key={mIdx} className="lc-cal-month-col" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                             <div
                                                 className="lc-cal-cells"
-                                                style={{ gridTemplateColumns: `repeat(${mBlock.weeks.length}, 10.5px)` }}
+                                                style={{ gridTemplateColumns: `repeat(${mBlock.weeks.length}, 10px)` }}
                                             >
                                                 {[0, 1, 2, 3, 4, 5, 6].map(row =>
                                                     mBlock.weeks.map((week, col) => {
