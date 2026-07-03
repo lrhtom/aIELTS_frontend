@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiClient } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 
 type UserRow = {
@@ -26,6 +27,7 @@ type PaginatedResponse = {
 
 export default function AdminUserManagement() {
     const { translations: t } = useLang();
+    const { user: currentUser } = useAuth();
     const [users, setUsers] = useState<UserRow[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
@@ -89,6 +91,45 @@ export default function AdminUserManagement() {
         } catch (error) {
             console.error('Failed to delete user:', error);
             toast.error(t.profile.admin.users.toastDeleteFail);
+        }
+    };
+
+    const handleTogglePromote = async (user: UserRow) => {
+        if (user.is_superuser) {
+            toast.error(t.profile.admin.users.toastSuperuserNoModify);
+            return;
+        }
+        if (currentUser && String(currentUser.id) === String(user.id)) {
+            toast.error(t.profile.admin.users.toastSelfNoModify);
+            return;
+        }
+
+        const willPromote = !user.is_staff;
+        const confirmMsg = (willPromote
+            ? t.profile.admin.users.toastPromoteConfirm
+            : t.profile.admin.users.toastDemoteConfirm
+        ).replace('{name}', user.username);
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            const resp = await apiClient.patch<UserRow>(`/admin/users/${user.id}/promote`);
+            setUsers((prev) => prev.map((item) =>
+                item.id === user.id ? { ...item, is_staff: resp.data.is_staff } : item
+            ));
+            toast.success(willPromote
+                ? t.profile.admin.users.toastPromoteSuccess
+                : t.profile.admin.users.toastDemoteSuccess);
+        } catch (error: unknown) {
+            console.error('Failed to toggle admin:', error);
+            const e = error as { response?: { data?: { error?: string } } };
+            const errCode = e.response?.data?.error;
+            if (errCode === 'CANNOT_MODIFY_SUPERUSER') {
+                toast.error(t.profile.admin.users.toastSuperuserNoModify);
+            } else if (errCode === 'CANNOT_MODIFY_SELF') {
+                toast.error(t.profile.admin.users.toastSelfNoModify);
+            } else {
+                toast.error(t.profile.admin.users.toastPromoteFail);
+            }
         }
     };
 
@@ -327,6 +368,13 @@ export default function AdminUserManagement() {
                                         disabled={isAdmin}
                                     >
                                         {user.is_banned ? t.profile.admin.users.btnUnban : t.profile.admin.users.btnBan}
+                                    </button>
+                                    <button
+                                        className={`admin-users-btn ${user.is_staff ? 'demote-btn' : 'promote-btn'}`}
+                                        onClick={() => handleTogglePromote(user)}
+                                        disabled={user.is_superuser || (!!currentUser && String(currentUser.id) === String(user.id))}
+                                    >
+                                        {user.is_staff ? t.profile.admin.users.btnDemote : t.profile.admin.users.btnPromote}
                                     </button>
                                     <button
                                         className="admin-users-btn adjust-btn"
@@ -648,6 +696,26 @@ export default function AdminUserManagement() {
 
                 .admin-users-btn.delete-btn:hover:not(:disabled) {
                     background: rgba(239, 68, 68, 0.18);
+                }
+
+                .admin-users-btn.promote-btn {
+                    color: #1d4ed8;
+                    background: rgba(59, 130, 246, 0.1);
+                    border-color: rgba(59, 130, 246, 0.28);
+                }
+
+                .admin-users-btn.promote-btn:hover:not(:disabled) {
+                    background: rgba(59, 130, 246, 0.18);
+                }
+
+                .admin-users-btn.demote-btn {
+                    color: #7c3aed;
+                    background: rgba(139, 92, 246, 0.1);
+                    border-color: rgba(139, 92, 246, 0.28);
+                }
+
+                .admin-users-btn.demote-btn:hover:not(:disabled) {
+                    background: rgba(139, 92, 246, 0.18);
                 }
 
                 .admin-users-state {

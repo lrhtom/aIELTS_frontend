@@ -234,18 +234,18 @@ export default function AdminAIUsage() {
                             <div style={{ ...cardValueStyle, color: '#0d9488' }}>{data.totals.at_consumed.toLocaleString()}</div>
                         </div>
                         <div style={cardStyle}>
-                            <div style={cardLabelStyle}>总调用次数</div>
+                            <div style={cardLabelStyle}>{t.totalCalls}</div>
                             <div style={{ ...cardValueStyle, color: '#8b5cf6' }}>{data.totals.call_count.toLocaleString()}</div>
                         </div>
                         {data.user && (
                             <div style={cardStyle}>
-                                <div style={cardLabelStyle}>当前用户余额</div>
+                                <div style={cardLabelStyle}>{t.userBalance}</div>
                                 <div style={cardValueStyle}>{data.user.at_balance.toLocaleString()} AT</div>
                             </div>
                         )}
                         <div style={cardStyle}>
-                            <div style={cardLabelStyle}>时间范围</div>
-                            <div style={cardValueStyle}>最近 {data.days} 天</div>
+                            <div style={cardLabelStyle}>{t.timeRange}</div>
+                            <div style={cardValueStyle}>{t.rangeLastNDays.replace('{n}', String(data.days))}</div>
                         </div>
                     </div>
 

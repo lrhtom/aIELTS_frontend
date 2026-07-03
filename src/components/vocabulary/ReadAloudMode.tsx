@@ -87,13 +87,13 @@ export default function ReadAloudMode({
             },
             onError: (err) => {
                 if (err === 'not-allowed' || err === 'service-not-allowed') {
-                    setMicError('麦克风权限被拒绝');
+                    setMicError(t.vocab.readAloud.micDenied);
                     setListening(false);
                 } else if (err === 'not-supported') {
-                    setMicError('浏览器不支持语音识别');
+                    setMicError(t.vocab.readAloud.micUnsupported);
                     setListening(false);
                 } else if (err !== 'no-speech' && err !== 'aborted') {
-                    setMicError(`识别错误: ${err}`);
+                    setMicError(t.vocab.readAloud.micError.replace('{msg}', String(err)));
                 }
             },
         });
@@ -200,13 +200,13 @@ export default function ReadAloudMode({
                                 <span className="fc-read-stage-icon">
                                     {enPassed ? <Check size={16} /> : stage === 'en' && listening ? <Loader2 size={16} className="fc-read-spin" /> : '①'}
                                 </span>
-                                <span className="fc-read-stage-label">朗读英文</span>
+                                <span className="fc-read-stage-label">{t.vocab.readAloud.stageEn}</span>
                             </div>
                             <div className={`fc-read-stage ${zhPassed ? 'is-passed' : stage === 'zh' ? 'is-active' : ''}`}>
                                 <span className="fc-read-stage-icon">
                                     {zhPassed ? <Check size={16} /> : stage === 'zh' && listening ? <Loader2 size={16} className="fc-read-spin" /> : '②'}
                                 </span>
-                                <span className="fc-read-stage-label">朗读中文释义</span>
+                                <span className="fc-read-stage-label">{t.vocab.readAloud.stageZh}</span>
                             </div>
                         </div>
 
@@ -218,8 +218,8 @@ export default function ReadAloudMode({
                                 <span className="fc-read-transcript-text">
                                     {transcript || (
                                         stage === 'en'
-                                            ? `请朗读：${currentCard.word}`
-                                            : `请朗读中文释义`
+                                            ? t.vocab.readAloud.promptSpeakEn.replace('{word}', currentCard.word)
+                                            : t.vocab.readAloud.promptSpeakZh
                                     )}
                                 </span>
                             </div>
@@ -231,7 +231,7 @@ export default function ReadAloudMode({
 
                         {!supported && (
                             <div className="fc-read-error">
-                                浏览器不支持语音识别,请使用「跳过朗读检测」直接评分
+                                {t.vocab.readAloud.micUnsupportedHint}
                             </div>
                         )}
 
@@ -243,21 +243,21 @@ export default function ReadAloudMode({
                                     onClick={handleRetry}
                                     disabled={!supported}
                                 >
-                                    重试朗读
+                                    {t.vocab.readAloud.retryBtn}
                                 </button>
                                 <button
                                     type="button"
                                     className="fc-read-action-btn fc-read-action-skip"
                                     onClick={handleSkip}
                                 >
-                                    跳过朗读检测 →
+                                    {t.vocab.readAloud.skipBtn}
                                 </button>
                             </div>
                         )}
 
                         {unlocked && (
                             <div className="fc-read-unlocked-hint">
-                                <Check size={14} /> {manualOverride ? '已跳过检测,可评分' : '朗读通过,请评分'}
+                                <Check size={14} /> {manualOverride ? t.vocab.readAloud.skippedLabel : t.vocab.readAloud.passedLabel}
                             </div>
                         )}
 
@@ -291,7 +291,7 @@ export default function ReadAloudMode({
                 ))}
             </div>
             <div className="fc-kb-hint">
-                {unlocked ? t.vocab.ratingHint : '完成朗读后可用 1–4 评分'}
+                {unlocked ? t.vocab.ratingHint : t.vocab.readAloud.ratingLocked}
             </div>
         </>
     );

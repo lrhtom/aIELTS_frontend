@@ -1273,12 +1273,21 @@ export interface Translations {
                 btnUnban: string;
                 btnAdjustAt: string;
                 btnDelete: string;
+                btnPromote: string;
+                btnDemote: string;
                 toastLoadFail: string;
                 toastAdminNoBan: string;
                 toastBanSuccess: string;
                 toastUnbanSuccess: string;
                 toastOpFail: string;
                 toastAdminNoDelete: string;
+                toastPromoteConfirm: string;
+                toastDemoteConfirm: string;
+                toastPromoteSuccess: string;
+                toastDemoteSuccess: string;
+                toastPromoteFail: string;
+                toastSuperuserNoModify: string;
+                toastSelfNoModify: string;
                 toastDeleteConfirm: string;
                 toastDeleteSuccess: string;
                 toastDeleteFail: string;
@@ -1440,6 +1449,15 @@ export interface Translations {
         deleteConfirm: string;
         deleteSuccess: string;
         deleteFail: string;
+        editEmptyInstruction: string;
+        editSuccess: string;
+        editFail: string;
+        fullscreenPreview: string;
+        aiEditHeading: string;
+        aiEditDesc: string;
+        aiEditPlaceholder: string;
+        editingBtn: string;
+        submitEditBtn: string;
     };
     store: {
         fetchFail: string;
@@ -1483,6 +1501,21 @@ export interface Translations {
             flashcardSimple: string;
             articleCopy: string;
             storyMode: string;
+        };
+        readAloud: {
+            micDenied: string;
+            micUnsupported: string;
+            micError: string;
+            stageEn: string;
+            stageZh: string;
+            promptSpeakEn: string;
+            promptSpeakZh: string;
+            micUnsupportedHint: string;
+            retryBtn: string;
+            skipBtn: string;
+            skippedLabel: string;
+            passedLabel: string;
+            ratingLocked: string;
         };
         common: {
             speak: string;

@@ -24,14 +24,14 @@ export default function CreativeWorkshopEditPage() {
     useEffect(() => {
         (async () => {
             if (!id) {
-                showToast(t.creativeWorkshop?.invalidProject || '无效的项目', 'error');
+                showToast(t.creativeWorkshop.invalidProject, 'error');
                 navigate('/creative-workshop', { replace: true });
                 return;
             }
 
             const projectId = Number(id);
             if (!Number.isFinite(projectId)) {
-                showToast(t.creativeWorkshop?.invalidProject || '无效的项目', 'error');
+                showToast(t.creativeWorkshop.invalidProject, 'error');
                 navigate('/creative-workshop', { replace: true });
                 return;
             }
@@ -40,7 +40,7 @@ export default function CreativeWorkshopEditPage() {
                 const { project: data } = await getCreativeWorkshopProject(projectId);
                 setProject(data);
             } catch {
-                showToast(t.creativeWorkshop?.loadDetailFail || '加载项目失败', 'error');
+                showToast(t.creativeWorkshop.loadDetailFail, 'error');
                 navigate('/creative-workshop', { replace: true });
             } finally {
                 setLoading(false);
@@ -50,20 +50,20 @@ export default function CreativeWorkshopEditPage() {
 
     const handleEdit = async () => {
         if (!project || !instruction.trim()) {
-            showToast('请输入修改指令');
+            showToast(t.creativeWorkshop.editEmptyInstruction);
             return;
         }
 
         setEditing(true);
         try {
             const { project: newProject } = await editCreativeWorkshopProject(project.id, instruction, aiProvider || undefined);
-            showToast('修改成功，已为您生成新的版本（Fork）', 'success');
+            showToast(t.creativeWorkshop.editSuccess, 'success');
             navigate(`/creative-workshop/edit/${newProject.id}`, { replace: true });
             setProject(newProject);
             setInstruction('');
         } catch (err: unknown) {
             const error = err as { message?: string };
-            showToast(error.message || 'AI 编辑失败', 'error');
+            showToast(error.message || t.creativeWorkshop.editFail, 'error');
         } finally {
             setEditing(false);
         }
@@ -77,10 +77,10 @@ export default function CreativeWorkshopEditPage() {
                 </div>
                 <div className="cw-preview-actions">
                     <button className="cw-favorites-entry" onClick={() => navigate('/creative-workshop')}>
-                        {t.creativeWorkshop?.backToHome || '返回工坊首页'}
+                        {t.creativeWorkshop.backToHome}
                     </button>
                     <button className="cw-favorites-entry alt" onClick={() => navigate(`/creative-workshop/pages/${project?.id}`)}>
-                        全屏预览
+                        {t.creativeWorkshop.fullscreenPreview}
                     </button>
                 </div>
             </header>
@@ -100,14 +100,14 @@ export default function CreativeWorkshopEditPage() {
                 </div>
 
                 <div className="cw-edit-panel">
-                    <h3>AI 助手修改</h3>
-                    <p className="cw-edit-desc">输入您想要的增删改查操作，AI 将为您生成一个新的分支版本。</p>
-                    
+                    <h3>{t.creativeWorkshop.aiEditHeading}</h3>
+                    <p className="cw-edit-desc">{t.creativeWorkshop.aiEditDesc}</p>
+
                     <textarea
                         className="cw-edit-textarea"
                         value={instruction}
                         onChange={(e) => setInstruction(e.target.value)}
-                        placeholder="例如：把背景改成深色模式，增加一个重试按钮..."
+                        placeholder={t.creativeWorkshop.aiEditPlaceholder}
                         disabled={editing || loading}
                     />
 
@@ -124,7 +124,7 @@ export default function CreativeWorkshopEditPage() {
                         onClick={handleEdit}
                         disabled={editing || loading || !instruction.trim()}
                     >
-                        {editing ? 'AI 正在全力修改中...' : '提交修改'}
+                        {editing ? t.creativeWorkshop.editingBtn : t.creativeWorkshop.submitEditBtn}
                     </button>
                 </div>
             </div>
