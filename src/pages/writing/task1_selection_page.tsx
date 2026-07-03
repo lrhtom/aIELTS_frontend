@@ -119,7 +119,7 @@ export default function Task1SelectionPage() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                        <span className="row-title">AI 模型</span>
+                                        <span className="row-title">{t.components.aiModel.label}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control console-model-selector">

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useState, useEffect } from 'react';
 import { useLang } from '../../i18n/LanguageContext';
 import { apiClient as api } from '../../api/client';
 import {
@@ -204,7 +203,7 @@ export default function UserFinance() {
                       cursor={{ fill: 'transparent' }}
                       contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                       itemStyle={{ color: 'var(--color-text)' }}
-                      formatter={(value: number) => [value.toLocaleString(), currencyType === 'AT_COIN' ? t.profile.finance.consumeAt : t.profile.finance.consumeCny]}
+                      formatter={(value) => [Number(value ?? 0).toLocaleString(), currencyType === 'AT_COIN' ? t.profile.finance.consumeAt : t.profile.finance.consumeCny]}
                       labelStyle={{ color: 'var(--color-text-secondary)', marginBottom: '8px' }}
                     />
                     <Bar dataKey={currencyType === 'AT_COIN' ? 'at_used' : 'cny_used'} fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
@@ -218,7 +217,7 @@ export default function UserFinance() {
                       cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '3 3' }}
                       contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                       itemStyle={{ color: 'var(--color-text)' }}
-                      formatter={(value: number) => [value.toLocaleString(), currencyType === 'AT_COIN' ? t.profile.finance.consumeAt : t.profile.finance.consumeCny]}
+                      formatter={(value) => [Number(value ?? 0).toLocaleString(), currencyType === 'AT_COIN' ? t.profile.finance.consumeAt : t.profile.finance.consumeCny]}
                       labelStyle={{ color: 'var(--color-text-secondary)', marginBottom: '8px' }}
                     />
                     <Line type="monotone" dataKey={currencyType === 'AT_COIN' ? 'at_used' : 'cny_used'} stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-primary)' }} activeDot={{ r: 6 }} />

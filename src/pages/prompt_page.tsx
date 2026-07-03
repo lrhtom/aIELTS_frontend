@@ -255,7 +255,7 @@ export default function PromptPage() {
                                                 <button
                                                     className={`action-btn like-btn ${p.is_liked ? 'active' : ''}`}
                                                     onClick={() => handleLike(p.id)}
-                                                    title="点赞"
+                                                    title={t.prompts.likeTitle}
                                                 >
                                                     <span className="action-icon">{p.is_liked ? '❤️' : '🤍'}</span>
                                                     <span className="action-count">{p.like_count}</span>
@@ -263,7 +263,7 @@ export default function PromptPage() {
                                                 <button
                                                     className={`action-btn fav-btn ${p.is_favorited ? 'active' : ''}`}
                                                     onClick={() => handleFavorite(p.id)}
-                                                    title="收藏"
+                                                    title={t.prompts.favTitle}
                                                 >
                                                     <span className="action-icon">{p.is_favorited ? '⭐' : '☆'}</span>
                                                     <span className="action-count">{p.favorite_count}</span>

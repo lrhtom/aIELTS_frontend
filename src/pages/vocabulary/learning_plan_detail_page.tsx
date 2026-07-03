@@ -24,6 +24,7 @@ type BookSubMode = 'all' | 'range' | 'select';
 
 const STUDY_MODES: [StudyMode, string][] = [
     ['flashcard', '记忆卡'],
+    ['read-aloud', '朗读单词'],
     ['choice', '4选1'],
     ['write', '看中文写英文'],
     ['copy', '抄写模式'],
@@ -767,7 +768,7 @@ export default function LearningPlanDetailPage() {
                                 }}
                             >
                                 <span className="nav-icon">
-                                    {m === 'flashcard' ? '🃏' : m === 'choice' ? '🎯' : m === 'write' ? '✍️' : m === 'copy' ? '📝' : m === 'article_copy' ? '📄' : '🍿'}
+                                    {m === 'flashcard' ? '🃏' : m === 'read-aloud' ? '🎙️' : m === 'choice' ? '🎯' : m === 'write' ? '✍️' : m === 'copy' ? '📝' : m === 'article_copy' ? '📄' : '🍿'}
                                 </span>
                                 <span className="nav-text">{label}</span>
                             </button>

@@ -9,6 +9,7 @@ import {
     type StoryModeData,
     type StoryModeCompleteResult,
 } from '../../api/learning_plan';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/story_mode.css';
 
 /* ── helpers ───────────────────────────────────────────────────────────────── */
@@ -44,6 +45,7 @@ function parseStoryText(text: string): PillToken[] {
 /* ── component ─────────────────────────────────────────────────────────────── */
 
 export default function StoryModePage() {
+    const { translations: t } = useLang();
     const { id } = useParams<{ id: string }>();
     const planId = Number(id);
     const navigate = useNavigate();
@@ -83,7 +85,7 @@ export default function StoryModePage() {
     /* ── load story ──────────────────────────────────────────────────────── */
     const loadStory = useCallback(async (refresh = false) => {
         if (!planId || Number.isNaN(planId)) {
-            setError('无效的计划');
+            setError(t.vocab.storyMode.errInvalidPlan);
             setLoading(false);
             return;
         }
@@ -107,7 +109,7 @@ export default function StoryModePage() {
         } catch (err: unknown) {
             if ((err as { name?: string }).name === 'CanceledError' || ctrl.signal.aborted) return;
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            setError(msg || '加载故事失败，请稍后重试');
+            setError(msg || t.vocab.storyMode.errLoadFail);
         } finally {
             setLoading(false);
         }
@@ -176,7 +178,7 @@ export default function StoryModePage() {
             setCompleteResult(result);
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            showToast(msg || '提交失败，请稍后重试', 'error');
+            showToast(msg || t.vocab.storyMode.submitFail, 'error');
         } finally {
             setCompleting(false);
         }
@@ -219,8 +221,8 @@ export default function StoryModePage() {
                 <div className="sm-container">
                     <div className="sm-main" style={{ alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                            <p>正在生成故事...</p>
-                            <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>AI 正在创作一篇包含你的目标词汇的短文</p>
+                            <p>{t.vocab.storyMode.generatingTitle}</p>
+                            <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>{t.vocab.storyMode.generatingDesc}</p>
                         </div>
                     </div>
                 </div>
@@ -234,7 +236,7 @@ export default function StoryModePage() {
                 <div className="sm-container">
                     <div className="sm-main" style={{ alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                            <p>{error || '故事数据不可用'}</p>
+                            <p>{error || t.vocab.storyMode.unavailable}</p>
                             <button
                                 onClick={() => navigate(-1)}
                                 style={{
@@ -243,7 +245,7 @@ export default function StoryModePage() {
                                     border: 'none', borderRadius: 6, cursor: 'pointer',
                                 }}
                             >
-                                返回
+                                {t.vocab.storyMode.backBtn}
                             </button>
                         </div>
                     </div>
@@ -262,7 +264,7 @@ export default function StoryModePage() {
                 <div className="sm-header">
                     <div>
                         <span className="sm-header-title">
-                            {titles[0] || '追剧背词'}
+                            {titles[0] || t.vocab.storyMode.fallbackTitle}
                         </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -344,28 +346,28 @@ export default function StoryModePage() {
             {completeResult && (
                 <div className="ac-complete-overlay">
                     <div className="ac-complete-card">
-                        <h3>故事完成！</h3>
+                        <h3>{t.vocab.storyMode.completedTitle}</h3>
 
                         <div className="ac-complete-stats">
                             <div className="ac-complete-row">
-                                <span>已收集单词</span>
+                                <span>{t.vocab.storyMode.collectedLabel}</span>
                                 <span>{collectedCount}/{targetWords.size}</span>
                             </div>
                             <div className="ac-complete-row">
-                                <span>已标记单词</span>
-                                <span>{completeResult.marked_count} 个</span>
+                                <span>{t.vocab.storyMode.markedLabel}</span>
+                                <span>{completeResult.marked_count} {t.vocab.storyMode.markedUnit}</span>
                             </div>
                         </div>
 
                         <p className="ac-complete-done">
-                            所有单词已标记完成，复习间隔已更新
+                            {t.vocab.storyMode.allMarkedMsg}
                         </p>
 
                         <button
                             className="ac-back-btn ac-back-btn-large"
                             onClick={() => navigate(`/vocabulary/plans/${planId}`)}
                         >
-                            返回计划详情
+                            {t.vocab.storyMode.backToPlan}
                         </button>
                     </div>
                 </div>
@@ -376,7 +378,7 @@ export default function StoryModePage() {
                 <div className="ac-complete-overlay">
                     <div className="ac-complete-card">
                         <div className="ac-loading-spinner" style={{ marginBottom: 16 }} />
-                        <p className="ac-completing-msg">正在提交...</p>
+                        <p className="ac-completing-msg">{t.vocab.storyMode.submittingMsg}</p>
                     </div>
                 </div>
             )}

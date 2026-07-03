@@ -1,15 +1,17 @@
 /**
- * SpeakingChatPage ?口语聊天练习? *
- * 架构:
- *  1. 前端 SpeechRecognition API  ?识别用户说的话（文本? *  2. 文本 ?POST /api/speaking/chat ?AI 回复文本
- *  3. AI 文本 ?POST /api/listening/audio (edge-tts) ?音频 blob
- *  4. 前端播放音频 ?播放完毕 ?解锁录音按钮
+ * SpeakingChatPage — Speaking chat practice
  *
- * 状态机:
- *  idle       ?可以点击录音
- *  listening  ?正在录音（SpeechRecognition 运行中）
- *  speaking   ?播放 AI 语音（禁用按钮）
- *  loading    ?进入页面时欢迎语加载（禁用按钮）
+ * Architecture:
+ *  1. Frontend SpeechRecognition API → transcribe user speech to text
+ *  2. Text → POST /api/speaking/chat → AI reply text
+ *  3. AI text → POST /api/listening/audio (edge-tts) → audio blob
+ *  4. Frontend plays audio → on playback end → unlock the record button
+ *
+ * State machine:
+ *  idle       — recording button clickable
+ *  listening  — actively recording (SpeechRecognition running)
+ *  speaking   — playing AI voice (button disabled)
+ *  loading    — welcome message loading on entry (button disabled)
  */
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -439,7 +441,7 @@ function SpeakingChatPage() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const SR = getSRConstructor() as any;
             if (!SR) {
-                setRecError('浏览器不支持语音识别，请使用 Chrome 浏览器或 Edge');
+                setRecError(t.speakingChat.errBrowserNoSpeech);
                 setStatusSync('idle');
                 setIsMicUnusable(true);
                 setShowTextInput(true);
@@ -497,7 +499,7 @@ function SpeakingChatPage() {
                         if (text) {
                             handleSend(text, blob.size > 1000 ? blob : undefined);
                         } else {
-                            setRecError('未能识别到语音，请大声重试');
+                            setRecError(t.speakingChat.errNoSpeech);
                             setStatusSync('idle');
                         }
                     });
@@ -508,7 +510,7 @@ function SpeakingChatPage() {
                     if (text) {
                         handleSend(text);
                     } else {
-                        setRecError('未能识别到语音，请大声重试');
+                        setRecError(t.speakingChat.errNoSpeech);
                         setStatusSync('idle');
                     }
                 }
@@ -523,15 +525,15 @@ function SpeakingChatPage() {
                 stopAudioVisualizer();
                 stopRecTimer();
                 if (e.error === 'no-speech') {
-                    setRecError('没有检测到语音，请重试');
+                    setRecError(t.speakingChat.errNoDetectSpeech);
                 } else if (e.error === 'network') {
-                    setRecError('语音识别需要网络，请检查连接');
+                    setRecError(t.speakingChat.errNetworkNeeded);
                 } else if (e.error === 'not-allowed') {
-                    setRecError('麦克风权限被拒绝，请允许后刷新');
+                    setRecError(t.speakingChat.errMicDenied);
                     setIsMicUnusable(true);
                     setShowTextInput(true);
                 } else {
-                    setRecError(`识别错误: ${e.error}`);
+                    setRecError(t.speakingChat.errUnknown.replace('{msg}', String(e.error)));
                     setIsMicUnusable(true);
                     setShowTextInput(true);
                 }
@@ -577,15 +579,15 @@ function SpeakingChatPage() {
                 const err = e as DOMException | Error;
                 const name = (err as DOMException).name || '';
                 if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-                    setRecError('麦克风权限已被禁止。请在浏览器地址栏左侧点击锁图标 🔒，将麦克风权限改为"允许"，然后刷新页面。');
+                    setRecError(t.speakingChat.errMicDeniedLong);
                 } else if (name === 'NotFoundError') {
-                    setRecError('未检测到麦克风设备，请确认麦克风已正确连接。');
+                    setRecError(t.speakingChat.errMicNotFound);
                 } else if (name === 'NotReadableError') {
-                    setRecError('麦克风被其他应用占用，请关闭其他使用麦克风的程序后重试。');
+                    setRecError(t.speakingChat.errMicBusy);
                 } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    setRecError('当前环境不支持麦克风。请使用 HTTPS 或 localhost 访问，并使用 Chrome/Edge/Firefox 浏览器。');
+                    setRecError(t.speakingChat.errMicUnsupported);
                 } else {
-                    setRecError('麦克风启动失败，请检查浏览器设置后刷新重试。');
+                    setRecError(t.speakingChat.errMicStartFail);
                 }
                 setIsMicUnusable(true);
                 setShowTextInput(true);
@@ -691,7 +693,7 @@ function SpeakingChatPage() {
             if (isExamMode && !currentExamItem) {
                 pendingRef.current = false;
                 setStatusSync('idle');
-                setChatHistory(h => [...h, { role: 'system', content: '⚠️ 题目数据缺失，请返回口语页重新开始。' }]);
+                setChatHistory(h => [...h, { role: 'system', content: t.speakingChat.sysMissingQuestion }]);
                 return;
             }
             if (activeMode === 'scenario') {
@@ -861,19 +863,18 @@ function SpeakingChatPage() {
                 if (isContinue === 0) {
                     if (isFullTestMode) {
                         if (fullTestPhase === 'part3' && currentQuestionIndex + 1 >= activeExamQuestions.length) {
-                            newHistory.push({ role: 'system', content: '🏁 全套口语考试已完成！点击下方按钮查看完整评估报告。' });
+                            newHistory.push({ role: 'system', content: t.speakingChat.sysFullTestDone });
                         }
-                        // For part1→part2 and part2→part3 transitions, the loading message is added by handleFullTestTransition
                     } else if (isExamMode) {
                         const effectiveMode = isFullTestMode ? fullTestPhase : activeMode;
                         const partLabel = effectiveMode === 'part1' ? 'Part 1' : effectiveMode === 'part2' ? 'Part 2' : 'Part 3';
                         if (effectiveMode === 'part2') {
-                            newHistory.push({ role: 'system', content: '🏁 Part 2 练习已完成。你可以继续 Part 3，或直接查看当前总结报告。' });
+                            newHistory.push({ role: 'system', content: t.speakingChat.sysPart2Done });
                         } else {
-                            newHistory.push({ role: 'system', content: `🏁 ${partLabel} 练习已完成，点击下方按钮查看最终评估报告。` });
+                            newHistory.push({ role: 'system', content: t.speakingChat.sysPartDone.replace('{label}', partLabel) });
                         }
                     } else {
-                        newHistory.push({ role: 'system', content: '🎭 本次练习已结束，查看得分总结。' });
+                        newHistory.push({ role: 'system', content: t.speakingChat.sysPracticeDone });
                     }
                 }
                 return newHistory;
@@ -888,11 +889,11 @@ function SpeakingChatPage() {
         } catch (error: unknown) {
             pendingRef.current = false;
 
-            if (typeof error === 'object' && error !== null && ('name' in error && (error as { name: string }).name === 'ATBalanceError' || 'message' in error && (error as { message: string }).message === 'AT币余额不足')) {
-                showToast((error as { message: string }).message, 'error', 'AT币不足');
-                setChatHistory(h => [...h, { role: 'system', content: '⚠️ AT币余额不足，请充值或联系管理员' }]);
+            if (typeof error === 'object' && error !== null && ('name' in error && (error as { name: string }).name === 'ATBalanceError' || 'message' in error && (error as { message: string }).message === t.speakingChat.errATInsufficient)) {
+                showToast((error as { message: string }).message, 'error', t.speakingChat.errATInsufficientTitle);
+                setChatHistory(h => [...h, { role: 'system', content: t.speakingChat.errATInsufficientBody }]);
             } else {
-                setChatHistory(h => [...h, { role: 'system', content: '⚠️ AI 连接失败，请检查网络后重试' }]);
+                setChatHistory(h => [...h, { role: 'system', content: t.speakingChat.errAIFail }]);
             }
             setStatusSync('idle');
         }
@@ -918,22 +919,22 @@ function SpeakingChatPage() {
 
     // ── UI helpers ─────────────────────────────────────────────────────────
     const STATUS_LABEL: Record<Status, string> = {
-        loading: '加载?..',
-        mic_loading: '请求麦克风权?..',
-        idle: '可以说话了',
-        listening: '录音?..',
-        processing: 'AI 思考中...',
-        speaking: 'AI 说话?..',
-        finished: '对话已结束',
+        loading: t.speakingChat.statusLoading,
+        mic_loading: t.speakingChat.statusMicLoading,
+        idle: t.speakingChat.statusIdle,
+        listening: t.speakingChat.statusListening,
+        processing: t.speakingChat.statusProcessing,
+        speaking: t.speakingChat.statusSpeaking,
+        finished: t.speakingChat.statusFinished,
     };
     const MIC_LABEL: Record<Status, string> = {
-        loading: '加载中，请稍?..',
-        mic_loading: '🎙?加载麦克?..',
-        idle: '🎙️ 按下开始说话',
-        listening: '🔴 点击结束说话',
-        processing: '?AI 思考中...',
-        speaking: '🔊 AI 说话?..',
-        finished: '🏁 已结束',
+        loading: t.speakingChat.hintLoading,
+        mic_loading: t.speakingChat.micLoadingLabel,
+        idle: t.speakingChat.idleLabel,
+        listening: t.speakingChat.listeningLabel,
+        processing: t.speakingChat.processingLabel,
+        speaking: t.speakingChat.speakingLabel,
+        finished: t.speakingChat.finishedLabel,
     };
     const formatTime = (s: number) =>
         `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -962,7 +963,7 @@ function SpeakingChatPage() {
                 : await ATInterceptor.bankGeneratePart3(activeExamQuestions[0]?.topic || '');
             const nextQuestions = (res.data?.questions ?? []) as ExamQuestion[];
             if (!nextQuestions.length) {
-                throw new Error(`未获取到 ${nextPhase === 'part2' ? 'Part 2' : 'Part 3'} 题目`);
+                throw new Error(t.speakingChat.errFetchPartFail.replace('{label}', nextPhase === 'part2' ? 'Part 2' : 'Part 3'));
             }
 
             const first = nextQuestions[0];
@@ -978,7 +979,7 @@ function SpeakingChatPage() {
             
             setChatHistory(h => [
                 ...h,
-                { role: 'system', content: `📍 进入 Part ${partNum}` },
+                { role: 'system', content: t.speakingChat.sysEnterPart.replace('{n}', String(partNum)) },
                 { role: 'assistant', content: transitionMsg }
             ]);
             contextRef.current = [...contextRef.current, { role: 'assistant', content: transitionMsg }];
@@ -986,9 +987,9 @@ function SpeakingChatPage() {
             // Play TTS for the transition message
             playTTS(transitionMsg, false);
         } catch (error: unknown) {
-            const msg = (error as { message?: string })?.message || '加载下一部分失败';
+            const msg = (error as { message?: string })?.message || t.speakingChat.errLoadNextPartFail;
             showToast(msg, 'error');
-            setChatHistory(h => [...h, { role: 'system', content: `⚠️ ${msg}，请点击下方按钮查看已完成部分的报告。` }]);
+            setChatHistory(h => [...h, { role: 'system', content: t.speakingChat.sysWarn.replace('{msg}', msg) }]);
             setStatusSync('finished');
         } finally {
             setLoadingNextPart(false);
@@ -1004,7 +1005,7 @@ function SpeakingChatPage() {
             const res = await ATInterceptor.bankGeneratePart3(activeExamQuestions[0]?.topic || '');
             const nextQuestions = (res.data?.questions ?? []) as ExamQuestion[];
             if (!nextQuestions.length) {
-                throw new Error('未获取到 Part 3 题目，请稍后重试。');
+                throw new Error(t.speakingChat.errPart3Fetch);
             }
 
             const first = nextQuestions[0];
@@ -1017,9 +1018,9 @@ function SpeakingChatPage() {
             setChatHistory(h => [...h, { role: 'assistant', content: part3Welcome }]);
             contextRef.current = [...contextRef.current, { role: 'assistant', content: part3Welcome }];
             setStatusSync('idle');
-            showToast('已继续进入 Part 3 练习。', 'success');
+            showToast(t.speakingChat.toastPart3Enter, 'success');
         } catch (error: unknown) {
-            const msg = (error as { message?: string })?.message || '进入 Part 3 失败，请稍后重试。';
+            const msg = (error as { message?: string })?.message || t.speakingChat.toastPart3Fail;
             showToast(msg, 'error');
             setStatusSync('finished');
         } finally {
@@ -1032,8 +1033,8 @@ function SpeakingChatPage() {
             {/* ── Sidebar: Word Basket & Ai Settings ── */}
             <aside className="sc-sidebar">
                 <div className="sc-sidebar-header">
-                    <button className="sc-back-btn" onClick={() => navigate('/speaking')}>?返回</button>
-                    <h3>📚 词汇 & 设置</h3>
+                    <button className="sc-back-btn" onClick={() => navigate('/speaking')}>{t.speakingChat.backBtn}</button>
+                    <h3>{t.speakingChat.vocabHeading}</h3>
                 </div>
 
                 <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid var(--color-border)', marginBottom: '1rem' }}>
@@ -1042,11 +1043,12 @@ function SpeakingChatPage() {
                     </div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: 'var(--color-text-secondary)', marginTop: '1rem' }}>
                         <input type="checkbox" checked={showTimer} onChange={e => setShowTimer(e.target.checked)} />
-                        在录音时显示计时?                    </label>
+                        {t.speakingChat.showTimer}
+                    </label>
                 </div>
 
                 <div className="sc-word-list">
-                    {words.length === 0 && <p className="sc-no-words">暂无目标词汇</p>}
+                    {words.length === 0 && <p className="sc-no-words">{t.speakingChat.noWords}</p>}
                     {words.map((w, i) => (
                         <div key={i} className={`sc-word-item${w.count > 0 ? ' used' : ''}`}>
                             <div className="sc-word-text">
@@ -1079,7 +1081,7 @@ function SpeakingChatPage() {
                                                 return next;
                                             })}
                                         >
-                                            {expandedMsgs.has(i) ? '🔽 隐藏文本' : '▶️ 显示文本'}
+                                            {expandedMsgs.has(i) ? t.speakingChat.hideText : t.speakingChat.showText}
                                         </button>
                                         {expandedMsgs.has(i) && (
                                             <MarkdownBubble content={msg.content} />
@@ -1095,46 +1097,46 @@ function SpeakingChatPage() {
                             {msg.scores && (
                                 <details className="sc-score-panel">
                                     <summary>
-                                        🌟 查看本轮口语多维评分详情
+                                        {t.speakingChat.viewMultiScore}
                                     </summary>
                                     <div className="sc-score-details">
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">🎯 准确?(Accuracy):</span>
+                                            <span className="sc-score-label">{t.speakingChat.scoreAccuracy}</span>
                                             <span className="sc-score-value">{msg.scores.accuracy != null ? (Math.round(msg.scores.accuracy * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">👄 发音 (Pronunciation):</span>
+                                            <span className="sc-score-label">{t.speakingChat.scorePronunciation}</span>
                                             <span className="sc-score-value">{msg.scores.pronunciation != null ? (Math.round(msg.scores.pronunciation * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">🌊 流利?(Fluency):</span>
+                                            <span className="sc-score-label">{t.speakingChat.scoreFluency}</span>
                                             <span className="sc-score-value">{msg.scores.fluency != null ? (Math.round(msg.scores.fluency * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">🧩 完整?(Completeness):</span>
+                                            <span className="sc-score-label">{t.speakingChat.scoreCompleteness}</span>
                                             <span className="sc-score-value">{msg.scores.completeness != null ? (Math.round(msg.scores.completeness * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-divider" />
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">📝 语法得分 (Grammar):</span>
+                                            <span className="sc-score-label">{t.speakingChat.scoreGrammar}</span>
                                             <span className="sc-score-value">{msg.scores.grammar ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">🎓 切题?(Relevance):</span>
+                                            <span className="sc-score-label">{t.speakingChat.scoreRelevance}</span>
                                             <span className="sc-score-value">{msg.scores.relevance ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">📚 词汇运用 (Vocabulary):</span>
+                                            <span className="sc-score-label">{t.speakingChat.scoreVocab}</span>
                                             <span className="sc-score-value">{msg.scores.vocab ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         {(msg.scores.coherence !== undefined || msg.scores.depth !== undefined) && (
                                             <>
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label">🧭 连贯?(Coherence):</span>
+                                                    <span className="sc-score-label">{t.speakingChat.scoreCoherence}</span>
                                                     <span className="sc-score-value">{msg.scores.coherence ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label">🧠 思维深度 (Depth):</span>
+                                                    <span className="sc-score-label">{t.speakingChat.scoreDepth}</span>
                                                     <span className="sc-score-value">{msg.scores.depth ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 {msg.scores.feedback && (
@@ -1148,15 +1150,15 @@ function SpeakingChatPage() {
                                             <>
                                                 <div className="sc-score-divider" />
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label" title="Answer: 第一句话是否直接回答了问题">🇦 Answer (直接作答):</span>
+                                                    <span className="sc-score-label" title={t.speakingChat.areAnswerTitle}>{t.speakingChat.areAnswer}</span>
                                                     <span className="sc-score-value">{msg.scores.are_a} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label" title="Reason: 是否给出了合理的解释">🇷 Reason (给出原因):</span>
+                                                    <span className="sc-score-label" title={t.speakingChat.areReasonTitle}>{t.speakingChat.areReason}</span>
                                                     <span className="sc-score-value">{msg.scores.are_r} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label" title="Example: 是否给出了具体的例子">🇪 Example (给出例子):</span>
+                                                    <span className="sc-score-label" title={t.speakingChat.areExampleTitle}>{t.speakingChat.areExample}</span>
                                                     <span className="sc-score-value">{msg.scores.are_e} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 {msg.scores.are_feedback && (
@@ -1170,14 +1172,14 @@ function SpeakingChatPage() {
                                             <>
                                                 <div className="sc-score-divider" />
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label">⏱️ 时长与字?</span>
+                                                    <span className="sc-score-label">{t.speakingChat.durationChars}</span>
                                                     <span className="sc-score-value" style={{ fontSize: '12px' }}>
                                                         {msg.scores.duration}s | {msg.scores.word_count} words
                                                     </span>
                                                 </div>
                                                 {msg.scores.weighted_total_score !== undefined && (
                                                     <div className="sc-score-item" style={{ marginTop: '6px', backgroundColor: '#ecfeff', padding: '6px', borderRadius: '4px' }}>
-                                                        <span className="sc-score-label" style={{ color: '#0891b2', fontWeight: 600 }}>🌟 加权平均总分:</span>
+                                                        <span className="sc-score-label" style={{ color: '#0891b2', fontWeight: 600 }}>{t.speakingChat.weightedAvg}</span>
                                                         <span className="sc-score-value" style={{ color: '#0891b2', fontWeight: 600 }}>
                                                             {msg.scores.weighted_total_score.toFixed(1)} <span style={{ fontSize: '11px', color: '#67e8f9' }}>/ 9.0</span>
                                                         </span>
@@ -1194,7 +1196,7 @@ function SpeakingChatPage() {
                                             <>
                                                 <div className="sc-score-divider" />
                                                 <div className="sc-corrected-block">
-                                                    <span className="sc-corrected-label">✍️ AI 修正后的表达</span>
+                                                    <span className="sc-corrected-label">{t.speakingChat.correctedLabel}</span>
                                                     <p className="sc-corrected-text">{msg.correctedText}</p>
                                                 </div>
                                             </>
@@ -1249,13 +1251,13 @@ function SpeakingChatPage() {
                         <div className="sc-transcript-hint">
                             {recError
                                 ? <span className="sc-rec-error">⚠️ {recError}</span>
-                                : status === 'idle' ? '轮到你说话啦，按下绿色按钮开始'
-                                    : status === 'mic_loading' ? '请在浏览器弹窗中允许麦克风权?..'
-                                        : status === 'listening' ? '正在录音，说完后点击红色按钮停止'
-                                            : status === 'processing' ? 'AI 正在生成回复，请稍?..'
-                                                : status === 'speaking' ? '正在播放，播完后按钮变绿可继续'
-                                                    : status === 'finished' ? '对话已结束，请点击上方查看总结报告'
-                                                        : '正在加载，请稍?..'}
+                                : status === 'idle' ? t.speakingChat.hintIdle
+                                    : status === 'mic_loading' ? t.speakingChat.hintMicLoading
+                                        : status === 'listening' ? t.speakingChat.hintListening
+                                            : status === 'processing' ? t.speakingChat.hintProcessing
+                                                : status === 'speaking' ? t.speakingChat.hintSpeaking
+                                                    : status === 'finished' ? t.speakingChat.hintFinished
+                                                        : t.speakingChat.hintLoading}
                         </div>
                     </div>
 
@@ -1263,10 +1265,10 @@ function SpeakingChatPage() {
                         {prepTimeLeft > 0 && (
                             <div className="sc-prep-timer" style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                                    ⏱️ 准备时间：{prepTimeLeft}s
+                                    {t.speakingChat.prepTimeLabel.replace('{n}', String(prepTimeLeft))}
                                 </div>
                                 <button className="sc-skip-btn" onClick={() => setPrepTimeLeft(0)} style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--color-border)', background: 'transparent', cursor: 'pointer', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                    跳过准备
+                                    {t.speakingChat.skipPrep}
                                 </button>
                             </div>
                         )}
@@ -1277,20 +1279,21 @@ function SpeakingChatPage() {
                                 {showPart3ContinuePrompt ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
                                         <div style={{ fontSize: '14px', color: '#374151', textAlign: 'center' }}>
-                                            Part 2 已结束，是否继续 Part 3 练习?                                        </div>
+                                            {t.speakingChat.part2Ended}
+                                        </div>
                                         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
                                             <button
                                                 className="sc-summary-btn"
                                                 onClick={handleContinueToPart3}
                                                 disabled={loadingPart3}
                                             >
-                                                {loadingPart3 ? '正在准备 Part 3...' : '是，继续 Part 3'}
+                                                {loadingPart3 ? t.speakingChat.preparingPart3 : t.speakingChat.yesContinuePart3}
                                             </button>
                                             <button
                                                 className="sc-summary-btn"
                                                 onClick={handleGoSummary}
                                             >
-                                                否，查看总结
+                                                {t.speakingChat.noViewSummary}
                                             </button>
                                         </div>
                                     </div>
@@ -1322,9 +1325,9 @@ function SpeakingChatPage() {
                                     <button 
                                         className="sc-back-btn" 
                                         onClick={() => setShowTextInput(true)}
-                                        title="使用键盘输入"
+                                        title={t.speakingChat.useKeyboardTitle}
                                     >
-                                        ⌨️ 使用键盘输入
+                                        {t.speakingChat.useKeyboardBtn}
                                     </button>
                                 ) : (
                                     <div className="sc-manual-input" style={{ width: '100%', maxWidth: '400px' }}>
@@ -1333,7 +1336,7 @@ function SpeakingChatPage() {
                                             type="text"
                                             value={textInput}
                                             onChange={e => setTextInput(e.target.value)}
-                                            placeholder="输入回复内容..."
+                                            placeholder={t.speakingChat.replyPlaceholder}
                                             disabled={isDisabled}
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter' && textInput.trim() && !isDisabled) {
@@ -1352,7 +1355,8 @@ function SpeakingChatPage() {
                                             }}
                                             disabled={!textInput.trim() || isDisabled}
                                         >
-                                            发?                                        </button>
+                                            {t.speakingChat.sendBtn}
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -1363,4 +1367,4 @@ function SpeakingChatPage() {
         </div>
     );
 }
-
+

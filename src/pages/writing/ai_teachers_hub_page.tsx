@@ -3,7 +3,7 @@ import Layout from '../../components/layout/Layout';
 import { useLang } from '../../i18n/LanguageContext';
 
 export default function AiTeachersHubPage() {
-    const { lang, translations: t } = useLang();
+    const { translations: t } = useLang();
     const navigate = useNavigate();
 
     return (
@@ -45,9 +45,9 @@ export default function AiTeachersHubPage() {
                         onClick={() => navigate('/writing/correction')}
                     >
                         <span style={{ fontSize: '24px' }}>📝</span>
-                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub?.correction?.title || 'AI 写作批改'}</div>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.correction.title}</div>
                         <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                            {t.writingHub?.correction?.desc || '提交作文，获取多维度评分与修改建议'}
+                            {t.writingHub.correction.desc}
                         </div>
                     </button>
 

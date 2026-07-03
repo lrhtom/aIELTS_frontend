@@ -47,7 +47,7 @@ export default function VocabBookDetailPage() {
             setWords(r.words);
             setTotal(r.total);
         } catch {
-            showToast('加载单词失败', 'error');
+            showToast(t.vocab.common.loadWordsFail, 'error');
         } finally {
             setLoading(false);
         }
@@ -60,12 +60,12 @@ export default function VocabBookDetailPage() {
     const handlePageJump = () => {
         const rawValue = pageJumpInput.trim();
         if (!rawValue) {
-            showToast('请输入页码', 'error');
+            showToast(t.vocab.pagination.errEnterPage, 'error');
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            showToast(`请输入 1 到 ${totalPages} 的整数页码`, 'error');
+            showToast(t.vocab.pagination.errPageRange.replace('{n}', String(totalPages)), 'error');
             return;
         }
         setPage(Math.min(totalPages, Math.max(1, parsed)));
@@ -130,7 +130,7 @@ export default function VocabBookDetailPage() {
                             {t.vocab.bookDetail.nextPage}
                         </button>
                         <div className="lp-page-jump">
-                            <span>跳到</span>
+                            <span>{t.vocab.pagination.jumpTo}</span>
                             <input
                                 type="text"
                                 inputMode="numeric"
@@ -142,8 +142,8 @@ export default function VocabBookDetailPage() {
                                     }
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handlePageJump(); }}
-                                placeholder="页码"
-                                aria-label="跳转到指定页"
+                                placeholder={t.vocab.pagination.pagePlaceholder}
+                                aria-label={t.vocab.pagination.jumpAria}
                             />
                             <button
                                 type="button"

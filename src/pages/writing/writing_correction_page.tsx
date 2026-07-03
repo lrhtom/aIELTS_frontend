@@ -37,7 +37,7 @@ export default function WritingCorrectionPage() {
     const [promptText, setPromptText] = useState('');
     const [taskType, setTaskType] = useState<WritingTaskType>('task2');
     const [isEvaluating, setIsEvaluating] = useState(false);
-    const [activeTab, setActiveTab] = useState<'sentence' | 'vocab' | 'improved' | 'model'>('sentence');
+    const [activeTab, setActiveTab] = useState<'sentence' | 'vocab' | 'improved' | 'model' | 'stats'>('sentence');
     const [transMode, setTransMode] = useState<'en' | 'zh'>('en');
     const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
     const [isTranslating, setIsTranslating] = useState(false);
@@ -62,7 +62,6 @@ export default function WritingCorrectionPage() {
     const [bankId, setBankId] = useState<number | null>(bankIdFromUrl ?? navState?.bankId ?? null);
     const [bankSubtype, setBankSubtype] = useState<string>(navState?.subtype || '');
     const [isSaved, setIsSaved] = useState(!!recordId);
-    const [isSaving, setIsSaving] = useState(false);
     // Trigger refs prevent the StrictMode double-mount from re-firing AI calls / bank load.
     const hasLoadedBankRef = useRef<number | null>(null);
     const hasAutoEvaluatedRef = useRef(false);
@@ -83,8 +82,8 @@ export default function WritingCorrectionPage() {
                         setIsSaved(true);
                     }
                 })
-                .catch(err => {
-                    showToast(lang === 'zh' ? '加载记录失败' : 'Failed to load record', 'error');
+                .catch(() => {
+                    showToast(t.writingCorrection.loadRecordFail, 'error');
                 });
         }
     }, []); // Only run once on mount since recordId is now state
@@ -109,7 +108,7 @@ export default function WritingCorrectionPage() {
             }
         }).catch(err => {
             console.error('Bank correction load failed:', err);
-            showToast(lang === 'zh' ? '题库加载失败' : 'Failed to load bank item', 'error');
+            showToast(t.writingCorrection.loadBankFail, 'error');
             navigate('/practice/ai/bank');
         });
     }, [bankIdFromUrl, lang, navigate]);
@@ -243,7 +242,7 @@ export default function WritingCorrectionPage() {
             if (currentBankId) {
                 submitAIQuestion(currentBankId, essayText, res).catch(err => {
                     console.error('Bank submit failed:', err);
-                    showToast(lang === 'zh' ? '保存到题库失败，但批改已显示' : 'Failed to save to bank', 'error');
+                    showToast(t.writingCorrection.saveBankFail, 'error');
                 });
                 return;
             }
@@ -254,7 +253,7 @@ export default function WritingCorrectionPage() {
                     method: 'POST',
                     body: {
                         service_type: 'correction',
-                        title: promptStr ? (promptStr.slice(0, 30) + '...') : (lang === 'zh' ? '无题作文批改' : 'Untitled Correction'),
+                        title: promptStr ? (promptStr.slice(0, 30) + '...') : t.writingCorrection.untitledFallback,
                         content: {
                             result: res,
                             text: essayText,
@@ -294,10 +293,10 @@ export default function WritingCorrectionPage() {
     };
 
     const scores = result ? [
-        { label: lang === 'zh' ? (taskType === 'task1' ? '任务完成' : '任务回应') : (taskType === 'task1' ? 'TA' : 'TR'), val: result.Task_Response },
-        { label: lang === 'zh' ? '连贯衔接' : 'CC', val: result.Coherence_Cohesion },
-        { label: lang === 'zh' ? '词汇资源' : 'LR', val: result.Lexical_Resource },
-        { label: lang === 'zh' ? '语法多样' : 'GRA', val: result.Grammatical_Range },
+        { label: taskType === 'task1' ? t.writingCorrection.taTask1 : t.writingCorrection.taTr, val: result.Task_Response },
+        { label: t.writingCorrection.ccLabelZh, val: result.Coherence_Cohesion },
+        { label: t.writingCorrection.lrLabelZh, val: result.Lexical_Resource },
+        { label: t.writingCorrection.graLabelZh, val: result.Grammatical_Range },
     ] : [];
 
 
@@ -431,7 +430,7 @@ export default function WritingCorrectionPage() {
         <Layout
             pageTitle={t.writingCorrection.title}
             backUrl={bankId ? '/practice/ai/bank' : (recordId ? "/writing/ai-teachers/records" : "/writing")}
-            backText={bankId ? (lang === 'zh' ? '返回 AI 题库' : 'Back to AI Bank') : (recordId ? (lang === 'zh' ? '返回记录' : 'Back to Records') : t.writingCorrection.backToHall)}
+            backText={bankId ? t.writingCorrection.backAiBank : (recordId ? t.writingCorrection.backRecords : t.writingCorrection.backToHall)}
             onBack={bankId ? () => navigate('/practice/ai/bank') : handleBack}
             headerRight={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -442,7 +441,7 @@ export default function WritingCorrectionPage() {
                             onClick={handleRedoFromBank}
                             style={{ padding: '6px 14px', fontSize: '0.85rem' }}
                         >
-                            🔁 {lang === 'zh' ? '重新作答' : 'Redo'}
+                            🔁 {t.writingCorrection.redoBtn}
                         </button>
                     )}
                     {!recordId && !bankId && <AiModelSelector variant="minimal" onModelChange={(nextProvider) => setProvider(nextProvider)} />}
@@ -457,13 +456,13 @@ export default function WritingCorrectionPage() {
                             {/* 1. Left: Essay with Annotations */}
                             <div className="wc-essay-panel">
                                 <div className="wc-panel-header">
-                                    <div className="wc-panel-title">✍️ {lang === 'zh' ? '您的作文 (带批注)' : 'Your Essay (Annotated)'}</div>
+                                    <div className="wc-panel-title">✍️ {t.writingCorrection.annotatedEssayTitle}</div>
                                 </div>
                                 
                                 {/* Essay Prompt Placeholder */}
                                 <div style={{ padding: '24px 32px 0 32px', color: '#475569', fontSize: '0.95rem', fontStyle: 'italic', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
-                                    <div style={{ fontWeight: 600, marginBottom: '8px', color: '#334155' }}>📝 {lang === 'zh' ? '作文题目 (Prompt)' : 'Essay Prompt'}</div>
-                                    {promptText || (lang === 'zh' ? '（您未输入原题目，系统直接基于文章内容进行无题批改）' : '(No prompt was provided, the system evaluated based on the essay content alone)')}
+                                    <div style={{ fontWeight: 600, marginBottom: '8px', color: '#334155' }}>📝 {t.writingCorrection.promptSectionTitle}</div>
+                                    {promptText || t.writingCorrection.noPromptMessage}
                                 </div>
 
                                 <div className="wc-essay-content" onClick={handleEssayClick}>
@@ -475,18 +474,18 @@ export default function WritingCorrectionPage() {
                             <div className="wc-corrections-panel">
                                 <div className="wc-tabs">
                                     {result.Sentence_Corrections && result.Sentence_Corrections.length > 0 && (
-                                        <button type="button" className={`wc-tab-btn${activeTab === 'sentence' ? ' active' : ''}`} onClick={() => setActiveTab('sentence')}>{lang === 'zh' ? '逐句精批' : 'Sentences'}</button>
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'sentence' ? ' active' : ''}`} onClick={() => setActiveTab('sentence')}>{t.writingCorrection.tabSentence}</button>
                                     )}
                                     {result.Vocabulary_Upgrades && result.Vocabulary_Upgrades.length > 0 && (
-                                        <button type="button" className={`wc-tab-btn${activeTab === 'vocab' ? ' active' : ''}`} onClick={() => setActiveTab('vocab')}>{lang === 'zh' ? '词汇升级' : 'Vocab'}</button>
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'vocab' ? ' active' : ''}`} onClick={() => setActiveTab('vocab')}>{t.writingCorrection.tabVocab}</button>
                                     )}
                                     {result.Revised_Essay && (
-                                        <button type="button" className={`wc-tab-btn${activeTab === 'improved' ? ' active' : ''}`} onClick={() => setActiveTab('improved')}>{lang === 'zh' ? '改后作文' : 'Improved'}</button>
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'improved' ? ' active' : ''}`} onClick={() => setActiveTab('improved')}>{t.writingCorrection.tabImproved}</button>
                                     )}
                                     {result.Model_Essay && (
-                                        <button type="button" className={`wc-tab-btn${activeTab === 'model' ? ' active' : ''}`} onClick={() => setActiveTab('model')}>{lang === 'zh' ? '高分范文' : 'Model'}</button>
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'model' ? ' active' : ''}`} onClick={() => setActiveTab('model')}>{t.writingCorrection.tabModel}</button>
                                     )}
-                                    <button type="button" className={`wc-tab-btn${activeTab === 'stats' ? ' active' : ''}`} onClick={() => setActiveTab('stats')}>{lang === 'zh' ? '数据统计' : 'Statistics'}</button>
+                                    <button type="button" className={`wc-tab-btn${activeTab === 'stats' ? ' active' : ''}`} onClick={() => setActiveTab('stats')}>{t.writingCorrection.tabStats}</button>
                                 </div>
 
                                 <div className="wc-corrections-content">
@@ -525,13 +524,13 @@ export default function WritingCorrectionPage() {
                                                 <div key={idx} id={`corr-${corr.original}`} className={`wc-correction-card ${corr.severity === 'suggestion' ? 'severity-suggestion' : 'severity-warning'}`}>
                                                     <div style={{ marginBottom: '8px' }}>
                                                         <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#ef4444', fontWeight: 600, marginRight: '8px' }}>
-                                                            {lang === 'zh' ? '原句' : 'Original'}
+                                                            {t.writingCorrection.origLabel}
                                                         </span>
                                                         <span style={{ textDecoration: 'line-through', color: 'var(--color-text-dim)' }}>{corr.original}</span>
                                                     </div>
                                                     <div style={{ marginBottom: '12px' }}>
                                                         <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#d1fae5', color: '#10b981', fontWeight: 600, marginRight: '8px' }}>
-                                                            {lang === 'zh' ? '修改' : 'Improved'}
+                                                            {t.writingCorrection.improvedLabel}
                                                         </span>
                                                         <span style={{ color: 'var(--color-text)', fontWeight: 500 }}>{corr.improved}</span>
                                                     </div>
@@ -565,7 +564,7 @@ export default function WritingCorrectionPage() {
                                         <div className="wc-correction-card">
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                                 <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
-                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{lang === 'zh' ? '英文' : 'English'}</button>
+                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{t.writingCorrection.transEnBtn}</button>
                                                     <button type="button" className={`wc-trans-btn${transMode === 'zh' ? ' active' : ''}`} onClick={async () => {
                                                         setTransMode('zh');
                                                         if (!translatedTexts['improved']) {
@@ -580,13 +579,13 @@ export default function WritingCorrectionPage() {
                                                             }
                                                         }
                                                     }}>
-                                                        {lang === 'zh' ? '中文翻译' : 'Translation'}
+                                                        {t.writingCorrection.transZhBtn}
                                                     </button>
                                                 </div>
                                             </div>
                                             <div style={{ lineHeight: 1.8, fontSize: '1.05rem', color: '#334155' }}>
                                                 {isTranslating && transMode === 'zh' ? (
-                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{lang === 'zh' ? '翻译中...' : 'Loading...'}</div>
+                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{t.writingCorrection.transLoading}</div>
                                                 ) : (
                                                     (transMode === 'en' ? result.Revised_Essay : (translatedTexts['improved'] || '')).split(/\n\n+/).map((para, idx) => (
                                                         <p key={idx} style={{ marginBottom: '16px' }}>{para.trim()}</p>
@@ -600,7 +599,7 @@ export default function WritingCorrectionPage() {
                                         <div className="wc-correction-card">
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                                 <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
-                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{lang === 'zh' ? '英文' : 'English'}</button>
+                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{t.writingCorrection.transEnBtn}</button>
                                                     <button type="button" className={`wc-trans-btn${transMode === 'zh' ? ' active' : ''}`} onClick={async () => {
                                                         setTransMode('zh');
                                                         if (!translatedTexts['model']) {
@@ -615,13 +614,13 @@ export default function WritingCorrectionPage() {
                                                             }
                                                         }
                                                     }}>
-                                                        {lang === 'zh' ? '中文翻译' : 'Translation'}
+                                                        {t.writingCorrection.transZhBtn}
                                                     </button>
                                                 </div>
                                             </div>
                                             <div style={{ lineHeight: 1.8, fontSize: '1.05rem', color: '#334155' }}>
                                                 {isTranslating && transMode === 'zh' ? (
-                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{lang === 'zh' ? '翻译中...' : 'Loading...'}</div>
+                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{t.writingCorrection.transLoading}</div>
                                                 ) : (
                                                     (transMode === 'en' ? result.Model_Essay : (translatedTexts['model'] || '')).split(/\n\n+/).map((para, idx) => (
                                                         <p key={idx} style={{ marginBottom: '16px' }}>{para.trim()}</p>
@@ -659,7 +658,7 @@ export default function WritingCorrectionPage() {
                                 <div style={{ padding: '20px', borderTop: '1px solid #f1f5f9' }}>
                                     <div className="wc-overall-feedback">
                                         <h3 style={{ marginBottom: '16px', fontSize: '1.05rem', color: '#1e293b', fontWeight: 700 }}>
-                                            {lang === 'zh' ? '综合评价 (Comprehensive Evaluation)' : 'Comprehensive Evaluation'}
+                                            {t.writingCorrection.comprehensiveEval}
                                         </h3>
                                         
                                         {/* Strengths */}
@@ -667,7 +666,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#15803d', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }}></div>
-                                                    {lang === 'zh' ? '优点 (Strengths)' : 'Strengths'}
+                                                    {t.writingCorrection.strengths}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Feedback_Strengths.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -680,7 +679,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></div>
-                                                    {lang === 'zh' ? '待改进 (Areas for Improvement)' : 'Areas for Improvement'}
+                                                    {t.writingCorrection.areasForImprovement}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Feedback_Improvements.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -693,7 +692,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#1d4ed8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }}></div>
-                                                    {lang === 'zh' ? '提升策略 (Actionable Strategies)' : 'Actionable Strategies'}
+                                                    {t.writingCorrection.actionableStrategies}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Actionable_Advice.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -706,7 +705,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#6d28d9', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#8b5cf6' }}></div>
-                                                    {lang === 'zh' ? '具体任务 (Specific Tasks)' : 'Specific Tasks'}
+                                                    {t.writingCorrection.specificTasks}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Feedback_Tasks.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -719,7 +718,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#0f766e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#14b8a6' }}></div>
-                                                    {lang === 'zh' ? '提分路径 (Path to Improvement)' : 'Path to Improvement'}
+                                                    {t.writingCorrection.pathToImprovement}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Feedback_Path.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -732,7 +731,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></div>
-                                                    {lang === 'zh' ? '考官点评 (Examiner Feedback)' : 'Examiner Feedback'}
+                                                    {t.writingCorrection.examinerFeedbackTab}
                                                 </div>
                                                 <div style={{ paddingLeft: '14px', borderLeft: '2px solid #f1f5f9', marginLeft: '3px' }}>
                                                     {(result.Feedback || result.feedback || '').split('\n').map((line, idx) => (
@@ -745,10 +744,10 @@ export default function WritingCorrectionPage() {
                                         {/* Accordions for Detailed Criteria */}
                                         <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                             {[
-                                                { key: 'TR', label: lang === 'zh' ? (taskType === 'task1' ? '任务完成情况 (Task Achievement)' : '任务回应情况 (Task Response)') : 'Task Response', content: result.Feedback_TR },
-                                                { key: 'CC', label: lang === 'zh' ? '连贯与衔接 (Coherence & Cohesion)' : 'Coherence & Cohesion', content: result.Feedback_CC },
-                                                { key: 'LR', label: lang === 'zh' ? '词汇资源 (Lexical Resource)' : 'Lexical Resource', content: result.Feedback_LR },
-                                                { key: 'GRA', label: lang === 'zh' ? '语法多样性及准确性 (Grammatical Range)' : 'Grammatical Range', content: result.Feedback_GRA }
+                                                { key: 'TR', label: taskType === 'task1' ? t.writingCorrection.trFeedbackLabelTask1 : t.writingCorrection.trFeedbackLabelTask2, content: result.Feedback_TR },
+                                                { key: 'CC', label: t.writingCorrection.ccFeedbackLabel, content: result.Feedback_CC },
+                                                { key: 'LR', label: t.writingCorrection.lrFeedbackLabel, content: result.Feedback_LR },
+                                                { key: 'GRA', label: t.writingCorrection.graFeedbackLabel, content: result.Feedback_GRA }
                                             ].map(crit => crit.content ? (
                                                 <div key={crit.key} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                                                     <button 
@@ -940,8 +939,8 @@ export default function WritingCorrectionPage() {
                         {isEvaluating && (
                             <div className="wc-result-placeholder" style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderRadius: 0, height: '100%', minHeight: '100%' }}>
                                 <div className="wc-ai-pulsing-core">AI</div>
-                                <h3>{lang === 'zh' ? '正在深度批改中' : 'Evaluating your essay'}</h3>
-                                <p style={{ color: '#475569', fontWeight: 500 }}>{lang === 'zh' ? 'AI 正在逐字句分析您的作文并提供高级词汇替换，请稍候...' : 'AI is analyzing your essay sentence by sentence and preparing advanced vocabulary upgrades, please wait...'}</p>
+                                <h3>{t.writingCorrection.evaluatingHeading}</h3>
+                                <p style={{ color: '#475569', fontWeight: 500 }}>{t.writingCorrection.evaluatingSubMsg}</p>
                             </div>
                         )}
                     </div>

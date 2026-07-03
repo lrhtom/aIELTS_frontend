@@ -1,7 +1,7 @@
 /* ── Types ───────────────────────────────────────────────────────────────── */
 
 export type Step = 'doing' | 'result';
-export type StudyMode = 'flashcard' | 'flashcard-simple' | 'choice' | 'write' | 'copy' | 'article_copy' | 'story_mode';
+export type StudyMode = 'flashcard' | 'flashcard-simple' | 'read-aloud' | 'choice' | 'write' | 'copy' | 'article_copy' | 'story_mode';
 export type TrackingMode = 'none' | 'eye' | 'mouse';
 export type MasterySetting = 'auto' | number;
 

@@ -124,9 +124,9 @@ export default function Writing_page() {
                             onClick={() => navigate('/writing/ai-teachers')}
                         >
                             <span style={{ fontSize: '24px' }}>👨‍🏫</span>
-                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.aiTeacher?.title || 'AI 写作老师'}</div>
+                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.aiTeacher.title}</div>
                             <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                                {t.writingHub.aiTeacher?.desc || '包含 AI 批改、小作文与大作文一对一辅导'}
+                                {t.writingHub.aiTeacher.desc}
                             </div>
                         </button>
                     </div>

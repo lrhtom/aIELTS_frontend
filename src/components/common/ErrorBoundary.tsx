@@ -1,4 +1,5 @@
 import React from 'react';
+import { translations } from '../../i18n/translations';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -7,6 +8,13 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+}
+
+function pickLang(): 'zh' | 'en' {
+  const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ielts_lang') : null;
+  if (stored === 'zh' || stored === 'en') return stored;
+  const nav = typeof navigator !== 'undefined' ? navigator.language : '';
+  return nav.toLowerCase().startsWith('zh') ? 'zh' : 'en';
 }
 
 export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -20,17 +28,17 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // 可以在这里上报错误到日志服务
-    console.error('ErrorBoundary 捕获到错误:', error, errorInfo);
+    console.error('ErrorBoundary caught:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
+      const t = translations[pickLang()].errorBoundary;
       return (
         <div style={{ color: 'red', padding: 24 }}>
-          <h2>页面发生错误</h2>
+          <h2>{t.heading}</h2>
           <pre>{this.state.error?.message}</pre>
-          <p>请刷新页面或联系技术支持。</p>
+          <p>{t.hint}</p>
         </div>
       );
     }

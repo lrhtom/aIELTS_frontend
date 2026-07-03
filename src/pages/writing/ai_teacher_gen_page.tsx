@@ -74,38 +74,38 @@ export default function AiTeacherGenPage() {
                             onClick={() => setAdvancedOpen(!advancedOpen)}
                         >
                             <span>{advancedOpen ? '▼' : '▶'}</span>
-                            {t.writingAiTeacher.advancedSettings?.title || '高级设置 / 自定义要求 (可选)'}
+                            {t.writingAiTeacher.advancedSettings.title}
                         </div>
-                        
+
                         {advancedOpen && (
                             <div className="at-gen-advanced-panel">
                                 <div>
-                                    <div className="at-gen-advanced-label">{t.writingAiTeacher.advancedSettings?.viewpointLabel || '文章立场偏好：'}</div>
+                                    <div className="at-gen-advanced-label">{t.writingAiTeacher.advancedSettings.viewpointLabel}</div>
                                     <div className="at-gen-radio-group">
                                         <label className={`at-gen-radio-label ${viewpoint === '' ? 'is-active' : ''}`}>
-                                            <input type="radio" name="vp" checked={viewpoint === ''} onChange={() => setViewpoint('')} /> 
-                                            {t.writingAiTeacher.advancedSettings?.viewpointOptions?.none || '不指定 (AI决定)'}
+                                            <input type="radio" name="vp" checked={viewpoint === ''} onChange={() => setViewpoint('')} />
+                                            {t.writingAiTeacher.advancedSettings.viewpointOptions.none}
                                         </label>
                                         <label className={`at-gen-radio-label ${viewpoint === 'positive' ? 'is-active' : ''}`}>
-                                            <input type="radio" name="vp" checked={viewpoint === 'positive'} onChange={() => setViewpoint('positive')} /> 
-                                            {t.writingAiTeacher.advancedSettings?.viewpointOptions?.positive || '正面 (支持/利大于弊)'}
+                                            <input type="radio" name="vp" checked={viewpoint === 'positive'} onChange={() => setViewpoint('positive')} />
+                                            {t.writingAiTeacher.advancedSettings.viewpointOptions.positive}
                                         </label>
                                         <label className={`at-gen-radio-label ${viewpoint === 'negative' ? 'is-active' : ''}`}>
-                                            <input type="radio" name="vp" checked={viewpoint === 'negative'} onChange={() => setViewpoint('negative')} /> 
-                                            {t.writingAiTeacher.advancedSettings?.viewpointOptions?.negative || '反面 (反对/弊大于利)'}
+                                            <input type="radio" name="vp" checked={viewpoint === 'negative'} onChange={() => setViewpoint('negative')} />
+                                            {t.writingAiTeacher.advancedSettings.viewpointOptions.negative}
                                         </label>
                                         <label className={`at-gen-radio-label ${viewpoint === 'both' ? 'is-active' : ''}`}>
-                                            <input type="radio" name="vp" checked={viewpoint === 'both'} onChange={() => setViewpoint('both')} /> 
-                                            {t.writingAiTeacher.advancedSettings?.viewpointOptions?.both || '探讨双方 (中立/分情况)'}
+                                            <input type="radio" name="vp" checked={viewpoint === 'both'} onChange={() => setViewpoint('both')} />
+                                            {t.writingAiTeacher.advancedSettings.viewpointOptions.both}
                                         </label>
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="at-gen-advanced-label">{t.writingAiTeacher.advancedSettings?.instructionsLabel || '额外写作指令：'}</div>
-                                    <textarea 
+                                    <div className="at-gen-advanced-label">{t.writingAiTeacher.advancedSettings.instructionsLabel}</div>
+                                    <textarea
                                         className="at-gen-textarea"
                                         style={{ minHeight: '80px', height: '80px' }}
-                                        placeholder={t.writingAiTeacher.advancedSettings?.instructionsPlaceholder || "例如：多用被动语态、尽量使用 C1 级别词汇、举一个关于人工智能的具体例子..."}
+                                        placeholder={t.writingAiTeacher.advancedSettings.instructionsPlaceholder}
                                         value={customInstructions}
                                         onChange={e => setCustomInstructions(e.target.value)}
                                         maxLength={500}

@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-// removed unused import
 import {
     Globe, Server, Search, ChevronDown, ChevronRight,
     Zap, Lock, ExternalLink, Hash, Layers,
@@ -7,47 +6,11 @@ import {
 } from 'lucide-react';
 import '../../styles/route_visualization.css';
 import { apiClient } from '../../api/client';
+import { useLang } from '../../i18n/LanguageContext';
+import type { Translations } from '../../i18n/translations';
 
 
-const rvMock = {
-    title: '系统路由与端点架构',
-    liveBadge: '实时监控',
-    tabFrontend: '前端路由树',
-    tabBackend: '后端 API',
-    searchRoutes: '搜索路径、组件、模块...',
-    searchEndpoints: '搜索端点、处理器...',
-    resultCount: '找到 {filtered} 项，共 {total} 项',
-    legendProtected: '需要鉴权',
-    legendPublic: '公开访问',
-    legendLazy: '懒加载 (优化)',
-    multiMethod: '多方法端点',
-    dataSource: 'Django DRF / App.tsx',
-    jwtHint: '访问受保护端点需在请求头携带 Bearer Token。',
-    totalRoutes: '总路由',
-    requireAuth: '需鉴权',
-    public: '公开',
-    lazyLoad: '懒加载',
-    modules: '大模块',
-    totalEndpoints: '总端点',
-    noMatch: '没有找到匹配项',
-    loadFail: '加载失败',
-    loadingBackend: '正在分析后端端点...',
-    retry: '重试',
-    moduleNames: {
-        auth: '鉴权与用户', balance: 'AT币管理', store: '商店', reading: '阅读',
-        listening: '听力', speaking: '口语', writing: '写作', fsrs: '词汇FSRS',
-        notebooks: '笔记本', plans: '学习计划', prompts: 'Prompt广场', creative: '创意工坊',
-        assistant: '全局助手', admin: '管理后台', feedback: '用户反馈',
-        other: '其他核心模块', topLevel: '顶层与公共', vocabulary: '词汇与记忆',
-        practice: '聚合训练', readingListening: '阅读与听力'
-    },
-    guards: {
-        public: 'routeVis.guards.public'
-    }
-};
-
-
-type RV = typeof rvMock;
+type RV = Translations['routeVis'];
 
 function resolveModuleName(key: string, rv: RV): string {
     if (!key) return '';
@@ -309,7 +272,8 @@ interface BackendData {
 }
 
 export default function RouteVisualization() {
-    const rv = rvMock;
+    const { translations } = useLang();
+    const rv = translations.routeVis;
     const resolveName = (key: string) => resolveModuleName(key, rv);
 
     const [tab, setTab] = useState<TreeTab>('frontend');

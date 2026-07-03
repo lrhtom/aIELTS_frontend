@@ -94,7 +94,9 @@ export default function AdminUserManagement() {
 
     const handleAdjustAT = async (user: UserRow) => {
         const input = window.prompt(
-            `调整用户 ${user.username} 的 AT 币余额\n当前余额: ${user.atBalance.toLocaleString()} AT\n输入正数为增加，负数为减少（例：10000 或 -500）`,
+            t.profile.admin.users.adjustAtPrompt
+                .replace('{name}', user.username)
+                .replace('{balance}', user.atBalance.toLocaleString()),
             ''
         );
         if (input === null) return;

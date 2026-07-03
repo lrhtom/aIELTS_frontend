@@ -4,6 +4,7 @@ import { avatarApi } from '../../api/avatar';
 import { showToast } from '../common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
+import { mediaUrl } from '../../utils/media';
 import '../../styles/avatarUpload.css';
 
 interface AvatarUploadProps {
@@ -29,11 +30,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
     };
 
     useEffect(() => {
-        if (user?.avatar_url) {
-            setPreviewUrl(user.avatar_url);
-        } else {
-            setPreviewUrl(null);
-        }
+        setPreviewUrl(mediaUrl(user?.avatar_url) || null);
     }, [user?.avatar_url]);
 
     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,7 +62,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
             const e = error as { response?: { data?: { error?: string } } };
             console.error('头像上传失败:', error);
             showToast(e.response?.data?.error || t.uploadFailed, 'error');
-            setPreviewUrl(user?.avatar_url || null);
+            setPreviewUrl(mediaUrl(user?.avatar_url) || null);
         } finally {
             setIsUploading(false);
             // 清除文件输入

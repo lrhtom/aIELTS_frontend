@@ -15,7 +15,7 @@ export default function VocabBookListPage() {
     useEffect(() => {
         listVocabBooks()
             .then(r => setBooks(r.books))
-            .catch(() => showToast('加载词书失败', 'error'))
+            .catch(() => showToast(t.vocab.common.loadBooksFail, 'error'))
             .finally(() => setLoading(false));
     }, []);
 

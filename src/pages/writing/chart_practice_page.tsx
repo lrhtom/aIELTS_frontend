@@ -341,7 +341,7 @@ export default function ChartPracticePage() {
                         fontFamily: 'system-ui',
                     }}
                 >
-                    🔍 {lang === 'zh' ? '点击放大' : 'Click to zoom'}
+                    🔍 {t.practiceSandbox.clickToZoom}
                 </div>
             </div>
         );

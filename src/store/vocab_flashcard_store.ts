@@ -33,6 +33,14 @@ interface AdvanceArgs {
     /** "Next due" hint shown after graduation. */
     completionDueHint: CompletionDueHint | null;
     /**
+     * The FSRS rating (1..4) the user actually clicked / that this advance is
+     * associated with. Recorded into `allRatings` on every call so the summary
+     * histogram reflects *every* click — not just the graduating one. Without
+     * this, a card rated Again five times then graduated with Good shows up as
+     * a single Good in the summary and Again looks perpetually 0.
+     */
+    ratingClicked: number;
+    /**
      * Pure function that computes the next queue given the queue tail
      * (after popping the head) and the current card index. Lives in the page
      * because it depends on the active `mode`.
@@ -52,6 +60,10 @@ export interface VocabFlashcardStore {
     graduatedCount: number;
     visitKey: number;
     results: ReviewResult[];
+    /** Every rating the user clicked this session, in order — used for the
+     *  summary histogram (Again/Hard/Good/Easy counts reflect ALL clicks, not
+     *  just the one that graduated the card). */
+    allRatings: number[];
 
     // ── Cycle UI flags (reset every time we advance to the next card) ──────
     isFlipped: boolean;
@@ -148,6 +160,7 @@ export const useVocabFlashcardStore = create<VocabFlashcardStore>((set) => ({
     graduatedCount: 0,
     visitKey: 0,
     results: [],
+    allRatings: [],
 
     isFlipped: false,
     isFlipping: false,
@@ -186,6 +199,7 @@ export const useVocabFlashcardStore = create<VocabFlashcardStore>((set) => ({
             copyReviewDaysTemp: new Array(n).fill(copyReviewDays),
             graduatedCount: 0,
             results: [],
+            allRatings: [],
             visitKey: 1,
             ...initialCycleUiState(true),
             submitting: false,
@@ -202,6 +216,7 @@ export const useVocabFlashcardStore = create<VocabFlashcardStore>((set) => ({
         newMastery,
         updatedCard,
         graduateResult,
+        ratingClicked,
         completionDueHint,
         reinsert,
         copyWordHidden,
@@ -239,11 +254,12 @@ export const useVocabFlashcardStore = create<VocabFlashcardStore>((set) => ({
                 sessionMastery,
                 queue,
                 results: graduateResult ? [...state.results, graduateResult] : state.results,
+                allRatings: [...state.allRatings, ratingClicked],
                 graduatedCount: graduate ? state.graduatedCount + 1 : state.graduatedCount,
-                completionDueHint,
                 visitKey: state.visitKey + 1,
                 submitting: false,
                 ...initialCycleUiState(!copyWordHidden),
+                completionDueHint,
             };
         });
     },
@@ -260,6 +276,7 @@ export const useVocabFlashcardStore = create<VocabFlashcardStore>((set) => ({
                 copyReviewDaysTemp: new Array(n).fill(copyReviewDays),
                 graduatedCount: 0,
                 results: [],
+                allRatings: [],
                 visitKey: state.visitKey + 1,
                 ...initialCycleUiState(!copyWordHidden),
                 submitting: false,
@@ -330,6 +347,7 @@ export function resetVocabFlashcardStore(): void {
         graduatedCount: 0,
         visitKey: 0,
         results: [],
+        allRatings: [],
         isFlipped: false,
         isFlipping: false,
         lastRating: null,

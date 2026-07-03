@@ -3,6 +3,7 @@ import { apiClient } from '../../api/client';
 import { applyUserBackground } from '../../contexts/AuthContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
+import { mediaUrl } from '../../utils/media';
 import '../../styles/user_background.css';
 
 export default function UserBackground() {
@@ -231,7 +232,7 @@ export default function UserBackground() {
 
                 {bgImageUrl && !bgImageUrl.startsWith('blob:') && (
                     <div className="ub-image-preview">
-                        <img src={bgImageUrl} alt={t.profile.background.preview} />
+                        <img src={mediaUrl(bgImageUrl)} alt={t.profile.background.preview} />
                     </div>
                 )}
             </section>

@@ -52,8 +52,8 @@ export default function ChoiceMode({
                         <button
                             className="choice-speak-btn"
                             onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                            title="朗读"
-                            aria-label="朗读单词"
+                            title={t.vocab.common.speak}
+                            aria-label={t.vocab.common.speakWord}
                         >
                             🎤
                         </button>
@@ -69,7 +69,7 @@ export default function ChoiceMode({
                     )}
                     {completionDueHint && (
                         <div className="fc-completion-hint fc-completion-hint--in-card" role="status" aria-live="polite">
-                            <span className="fc-completion-hint__label">下次学习</span>
+                            <span className="fc-completion-hint__label">{t.vocab.common.nextStudy}</span>
                             <span className="fc-completion-hint__word">{completionDueHint.word}</span>
                             <span className="fc-completion-hint__date">{formatDueDate(completionDueHint.dueAt)}</span>
                         </div>
@@ -164,7 +164,7 @@ export default function ChoiceMode({
                         {choiceSelected !== null && (
                             <div className="choice-feedback-result">
                                 <span className={`choice-feedback-tag ${choiceCorrect ? 'is-correct' : 'is-wrong'}`}>
-                                    {choiceCorrect ? '✅ 回答正确' : '❌ 回答错误'}
+                                    {choiceCorrect ? t.vocab.common.correctAnswer : t.vocab.common.wrongAnswer}
                                 </span>
                                 <button
                                     className="choice-btn-next"

@@ -186,9 +186,9 @@ function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planI
             <div className="analytics-modal-container" onClick={e => e.stopPropagation()}>
                 <div className="analytics-modal-header">
                     <h3 className="analytics-modal-title">
-                        {days === 0 ? t.today || '今天' : `${days} ` + (t.daysLater || '天后')}
+                        {days === 0 ? t.today : `${days} ${t.daysLater}`}
                         {words && words.length > 0 && (
-                            <span className="analytics-modal-badge">{words.length} 词</span>
+                            <span className="analytics-modal-badge">{words.length} {t.wordsUnit}</span>
                         )}
                     </h3>
                     <button onClick={onClose} className="analytics-modal-close">
@@ -205,7 +205,7 @@ function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planI
                         </div>
                     ) : words.length === 0 ? (
                         <div className="analytics-modal-empty">
-                            当日无复习计划
+                            {t.emptyDayPlan}
                         </div>
                     ) : (
                         <div>
@@ -225,7 +225,6 @@ function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planI
 
 export default function UserAnalytics() {
     const { translations: t } = useLang();
-    const { user } = useAuth();
 
     const [activeSkill, setActiveSkill] = useState<'vocab' | 'writing'>('vocab');
 
@@ -803,7 +802,6 @@ function ForgettingCurveChart({ data, t }: { data: { day: number; words: number 
 import { getWritingAnalytics, type WritingAnalytics, type WritingSkillsAvg } from '../../api/analytics';
 
 function WritingAnalyticsPanel({ t }: { t: any }) {
-    const { lang } = useLang();
     const { user } = useAuth();
     const [data, setData] = useState<WritingAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
@@ -879,14 +877,14 @@ function WritingAnalyticsPanel({ t }: { t: any }) {
                 {validTask2Trend.length > 0 && data.task2_skills_avg && (
                     <div className="analytics-chart-card" style={{ flex: '1 1 300px' }}>
                         <h3 className="analytics-chart-title">{t.skillsAvg.task2}</h3>
-                        <WritingSkillsRadarChart skills={data.task2_skills_avg} t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
+                        <WritingSkillsRadarChart skills={data.task2_skills_avg} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
                     </div>
                 )}
                 
                 {validTask1Trend.length > 0 && data.task1_skills_avg && (
                     <div className="analytics-chart-card" style={{ flex: '1 1 300px' }}>
                         <h3 className="analytics-chart-title">{t.skillsAvg.task1}</h3>
-                        <WritingSkillsRadarChart skills={data.task1_skills_avg} t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
+                        <WritingSkillsRadarChart skills={data.task1_skills_avg} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
                     </div>
                 )}
             </div>
@@ -1069,7 +1067,7 @@ function WritingScoreLineChart({ data, color, t, targetScore }: { data: WritingR
     );
 }
 
-function WritingSkillsRadarChart({ skills, t, targetScore }: { skills: WritingSkillsAvg; t: any; targetScore?: number | null }) {
+function WritingSkillsRadarChart({ skills, targetScore }: { skills: WritingSkillsAvg; targetScore?: number | null }) {
     const W = 420;
     const H = 360;
     const cx = W / 2;

@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+Disallow: /settings
+Disallow: /store
+Disallow: /prompts
+
+Sitemap: https://aielts.xyz/sitemap.xml

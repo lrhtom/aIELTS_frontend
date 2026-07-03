@@ -13,10 +13,32 @@ const LanguageContext = createContext<LanguageContextValue>({
     setLang: () => { },
 });
 
+function detectBrowserLang(): Lang {
+    // navigator.languages is more accurate than navigator.language on multi-lang browsers.
+    const candidates: string[] = [];
+    if (typeof navigator !== 'undefined') {
+        if (Array.isArray(navigator.languages)) candidates.push(...navigator.languages);
+        if (navigator.language) candidates.push(navigator.language);
+    }
+    for (const tag of candidates) {
+        if (typeof tag === 'string' && tag.toLowerCase().startsWith('zh')) {
+            return 'zh';
+        }
+    }
+    return 'en';
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
     const [lang, setLangState] = useState<Lang>(() => {
+        // Priority:
+        //   1. explicit user choice (localStorage) — takes precedence for both anon
+        //      and logged-in users so the toggle button always sticks
+        //   2. browser language — Chinese if `zh*`, otherwise English
+        // Once a logged-in user's profile hydrates, AuthContext calls setLang()
+        // with their saved preference and overrides the browser default.
         const saved = localStorage.getItem('ielts_lang');
-        return (saved === 'zh' || saved === 'en') ? saved : 'zh';
+        if (saved === 'zh' || saved === 'en') return saved;
+        return detectBrowserLang();
     });
 
     const setLang = (newLang: Lang, syncToServer = true) => {

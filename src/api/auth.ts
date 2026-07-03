@@ -53,7 +53,13 @@ export const authApi = {
         return { user: profileResponse.data.user };
     },
 
-    register: async (data: Record<string, string>): Promise<AuthResponse> => {
+    register: async (data: {
+        username: string;
+        password: string;
+        email?: string;
+        verification_code?: string;
+        nickname?: string;
+    }): Promise<AuthResponse> => {
         // Backend already set auth cookies on this response.
         const response = await apiClient.post('/auth/register', data);
         return response.data;

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { type User, authApi } from '../api/auth';
+import { mediaUrl } from '../utils/media';
 
 // ── 背景模糊层管理 ────────────────────────────────────────
 function getOrCreateBgLayer(blur: number): HTMLDivElement {
@@ -35,7 +36,9 @@ export function applyUserBackground(user: User | null) {
         // 图片模式：通过独立 div 层展示，带模糊
         const blur = typeof user.bg_blur === 'number' ? user.bg_blur : 2;
         const layer = getOrCreateBgLayer(blur);
-        layer.style.backgroundImage = `url(${user.bg_image_url})`;
+        // bg_image_url is polymorphic — mediaUrl() passes external http(s):// URLs
+        // through untouched and prepends VITE_MEDIA_BASE to relative keys.
+        layer.style.backgroundImage = `url(${mediaUrl(user.bg_image_url)})`;
         // body 本身透明，让模糊层打底
         document.body.style.background = 'transparent';
         document.body.style.backgroundColor = 'transparent';

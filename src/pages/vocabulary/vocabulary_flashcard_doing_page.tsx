@@ -14,6 +14,7 @@ import ChoiceMode from '../../components/vocabulary/ChoiceMode';
 import WriteMode from '../../components/vocabulary/WriteMode';
 import CopyMode from '../../components/vocabulary/CopyMode';
 import GazeMode from '../../components/vocabulary/GazeMode';
+import ReadAloudMode from '../../components/vocabulary/ReadAloudMode';
 import { predictNextDueAt, formatDueLabel } from '../../utils/vocab_due_label';
 import {
     type Step,
@@ -48,6 +49,7 @@ export default function VocabularyFlashcardDoingPage() {
     const MODE_LABELS: Record<StudyMode, string> = useMemo(() => ({
         flashcard: t.vocab.modes.flashcard,
         'flashcard-simple': '记忆卡简单模式',
+        'read-aloud': '朗读单词',
         choice:    t.vocab.modes.choice,
         write:     t.vocab.modes.write,
         copy:      t.vocab.modes.copy,
@@ -136,6 +138,7 @@ export default function VocabularyFlashcardDoingPage() {
     const graduatedCount = useVocabFlashcardStore((s) => s.graduatedCount);
     const visitKey = useVocabFlashcardStore((s) => s.visitKey);
     const results = useVocabFlashcardStore((s) => s.results);
+    const allRatings = useVocabFlashcardStore((s) => s.allRatings);
 
     const isFlipped = useVocabFlashcardStore((s) => s.isFlipped);
     const isFlipping = useVocabFlashcardStore((s) => s.isFlipping);
@@ -211,6 +214,15 @@ export default function VocabularyFlashcardDoingPage() {
         }
         return true;
     });
+    const [cardFrontFace, setCardFrontFace] = useState<'en' | 'zh'>(() => {
+        try {
+            const cached = localStorage.getItem('vocab_card_front_face');
+            if (cached === 'zh' || cached === 'en') return cached;
+        } catch {
+            // ignore
+        }
+        return 'en';
+    });
 
     const trackingMenuRef = useRef<HTMLDivElement | null>(null);
     const submittedFsrsIndices = useRef<Set<number>>(new Set());
@@ -246,6 +258,15 @@ export default function VocabularyFlashcardDoingPage() {
             }
             return next;
         });
+    }, []);
+
+    const setFrontFace = useCallback((face: 'en' | 'zh') => {
+        setCardFrontFace(face);
+        try {
+            localStorage.setItem('vocab_card_front_face', face);
+        } catch {
+            // ignore
+        }
     }, []);
 
     /**
@@ -335,7 +356,7 @@ export default function VocabularyFlashcardDoingPage() {
             console.log('[词汇学习] Mode从location.state恢复', { mode: state.mode });
         } else if (state.planId) {
             const cachedMode = localStorage.getItem(`lp_study_mode_${state.planId}`) as StudyMode | null;
-            if (cachedMode && ['flashcard', 'flashcard-simple', 'choice', 'write', 'copy'].includes(cachedMode)) {
+            if (cachedMode && ['flashcard', 'flashcard-simple', 'read-aloud', 'choice', 'write', 'copy'].includes(cachedMode)) {
                 resolvedMode = cachedMode;
                 console.log('[词汇学习] Mode从localStorage恢复', { mode: cachedMode, planId: state.planId });
             } else {
@@ -359,21 +380,23 @@ export default function VocabularyFlashcardDoingPage() {
     /* Mode同步到localStorage（作为长期持久化备份） */
     useEffect(() => {
         if (!initialized || !planId) return;
-        if (mode && ['flashcard', 'flashcard-simple', 'choice', 'write', 'copy'].includes(mode)) {
+        if (mode && ['flashcard', 'flashcard-simple', 'read-aloud', 'choice', 'write', 'copy'].includes(mode)) {
             localStorage.setItem(`lp_study_mode_${planId}`, mode);
         }
     }, [mode, planId, initialized]);
 
     /* 每张新卡自动播放一次单词读音（所有模式）
-     * setTimeout 解决 Chrome cancel/speak 竞争：cancel() 后立即 speak() 会被吞掉 */
+     * setTimeout 解决 Chrome cancel/speak 竞争：cancel() 后立即 speak() 会被吞掉
+     * 朗读模式(read-aloud)由组件内部编排发音+识别时机,跳过外层自动播放避免双播 */
     useEffect(() => {
         if (!initialized || queue.length === 0 || !autoSpeakEnabled) return;
+        if (mode === 'read-aloud') return;
         const word = cards[queue[0]]?.word;
         if (!word) return;
         const timer = setTimeout(() => speakWord(word), 150);
         return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visitKey]);
+    }, [visitKey, mode]);
 
     const choices = useChoiceOptionsPool({ mode, cards, queue, visitKey });
 
@@ -444,6 +467,7 @@ export default function VocabularyFlashcardDoingPage() {
                       scheduledDays: updatedCard.scheduled_days,
                   }
                 : null,
+            ratingClicked: fsrsRating,
             completionDueHint: graduate
                 ? { word: updatedCard.word, dueAt: updatedCard.due }
                 : null,
@@ -859,6 +883,18 @@ export default function VocabularyFlashcardDoingPage() {
             return next;
         });
 
+        // Copy mode has no explicit user rating. Derive it from the review-days
+        // choice so cards the user pushed far into the future count as Easy,
+        // and cards they want back sooner count lower. This replaces the old
+        // hard-coded `rating: 4` which made every copy-mode graduation look
+        // like Easy in the summary.
+        const derivedRating = completed
+            ? (scheduledDays >= 15 ? 4
+               : scheduledDays >= 7 ? 3
+               : scheduledDays >= 3 ? 2
+               : 1)
+            : 3; // per-round pulse before graduation stays neutral (Good)
+
         // Reuse the same advance pipeline for the queue + UI reset cascade.
         advanceQueue({
             cardIndex,
@@ -867,13 +903,14 @@ export default function VocabularyFlashcardDoingPage() {
             newMastery: completed ? 4 : 3,
             updatedCard: null,
             graduateResult: completed && card
-                ? { word: card.word, zh: card.zh, rating: 4, newDue: dueAt, scheduledDays }
+                ? { word: card.word, zh: card.zh, rating: derivedRating, newDue: dueAt, scheduledDays }
                 : null,
+            ratingClicked: derivedRating,
             completionDueHint: completed && card ? { word: card.word, dueAt } : null,
             reinsert: reinsertAfterGap,
             copyWordHidden,
         });
-        setLastRating(completed ? 4 : 3);
+        setLastRating(derivedRating);
     }, [
         submitting,
         copySubmitted,
@@ -1004,7 +1041,18 @@ export default function VocabularyFlashcardDoingPage() {
 
     /* ══ 结果页 ══════════════════════════════════════════════════════════════ */
     if (step === 'result') {
-        const counts = [1, 2, 3, 4].map((r) => results.filter((x) => x.rating === r).length);
+        // Counts come from ALL clicks the user made this session, not just the
+        // one that graduated each card. A card rated Again 3× then Good once
+        // now contributes {again: 3, good: 1} to the histogram instead of a
+        // single Good — which is why Again used to be perpetually 0.
+        const counts = [1, 2, 3, 4].map((r) => allRatings.filter((x) => x === r).length);
+        const totalClicks = allRatings.length;
+        // `sessionErrorCount` gets reset to 0 on card graduation (see store
+        // `resetErrorCount`), so summing it at end-of-session yields 0 for
+        // everyone. Derive forgets from `allRatings` instead — the total is
+        // simply the number of Again clicks.
+        const totalForgets = counts[0];
+        const graduatedTotal = results.length;
         return (
             <Layout>
                 <div className="config-page-wrap">
@@ -1016,6 +1064,15 @@ export default function VocabularyFlashcardDoingPage() {
                                     <div className="rs-label">{RS_LABELS[i]}</div>
                                 </div>
                             ))}
+                        </div>
+                        <div style={{
+                            marginTop: 14, display: 'flex', gap: 18, flexWrap: 'wrap',
+                            justifyContent: 'center', fontSize: 13,
+                            color: 'var(--color-text-secondary)',
+                        }}>
+                            <span>✅ 毕业 <strong style={{ color: 'var(--color-text)' }}>{graduatedTotal}</strong> 词</span>
+                            <span>🖱 累计评分 <strong style={{ color: 'var(--color-text)' }}>{totalClicks}</strong> 次</span>
+                            <span>❌ 遗忘 <strong style={{ color: totalForgets > 0 ? '#dc2626' : 'var(--color-text)' }}>{totalForgets}</strong> 次</span>
                         </div>
                     </div>
                     <div className="config-card">
@@ -1077,46 +1134,74 @@ export default function VocabularyFlashcardDoingPage() {
                             今日时长 {todayLearningDuration}
                         </span>
                         <div className="fc-mode-badge-wrap" ref={trackingMenuRef}>
-                            <button
-                                className={`fc-mode-badge${mode.startsWith('flashcard') ? ' has-submenu' : ''}`}
-                                onClick={() => mode.startsWith('flashcard') && setTrackingMenuOpen((v) => !v)}
-                                title={mode.startsWith('flashcard') ? '模式与追踪选项' : undefined}
-                            >
-                                {MODE_LABELS[mode]}
-                                {mode.startsWith('flashcard') && trackingMode !== 'none' && (
-                                    <span className="fc-mode-badge-sub">· {TRACKING_LABELS[trackingMode]}</span>
-                                )}
-                                {mode.startsWith('flashcard') && <span className="fc-mode-badge-arrow">▾</span>}
-                            </button>
-                            {trackingMenuOpen && mode.startsWith('flashcard') && (
-                                <div className="fc-tracking-menu">
-                                    <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>学习模式</div>
-                                    {(['flashcard', 'flashcard-simple'] as StudyMode[]).map((m) => (
+                            {(() => {
+                                const isCardMode = mode.startsWith('flashcard') || mode === 'read-aloud';
+                                const isFlashcardOnly = mode.startsWith('flashcard');
+                                return (
+                                    <>
                                         <button
-                                            key={m}
-                                            className={`fc-tracking-menu-item${mode === m ? ' active' : ''}`}
-                                            onClick={() => { setMode(m); setTrackingMenuOpen(false); }}
+                                            className={`fc-mode-badge${isCardMode ? ' has-submenu' : ''}`}
+                                            onClick={() => isCardMode && setTrackingMenuOpen((v) => !v)}
+                                            title={isCardMode ? '模式与显示选项' : undefined}
                                         >
-                                            <span className="fc-tracking-menu-dot" />
-                                            <span>{MODE_LABELS[m]}</span>
-                                            {mode === m && <span className="fc-tracking-menu-check">✓</span>}
+                                            {MODE_LABELS[mode]}
+                                            {isFlashcardOnly && trackingMode !== 'none' && (
+                                                <span className="fc-mode-badge-sub">· {TRACKING_LABELS[trackingMode]}</span>
+                                            )}
+                                            {isFlashcardOnly && cardFrontFace === 'zh' && (
+                                                <span className="fc-mode-badge-sub">· 中文正面</span>
+                                            )}
+                                            {isCardMode && <span className="fc-mode-badge-arrow">▾</span>}
                                         </button>
-                                    ))}
-                                    <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
-                                    <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>追踪模式</div>
-                                    {(['none', 'eye', 'mouse'] as TrackingMode[]).map((tm) => (
-                                        <button
-                                            key={tm}
-                                            className={`fc-tracking-menu-item${trackingMode === tm ? ' active' : ''}`}
-                                            onClick={() => { setTrackingMode(tm); setTrackingMenuOpen(false); }}
-                                        >
-                                            <span className="fc-tracking-menu-dot" />
-                                            <span>{TRACKING_LABELS[tm]}</span>
-                                            {trackingMode === tm && <span className="fc-tracking-menu-check">✓</span>}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                                        {trackingMenuOpen && isCardMode && (
+                                            <div className="fc-tracking-menu">
+                                                <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>学习模式</div>
+                                                {(['flashcard', 'flashcard-simple', 'read-aloud'] as StudyMode[]).map((m) => (
+                                                    <button
+                                                        key={m}
+                                                        className={`fc-tracking-menu-item${mode === m ? ' active' : ''}`}
+                                                        onClick={() => { setMode(m); setTrackingMenuOpen(false); }}
+                                                    >
+                                                        <span className="fc-tracking-menu-dot" />
+                                                        <span>{MODE_LABELS[m]}</span>
+                                                        {mode === m && <span className="fc-tracking-menu-check">✓</span>}
+                                                    </button>
+                                                ))}
+                                                {isFlashcardOnly && (
+                                                    <>
+                                                        <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
+                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>卡面正反</div>
+                                                        {([['en', '英文正面（默认）'], ['zh', '中文正面']] as [('en' | 'zh'), string][]).map(([face, label]) => (
+                                                            <button
+                                                                key={face}
+                                                                className={`fc-tracking-menu-item${cardFrontFace === face ? ' active' : ''}`}
+                                                                onClick={() => { setFrontFace(face); setTrackingMenuOpen(false); }}
+                                                            >
+                                                                <span className="fc-tracking-menu-dot" />
+                                                                <span>{label}</span>
+                                                                {cardFrontFace === face && <span className="fc-tracking-menu-check">✓</span>}
+                                                            </button>
+                                                        ))}
+                                                        <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
+                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>追踪模式</div>
+                                                        {(['none', 'eye', 'mouse'] as TrackingMode[]).map((tm) => (
+                                                            <button
+                                                                key={tm}
+                                                                className={`fc-tracking-menu-item${trackingMode === tm ? ' active' : ''}`}
+                                                                onClick={() => { setTrackingMode(tm); setTrackingMenuOpen(false); }}
+                                                            >
+                                                                <span className="fc-tracking-menu-dot" />
+                                                                <span>{TRACKING_LABELS[tm]}</span>
+                                                                {trackingMode === tm && <span className="fc-tracking-menu-check">✓</span>}
+                                                            </button>
+                                                        ))}
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
                         <span className="fc-state-label-inline">
                             {STATE_LABELS[currentCard.state] ?? ''}
@@ -1152,6 +1237,19 @@ export default function VocabularyFlashcardDoingPage() {
                         estimateInterval={estimateInterval}
                         previewNextDueLabel={previewNextDueLabel}
                         simpleMode={mode === 'flashcard-simple'}
+                        frontFace={cardFrontFace}
+                    />
+                )}
+
+                {/* ══ 朗读单词模式 ══ */}
+                {mode === 'read-aloud' && (
+                    <ReadAloudMode
+                        currentCard={currentCard}
+                        statusCls={statusCls}
+                        submitting={submitting}
+                        onRating={handleFlashcardRating}
+                        estimateInterval={estimateInterval}
+                        previewNextDueLabel={previewNextDueLabel}
                     />
                 )}
 

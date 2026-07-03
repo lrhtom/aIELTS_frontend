@@ -35,17 +35,6 @@ const to05 = (n: number) => Math.round(n * 2) / 2;
 /** Azure 100-scale → 9.0-scale */
 const azureTo9 = (v: number | undefined) => v != null ? to05(v * 9 / 100) : 0;
 
-// 7 score dimensions
-const DIMS = [
-    { key: 'accuracy',      label: '🎯 准确度',   azure: true,  color: '#6366f1' },
-    { key: 'pronunciation', label: '👄 发音',     azure: true,  color: '#818cf8' },
-    { key: 'fluency',       label: '🌊 流利度',   azure: true,  color: '#3b82f6' },
-    { key: 'completeness',  label: '🧩 完整度',   azure: true,  color: '#06b6d4' },
-    { key: 'grammar',       label: '📝 语法',     azure: false, color: '#8b5cf6' },
-    { key: 'vocab',         label: '📚 词汇',     azure: false, color: '#7c3aed' },
-    { key: 'relevance',     label: '🎓 切题度',   azure: false, color: '#f59e0b' },
-] as const;
-
 type DimKey = string;
 
 export default function SpeakingSummaryPage() {
@@ -53,6 +42,17 @@ export default function SpeakingSummaryPage() {
     const navigate = useNavigate();
     const { translations: t } = useLang();
     const s = t.speakingConfig.scenarioSummary;
+    const sm = t.speakingConfig.summary;
+
+    const DIMS = [
+        { key: 'accuracy',      label: sm.metricAccuracy,       azure: true,  color: '#6366f1' },
+        { key: 'pronunciation', label: sm.metricPronunciation,  azure: true,  color: '#818cf8' },
+        { key: 'fluency',       label: sm.metricFluency,        azure: true,  color: '#3b82f6' },
+        { key: 'completeness',  label: sm.metricCompleteness,   azure: true,  color: '#06b6d4' },
+        { key: 'grammar',       label: sm.metricGrammar,        azure: false, color: '#8b5cf6' },
+        { key: 'vocab',         label: sm.metricVocab,          azure: false, color: '#7c3aed' },
+        { key: 'relevance',     label: sm.metricRelevance,      azure: false, color: '#f59e0b' },
+    ] as const;
     const captureRef = useRef<HTMLDivElement>(null);
     const [sharing, setSharing] = useState(false);
 
@@ -126,8 +126,8 @@ export default function SpeakingSummaryPage() {
     } else if (isPart2 || isPart3) {
         activeDims = [
             ...DIMS,
-            { key: 'coherence', label: '🧭 连贯度', azure: false, color: '#22c55e' },
-            { key: 'depth', label: '🧠 深度', azure: false, color: '#ef4444' },
+            { key: 'coherence', label: sm.metricCoherence, azure: false, color: '#22c55e' },
+            { key: 'depth', label: sm.metricDepth, azure: false, color: '#ef4444' },
         ];
     } else if (isFullTest) {
         // Full Test: include all possible dimensions
@@ -136,8 +136,8 @@ export default function SpeakingSummaryPage() {
             { key: 'are_a', label: '🇦 Answer', azure: false, color: '#f43f5e' },
             { key: 'are_r', label: '🇷 Reason', azure: false, color: '#f97316' },
             { key: 'are_e', label: '🇪 Example', azure: false, color: '#eab308' },
-            { key: 'coherence', label: '🧭 连贯度', azure: false, color: '#22c55e' },
-            { key: 'depth', label: '🧠 深度', azure: false, color: '#ef4444' },
+            { key: 'coherence', label: sm.metricCoherence, azure: false, color: '#22c55e' },
+            { key: 'depth', label: sm.metricDepth, azure: false, color: '#ef4444' },
         ];
     }
 
@@ -187,8 +187,8 @@ export default function SpeakingSummaryPage() {
         <Layout>
             <div className="ss-root" ref={captureRef}>
                 <header className="ss-header">
-                    <h1>{isFullTest ? '📋 全套口语考试报告' : s.title}</h1>
-                    <p>{isFullTest ? 'Part 1 → Part 2 → Part 3 完整模拟评估' : s.subtitle}</p>
+                    <h1>{isFullTest ? sm.fullTestTitle : s.title}</h1>
+                    <p>{isFullTest ? sm.fullTestSubtitle : s.subtitle}</p>
                 </header>
 
                 {/* Hero scores */}
@@ -223,14 +223,14 @@ export default function SpeakingSummaryPage() {
                 {/* Per-round detail table */}
                 {rounds.length > 0 && (
                     <div className="ss-section">
-                        <h3 className="ss-section-title">📋 每轮评分明细 (满分 9.0)</h3>
+                        <h3 className="ss-section-title">{sm.perRoundHeading}</h3>
                         <div className="ss-table-wrap">
                             <table className="ss-table">
                                 <thead>
                                     <tr>
-                                        <th>轮次</th>
+                                        <th>{sm.colRound}</th>
                                         {activeDims.map(d => <th key={d.key}>{d.label.slice(2)}</th>)}
-                                        <th>轮均</th>
+                                        <th>{sm.colAvg}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -245,7 +245,7 @@ export default function SpeakingSummaryPage() {
                                         );
                                     })}
                                     <tr className="ss-tr-summary">
-                                        <td className="ss-td-round">平均</td>
+                                        <td className="ss-td-round">{sm.avgRow}</td>
                                         {activeDims.map(d => <td key={d.key}>{avgs[d.key]}</td>)}
                                         <td className="ss-td-avg">{overall}</td>
                                     </tr>
@@ -258,7 +258,7 @@ export default function SpeakingSummaryPage() {
                 {/* Scenario description */}
                 {scenarioPrompt && !isPart1 && (
                     <div className="ss-section">
-                        <h3 className="ss-section-title">🎭 场景描述</h3>
+                        <h3 className="ss-section-title">{sm.scenarioHeading}</h3>
                         <div className="ss-scenario-quote">"{scenarioPrompt}"</div>
                     </div>
                 )}
@@ -266,7 +266,7 @@ export default function SpeakingSummaryPage() {
                 {/* Vocabulary review */}
                 {words.length > 0 && (
                     <div className="ss-section">
-                        <h3 className="ss-section-title">📝 词汇运用</h3>
+                        <h3 className="ss-section-title">{sm.vocabHeading}</h3>
                         <div className="ss-word-chips">
                             {words.map((w, i) => (
                                 <span key={i} className={`ss-chip ${w.count > 0 ? 'ss-chip-used' : ''}`}>
@@ -279,7 +279,7 @@ export default function SpeakingSummaryPage() {
 
                 <div className="ss-footer">
                     <button className="ss-share-btn" onClick={handleShare} disabled={sharing}>
-                        {sharing ? '⏳ 生成中...' : '📤 分享报告'}
+                        {sharing ? sm.sharing : sm.shareBtn}
                     </button>
                     <button className="ss-back-btn" onClick={() => navigate('/speaking')}>
                         {s.backBtn}

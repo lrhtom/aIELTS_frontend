@@ -4,34 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { showToast } from '../../components/common/Toast';
 import { type VocabMode } from '../../utils/vocab_training_utils';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
 
-const MODE_OPTIONS: Array<{ id: VocabMode; icon: string; title: string; desc: string }> = [
-    {
-        id: 'mcq',
-        icon: '🧩',
-        title: '4选1模式',
-        desc: '根据释义/读音在四个选项中选择正确单词',
-    },
-    {
-        id: 'dictation',
-        icon: '🎧',
-        title: '完全听写模式',
-        desc: '听到发音后完整拼写单词并实时纠错',
-    },
-    {
-        id: 'complete',
-        icon: '✏️',
-        title: '看中文写英文',
-        desc: '根据中文释义拼写英文单词，可选择不同难度',
-    },
-];
-
 export default function VocabularyTrainingPage() {
+    const { translations: t } = useLang();
     const navigate = useNavigate();
     const [vocabInput, setVocabInput] = useState('');
     const [mode, setMode] = useState<VocabMode>('mcq');
     const [shuffleWordOrder, setShuffleWordOrder] = useState(true);
+
+    const MODE_OPTIONS: Array<{ id: VocabMode; icon: string; title: string; desc: string }> = [
+        { id: 'mcq', icon: '🧩', title: t.vocab.trainingConfig.modeChoice.title, desc: t.vocab.trainingConfig.modeChoice.desc },
+        { id: 'dictation', icon: '🎧', title: t.vocab.trainingConfig.modeDictation.title, desc: t.vocab.trainingConfig.modeDictation.desc },
+        { id: 'complete', icon: '✏️', title: t.vocab.trainingConfig.modeComplete.title, desc: t.vocab.trainingConfig.modeComplete.desc },
+    ];
 
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
@@ -40,7 +27,7 @@ export default function VocabularyTrainingPage() {
     const handleStart = () => {
         const validVocabInput = vocabInput.trim();
         if (!validVocabInput) {
-            showToast('请先输入词汇（英文-中文）', 'error');
+            showToast(t.vocab.trainingConfig.toastEmpty, 'error');
             return;
         }
 
@@ -56,14 +43,14 @@ export default function VocabularyTrainingPage() {
 
     return (
         <Layout
-    pageTitle='词汇练习'
-    pageSubtitle='先输入目标词汇，再从 3 个模式中选择 1 个开始练习'
+    pageTitle={t.vocab.trainingConfig.pageTitle}
+    pageSubtitle={t.vocab.trainingConfig.pageSubtitle}
     backUrl='/vocabulary'
-    backText='返回词汇学习'
+    backText={t.vocab.trainingConfig.backText}
 >
             <div className="config-page-wrap reading-config">
                 <div className="config-card">
-                    <h3>目标词汇（英-中）</h3>
+                    <h3>{t.vocab.trainingConfig.targetWordsHeading}</h3>
                     <VocabInput
                         value={vocabInput}
                         onChange={handleVocabChange}
@@ -71,7 +58,7 @@ export default function VocabularyTrainingPage() {
                 </div>
 
                 <div className="config-card">
-                    <h3>练习模式（3选1）</h3>
+                    <h3>{t.vocab.trainingConfig.modeChoiceHeading}</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                         {MODE_OPTIONS.map((m) => (
                             <button
@@ -103,8 +90,8 @@ export default function VocabularyTrainingPage() {
                 <div className="config-card">
                     <div className="toggle-row">
                         <div>
-                            <div className="label-text">是否打乱单词顺序</div>
-                            <div className="label-desc">开启后所有模式都会随机打乱出题顺序，关闭则按输入顺序出题</div>
+                            <div className="label-text">{t.vocab.trainingConfig.shuffleLabel}</div>
+                            <div className="label-desc">{t.vocab.trainingConfig.shuffleDesc}</div>
                         </div>
                         <label className="toggle-switch">
                             <input
@@ -119,7 +106,7 @@ export default function VocabularyTrainingPage() {
 
                 <div className="config-card">
                     <button className="skill-btn reading" style={{ width: '100%' }} onClick={handleStart}>
-                        <span className="btn-icon">🚀</span> 开始练习
+                        {t.vocab.trainingConfig.startBtn}
                     </button>
                 </div>
             </div>

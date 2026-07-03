@@ -10,12 +10,14 @@ import UserBackpack from '../components/profile/UserBackpack';
 import UserFeedback from '../components/profile/UserFeedback';
 import AdminFeedback from '../components/profile/AdminFeedback';
 import AdminUserManagement from '../components/profile/AdminUserManagement';
+import AdminAIUsage from '../components/profile/AdminAIUsage';
 import UserBackground from '../components/profile/UserBackground';
 import UserManual from '../components/profile/UserManual';
 import UserAnalytics from '../components/profile/UserAnalytics';
 import UserFinance from '../components/profile/UserFinance';
 import RouteVisualization from '../components/admin/RouteVisualization';
 import { formatATBalance } from '../utils/format';
+import { mediaUrl } from '../utils/media';
 import {
   LayoutDashboard,
   Backpack,
@@ -37,7 +39,7 @@ import {
 } from 'lucide-react';
 import '../styles/profile_page.css';
 
-type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'manual';
+type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'admin_ai_usage' | 'manual';
 
 /** Shown when a non-admin tries to access an admin tab via DevTools state manipulation */
 function AccessDenied() {
@@ -82,6 +84,7 @@ export default function ProfilePage() {
             case 'admin_feedback': return isAdmin ? <AdminFeedback /> : <AccessDenied />;
             case 'admin_users':   return isAdmin ? <AdminUserManagement /> : <AccessDenied />;
             case 'admin_routes':  return isAdmin ? <RouteVisualization /> : <AccessDenied />;
+            case 'admin_ai_usage': return isAdmin ? <AdminAIUsage /> : <AccessDenied />;
             default: return <UserHome />;
         }
     };
@@ -92,7 +95,7 @@ export default function ProfilePage() {
     const menuItems: { tab: Tab; Icon: typeof LayoutDashboard; label: string }[] = [
         { tab: 'home', Icon: LayoutDashboard, label: t.profile.menu.home },
         { tab: 'analytics', Icon: BarChart3, label: t.profile.menu.analytics },
-        { tab: 'goals', Icon: Target, label: t.profile.goals?.title || '个人目标' },
+        { tab: 'goals', Icon: Target, label: t.profile.goals.title },
         { tab: 'finance', Icon: Coins, label: t.profile.menu.finance },
         { tab: 'backpack', Icon: Backpack, label: t.profile.menu.backpack },
         { tab: 'settings', Icon: Settings, label: t.profile.menu.settings },
@@ -109,7 +112,7 @@ export default function ProfilePage() {
                         <div className="profile-user-info">
                             <div className="profile-user-avatar">
                                 {user.avatar_url ? (
-                                    <img src={user.avatar_url} alt={user.username} className="profile-avatar-image" />
+                                    <img src={mediaUrl(user.avatar_url)} alt={user.username} className="profile-avatar-image" />
                                 ) : (
                                     <div className="profile-avatar-placeholder">
                                         {user.username.charAt(0).toUpperCase()}
@@ -200,6 +203,13 @@ export default function ProfilePage() {
                                         >
                                             <GitBranch size={16} className="menu-item-icon" />
                                             <span className="menu-item-text">{t.profile.admin.routes.title}</span>
+                                        </button>
+                                        <button
+                                            className={`profile-menu-item profile-sub-item ${activeTab === 'admin_ai_usage' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('admin_ai_usage')}
+                                        >
+                                            <BarChart3 size={16} className="menu-item-icon" />
+                                            <span className="menu-item-text">{t.profile.admin.aiUsageStats}</span>
                                         </button>
                                     </div>
                                 </div>

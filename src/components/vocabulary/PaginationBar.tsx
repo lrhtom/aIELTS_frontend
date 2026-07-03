@@ -1,3 +1,5 @@
+import { useLang } from '../../i18n/LanguageContext';
+
 interface PaginationBarProps {
     page: number;
     totalPages: number;
@@ -18,11 +20,12 @@ export default function PaginationBar({
     onPageChange,
     onPageJumpInputChange,
     onPageJump,
-    prevLabel = '上一页',
-    nextLabel = '下一页',
+    prevLabel,
+    nextLabel,
     jumpLabel = 'GO',
     pageInfo,
 }: PaginationBarProps) {
+    const { translations: t } = useLang();
     return (
         <div className="lp-pager">
             <button
@@ -31,7 +34,7 @@ export default function PaginationBar({
                 disabled={page <= 1}
                 onClick={() => onPageChange(page - 1)}
             >
-                {prevLabel}
+                {prevLabel ?? t.vocab.pagination.prev}
             </button>
             <span className="lp-page-info">{pageInfo ?? `${page} / ${totalPages}`}</span>
             <button
@@ -40,18 +43,18 @@ export default function PaginationBar({
                 disabled={page >= totalPages}
                 onClick={() => onPageChange(page + 1)}
             >
-                {nextLabel}
+                {nextLabel ?? t.vocab.pagination.next}
             </button>
             <span className="lp-page-jump">
-                <span>跳到</span>
+                <span>{t.vocab.pagination.jumpTo}</span>
                 <input
                     type="text"
                     inputMode="numeric"
                     value={pageJumpInput}
                     onChange={(e) => onPageJumpInputChange(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') onPageJump(); }}
-                    placeholder="页码"
-                    aria-label="跳转到指定页"
+                    placeholder={t.vocab.pagination.pagePlaceholder}
+                    aria-label={t.vocab.pagination.jumpAria}
                 />
                 <button type="button" onClick={onPageJump} disabled={!pageJumpInput.trim()}>{jumpLabel}</button>
             </span>

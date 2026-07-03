@@ -50,7 +50,7 @@ export default function TodayStudiedSection({ plan }: Props) {
                 aria-valuenow={pct}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-label="今日学习进度"
+                aria-label={t.vocab.common.todayStudiedProgressAria}
             >
                 <div className="lp-today-progress-fill" style={{ width: `${pct}%` }} />
             </div>

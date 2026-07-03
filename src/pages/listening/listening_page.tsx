@@ -67,6 +67,47 @@ export default function ListeningPage() {
     const [ttsSpeaking, setTtsSpeaking] = useState(false);
     const [audioLoading, setAudioLoading] = useState(false);
 
+    // Playback controls — persisted across sessions so the user's speed
+    // preference and hidden-controls choice survive a page refresh.
+    const PLAYBACK_RATE_KEY = 'listening_playback_rate';
+    const CONTROLS_HIDDEN_KEY = 'listening_controls_hidden';
+    const [playbackTime, setPlaybackTime] = useState(0);
+    const [audioDuration, setAudioDuration] = useState(0);
+    const [playbackRate, setPlaybackRate] = useState<number>(() => {
+        const stored = Number(localStorage.getItem(PLAYBACK_RATE_KEY));
+        return stored > 0 ? stored : 1;
+    });
+    const [controlsHidden, setControlsHidden] = useState<boolean>(
+        () => localStorage.getItem(CONTROLS_HIDDEN_KEY) === 'true',
+    );
+
+    const formatAudioTime = (secs: number): string => {
+        if (!isFinite(secs) || secs < 0) return '0:00';
+        const m = Math.floor(secs / 60);
+        const s = Math.floor(secs % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const handleSeek = (value: number) => {
+        if (!audioRef.current || !isFinite(value)) return;
+        audioRef.current.currentTime = value;
+        setPlaybackTime(value);
+    };
+
+    const handleRateChange = (rate: number) => {
+        setPlaybackRate(rate);
+        localStorage.setItem(PLAYBACK_RATE_KEY, String(rate));
+        if (audioRef.current) audioRef.current.playbackRate = rate;
+    };
+
+    const toggleControlsHidden = () => {
+        setControlsHidden((prev) => {
+            const next = !prev;
+            localStorage.setItem(CONTROLS_HIDDEN_KEY, String(next));
+            return next;
+        });
+    };
+
     // 清理 URL 对象
     useEffect(() => {
         return () => {
@@ -135,9 +176,12 @@ export default function ListeningPage() {
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
         const audio = new Audio(url);
+        audio.playbackRate = playbackRate;
         audioRef.current = audio;
         audio.onended = () => { setTtsSpeaking(false); setTtsStarted(false); };
         audio.onerror = () => { console.error('Audio playback error'); setTtsSpeaking(false); setTtsStarted(false); };
+        audio.onloadedmetadata = () => setAudioDuration(audio.duration || 0);
+        audio.ontimeupdate = () => setPlaybackTime(audio.currentTime);
     };
 
     const loadFromBank = async (id: number) => {
@@ -146,7 +190,7 @@ export default function ListeningPage() {
             const detail = await getAIQuestion(id);
             const content = (detail.content || {}) as Partial<ListeningData>;
             if (!content.passage || !Array.isArray(content.questions)) {
-                showToast('题目内容缺失，已删除或损坏', 'error');
+                showToast(t.listeningDetails.toastContentMissing, 'error');
                 navigate('/practice/ai/bank');
                 return;
             }
@@ -173,7 +217,7 @@ export default function ListeningPage() {
             setAudioLoading(false);
         } catch (err: unknown) {
             console.error('Bank load error:', err);
-            showToast('题库加载失败', 'error');
+            showToast(t.aiBank.loadFail, 'error');
             navigate('/practice/ai/bank');
         } finally {
             set('isLoading', false);
@@ -221,7 +265,7 @@ export default function ListeningPage() {
             // 生成成功后跳转到 AI 题库，由用户在题库内挑题作答
             sessionStorage.removeItem(CACHE_KEY);
             const justId = parsedData.aiQuestionId ?? null;
-            showToast('题目已生成并保存到 AI 题库', 'success');
+            showToast(t.aiBank.toastGeneratedSaved, 'success');
             navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
             return;
         } catch (err: unknown) {
@@ -249,7 +293,7 @@ export default function ListeningPage() {
         if (bankId) {
             submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
                 console.error('submit to bank failed:', err);
-                showToast('保存作答失败，但本次成绩已显示', 'error');
+                showToast(t.listeningDetails.toastSaveFail, 'error');
             });
         }
         set('step', 3);
@@ -642,6 +686,46 @@ export default function ListeningPage() {
                                     {ttsSpeaking ? `🔊 ${t.listeningDetails.speaking}` : `✅ ${t.listeningDetails.audioDone}`}
                                 </span>
                             )}
+                            {/* Player controls: progress + speed. Hidden together via the 👁 toggle. */}
+                            {ttsStarted && !controlsHidden && (
+                                <div className="listening-audio-controls" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '12px' }}>
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={audioDuration || 0.1}
+                                        step={0.1}
+                                        value={playbackTime}
+                                        onChange={(e) => handleSeek(Number(e.target.value))}
+                                        style={{ width: '180px', accentColor: 'var(--color-primary)' }}
+                                    />
+                                    <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', minWidth: '76px', fontVariantNumeric: 'tabular-nums' }}>
+                                        {formatAudioTime(playbackTime)} / {formatAudioTime(audioDuration)}
+                                    </span>
+                                    <select
+                                        value={playbackRate}
+                                        onChange={(e) => handleRateChange(Number(e.target.value))}
+                                        style={{ fontSize: '12px', padding: '2px 6px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}
+                                        title="播放倍速"
+                                    >
+                                        <option value={0.75}>0.75×</option>
+                                        <option value={1}>1×</option>
+                                        <option value={1.25}>1.25×</option>
+                                        <option value={1.5}>1.5×</option>
+                                        <option value={2}>2×</option>
+                                    </select>
+                                </div>
+                            )}
+                            {ttsStarted && (
+                                <button
+                                    className="toolbar-btn toolbar-btn-outline"
+                                    onClick={toggleControlsHidden}
+                                    style={{ marginLeft: '8px' }}
+                                    title={controlsHidden ? '显示播放控件' : '隐藏播放控件'}
+                                >
+                                    <span className="btn-icon">{controlsHidden ? '👁' : '🙈'}</span>
+                                    {controlsHidden ? '显示控件' : '隐藏控件'}
+                                </button>
+                            )}
                         </div>
                         <div className="toolbar-info-badges">
                             <span className="toolbar-badge mode-badge">
@@ -657,12 +741,12 @@ export default function ListeningPage() {
                         </div>
                         <div className="toolbar-right-group">
                             <button className="toolbar-btn toolbar-btn-danger" onClick={() => {
-                                if (window.confirm('确定要退出练习吗？未提交的进度可能会丢失。')) {
+                                if (window.confirm(t.listeningDetails.exitConfirm)) {
                                     if (audioRef.current) audioRef.current.pause();
                                     onReturnHome();
                                 }
                             }}>
-                                <span className="btn-icon">🚪</span> 退出练习
+                                <span className="btn-icon">🚪</span> {t.listeningDetails.exitBtn}
                             </button>
                         </div>
                     </div>
@@ -713,9 +797,9 @@ export default function ListeningPage() {
                             <span className="btn-icon">{st.isPassageOpen ? '✕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
                         </button>
                         {bankId && (
-                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> 重新作答</button>
+                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t.aiBank.redoBtn}</button>
                         )}
-                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{bankId ? '📚' : '🏠'}</span> {bankId ? '返回题库' : t.common.home}</button>
+                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{bankId ? '📚' : '🏠'}</span> {bankId ? t.aiBank.backToBank : t.common.home}</button>
                     </div>
                 </div>
 

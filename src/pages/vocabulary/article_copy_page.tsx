@@ -9,6 +9,7 @@ import {
     type ArticleCopyData,
     type ArticleCopyCompleteResult,
 } from '../../api/learning_plan';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/article_copy.css';
 
 /* ── helpers ───────────────────────────────────────────────────────────────── */
@@ -53,6 +54,7 @@ function formatTimer(seconds: number): string {
 /* ── component ─────────────────────────────────────────────────────────────── */
 
 export default function ArticleCopyPage() {
+    const { translations: t } = useLang();
     const { id } = useParams<{ id: string }>();
     const planId = Number(id);
     const navigate = useNavigate();
@@ -104,7 +106,7 @@ export default function ArticleCopyPage() {
     /* ── load article ────────────────────────────────────────────────────── */
     const loadArticle = useCallback(async (refresh = false) => {
         if (!planId || Number.isNaN(planId)) {
-            setError('无效的计划');
+            setError(t.vocab.articleCopy.errInvalidPlan);
             setLoading(false);
             return;
         }
@@ -137,7 +139,7 @@ export default function ArticleCopyPage() {
         } catch (err: unknown) {
             if ((err as { name?: string }).name === 'CanceledError' || ctrl.signal.aborted) return;
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            setError(msg || '加载文章失败，请稍后重试');
+            setError(msg || t.vocab.articleCopy.errLoadFail);
         } finally {
             setLoading(false);
             if (loadingStepsTimerRef.current) {
@@ -235,7 +237,7 @@ export default function ArticleCopyPage() {
                     setCompleteResult(result);
                 } catch (err: unknown) {
                     const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-                    showToast(msg || '提交失败，请稍后重试', 'error');
+                    showToast(msg || t.vocab.articleCopy.submitFail, 'error');
                 } finally {
                     setCompleting(false);
                 }
@@ -428,17 +430,17 @@ export default function ArticleCopyPage() {
 
     if (loading) {
         const steps = [
-            { label: '正在连接', desc: '准备生成文章' },
-            { label: 'AI 正在生成文章', desc: '可能需要 10-60 秒' },
-            { label: '分析词汇位置', desc: '标记目标单词' },
+            { label: t.vocab.articleCopy.stepConnectLabel, desc: t.vocab.articleCopy.stepConnectDesc },
+            { label: t.vocab.articleCopy.stepGeneratingLabel, desc: t.vocab.articleCopy.stepGeneratingDesc },
+            { label: t.vocab.articleCopy.stepAnalyzingLabel, desc: t.vocab.articleCopy.stepAnalyzingDesc },
         ];
 
         return (
             <Layout>
                 <div className="ac-loading">
                     <div className="ac-loading-spinner" />
-                    <h2 className="ac-loading-title">正在准备文章...</h2>
-                    <p className="ac-loading-hint">AI 正在根据今日学习计划生成一篇包含目标词汇的短文</p>
+                    <h2 className="ac-loading-title">{t.vocab.articleCopy.preparingTitle}</h2>
+                    <p className="ac-loading-hint">{t.vocab.articleCopy.preparingHint}</p>
 
                     <div className="ac-loading-steps">
                         {steps.map((step, i) => (
@@ -466,11 +468,11 @@ export default function ArticleCopyPage() {
                         className="ac-cancel-btn"
                         onClick={() => { abortRef.current?.abort(); navigate(-1); }}
                     >
-                        取消
+                        {t.vocab.articleCopy.cancelBtn}
                     </button>
 
                     {loadingStep >= 1 && (
-                        <p className="ac-loading-slow">文章越长，生成越慢，请耐心等待...</p>
+                        <p className="ac-loading-slow">{t.vocab.articleCopy.slowHint}</p>
                     )}
                 </div>
             </Layout>
@@ -481,8 +483,8 @@ export default function ArticleCopyPage() {
         return (
             <Layout>
                 <div className="ac-error">
-                    <p>{error || '文章数据不可用'}</p>
-                    <button onClick={() => navigate(-1)}>返回</button>
+                    <p>{error || t.vocab.articleCopy.unavailable}</p>
+                    <button onClick={() => navigate(-1)}>{t.vocab.articleCopy.backBtn}</button>
                 </div>
             </Layout>
         );
@@ -497,16 +499,16 @@ export default function ArticleCopyPage() {
                         className="ac-back-btn"
                         onClick={() => navigate(`/vocabulary/plans/${planId}`)}
                     >
-                        ← 返回计划
+                        {t.vocab.articleCopy.backToPlan}
                     </button>
-                    <span className="ac-plan-name">{planNameRef.current || '文章抄写'}</span>
-                    {cached && <span className="ac-cached-badge">缓存</span>}
+                    <span className="ac-plan-name">{planNameRef.current || t.vocab.articleCopy.fallbackTitle}</span>
+                    {cached && <span className="ac-cached-badge">{t.vocab.articleCopy.cachedBadge}</span>}
                     <button
                         className="ac-regenerate-btn"
                         onClick={handleRegenerate}
                         disabled={regenerating}
                     >
-                        {regenerating ? '生成中...' : '重新生成'}
+                        {regenerating ? t.vocab.articleCopy.regeneratingBtn : t.vocab.articleCopy.regenerateBtn}
                     </button>
                     <span className="ac-timer">{formatTimer(elapsedSeconds)}</span>
                 </div>
@@ -514,14 +516,14 @@ export default function ArticleCopyPage() {
                 {/* progress */}
                 <div className="ac-progress">
                     <div className="ac-progress-item">
-                        <span className="ac-progress-label">整体进度</span>
+                        <span className="ac-progress-label">{t.vocab.articleCopy.overallProgress}</span>
                         <span className="ac-progress-value">{progress.pct}%</span>
                         <div className="ac-progress-bar">
                             <div className="ac-progress-fill" style={{ width: `${progress.pct}%` }} />
                         </div>
                     </div>
                     <div className="ac-progress-item">
-                        <span className="ac-progress-label">正确率</span>
+                        <span className="ac-progress-label">{t.vocab.articleCopy.correctnessLabel}</span>
                         <span className="ac-progress-value">{progress.accuracy}%</span>
                         <div className="ac-progress-bar">
                             <div
@@ -532,10 +534,10 @@ export default function ArticleCopyPage() {
                     </div>
                     <div className="ac-progress-item">
                         <span className="ac-progress-label">
-                            目标词 {progress.wordsDone}/{progress.wordsTotal}
+                            {t.vocab.articleCopy.targetWords.replace('{done}', String(progress.wordsDone)).replace('{total}', String(progress.wordsTotal))}
                         </span>
                         <span className="ac-progress-value">
-                            {progress.typed}/{progress.total} 字符
+                            {t.vocab.articleCopy.charProgress.replace('{typed}', String(progress.typed)).replace('{total}', String(progress.total))}
                         </span>
                         <div className="ac-progress-bar">
                             <div
@@ -567,11 +569,11 @@ export default function ArticleCopyPage() {
                             disabled={currentPage === 0}
                             onClick={() => goToPage(currentPage - 1)}
                         >
-                            ← 上一页
+                            {t.vocab.articleCopy.prevPage}
                         </button>
                         <div className="ac-page-nav-info">
                             <span className="ac-page-nav-index">
-                                第 {currentPage + 1}/{totalPages} 页
+                                {t.vocab.articleCopy.pageNum.replace('{n}', String(currentPage + 1)).replace('{total}', String(totalPages))}
                             </span>
                             {boundaries[currentPage] && (
                                 <span className="ac-page-title">
@@ -584,7 +586,7 @@ export default function ArticleCopyPage() {
                             disabled={currentPage >= totalPages - 1}
                             onClick={() => goToPage(currentPage + 1)}
                         >
-                            下一页 →
+                            {t.vocab.articleCopy.nextPage}
                         </button>
                     </div>
                 )}
@@ -599,7 +601,7 @@ export default function ArticleCopyPage() {
                         <button
                             className="ac-sidebar-toggle"
                             onClick={() => setSidebarOpen(prev => !prev)}
-                            title={sidebarOpen ? '收起侧边栏' : '展开侧边栏'}
+                            title={sidebarOpen ? t.vocab.articleCopy.sidebarClose : t.vocab.articleCopy.sidebarOpen}
                         >
                             {sidebarOpen ? '◀' : '▶'}
                         </button>
@@ -613,13 +615,13 @@ export default function ArticleCopyPage() {
                                             className={`ac-sidebar-tab${sidebarTab === 'words' ? ' active' : ''}`}
                                             onClick={() => setSidebarTab('words')}
                                         >
-                                            目标词 ({progress.wordsDone}/{progress.wordsTotal})
+                                            {t.vocab.articleCopy.targetWordsCount.replace('{done}', String(progress.wordsDone)).replace('{total}', String(progress.wordsTotal))}
                                         </button>
                                         <button
                                             className={`ac-sidebar-tab${sidebarTab === 'translation' ? ' active' : ''}`}
                                             onClick={() => setSidebarTab('translation')}
                                         >
-                                            译文
+                                            {t.vocab.articleCopy.translationTab}
                                         </button>
                                     </div>
 
@@ -651,7 +653,7 @@ export default function ArticleCopyPage() {
                                                     <>
                                                         {boundaries.length > 0 && (
                                                             <p className="ac-translation-page-hint">
-                                                                第 {currentPage + 1} 页译文
+                                                                {t.vocab.articleCopy.pageTranslation.replace('{n}', String(currentPage + 1))}
                                                             </p>
                                                         )}
                                                         <p className="ac-translation-text">
@@ -659,7 +661,7 @@ export default function ArticleCopyPage() {
                                                         </p>
                                                     </>
                                                 ) : (
-                                                    <p className="ac-translation-empty">暂无译文</p>
+                                                    <p className="ac-translation-empty">{t.vocab.articleCopy.emptyTranslation}</p>
                                                 )}
                                             </>
                                         )}
@@ -669,7 +671,7 @@ export default function ArticleCopyPage() {
                         )}
 
                         {!sidebarOpen && (
-                            <span className="ac-sidebar-collapsed-text">侧边栏</span>
+                            <span className="ac-sidebar-collapsed-text">{t.vocab.articleCopy.sidebarLabel}</span>
                         )}
                     </aside>
 
@@ -708,8 +710,8 @@ export default function ArticleCopyPage() {
                 {article.atConsumed !== undefined && article.atConsumed > 0 && (
                     <div className="ac-cost">
                         {article.cached
-                            ? '使用缓存（未扣除 AT）'
-                            : `消耗了 ${article.atConsumed.toLocaleString()} AT`}
+                            ? t.vocab.articleCopy.cachedNoAT
+                            : t.vocab.articleCopy.atConsumed.replace('{n}', article.atConsumed.toLocaleString())}
                     </div>
                 )}
             </div>
@@ -718,32 +720,32 @@ export default function ArticleCopyPage() {
             {completeResult && (
                 <div className="ac-complete-overlay">
                     <div className="ac-complete-card">
-                        <h3>抄写完成！</h3>
+                        <h3>{t.vocab.articleCopy.completedTitle}</h3>
 
                         <div className="ac-complete-stats">
                             <div className="ac-complete-row">
-                                <span>用时</span>
+                                <span>{t.vocab.articleCopy.timeUsedLabel}</span>
                                 <span>{formatTimer(elapsedSeconds)}</span>
                             </div>
                             <div className="ac-complete-row">
-                                <span>正确率</span>
+                                <span>{t.vocab.articleCopy.correctnessValueLabel}</span>
                                 <span>{progress.accuracy}%</span>
                             </div>
                             <div className="ac-complete-row">
-                                <span>已标记单词</span>
-                                <span>{completeResult.marked_count} 个</span>
+                                <span>{t.vocab.articleCopy.markedWordsLabel}</span>
+                                <span>{completeResult.marked_count} {t.vocab.articleCopy.markedUnit}</span>
                             </div>
                         </div>
 
                         <p className="ac-complete-done">
-                            所有单词已标记完成，复习间隔已更新
+                            {t.vocab.articleCopy.allMarkedMsg}
                         </p>
 
                         <button
                             className="ac-back-btn ac-back-btn-large"
                             onClick={() => navigate(`/vocabulary/plans/${planId}`)}
                         >
-                            返回计划详情
+                            {t.vocab.storyMode.backToPlan}
                         </button>
                     </div>
                 </div>
@@ -754,7 +756,7 @@ export default function ArticleCopyPage() {
                 <div className="ac-complete-overlay">
                     <div className="ac-complete-card">
                         <div className="ac-loading-spinner" style={{ marginBottom: 16 }} />
-                        <p className="ac-completing-msg">正在提交...</p>
+                        <p className="ac-completing-msg">{t.vocab.articleCopy.submittingMsg}</p>
                     </div>
                 </div>
             )}

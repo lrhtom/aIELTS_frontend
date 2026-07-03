@@ -10,46 +10,12 @@ export interface BadExample {
     reason: string;
 }
 
-export const ERROR_TYPE_LABELS_ZH: Record<string, string> = {
-    wordy: '废话连篇',
-    absolute: '过于绝对',
-    superficial: '表面现象',
-    illogical: '缺乏说服力',
-    colloquial: '口语化表达',
-    example_dump: '堆砌例子',
-    memorized_template: '背诵模板',
-    copy_prompt: '照抄原题',
-    copied_prompt: '照抄原题',
-    unclear_position: '立场不清',
-    too_broad: '背景太泛',
-    wordy_background: '背景冗长',
-    new_idea_in_conclusion: '结尾新观点',
-    vague_summary: '总结空泛',
-};
-
-export const ERROR_TYPE_LABELS_EN: Record<string, string> = {
-    wordy: 'Wordy / Empty',
-    absolute: 'Overly Absolute',
-    superficial: 'Superficial',
-    illogical: 'Lacks Persuasion',
-    colloquial: 'Overly Colloquial',
-    example_dump: 'Example Dumping',
-    memorized_template: 'Memorized Template',
-    copy_prompt: 'Copying Prompt',
-    copied_prompt: 'Copying Prompt',
-    unclear_position: 'Unclear Position',
-    too_broad: 'Too Broad',
-    wordy_background: 'Wordy Background',
-    new_idea_in_conclusion: 'New Idea in Conclusion',
-    vague_summary: 'Vague Summary',
-};
-
 interface BadExampleListProps {
     badExamples: BadExample[];
 }
 
 export default function BadExampleList({ badExamples }: BadExampleListProps) {
-    const { translations: t, lang } = useLang();
+    const { translations: t } = useLang();
     const [expandedBad, setExpandedBad] = useState<Record<number, boolean>>({});
 
     const toggleBad = (idx: number) => {
@@ -57,8 +23,7 @@ export default function BadExampleList({ badExamples }: BadExampleListProps) {
     };
 
     const getErrorLabel = (type: string) => {
-        if (lang === 'zh') return ERROR_TYPE_LABELS_ZH[type] || type;
-        return ERROR_TYPE_LABELS_EN[type] || type;
+        return (t.badExampleTypes as Record<string, string>)[type] || type;
     };
 
     if (!badExamples || badExamples.length === 0) return null;
@@ -68,7 +33,7 @@ export default function BadExampleList({ badExamples }: BadExampleListProps) {
             {badExamples.map((bad, idx) => (
                 <div className="wpt-bad-box" key={bad.type || idx}>
                     <div className="wpt-box-header">
-                        <span className="wpt-badge wpt-badge-bad">{t.writingPerspective?.badBadge || 'BAD EXAMPLE'}</span>
+                        <span className="wpt-badge wpt-badge-bad">{t.writingPerspective.badBadge}</span>
                         <span className="wpt-error-type-label">{getErrorLabel(bad.type)}</span>
                     </div>
                     <div className="wpt-opinion-bilingual">
@@ -79,13 +44,13 @@ export default function BadExampleList({ badExamples }: BadExampleListProps) {
                         className="wpt-expand-btn"
                         onClick={() => toggleBad(idx)}
                     >
-                        {expandedBad[idx] ? (t.writingPerspective?.collapseBtn || 'Collapse') : (t.writingPerspective?.expandBtn || 'Expand')}
+                        {expandedBad[idx] ? t.writingPerspective.collapseBtn : t.writingPerspective.expandBtn}
                         <span className={`wpt-expand-arrow${expandedBad[idx] ? ' open' : ''}`}>▸</span>
                     </button>
                     {expandedBad[idx] && (
                         <div className="wpt-expanded-content">
                             <div className="wpt-reason-box">
-                                <span className="wpt-reason-label">{t.writingPerspective?.reasonLabel || 'Reason'}</span>
+                                <span className="wpt-reason-label">{t.writingPerspective.reasonLabel}</span>
                                 <p>{bad.reason}</p>
                             </div>
                             <p className="wpt-expanded-en">{bad.expanded_en}</p>

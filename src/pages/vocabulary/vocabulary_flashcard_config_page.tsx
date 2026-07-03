@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { showToast } from '../../components/common/Toast';
 import { syncVocab, type VocabCard, type VocabStats } from '../../api/vocab';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_flashcard_config.css';
 
@@ -48,6 +49,7 @@ function sortCards(cards: VocabCard[]): VocabCard[] {
 
 /* ── 组件 ─────────────────────────────────────────────────────────────────── */
 export default function VocabularyFlashcardConfigPage() {
+    const { translations: t } = useLang();
     const navigate = useNavigate();
 
     const [vocabInput, setVocabInput] = useState('');
@@ -70,7 +72,7 @@ export default function VocabularyFlashcardConfigPage() {
     const handleSync = async () => {
         const entries = parseVocabInput(vocabInput);
         if (entries.length === 0) {
-            showToast('请先输入有效词汇（英文 - 中文）', 'error');
+            showToast(t.vocab.flashcardConfig.toastEmptyInput, 'error');
             return;
         }
         setSyncing(true);
@@ -79,7 +81,7 @@ export default function VocabularyFlashcardConfigPage() {
             setAllCards(result.cards);
             setStats(result.stats);
         } catch {
-            showToast('同步失败，请检查网络', 'error');
+            showToast(t.vocab.flashcardConfig.toastSyncFail, 'error');
         } finally {
             setSyncing(false);
         }
@@ -88,7 +90,7 @@ export default function VocabularyFlashcardConfigPage() {
     /* 开始背诵 */
     const handleStart = () => {
         if (!allCards) {
-            showToast('请先点击"同步词汇"', 'error');
+            showToast(t.vocab.flashcardConfig.toastNoSync, 'error');
             return;
         }
         const now = new Date();
@@ -97,7 +99,7 @@ export default function VocabularyFlashcardConfigPage() {
             : allCards;
 
         if (filtered.length === 0) {
-            showToast('没有需要复习的单词，今天已全部完成！', 'success');
+            showToast(t.vocab.flashcardConfig.toastAllDone, 'success');
             return;
         }
         navigate('/vocabulary/flashcard/doing', { state: { cards: sortCards(filtered) } });
@@ -110,15 +112,14 @@ export default function VocabularyFlashcardConfigPage() {
 
     return (
         <Layout
-    pageTitle='记忆卡背诵'
-    pageSubtitle='翻转卡片，快速记忆单词含义。使用 FSRS 算法智能安排复习间隔。'
+    pageTitle={t.vocab.flashcardConfig.pageTitle}
+    pageSubtitle={t.vocab.flashcardConfig.pageSubtitle}
     backUrl='/vocabulary'
-    backText='返回词汇学习'
+    backText={t.vocab.flashcardConfig.backText}
 >
             <div className="config-page-wrap reading-config">
-                {/* 词汇输入 */}
                 <div className="config-card">
-                    <h3>目标词汇（英-中）</h3>
+                    <h3>{t.vocab.flashcardConfig.targetWordsHeading}</h3>
                     <VocabInput value={vocabInput} onChange={handleVocabChange} />
                     <div style={{ marginTop: '16px' }}>
                         <button
@@ -127,33 +128,31 @@ export default function VocabularyFlashcardConfigPage() {
                             onClick={handleSync}
                             disabled={syncing}
                         >
-                            {syncing ? '同步中…' : '🔄 同步词汇状态'}
+                            {syncing ? t.vocab.flashcardConfig.syncingBtn : t.vocab.flashcardConfig.syncBtn}
                         </button>
                     </div>
 
-                    {/* 同步结果统计徽章 */}
                     {stats && (
                         <div className="fc-stats-row">
                             <span className="fc-stat-badge badge-due">
-                                🔔 今日到期 {reviewCount}
+                                {t.vocab.flashcardConfig.todayDueBadge.replace('{n}', String(reviewCount))}
                             </span>
                             <span className="fc-stat-badge badge-new">
-                                ✨ 新单词 {stats.new}
+                                {t.vocab.flashcardConfig.newBadge.replace('{n}', String(stats.new))}
                             </span>
                             <span className="fc-stat-badge badge-total">
-                                📚 全部 {stats.total}
+                                {t.vocab.flashcardConfig.totalBadge.replace('{n}', String(stats.total))}
                             </span>
                         </div>
                     )}
                 </div>
 
-                {/* 显示范围 */}
                 <div className="config-card">
                     <div className="toggle-row">
                         <div>
-                            <div className="label-text">只显示今日到期</div>
+                            <div className="label-text">{t.vocab.flashcardConfig.showTodayOnlyLabel}</div>
                             <div className="label-desc">
-                                开启：仅复习今天到期的旧卡 + 所有新卡；关闭：复习全部词汇
+                                {t.vocab.flashcardConfig.showTodayOnlyDesc}
                             </div>
                         </div>
                         <label className="toggle-switch">
@@ -167,7 +166,6 @@ export default function VocabularyFlashcardConfigPage() {
                     </div>
                 </div>
 
-                {/* 开始按钮 */}
                 <div className="config-card">
                     <button
                         className="skill-btn reading"
@@ -175,11 +173,11 @@ export default function VocabularyFlashcardConfigPage() {
                         onClick={handleStart}
                         disabled={!allCards}
                     >
-                        <span className="btn-icon">🃏</span> 开始背诵
+                        {t.vocab.flashcardConfig.startBtn}
                     </button>
                     {!allCards && (
                         <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-                            请先点击"同步词汇状态"
+                            {t.vocab.flashcardConfig.syncFirstHint}
                         </p>
                     )}
                 </div>

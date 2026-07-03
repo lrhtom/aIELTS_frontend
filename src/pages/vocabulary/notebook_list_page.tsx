@@ -175,12 +175,12 @@ export default function NotebookListPage() {
                                     <div className="nb-card-actions">
                                         <button
                                             className="nb-action-btn"
-                                            title="编辑"
+                                            title={t.vocab.common.edit}
                                             onClick={e => openEdit(e, nb)}
                                         >✏️</button>
                                         <button
                                             className="nb-action-btn danger"
-                                            title="删除"
+                                            title={t.vocab.common.delete}
                                             onClick={e => handleDelete(e, nb)}
                                         >🗑️</button>
                                     </div>

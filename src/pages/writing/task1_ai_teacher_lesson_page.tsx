@@ -149,8 +149,7 @@ export default function Task1AiTeacherLessonPage() {
     const [currentSection, setCurrentSection] = useState(0);
     const [loadingStep, setLoadingStep] = useState(0);
         const [showTopic, setShowTopic] = useState(false);
-    const [isSaved, setIsSaved] = useState(!!recordId);
-    const [isSaving, setIsSaving] = useState(false);
+    const [, setIsSaved] = useState(!!recordId);
     const [activeTemplateContent, setActiveTemplateContent] = useState<any>(null);
 
     const contentRef = useRef<HTMLDivElement>(null);
@@ -160,21 +159,7 @@ export default function Task1AiTeacherLessonPage() {
         navigate('/writing/ai-teachers', { replace: true });
     };
 
-    const sectionNames = lang === 'zh' ? [
-        '1. 图表审题与核心趋势',
-        '2. 行文结构指南',
-        '3. 开头与概述段',
-        '4. 主体段落数据对比',
-        '5. 作文模板解析',
-        '6. 核心词汇与完整范文'
-    ] : [
-        '1. Question Analysis & Trends',
-        '2. Structure Guide',
-        '3. Intro & Overview',
-        '4. Body Paragraphs (Data)',
-        '5. Template Analysis',
-        '6. Vocab & Full Essay'
-    ];
+    const sectionNames = t.writingAiTeacher.task1.sectionNames;
     const totalSections = sectionNames.length;
 
     const fetchLesson = useCallback(async () => {
@@ -195,7 +180,7 @@ export default function Task1AiTeacherLessonPage() {
                     throw new Error('Load failed');
                 }
             } catch (e: any) {
-                setErrorMsg(lang === 'zh' ? '记录加载失败' : 'Failed to load record');
+                setErrorMsg(t.writingAiTeacher.lesson.loadRecordFail);
                 setState('error');
             } finally {
                 fetchingRef.current = false;
@@ -228,7 +213,7 @@ export default function Task1AiTeacherLessonPage() {
                 let errorData: any = null;
                 try { errorData = await res.json(); } catch { /* ignore */ }
                 if (errorData?.error === 'INVALID_TOPIC') {
-                    showToast(lang === 'zh' ? '输入内容不合法！\n' + (errorData.reason || '') : 'Invalid topic!\n' + (errorData.reason || ''), 'error');
+                    showToast(t.writingAiTeacher.lesson.invalidTopic + '\n' + (errorData.reason || ''), 'error');
                     navigate('/writing/ai-teachers', { replace: true });
                     return;
                 }
@@ -255,7 +240,7 @@ export default function Task1AiTeacherLessonPage() {
 
                         if (parsed.error) {
                             if (parsed.error === 'INVALID_TOPIC') {
-                                showToast(lang === 'zh' ? '输入内容不合法！\n' + (parsed.reason || '') : 'Invalid topic!\n' + (parsed.reason || ''), 'error');
+                                showToast(t.writingAiTeacher.lesson.invalidTopic + '\n' + (parsed.reason || ''), 'error');
                                 navigate('/writing/ai-teachers', { replace: true });
                                 return;
                             }
@@ -275,7 +260,7 @@ export default function Task1AiTeacherLessonPage() {
                             // Auto-save logic
                             apiClient.post<{status: string, id: number}>('/writing/records', {
                                 service_type: 'task1_teacher',
-                                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : '小作文讲解',
+                                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : t.writingAiTeacher.lesson.fallbackTitleTask1,
                                 content: { ...lessonData, original_topic: topic },
                             }).catch(err => console.error("Auto-save failed", err));
                         }
@@ -360,11 +345,11 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
             <div className="at-split-layout">
                 <div className="at-split-main" style={{ maxHeight: '75vh', overflowY: 'auto', paddingRight: '0.75rem' }}>
                     <div className="at-section-card" style={{ borderLeft: '4px solid var(--color-primary)' }}>
-                        <h3>{lang === 'zh' ? '图表核心要素' : 'Chart Core Elements'}</h3>
-                        
+                        <h3>{t.writingAiTeacher.lesson.chartCoreElementsHeading}</h3>
+
                         <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                            {renderCategoryBadges(lang === 'zh' ? '动静图分类' : 'Dynamism', DYNAMISM_CATEGORIES, qa.dynamic_or_static_zh)}
-                            {renderCategoryBadges(lang === 'zh' ? '图表类型' : 'Chart Type', CHART_CATEGORIES, qa.chart_type_zh)}
+                            {renderCategoryBadges(t.writingAiTeacher.lesson.dynamism, DYNAMISM_CATEGORIES, qa.dynamic_or_static_zh)}
+                            {renderCategoryBadges(t.writingAiTeacher.lesson.chartType, CHART_CATEGORIES, qa.chart_type_zh)}
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
@@ -393,7 +378,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         {qa.key_focus_points_en && qa.key_focus_points_en.length > 0 && (
                             <div style={{ padding: '1rem', background: 'var(--color-warning-bg, #fffbeb)', borderRadius: '8px', borderLeft: '4px solid var(--color-warning, #f59e0b)' }}>
                                 <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--color-warning-dark, #b45309)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>🎯</span> {lang === 'zh' ? '本图核心考点与关注点' : 'Key Focus Points'}
+                                    <span>🎯</span> {t.writingAiTeacher.lesson.keyFocusPoints}
                                 </div>
                                 <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--color-warning-text, #92400e)', fontSize: '0.95rem', lineHeight: '1.6' }}>
                                     {qa.key_focus_points_en.map((_, i) => (
@@ -408,7 +393,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         {qa.data_grouping && qa.data_grouping.length > 0 && (
                             <div style={{ marginTop: '1rem' }}>
                                 <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--color-primary-dark)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>📊</span> {lang === 'zh' ? '数据分组建议' : 'Data Grouping Recommendation'}
+                                    <span>📊</span> {t.writingAiTeacher.lesson.dataGroupingReco}
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: qa.data_grouping.length > 1 ? '1fr 1fr' : '1fr', gap: '1rem' }}>
                                     {qa.data_grouping.map((g, i) => (
@@ -428,13 +413,13 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         {qa.map_changes && (qa.map_changes.retained_en?.length > 0 || qa.map_changes.removed_en?.length > 0 || qa.map_changes.added_en?.length > 0 || qa.map_changes.relocated_en?.length > 0) && (
                             <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px', borderLeft: '4px solid #8b5cf6' }}>
                                 <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#6d28d9', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>🗺️</span> {lang === 'zh' ? '地图特征分析 (Map Changes)' : 'Map Changes Analysis'}
+                                    <span>🗺️</span> {t.writingAiTeacher.lesson.mapChanges}
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                                     {qa.map_changes.retained_en && qa.map_changes.retained_en.length > 0 && (
                                         <div style={{ padding: '0.8rem', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <span style={{color: '#64748b'}}>⚓</span> {lang === 'zh' ? '保留 (Remain)' : 'Remain'}
+                                                <span style={{color: '#64748b'}}>⚓</span> {t.writingAiTeacher.lesson.mapRemain}
                                             </div>
                                             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
                                                 {qa.map_changes.retained_en.map((_, i) => (
@@ -446,7 +431,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                                     {qa.map_changes.removed_en && qa.map_changes.removed_en.length > 0 && (
                                         <div style={{ padding: '0.8rem', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-danger)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <span style={{color: '#ef4444'}}>🗑️</span> {lang === 'zh' ? '移除 (Remove)' : 'Remove'}
+                                                <span style={{color: '#ef4444'}}>🗑️</span> {t.writingAiTeacher.lesson.mapRemove}
                                             </div>
                                             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
                                                 {qa.map_changes.removed_en.map((_, i) => (
@@ -458,7 +443,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                                     {qa.map_changes.added_en && qa.map_changes.added_en.length > 0 && (
                                         <div style={{ padding: '0.8rem', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-success)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <span style={{color: '#10b981'}}>🏗️</span> {lang === 'zh' ? '新增 (Build)' : 'Build'}
+                                                <span style={{color: '#10b981'}}>🏗️</span> {t.writingAiTeacher.lesson.mapBuild}
                                             </div>
                                             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
                                                 {qa.map_changes.added_en.map((_, i) => (
@@ -470,7 +455,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                                     {qa.map_changes.relocated_en && qa.map_changes.relocated_en.length > 0 && (
                                         <div style={{ padding: '0.8rem', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#f59e0b', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <span style={{color: '#f59e0b'}}>🚚</span> {lang === 'zh' ? '改变/搬迁 (Change)' : 'Change'}
+                                                <span style={{color: '#f59e0b'}}>🚚</span> {t.writingAiTeacher.lesson.mapChange}
                                             </div>
                                             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
                                                 {qa.map_changes.relocated_en.map((_, i) => (
@@ -486,14 +471,14 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 </div>
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: 'var(--color-success, #10b981)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>💡</span> {lang === 'zh' ? '正确写作思路' : 'Correct Approach'}
+                        <span>💡</span> {t.writingAiTeacher.lesson.correctApproach}
                     </h5>
-                    <SingleLangGoodBox en={qa.correct_approach_en} zh={qa.correct_approach_zh} label={lang === 'zh' ? '推荐思路' : 'Recommended'} />
-                    
+                    <SingleLangGoodBox en={qa.correct_approach_en} zh={qa.correct_approach_zh} label={t.writingAiTeacher.lesson.recommendedLabel} />
+
                     <h5 className="at-split-side-title" style={{ color: 'var(--color-danger, #ef4444)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '1.5rem 0 1rem 0' }}>
-                        <span>⚠️</span> {lang === 'zh' ? '跑题预警' : 'Off-Topic Alert'}
+                        <span>⚠️</span> {t.writingAiTeacher.lesson.offTopicAlert}
                     </h5>
-                    <SingleLangBadBox en={qa.off_topic_en} zh={qa.off_topic_zh} label={lang === 'zh' ? '反面教材' : 'Bad Example'} />
+                    <SingleLangBadBox en={qa.off_topic_en} zh={qa.off_topic_zh} label={t.writingAiTeacher.lesson.badExampleLabel} />
                 </div>
             </div>
         );
@@ -524,9 +509,9 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 </div>
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: 'var(--color-danger, #ef4444)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>⚠️</span> {lang === 'zh' ? '常见结构错误' : 'Common Structure Mistakes'}
+                        <span>⚠️</span> {t.writingAiTeacher.lesson.commonStructureMistakes}
                     </h5>
-                    <SingleLangBadBox en={struct.wrong_structure_en} zh={struct.wrong_structure_zh} label={lang === 'zh' ? '反面教材' : 'Bad Example'} />
+                    <SingleLangBadBox en={struct.wrong_structure_en} zh={struct.wrong_structure_zh} label={t.writingAiTeacher.lesson.badExampleLabel} />
                 </div>
             </div>
         );
@@ -549,7 +534,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 </div>
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: 'var(--color-danger, #ef4444)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>⚠️</span> {lang === 'zh' ? '常见错误避坑' : 'Common Mistakes'}
+                        <span>⚠️</span> {t.writingAiTeacher.lesson.commonMistakes}
                     </h5>
                     <div className="wpt-bad-box" style={{ marginBottom: '1rem' }}>
                         <div className="wpt-box-header">
@@ -592,7 +577,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                     </div>
                     <div className="at-split-side">
                         <h5 className="at-split-side-title" style={{ color: 'var(--color-danger, #ef4444)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                            <span>⚠️</span> {lang === 'zh' ? '常见数据描述错误' : 'Common Data Mistakes'}
+                            <span>⚠️</span> {t.writingAiTeacher.lesson.commonDataMistakes}
                         </h5>
                         <div className="wpt-bad-examples-list">
                             {body.bad_examples && body.bad_examples.map((bad: any, idx: number) => (
@@ -632,7 +617,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 <div className="at-split-layout">
                     <div className="at-section-card">
                         <h3>{sectionNames[4]}</h3>
-                        <p>{lang === 'zh' ? '暂无模板分析数据' : 'No template analysis available for this record.'}</p>
+                        <p>{t.writingAiTeacher.lesson.templateEmpty}</p>
                     </div>
                 </div>
             );
@@ -692,7 +677,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                             <div className="at-template-viewer-content">
                                 <div className="at-template-viewer-title">
                                     <span style={{ marginRight: '6px' }}>📝</span>
-                                    {lang === 'zh' ? 'AI 原文片段' : 'Original Text Segment'}
+                                    {t.writingAiTeacher.lesson.aiSegmentTitle}
                                 </div>
                                 <div className="at-template-viewer-text">
                                     {activeTemplateContent.actual_content_en || activeTemplateContent.actual_content}
@@ -706,7 +691,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         ) : (
                             <div className="at-template-viewer-empty">
                                 <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>👈</div>
-                                <div>{lang === 'zh' ? '点击左侧模板中的括号 [...] 查看对应的 AI 生成内容' : 'Click the brackets [...] on the left to view the corresponding AI-generated content'}</div>
+                                <div>{t.writingAiTeacher.lesson.templateClickHint}</div>
                             </div>
                         )}
                     </div>
@@ -722,7 +707,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
             <div className="at-split-layout" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
                 <div className="at-split-main">
                     <div className="at-section-card">
-                        <h3>{lang === 'zh' ? '高分词汇与搭配 (Vocabulary)' : 'High-Scoring Vocabulary'}</h3>
+                        <h3>{t.writingAiTeacher.lesson.vocabHeading}</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {p3.vocabulary.map((v, i) => (
                                 <div key={i} style={{ padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px', borderLeft: '3px solid var(--color-primary)' }}>
@@ -748,7 +733,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 </div>
                 <div style={{ width: '100%' }}>
                     <div className="at-section-card" style={{ background: 'var(--color-bg)', height: '100%' }}>
-                        <h3>{lang === 'zh' ? '完整范文 (Full Essay)' : 'Full Model Essay'}</h3>
+                        <h3>{t.writingAiTeacher.lesson.fullEssayHeading}</h3>
                         <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: '1.05rem', color: 'var(--color-text)' }}>
                             {p3.full_essay.essay_en}
                         </div>
@@ -775,31 +760,19 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
     };
 
     if (state === 'loading') {
-        const stepsZh = [
-            'AI 正在审阅图表特征与考点...',
-            'AI 正在构建高分文章大纲...',
-            'AI 正在逐句撰写主体段落...',
-            'AI 正在润色完整范文与核心词汇...'
-        ];
-        const stepsEn = [
-            'AI is analyzing chart features...',
-            'AI is structuring the essay...',
-            'AI is writing body paragraphs...',
-            'AI is finalizing essay and vocabulary...'
-        ];
-        const steps = lang === 'zh' ? stepsZh : stepsEn;
+        const steps = t.writingAiTeacher.task1.loadingSteps;
 
         return (
             <Layout
-                pageTitle={lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}
+                pageTitle={t.writingAiTeacher.task1.pageTitle}
                 backUrl="/writing/ai-teachers"
-                backText="Back"
+                backText={t.writingAiTeacher.lesson.backText}
                 onBack={handleBack}
             >
                 <div className="at-loading-wrap" style={{ padding: '3rem', maxWidth: '600px', margin: '0 auto', background: 'var(--color-bg)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', marginTop: '2rem' }}>
                     <h2 style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--color-primary-dark)', fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                         <span>✨</span>
-                        {recordId ? (lang === 'zh' ? '正在提取历史服务记录...' : 'Loading service record...') : (lang === 'zh' ? 'AI 老师正在为您精心备课' : 'AI Teacher is preparing your lesson')}
+                        {recordId ? t.writingAiTeacher.lesson.loadingRecord : t.writingAiTeacher.lesson.loadingTitle}
                     </h2>
                     
                     {!recordId && (
@@ -855,9 +828,9 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
     if (state === 'error') {
         return (
             <Layout
-                pageTitle={lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}
+                pageTitle={t.writingAiTeacher.task1.pageTitle}
                 backUrl="/writing/ai-teachers"
-                backText="Back"
+                backText={t.writingAiTeacher.lesson.backText}
                 onBack={handleBack}
             >
                 <div className="at-error-wrap">
@@ -870,9 +843,9 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
 
     return (
         <Layout
-            pageTitle={lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}
+            pageTitle={t.writingAiTeacher.task1.pageTitle}
             backUrl={recordId ? "/writing/ai-teachers/records" : "/writing/ai-teachers"}
-            backText="Back"
+            backText={t.writingAiTeacher.lesson.backText}
             onBack={handleBack}
             headerRight={
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -893,7 +866,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                     {data && (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <button onClick={() => setShowTopic(true)} style={{ padding: '0.25rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '20px', background: 'rgba(59, 130, 246, 0.08)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-                                📄 {lang === 'zh' ? '查看题目' : 'Topic'}
+                                📄 {t.writingAiTeacher.lesson.topicToggleBtn}
                             </button>
                         </div>
                     )}
@@ -917,7 +890,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         
                     >
                         <div style={{ textAlign: 'center', marginBottom: '1rem', borderBottom: '2px solid var(--color-border, #e2e8f0)', paddingBottom: '2rem' }}>
-                            <h1 style={{ fontSize: '2.5rem', color: 'var(--color-text)', margin: '0 0 1rem 0' }}>{lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}</h1>
+                            <h1 style={{ fontSize: '2.5rem', color: 'var(--color-text)', margin: '0 0 1rem 0' }}>{t.writingAiTeacher.task1.pageTitle}</h1>
                             <div style={{ color: 'var(--color-text-secondary)', fontSize: '1.2rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '12px', display: 'inline-block', maxWidth: '800px', lineHeight: '1.6' }}>
                                 <strong style={{color: 'var(--color-primary)'}}>Topic:</strong> {topic}
                             </div>
@@ -948,7 +921,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 <div className="at-topic-modal-overlay" onClick={() => setShowTopic(false)}>
                     <div className="at-topic-modal-content" onClick={e => e.stopPropagation()}>
                         <div className="at-topic-modal-header">
-                            <h3>{lang === 'zh' ? '图表题目' : 'Chart Topic'}</h3>
+                            <h3>{t.writingAiTeacher.lesson.chartTopicHeading}</h3>
                             <button className="at-topic-modal-close" onClick={() => setShowTopic(false)}>&times;</button>
                         </div>
                         <div className="at-topic-modal-body">

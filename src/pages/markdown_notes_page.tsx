@@ -63,14 +63,6 @@ function removeDraft(id: number) {
 
 /* ── Create Modal ────────────────────────────────────── */
 
-const TEMPLATES: { id: string; label: string; icon: string; content: string }[] = [
-    { id: 'blank',   label: '空白笔记',  icon: '📄', content: '' },
-    { id: 'daily',   label: '日记模板',  icon: '📅', content: `# ${new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}\n\n## 今天做了什么\n\n\n## 感想\n\n\n## 明日计划\n\n` },
-    { id: 'study',   label: '学习笔记',  icon: '📚', content: `# 学习笔记\n\n## 主题\n\n\n## 核心概念\n\n\n## 例句 / 例题\n\n\n## 总结\n\n` },
-    { id: 'vocab',   label: '词汇整理',  icon: '🔤', content: `# 词汇整理\n\n| 单词 | 音标 | 含义 | 例句 |\n| --- | --- | --- | --- |\n|  |  |  |  |\n` },
-    { id: 'essay',   label: '文章大纲',  icon: '✍️', content: `# 标题\n\n## Introduction\n\n\n## Body Paragraph 1\n\n\n## Body Paragraph 2\n\n\n## Conclusion\n\n` },
-];
-
 interface CreateModalProps {
     onConfirm: (title: string, content: string) => void;
     onCancel: () => void;
@@ -78,9 +70,18 @@ interface CreateModalProps {
 }
 
 function CreateModal({ onConfirm, onCancel, creating }: CreateModalProps) {
+    const { translations: t, lang } = useLang();
     const [inputTitle, setInputTitle] = useState('');
     const [selectedTemplate, setSelectedTemplate] = useState('blank');
     const inputRef = useRef<HTMLInputElement>(null);
+
+    const TEMPLATES: { id: string; label: string; icon: string; content: string }[] = [
+        { id: 'blank', label: t.markdownNotes.templates.blank, icon: '📄', content: '' },
+        { id: 'daily', label: t.markdownNotes.templates.daily, icon: '📅', content: `# ${new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}${t.markdownNotes.templates.dailyContent}` },
+        { id: 'study', label: t.markdownNotes.templates.study, icon: '📚', content: t.markdownNotes.templates.studyContent },
+        { id: 'vocab', label: t.markdownNotes.templates.vocab, icon: '🔤', content: t.markdownNotes.templates.vocabContent },
+        { id: 'essay', label: t.markdownNotes.templates.essay, icon: '✍️', content: t.markdownNotes.templates.essayContent },
+    ];
 
     useEffect(() => {
         inputRef.current?.focus();
@@ -88,8 +89,8 @@ function CreateModal({ onConfirm, onCancel, creating }: CreateModalProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const tpl = TEMPLATES.find(t => t.id === selectedTemplate)!;
-        onConfirm(inputTitle.trim() || '无标题笔记', tpl.content);
+        const tpl = TEMPLATES.find(x => x.id === selectedTemplate)!;
+        onConfirm(inputTitle.trim() || t.markdownNotes.untitled, tpl.content);
     };
 
     return (
@@ -97,17 +98,17 @@ function CreateModal({ onConfirm, onCancel, creating }: CreateModalProps) {
             <div className="md-modal" onClick={e => e.stopPropagation()}>
                 <div className="md-modal-header">
                     <span className="md-modal-icon">✏️</span>
-                    <h3>新建笔记</h3>
+                    <h3>{t.markdownNotes.newNoteHeading}</h3>
                 </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="md-modal-field">
-                        <label className="md-modal-label">笔记标题</label>
+                        <label className="md-modal-label">{t.markdownNotes.titleLabel}</label>
                         <input
                             ref={inputRef}
                             className="md-modal-input"
                             type="text"
-                            placeholder="输入标题（可留空）"
+                            placeholder={t.markdownNotes.titleInputPlaceholder}
                             value={inputTitle}
                             onChange={e => setInputTitle(e.target.value)}
                             maxLength={100}
@@ -115,7 +116,7 @@ function CreateModal({ onConfirm, onCancel, creating }: CreateModalProps) {
                     </div>
 
                     <div className="md-modal-field">
-                        <label className="md-modal-label">选择模板</label>
+                        <label className="md-modal-label">{t.markdownNotes.templateLabel}</label>
                         <div className="md-modal-templates">
                             {TEMPLATES.map(tpl => (
                                 <button
@@ -133,10 +134,10 @@ function CreateModal({ onConfirm, onCancel, creating }: CreateModalProps) {
 
                     <div className="md-modal-actions">
                         <button type="button" className="md-modal-cancel" onClick={onCancel}>
-                            取消
+                            {t.common.cancel}
                         </button>
                         <button type="submit" className="md-modal-confirm" disabled={creating}>
-                            {creating ? '创建中…' : '创建笔记'}
+                            {creating ? t.markdownNotes.creatingBtn : t.markdownNotes.createBtn}
                         </button>
                     </div>
                 </form>
@@ -235,7 +236,7 @@ export default function MarkdownNotesPage() {
 
     const handleSyncFromCloud = async () => {
         if (!selectedNote) return;
-        if (dirty && !window.confirm('本地有未保存的修改，同步云端将会覆盖当前内容，是否继续？')) {
+        if (dirty && !window.confirm(t.markdownNotes.overwriteConfirm)) {
             return;
         }
         setSyncing(true);
@@ -247,9 +248,9 @@ export default function MarkdownNotesPage() {
             setContent(note.content);
             removeDraft(note.id);
             setDirty(false);
-            showToast('已同步云端最新内容', 'success');
+            showToast(t.markdownNotes.syncedFromCloud, 'success');
         } catch {
-            showToast('同步云端失败', 'error');
+            showToast(t.markdownNotes.syncFail, 'error');
         } finally {
             setSyncing(false);
         }
@@ -354,7 +355,7 @@ export default function MarkdownNotesPage() {
                             <h2 className="md-sidebar-title">{t.markdownNotes.title}</h2>
                             <button
                                 className="md-sidebar-toggle"
-                                title={sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
+                                title={sidebarCollapsed ? t.markdownNotes.expandSidebar : t.markdownNotes.collapseSidebar}
                                 onClick={() => setSidebarCollapsed(v => !v)}
                             >
                                 {sidebarCollapsed ? '▶' : '◀'}
@@ -390,7 +391,7 @@ export default function MarkdownNotesPage() {
                                     <span>{searchQuery ? t.markdownNotes.emptyList : t.markdownNotes.noNotesYet}</span>
                                     {!searchQuery && (
                                         <button className="md-btn primary" style={{ marginTop: 8, fontSize: 12, padding: '6px 14px' }} onClick={openCreateModal}>
-                                            新建第一篇笔记
+                                            {t.markdownNotes.firstNoteBtn}
                                         </button>
                                     )}
                                 </div>
@@ -468,26 +469,26 @@ export default function MarkdownNotesPage() {
                                                 <button
                                                     className={previewMode === 'edit' ? 'active' : ''}
                                                     onClick={() => setPreviewMode('edit')}
-                                                    title="仅编辑"
+                                                    title={t.markdownNotes.editOnlyTitle}
                                                 >
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                                    编辑
+                                                    {t.markdownNotes.editOnlyLabel}
                                                 </button>
                                                 <button
                                                     className={previewMode === 'split' ? 'active' : ''}
                                                     onClick={() => setPreviewMode('split')}
-                                                    title="分栏视图"
+                                                    title={t.markdownNotes.splitTitle}
                                                 >
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
-                                                    分栏
+                                                    {t.markdownNotes.splitLabel}
                                                 </button>
                                                 <button
                                                     className={previewMode === 'preview' ? 'active' : ''}
                                                     onClick={() => setPreviewMode('preview')}
-                                                    title="仅预览"
+                                                    title={t.markdownNotes.previewOnlyTitle}
                                                 >
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                                    预览
+                                                    {t.markdownNotes.previewOnlyLabel}
                                                 </button>
                                             </div>
 
@@ -495,12 +496,12 @@ export default function MarkdownNotesPage() {
                                                 className="md-btn sync-cloud"
                                                 onClick={handleSyncFromCloud}
                                                 disabled={syncing}
-                                                title="从云端拉取"
+                                                title={t.markdownNotes.pullCloudTitle}
                                             >
                                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                                                 </svg>
-                                                {syncing ? '同步中…' : '从云端同步'}
+                                                {syncing ? t.markdownNotes.pullingBtn : t.markdownNotes.pullBtn}
                                             </button>
 
                                             <button
@@ -573,7 +574,7 @@ export default function MarkdownNotesPage() {
                                             ) : (
                                                 <div className="md-editor-preview-empty">
                                                     <span style={{ fontSize: 32, opacity: 0.3 }}>📝</span>
-                                                    <span>预览将显示在这里</span>
+                                                    <span>{t.markdownNotes.emptyPreview}</span>
                                                 </div>
                                             )}
                                         </div>

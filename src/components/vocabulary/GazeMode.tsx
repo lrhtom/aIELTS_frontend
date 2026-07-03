@@ -511,7 +511,7 @@ export default function GazeMode({
                 onKeyDown={e => {
                     if (e.code === 'Space') { e.preventDefault(); onFlip(); }
                 }}
-                aria-label={isFlipped ? '点击翻回正面' : '点击翻转查看释义'}
+                aria-label={isFlipped ? t.vocab.common.flipFront : t.vocab.common.flipBack}
             >
                 <div
                     className={`fc-card ${isFlipped && !simpleMode ? 'is-flipped' : ''} ${isFlipping ? 'is-flipping' : ''} ${statusCls}`}
@@ -522,7 +522,7 @@ export default function GazeMode({
                             type="button"
                             className="fc-speak-btn"
                             onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                            aria-label="朗读发音"
+                            aria-label={t.vocab.common.speakPronunciation}
                         ><Volume2 size={18} /></button>
 
                         {!gazeReady ? (
@@ -581,7 +581,7 @@ export default function GazeMode({
                                 type="button"
                                 className="fc-speak-btn fc-speak-btn--inline"
                                 onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                                aria-label="朗读发音"
+                                aria-label={t.vocab.common.speakPronunciation}
                             ><Volume2 size={18} /></button>
                         </div>
                         {currentCard.phonetic && (

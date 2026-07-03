@@ -70,7 +70,7 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                         type="button"
                         className="lp-speak-btn"
                         onClick={() => { speakWord(entry.word); }}
-                        aria-label="朗读发音"
+                        aria-label={t.vocab.common.speakPronunciation}
                     >
                         <Volume2 size={16} />
                     </button>
@@ -103,10 +103,10 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                             onChange={e => setDays(Number(e.target.value))}
                             onBlur={() => onDueDays(entry, days)}
                             onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                            title="设置几天后复习"
+                            title={t.vocab.common.reviewAfterHint}
                         />
                         {t.vocab.intervals.daysUnit}
-                        <span className="lp-due-date" title="下次学习日期">
+                        <span className="lp-due-date" title={t.vocab.common.nextStudyDate}>
                             {displayDueDate}
                         </span>
                     </div>
@@ -115,7 +115,7 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                         type="button"
                         className="lp-del-btn"
                         onClick={() => onRemove(entry)}
-                        aria-label="删除单词"
+                        aria-label={t.vocab.common.deleteWordAria}
                     >
                         <X size={14} />
                     </button>

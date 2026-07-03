@@ -108,7 +108,7 @@ export default function Reading_page() {
             }
         } catch (err: unknown) {
             console.error('Bank load error:', err);
-            showToast('题库加载失败', 'error');
+            showToast(t.aiBank.loadFail, 'error');
             navigate('/practice/ai/bank');
         } finally {
             set('isLoading', false);
@@ -144,14 +144,14 @@ export default function Reading_page() {
             // 生成成功后直接跳转到 AI 题库，由用户在题库内挑题作答
             sessionStorage.removeItem(CACHE_KEY);
             const justId = parsedData.aiQuestionId ?? null;
-            showToast('题目已生成并保存到 AI 题库', 'success');
+            showToast(t.aiBank.toastGeneratedSaved, 'success');
             navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
             return;
         } catch (err: unknown) { // Changed 'any' to 'unknown'
             console.error("API Error:", err);
             const error = err as { message?: string, status?: number }; // Cast to a type that might have message and status
             const code = error.status ?? (err instanceof TypeError ? 'NET' : undefined);
-            showToast(error.message || '请求失败', 'error', code);
+            showToast(error.message || t.readingDetails.toastReqFail, 'error', code);
             onReturnHome();
         } finally {
             set('isLoading', false);
@@ -185,7 +185,7 @@ export default function Reading_page() {
         if (bankId) {
             submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
                 console.error('submit to bank failed:', err);
-                showToast('保存作答失败，但本次成绩已显示', 'error');
+                showToast(t.readingDetails.toastSaveFail, 'error');
             });
         }
         set('step', 3);
@@ -486,11 +486,11 @@ export default function Reading_page() {
                                 <span className="btn-icon">💡</span> {t.readingDetails.hideTargets}
                             </button>
                             <button className="toolbar-btn toolbar-btn-danger" onClick={() => {
-                                if (window.confirm('确定要退出练习吗？未提交的进度可能会丢失')) {
+                                if (window.confirm(t.readingDetails.exitConfirm)) {
                                     onReturnHome();
                                 }
                             }}>
-                                <span className="btn-icon">🚪</span> 退出练习</button>
+                                <span className="btn-icon">🚪</span> {t.readingDetails.exitBtn}</button>
                         </div>
                     </div>
 
@@ -559,9 +559,9 @@ export default function Reading_page() {
                             <span className="btn-icon">{st.isPassageOpen ? '📕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
                         </button>
                         {bankId && (
-                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> 重新作答</button>
+                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t.aiBank.redoBtn}</button>
                         )}
-                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{bankId ? '📚' : '🏠'}</span> {bankId ? '返回题库' : t.common.home}</button>
+                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{bankId ? '📚' : '🏠'}</span> {bankId ? t.aiBank.backToBank : t.common.home}</button>
                     </div>
                 </div>
 

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/toast.css';
 
-export type ToastType = 'error' | 'success';
+export type ToastType = 'error' | 'success' | 'info';
 
 interface ToastItem {
     id: number;
@@ -62,7 +62,7 @@ export default function ToastContainer() {
                     onClick={() => removeToast(tItem.id)}
                 >
                     <span className="toast-icon">
-                        {tItem.type === 'error' ? '✕' : '✓'}
+                        {tItem.type === 'error' ? '✕' : tItem.type === 'info' ? 'ℹ' : '✓'}
                     </span>
                     <span className="toast-message">
                         {tItem.type === 'error'

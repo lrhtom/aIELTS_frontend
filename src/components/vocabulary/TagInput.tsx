@@ -1,3 +1,5 @@
+import { useLang } from '../../i18n/LanguageContext';
+
 interface Props {
     tags: string[];
     tagInput: string;
@@ -6,6 +8,7 @@ interface Props {
 }
 
 export default function TagInput({ tags, tagInput, onChange, onTagsChange }: Props) {
+    const { translations: t } = useLang();
     const commitTag = (val: string) => {
         const trimmed = val.trim().toLowerCase();
         if (trimmed && !tags.includes(trimmed)) {
@@ -36,7 +39,7 @@ export default function TagInput({ tags, tagInput, onChange, onTagsChange }: Pro
             <input
                 className="wf-tag-raw-input"
                 value={tagInput}
-                placeholder={tags.length === 0 ? '输入标签，回车确认…' : ''}
+                placeholder={tags.length === 0 ? t.vocab.common.tagPlaceholder : ''}
                 onChange={e => onChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onBlur={() => { if (tagInput.trim()) commitTag(tagInput); }}

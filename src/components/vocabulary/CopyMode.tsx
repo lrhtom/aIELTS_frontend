@@ -196,7 +196,7 @@ export default function CopyMode({
                         <button
                             className="fc-speak-btn"
                             onClick={(e) => { e.stopPropagation(); speak(currentCard.word); }}
-                            title="朗读"
+                            title={t.vocab.common.speak}
                             style={{
                                 padding: '6px 12px',
                                 fontSize: '16px',
@@ -216,11 +216,11 @@ export default function CopyMode({
                         )}
                         <div className="fc-copy-meaning">{currentCard.zh}</div>
                         <div className="fc-copy-remaining">
-                            本词需抄写次数：{requiredCount}
+                            {t.vocab.copyMode.requiredCountLabel.replace('{n}', String(requiredCount))}
                         </div>
                         {completionDueHint && (
                             <div className="fc-completion-hint fc-completion-hint--in-card" role="status" aria-live="polite">
-                                <span className="fc-completion-hint__label">下次学习</span>
+                                <span className="fc-completion-hint__label">{t.vocab.common.nextStudy}</span>
                                 <span className="fc-completion-hint__word">{completionDueHint.word}</span>
                                 <span className="fc-completion-hint__date">{formatDueDate(completionDueHint.dueAt)}</span>
                             </div>
@@ -231,7 +231,7 @@ export default function CopyMode({
                     <button
                         className="fc-eye-btn"
                         onClick={onToggleHidden}
-                        title={copyWordHidden ? "显示单词" : "隐藏单词"}
+                        title={copyWordHidden ? t.vocab.copyMode.showWord : t.vocab.copyMode.hideWord}
                         style={{
                             padding: '6px 14px',
                             fontSize: '14px',
@@ -242,7 +242,7 @@ export default function CopyMode({
                             transition: 'all 0.2s'
                         }}
                     >
-                        {copyWordHidden ? '👁️‍🗨️ 显示' : '👁️ 隐藏'}
+                        {copyWordHidden ? t.vocab.copyMode.showBtn : t.vocab.copyMode.hideBtn}
                     </button>
                     {!copyWordVisible && (
                         <button
@@ -252,7 +252,7 @@ export default function CopyMode({
                             onMouseLeave={onPeekEnd}
                             onTouchStart={onPeekStart}
                             onTouchEnd={onPeekEnd}
-                            title="按住偷看单词"
+                            title={t.vocab.copyMode.peekTitle}
                             style={{
                                 padding: '6px 14px',
                                 fontSize: '14px',
@@ -265,7 +265,7 @@ export default function CopyMode({
                                 WebkitUserSelect: 'none'
                             }}
                         >
-                            🫣 偷看
+                            {t.vocab.copyMode.peekBtn}
                         </button>
                     )}
                     <button
@@ -274,7 +274,7 @@ export default function CopyMode({
                             setBlinkEnabled(next);
                             if (!next) setShowBlinkConfig(false);
                         }}
-                        title={blinkEnabled ? '关闭闪烁模式' : '开启闪烁模式：单词默认隐藏，定时短暂显示'}
+                        title={blinkEnabled ? t.vocab.copyMode.blinkOff : t.vocab.copyMode.blinkOn}
                         style={{
                             padding: '6px 14px',
                             fontSize: '14px',
@@ -287,12 +287,12 @@ export default function CopyMode({
                             fontWeight: blinkEnabled ? 500 : undefined,
                         }}
                     >
-                        {blinkEnabled ? '⚡ 闪烁开' : '⚡ 闪烁'}
+                        {blinkEnabled ? t.vocab.copyMode.blinkOnBtn : t.vocab.copyMode.blinkBtn}
                     </button>
                     {blinkEnabled && (
                         <button
                             onClick={() => setShowBlinkConfig(c => !c)}
-                            title="闪烁参数设置"
+                            title={t.vocab.copyMode.blinkSettingsTitle}
                             style={{
                                 padding: '6px 10px',
                                 fontSize: '14px',
@@ -321,7 +321,7 @@ export default function CopyMode({
                         fontSize: '13px',
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <label style={{ minWidth: '90px', fontWeight: 500, color: '#92400e' }}>隐藏间隔：</label>
+                            <label style={{ minWidth: '90px', fontWeight: 500, color: '#92400e' }}>{t.vocab.copyMode.hideIntervalLabel}</label>
                             <input
                                 type="number"
                                 min="1"
@@ -340,10 +340,10 @@ export default function CopyMode({
                                     fontSize: '13px',
                                 }}
                             />
-                            <span style={{ color: '#78716c' }}>秒</span>
+                            <span style={{ color: '#78716c' }}>{t.vocab.copyMode.secondsUnit}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <label style={{ minWidth: '90px', fontWeight: 500, color: '#92400e' }}>显示时长：</label>
+                            <label style={{ minWidth: '90px', fontWeight: 500, color: '#92400e' }}>{t.vocab.copyMode.showDurationLabel}</label>
                             <input
                                 type="number"
                                 min="0.5"
@@ -363,10 +363,10 @@ export default function CopyMode({
                                     fontSize: '13px',
                                 }}
                             />
-                            <span style={{ color: '#78716c' }}>秒</span>
+                            <span style={{ color: '#78716c' }}>{t.vocab.copyMode.secondsUnit}</span>
                         </div>
                         <div style={{ color: '#a8a29e', fontSize: '12px', marginTop: '2px' }}>
-                            💡 单词默认隐藏，每隔 {blinkHideSeconds} 秒显示 {blinkShowSeconds} 秒。输入正确、开启显示或偷看时优先显示。
+                            {t.vocab.copyMode.blinkHint.replace('{hide}', String(blinkHideSeconds)).replace('{show}', String(blinkShowSeconds))}
                         </div>
                     </div>
                 )}
@@ -379,12 +379,12 @@ export default function CopyMode({
                         color: blinkFlashing ? '#f59e0b' : '#a8a29e',
                         transition: 'color 0.3s',
                     }}>
-                        {blinkFlashing ? '⚡ 闪烁显示中…' : `⏳ ${blinkHideSeconds}s 后闪烁`}
+                        {blinkFlashing ? t.vocab.copyMode.blinkShowing : t.vocab.copyMode.blinkNext.replace('{n}', String(blinkHideSeconds))}
                     </div>
                 )}
                 {!copySubmitted && (
                     <div className="fc-copy-days-control" style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                        <label style={{ minWidth: '110px', fontSize: '14px', fontWeight: '500', color: '#333' }}>多少天后学习：</label>
+                        <label style={{ minWidth: '110px', fontSize: '14px', fontWeight: '500', color: '#333' }}>{t.vocab.copyMode.reviewDaysLabel}</label>
                         <input
                             type="number"
                             min="0"
@@ -403,7 +403,7 @@ export default function CopyMode({
                                 textAlign: 'center',
                             }}
                         />
-                        <span style={{ color: '#999', fontSize: '14px' }}>天</span>
+                        <span style={{ color: '#999', fontSize: '14px' }}>{t.vocab.copyMode.daysUnit}</span>
                     </div>
                 )}
             </div>
@@ -594,14 +594,14 @@ export default function CopyMode({
                             || !isCountMet
                         }
                     >
-                        提交
+                        {t.vocab.copyMode.submitBtn}
                     </button>
                 </div>
 
                 {!copySubmitted && (
                     <div className="fc-copy-hint" style={{ marginTop: 8 }}>
-                        <div style={{ fontWeight: 500, color: isCountMet ? '#059669' : '#d97706', marginBottom: 4 }}>实时进度：{validCount} / {requiredCount}</div>
-                        输入必须与单词完全一致，打完一个会自动加空格。达到目标次数后按回车提交。
+                        <div style={{ fontWeight: 500, color: isCountMet ? '#059669' : '#d97706', marginBottom: 4 }}>{t.vocab.copyMode.realtimeProgress.replace('{n}', String(validCount)).replace('{total}', String(requiredCount))}</div>
+                        {t.vocab.copyMode.copyInstructions}
                     </div>
                 )}
 
@@ -609,8 +609,8 @@ export default function CopyMode({
                     <div className="fc-write-result correct">
                         <span>
                             {copyPendingAction?.completed
-                                ? `✓ 本词已完成：下次学习日期 ${formatDueDate(copyPendingAction?.dueAt ?? '')}（在原间隔基础上 +${copyReviewDaysTemp[currentCardIdx] ?? copyReviewDays} 天）`
-                                : `✓ 抄写成功`}
+                                ? t.vocab.copyMode.copyDone.replace('{date}', formatDueDate(copyPendingAction?.dueAt ?? '')).replace('{days}', String(copyReviewDaysTemp[currentCardIdx] ?? copyReviewDays))
+                                : t.vocab.copyMode.copySuccess}
                         </span>
                         <button
                             className="fc-write-next"

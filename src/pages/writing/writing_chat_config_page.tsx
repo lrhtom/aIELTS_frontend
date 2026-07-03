@@ -13,6 +13,7 @@ import '../../styles/practice_page.css';
 export default function WritingChatConfigPage() {
     const { lang } = useLang();
     const t = translations[lang].writingChatConfig;
+    const tAll = translations[lang];
 
     const [vocabInput, setVocabInput] = useState(() => getInitialVocabInput());
     const [useCustomVocab, setUseCustomVocab] = useState(false);
@@ -90,7 +91,7 @@ export default function WritingChatConfigPage() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                        <span className="row-title">AI 模型</span>
+                                        <span className="row-title">{tAll.components.aiModel.label}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control console-model-selector">

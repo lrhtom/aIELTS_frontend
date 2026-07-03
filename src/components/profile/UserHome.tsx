@@ -98,7 +98,6 @@ export default function UserHome() {
             `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
         const today = new Date();
-        const todayStr = fmt(today);
 
         const lookup: Record<string, CalendarEntry> = {};
         for (const e of calendarData) lookup[e.date] = e;
@@ -109,7 +108,6 @@ export default function UserHome() {
 
         const oneYearAgo = new Date(today);
         oneYearAgo.setDate(oneYearAgo.getDate() - 364);
-        const oneYearAgoStr = fmt(oneYearAgo);
 
         // Count cumulative from all calendar entries
         for (const e of calendarData) {
@@ -304,12 +302,13 @@ export default function UserHome() {
                                                         const buildTooltip = () => {
                                                             const secs = e?.learning_seconds ?? 0;
                                                             const tt = t.profile.home.calendar.tooltip;
+                                                            const dateStr = cell.date ?? '';
                                                             if (secs === 0) {
-                                                                const parts = [cell.date, tt.noActivity];
+                                                                const parts = [dateStr, tt.noActivity];
                                                                 if (e?.checked) parts.push(tt.checkedIn);
                                                                 return parts.join('\n');
                                                             }
-                                                            const parts: string[] = [cell.date, tt.studied.replace('{time}', formatSecondsMid(secs))];
+                                                            const parts: string[] = [dateStr, tt.studied.replace('{time}', formatSecondsMid(secs))];
                                                             if (e?.checked)   parts.push(tt.checkedIn);
                                                             if (e?.vocab)     parts.push(tt.vocab.replace('{n}', String(e.vocab)));
                                                             if (e?.reading)   parts.push(tt.reading.replace('{n}', String(e.reading)));

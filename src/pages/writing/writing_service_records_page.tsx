@@ -150,17 +150,7 @@ export default function WritingServiceRecordsPage() {
                 ) : (
                     <div className="wsr-list">
                         {records.map(record => (
-                                <div className="wsr-card" key={record.id} onClick={() => {
-                                    if (record.service_type === 'correction') {
-                                        navigate('/writing/correction', { state: { record_id: record.id } });
-                                    } else if (record.service_type === 'task1_teacher') {
-                                        navigate('/writing/task1-ai-teacher/lesson', { state: { record_id: record.id } });
-                                    } else if (record.service_type === 'task2_teacher') {
-                                        navigate('/writing/ai-teacher/lesson', { state: { record_id: record.id } });
-                                    } else {
-                                        showToast(t?.viewerNotSupported || 'Viewer not supported for this type', 'info');
-                                    }
-                                }}>
+                                <div className="wsr-card" key={record.id} onClick={() => handleCardClick(record)}>
                                 <div className="wsr-card-header">
                                     <span className="wsr-badge">{(t?.serviceTypes as any)?.[record.service_type] || record.service_type}</span>
                                     <button className="wsr-delete-btn" onClick={(e) => handleDelete(e, record.id)}>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { appendCustomDeck, createCustomDeck } from '../../api/custom_memory';
+import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
 import '../../styles/custom_memory_cards.css';
 
@@ -13,6 +14,7 @@ interface CreateLocationState {
 }
 
 export default function CustomMemoryCreatePage() {
+    const { translations: t } = useLang();
     const location = useLocation();
     const navigate = useNavigate();
     const [targetDeckId, setTargetDeckId] = useState<number | null>(null);
@@ -86,15 +88,15 @@ export default function CustomMemoryCreatePage() {
         const normalizedTitle = title.trim();
         const text = submitText;
         if (!normalizedTitle) {
-            showToast('请先填写计划名称', 'error');
+            showToast(t.vocab.customMemory.toastNameEmpty, 'error');
             return;
         }
         if (!Number.isInteger(dailyCount) || dailyCount < 1 || dailyCount > 200) {
-            showToast('每日学习卡片数量必须在 1-200 之间', 'error');
+            showToast(t.vocab.customMemory.toastDailyRange, 'error');
             return;
         }
         if (!text) {
-            showToast('请先输入要制作记忆卡的文本', 'error');
+            showToast(t.vocab.customMemory.toastTextEmpty, 'error');
             return;
         }
 
@@ -102,14 +104,14 @@ export default function CustomMemoryCreatePage() {
         try {
             if (targetDeckId !== null) {
                 const { cards_added } = await appendCustomDeck(targetDeckId, text);
-                showToast(`已添加 ${cards_added} 张卡片`, 'success');
+                showToast(t.vocab.customMemory.toastAddSuccess.replace('{n}', String(cards_added)), 'success');
                 navigate('/vocabulary/plans', { replace: true });
                 return;
             }
 
             const { deck, cards } = await createCustomDeck(normalizedTitle, text, dailyCount);
             if (!cards.length) {
-                showToast('今日学习卡片已完成，或暂无可学习卡片', 'success');
+                showToast(t.vocab.customMemory.toastAllDone, 'success');
                 return;
             }
             navigate('/vocabulary/custom-cards/study', {
@@ -121,7 +123,7 @@ export default function CustomMemoryCreatePage() {
                 },
             });
         } catch (e: unknown) {
-            const msg = (e as any)?.response?.data?.error || '创建记忆卡失败，请稍后再试'; // eslint-disable-line @typescript-eslint/no-explicit-any
+            const msg = (e as any)?.response?.data?.error || t.vocab.customMemory.toastCreateFail; // eslint-disable-line @typescript-eslint/no-explicit-any
             showToast(msg, 'error');
         } finally {
             setCreating(false);
@@ -130,27 +132,27 @@ export default function CustomMemoryCreatePage() {
 
     return (
         <Layout
-    pageTitle={targetDeckId !== null ? '添加自定义记忆卡' : '自定义记忆卡'}
-    pageSubtitle="\n                        {targetDeckId !== null\n                            ? '当前为添加模式：将把卡片追加到已有卡组。'\n                            : '输入文本后自动生成记忆卡，复习调度使用和背单词一致的 FSRS 算法。'}\n                    "
+    pageTitle={targetDeckId !== null ? t.vocab.customMemory.addPageTitle : t.vocab.customMemory.defaultTitle}
+    pageSubtitle={targetDeckId !== null ? t.vocab.customMemory.addPageSubtitle : t.vocab.customMemory.createPageSubtitle}
     backUrl='/vocabulary/plans'
-    backText='返回词汇学习'
+    backText={t.vocab.customMemory.backToVocab}
 >
             <div className="config-page-wrap cm-create-wrap">
                 <div className="config-card">
-                    <h3>计划名称</h3>
+                    <h3>{t.vocab.customMemory.planNameHeading}</h3>
                     <input
                         className="cm-input"
                         type="text"
                         value={title}
                         maxLength={100}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder="例如：雅思高频句 / 阅读错题 / 自定义笔记"
+                        placeholder={t.vocab.customMemory.planNamePlaceholder}
                         disabled={targetDeckId !== null}
                     />
                 </div>
 
                 <div className="config-card">
-                    <h3>每日学习卡片数量（1-200）</h3>
+                    <h3>{t.vocab.customMemory.dailyCountHeading}</h3>
                     <input
                         className="cm-input"
                         type="number"
@@ -163,47 +165,47 @@ export default function CustomMemoryCreatePage() {
                 </div>
 
                 <div className="config-card">
-                    <h3>输入文本</h3>
+                    <h3>{t.vocab.customMemory.inputTextHeading}</h3>
                     <label className="cm-check-row">
                         <input
                             type="checkbox"
                             checked={batchByLine}
                             onChange={(e) => setBatchByLine(e.target.checked)}
                         />
-                        <span>使用换行自动判断批导入（按行匹配正面与背面）</span>
+                        <span>{t.vocab.customMemory.autoBatchHint}</span>
                     </label>
                     <div className="cm-dual-grid">
                         <div>
-                            <div className="cm-field-title">正面</div>
+                            <div className="cm-field-title">{t.vocab.customMemory.frontLabel}</div>
                             <textarea
                                 className="cm-textarea cm-textarea-short"
                                 value={frontText}
                                 onChange={(e) => setFrontText(e.target.value)}
                                 placeholder={batchByLine
                                     ? [
-                                        '每行一条正面内容：',
+                                        t.vocab.customMemory.frontMultiHint,
                                         'abandon',
                                         'sustainable',
                                         'This sentence is important.',
                                     ].join('\n')
-                                    : '输入单张卡片的正面内容（可多行，将自动合并）'}
+                                    : t.vocab.customMemory.frontSingleHint}
                             />
                         </div>
 
                         <div>
-                            <div className="cm-field-title">背面</div>
+                            <div className="cm-field-title">{t.vocab.customMemory.backLabel}</div>
                             <textarea
                                 className="cm-textarea cm-textarea-short"
                                 value={backText}
                                 onChange={(e) => setBackText(e.target.value)}
                                 placeholder={batchByLine
                                     ? [
-                                        '每行一条背面内容（可留空）：',
+                                        t.vocab.customMemory.backMultiHint,
                                         '放弃',
                                         '可持续的',
                                         '这句话在雅思写作中很重要。',
                                     ].join('\n')
-                                    : '输入单张卡片的背面内容（可选）'}
+                                    : t.vocab.customMemory.backSingleHint}
                             />
                         </div>
                     </div>
@@ -216,7 +218,7 @@ export default function CustomMemoryCreatePage() {
                         tabIndex={-1}
                     />
                     <p className="cm-hint">
-                        当前预计导入 <strong>{estimatedCount}</strong> 张；系统会自动去重；单次最多创建 300 张卡片。
+                        {t.vocab.customMemory.estimatePreamble.replace('{n}', String(estimatedCount))}
                     </p>
                 </div>
 
@@ -228,8 +230,8 @@ export default function CustomMemoryCreatePage() {
                         onClick={handleCreate}
                     >
                         {targetDeckId !== null
-                            ? (creating ? '添加中...' : '添加到卡组')
-                            : (creating ? '创建中...' : '开始学习自定义记忆卡')}
+                            ? (creating ? t.vocab.customMemory.addingBtn : t.vocab.customMemory.addToDeckBtn)
+                            : (creating ? t.vocab.customMemory.creatingBtn : t.vocab.customMemory.startBtn)}
                     </button>
                 </div>
             </div>

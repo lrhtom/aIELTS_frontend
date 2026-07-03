@@ -6,7 +6,7 @@ import '../../styles/profile_page.css';
 
 export default function UserGoals() {
     const { user, updateUser } = useAuth();
-    const { lang, translations: t } = useLang();
+    const { translations: t } = useLang();
 
     // 个人目标设置状态
     const [targetListening, setTargetListening] = useState(user?.target_listening ?? '');

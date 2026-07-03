@@ -85,11 +85,11 @@ export default function UserSettings() {
                 ai_generation_retry_count: aiRetryCount
             });
             updateUser(updatedUser);
-            setUpdateRetryCountMessage(t.settings.aiRetry?.saveSuccess || '✓ 保存成功');
+            setUpdateRetryCountMessage(t.settings.aiRetry.saveSuccess);
             setTimeout(() => setUpdateRetryCountMessage(''), 3000);
         } catch (error) {
             console.error('Failed to update AI retry count:', error);
-            setUpdateRetryCountError(t.settings.aiRetry?.saveFailed || '✗ 保存失败');
+            setUpdateRetryCountError(t.settings.aiRetry.saveFailed);
         } finally {
             setIsUpdatingRetryCount(false);
         }

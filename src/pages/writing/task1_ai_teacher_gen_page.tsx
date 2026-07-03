@@ -13,7 +13,7 @@ const EXAMPLE_TOPICS = [
 ];
 
 export default function Task1AiTeacherGenPage() {
-    const { lang, translations: t } = useLang();
+    const { translations: t } = useLang();
     const navigate = useNavigate();
     const [topic, setTopic] = useState('');
     const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -23,11 +23,11 @@ export default function Task1AiTeacherGenPage() {
     const handleFileChange = (file: File | null) => {
         if (!file) return;
         if (!file.type.startsWith('image/')) {
-            showToast(lang === 'zh' ? '只能上传图片文件！' : 'Only image files are allowed!', 'error');
+            showToast(t.writingAiTeacher.task1.imageOnlyError, 'error');
             return;
         }
         if (file.size > 5 * 1024 * 1024) {
-            showToast(lang === 'zh' ? '图片大小不能超过5MB！' : 'Image size cannot exceed 5MB!', 'error');
+            showToast(t.writingAiTeacher.task1.imageTooLargeError, 'error');
             return;
         }
 
@@ -64,16 +64,16 @@ export default function Task1AiTeacherGenPage() {
 
     return (
         <Layout
-            pageTitle={lang === 'zh' ? '小作文 AI 老师' : 'Task 1 AI Teacher'}
-            pageSubtitle={lang === 'zh' ? '极速图表分析与段落结构指导' : 'Fast chart analysis and structure guide'}
+            pageTitle={t.writingAiTeacher.task1.pageTitle}
+            pageSubtitle={t.writingAiTeacher.task1.genSubtitle}
             backUrl="/writing/ai-teachers"
             backText={t.writingHub.backToPractice}
             headerRight={<AiModelSelector variant="minimal" label="" description="" />}
         >
             <div className="at-gen-wrap">
                 <div className="at-gen-card">
-                    <h2>{lang === 'zh' ? '输入小作文题目' : 'Enter Task 1 Topic'}</h2>
-                    <p>{lang === 'zh' ? '您可以附上图表截图，AI 老师会自动识别图表数据。' : 'You can attach a screenshot of the chart, and the AI Teacher will recognize the data.'}</p>
+                    <h2>{t.writingAiTeacher.task1.genHeading}</h2>
+                    <p>{t.writingAiTeacher.task1.genDesc}</p>
 
                     <div 
                         className="at-image-upload-area"
@@ -112,7 +112,7 @@ export default function Task1AiTeacherGenPage() {
                             </div>
                         ) : (
                             <div style={{ color: 'var(--color-text-secondary)' }}>
-                                {lang === 'zh' ? '点击或拖拽上传图表截图 (选填)' : 'Click or drag to upload chart image (Optional)'}
+                                {t.writingAiTeacher.task1.imageUploadHint}
                             </div>
                         )}
                     </div>
@@ -136,7 +136,7 @@ export default function Task1AiTeacherGenPage() {
                     </button>
 
                     <div className="at-gen-examples">
-                        <div className="at-gen-examples-label">Quick examples:</div>
+                        <div className="at-gen-examples-label">{t.writingAiTeacher.lesson.quickExamples}</div>
                         {EXAMPLE_TOPICS.map((example, i) => (
                             <button
                                 key={i}

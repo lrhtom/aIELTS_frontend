@@ -56,6 +56,8 @@ const RegisterPage: React.FC = () => {
         setError('');
     };
 
+    const emailProvided = formData.email.trim().length > 0;
+
     const handleSendCode = async () => {
         const { username, email } = formData;
         if (!username.trim() || !email.trim()) {
@@ -94,7 +96,8 @@ const RegisterPage: React.FC = () => {
             return;
         }
 
-        if (!formData.verificationCode.trim()) {
+        // Verification code is only required when the user chose to provide an email.
+        if (emailProvided && !formData.verificationCode.trim()) {
             setError(t.auth.errorCodeInvalid);
             return;
         }
@@ -102,12 +105,19 @@ const RegisterPage: React.FC = () => {
         setLoading(true);
 
         try {
-            const registerData = {
+            const registerData: {
+                username: string;
+                password: string;
+                email?: string;
+                verification_code?: string;
+            } = {
                 username: formData.username,
-                email: formData.email.toLowerCase(),
                 password: formData.password,
-                verification_code: formData.verificationCode,
             };
+            if (emailProvided) {
+                registerData.email = formData.email.toLowerCase();
+                registerData.verification_code = formData.verificationCode;
+            }
 
             const response = await authApi.register(registerData);
 
@@ -167,7 +177,9 @@ const RegisterPage: React.FC = () => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="email">{t.auth.email}</label>
+                        <label htmlFor="email">
+                            {t.auth.email} <span style={{ opacity: 0.6, fontWeight: 'normal' }}>({t.common.optional})</span>
+                        </label>
                         <div className="code-input-group">
                             <input
                                 type="email"
@@ -175,7 +187,6 @@ const RegisterPage: React.FC = () => {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                required
                                 placeholder={t.auth.email}
                                 disabled={loading}
                             />
@@ -183,27 +194,29 @@ const RegisterPage: React.FC = () => {
                                 type="button"
                                 className="send-code-btn"
                                 onClick={handleSendCode}
-                                disabled={sendingCode || cooldown > 0 || loading}
+                                disabled={sendingCode || cooldown > 0 || loading || !emailProvided}
                             >
                                 {sendBtnLabel}
                             </button>
                         </div>
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="verificationCode">{t.auth.verificationCode}</label>
-                        <input
-                            type="text"
-                            id="verificationCode"
-                            name="verificationCode"
-                            value={formData.verificationCode}
-                            onChange={handleChange}
-                            required
-                            placeholder={t.auth.codePlaceholder}
-                            maxLength={6}
-                            disabled={loading}
-                        />
-                    </div>
+                    {emailProvided && (
+                        <div className="form-group">
+                            <label htmlFor="verificationCode">{t.auth.verificationCode}</label>
+                            <input
+                                type="text"
+                                id="verificationCode"
+                                name="verificationCode"
+                                value={formData.verificationCode}
+                                onChange={handleChange}
+                                required
+                                placeholder={t.auth.codePlaceholder}
+                                maxLength={6}
+                                disabled={loading}
+                            />
+                        </div>
+                    )}
 
                     <div className="form-group">
                         <label htmlFor="password">{t.auth.password}</label>

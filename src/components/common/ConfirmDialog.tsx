@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { useLang } from '../../i18n/LanguageContext';
 
 interface ConfirmDialogProps {
     open: boolean;
@@ -15,12 +16,13 @@ export default function ConfirmDialog({
     open,
     title,
     message,
-    confirmLabel = '确认',
-    cancelLabel = '取消',
+    confirmLabel,
+    cancelLabel,
     variant = 'default',
     onConfirm,
     onCancel,
 }: ConfirmDialogProps) {
+    const { translations: t } = useLang();
     const overlayRef = useRef<HTMLDivElement>(null);
     const confirmBtnRef = useRef<HTMLButtonElement>(null);
     const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -88,7 +90,7 @@ export default function ConfirmDialog({
                         className="secondary-button"
                         onClick={handleClose}
                     >
-                        {cancelLabel}
+                        {cancelLabel ?? t.common.cancel}
                     </button>
                     <button
                         ref={confirmBtnRef}
@@ -96,7 +98,7 @@ export default function ConfirmDialog({
                         className={`primary-button ${variant === 'danger' ? 'confirm-dialog-danger' : ''}`}
                         onClick={() => { onConfirm(); }}
                     >
-                        {confirmLabel}
+                        {confirmLabel ?? t.common.confirm}
                     </button>
                 </div>
             </div>

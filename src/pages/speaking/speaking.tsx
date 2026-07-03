@@ -34,6 +34,7 @@ interface ModeInfo {
 export default function Speaking() {
     const { lang } = useLang();
     const sc = translations[lang].speakingConfig;
+    const tAll = translations[lang];
 
     const PARTS: PartInfo[] = [
         { id: 'part1', emoji: '💬', title: sc.ieltsPart.parts.part1.title, desc: sc.ieltsPart.parts.part1.desc },
@@ -109,12 +110,12 @@ export default function Speaking() {
         if (selected.length === 0) return;
         const total = scenarioFiles.length + selected.length;
         if (total > 3) {
-            alert('最多上传 3 个文件');
+            alert(sc.toastMaxFiles);
             return;
         }
         const oversized = selected.filter(f => f.size > 5 * 1024 * 1024);
         if (oversized.length > 0) {
-            alert('单个文件不能超过 5MB');
+            alert(sc.toastFileTooBig);
             return;
         }
         setScenarioFiles(prev => [...prev, ...selected]);
@@ -129,7 +130,7 @@ export default function Speaking() {
                 setScenarioInput(res.data.scenario);
             }
         } catch (err: unknown) {
-            alert('生成随机场景失败: ' + (err as { message?: string }).message);
+            alert(sc.toastRandomScenarioFail.replace('{msg}', (err as { message?: string }).message ?? ''));
         } finally {
             setIsGeneratingScenario(false);
         }
@@ -146,7 +147,7 @@ export default function Speaking() {
             const { plan: detail } = await getPlanDetail(importPlanId);
             const todayWords = detail.today_words || [];
             if (todayWords.length === 0) {
-                showToast('该计划今日暂无待学单词', 'error');
+                showToast(tAll.common.planImport.noWords, 'error');
                 return;
             }
             const validWords = todayWords.filter(w => w.zh && w.zh.trim());
@@ -154,12 +155,12 @@ export default function Speaking() {
             const lines = validWords.map(w => `${w.word} - ${w.zh}`).join('\n');
             handleVocabChange(lines);
             if (skipped > 0) {
-                showToast(`已导入 ${validWords.length} 个单词，${skipped} 个因缺少中文释义被跳过`, 'error');
+                showToast(tAll.common.planImport.skipped.replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
             } else {
-                showToast(`已导入 ${validWords.length} 个单词`, 'success');
+                showToast(tAll.common.planImport.success.replace('{n}', String(validWords.length)), 'success');
             }
         } catch {
-            showToast('导入失败', 'error');
+            showToast(tAll.common.planImport.failed, 'error');
         } finally {
             setImportingPlan(false);
         }
@@ -173,7 +174,7 @@ export default function Speaking() {
 
     const handleStart = async () => {
         if (selectedMode === 'scenario' && !scenarioInput.trim()) {
-            alert('请输入您想设定的场景内容');
+            alert(sc.toastEnterScenario);
             return;
         }
 
@@ -182,12 +183,12 @@ export default function Speaking() {
                 setIsChecking(true);
                 const checkRes = await ATInterceptor.checkScenario(scenarioInput.trim());
                 if (!checkRes.data.valid) {
-                    alert('场景检测不通过：' + (checkRes.data.reason || '包含不适宜的话题，请重新修改。'));
+                    alert(sc.toastScenarioBlocked.replace('{reason}', checkRes.data.reason || sc.toastScenarioBlockedFallback));
                     setIsChecking(false);
                     return;
                 }
             } catch (err: unknown) {
-                alert('安全性测算失败或余额不足: ' + (err as { message?: string }).message);
+                alert(sc.toastSafetyFail.replace('{msg}', (err as { message?: string }).message ?? ''));
                 setIsChecking(false);
                 return;
             } finally {
@@ -222,7 +223,7 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                alert('获取Part1题目失败: ' + (err as { message?: string }).message);
+                alert(sc.toastPart1Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
@@ -241,7 +242,7 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                alert('获取Part2题目失败: ' + (err as { message?: string }).message);
+                alert(sc.toastPart2Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
@@ -260,7 +261,7 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                alert('获取Part3题目失败: ' + (err as { message?: string }).message);
+                alert(sc.toastPart3Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
@@ -280,25 +281,13 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                alert('获取Full Test题目失败: ' + (err as { message?: string }).message);
+                alert(sc.toastFullTestFail.replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
         } else {
             alert(sc.comingSoon);
         }
-    };
-
-    const getSummaryText = () => {
-        const mode = MODES.find(m => m.id === selectedMode);
-        let text = `${mode?.emoji} ${mode?.title}`;
-        if (selectedMode === 'exam' || selectedMode === 'fullTest') {
-            const part = PARTS.find(p => p.id === selectedPart);
-            if (selectedMode === 'exam') {
-                text += ` · ${part?.title}`;
-            }
-        }
-        return text;
     };
 
     return (
@@ -387,8 +376,8 @@ export default function Speaking() {
                                     </div>
                                     <div className="uc-list-row">
                                         <div className="uc-row-label">
-                                            <span className="row-title">参考附件</span>
-                                            <span className="row-desc">上传图片或文档 (选做)</span>
+                                            <span className="row-title">{sc.attachmentLabel}</span>
+                                            <span className="row-desc">{sc.attachmentDesc}</span>
                                         </div>
                                         <div className="uc-row-control">
                                             <input
@@ -400,7 +389,7 @@ export default function Speaking() {
                                                 style={{ display: 'none' }}
                                             />
                                             <button className="secondary-btn-console" onClick={() => fileInputRef.current?.click()}>
-                                                📎 选择文件
+                                                {sc.attachmentSelectBtn}
                                             </button>
                                         </div>
                                     </div>
@@ -424,7 +413,7 @@ export default function Speaking() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                            <span className="row-title">AI 模型</span>
+                                            <span className="row-title">{tAll.components.aiModel.label}</span>
                                         </div>
                                     </div>
                                     <div className="uc-row-control console-model-selector">
@@ -476,7 +465,7 @@ export default function Speaking() {
                                                     {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                 </select>
                                                 <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
-                                                    {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
+                                                    {importingPlan ? tAll.common.planImport.importing : tAll.common.planImport.btn}
                                                 </button>
                                             </div>
                                         )}
@@ -493,7 +482,7 @@ export default function Speaking() {
                                 onClick={handleStart}
                                 disabled={isStartDisabled}
                             >
-                                {isChecking ? '⏳ 正在准备...' : `🗣️ 开始练习`}
+                                {isChecking ? sc.startPreparing : sc.startPractice}
                             </button>
                         </div>
                     </div>

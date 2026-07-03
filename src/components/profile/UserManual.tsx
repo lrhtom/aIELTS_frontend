@@ -134,7 +134,7 @@ const UserManual: React.FC = () => {
                 <button
                     className={`manual-toggle-handle ${isSidebarClosed ? 'closed' : ''}`}
                     onClick={() => setIsSidebarClosed(!isSidebarClosed)}
-                    title={isSidebarClosed ? (lang === 'zh' ? '展开目录' : 'Expand sidebar') : (lang === 'zh' ? '收起目录' : 'Collapse sidebar')}
+                    title={isSidebarClosed ? t.auth.manualExpandSidebar : t.auth.manualCollapseSidebar}
                 >
                     <svg
                         viewBox="0 0 24 24"

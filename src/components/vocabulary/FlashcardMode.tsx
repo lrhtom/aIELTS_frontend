@@ -15,6 +15,8 @@ interface Props {
     /** Returns the formatted absolute date (e.g. "06-25" / "今天") the card will next surface at after this rating. */
     previewNextDueLabel?: (card: VocabCard, rating: number) => string;
     simpleMode?: boolean;
+    /** 'en' → 正面英文(默认); 'zh' → 正面中文,背面英文 */
+    frontFace?: 'en' | 'zh';
 }
 
 function speak(word: string) {
@@ -32,7 +34,9 @@ export default function FlashcardMode({
     estimateInterval,
     previewNextDueLabel,
     simpleMode,
+    frontFace = 'en',
 }: Props) {
+    const zhFirst = frontFace === 'zh';
     const { translations: t } = useLang();
 
     const RATING_INFO = [
@@ -59,7 +63,7 @@ export default function FlashcardMode({
                 onKeyDown={e => {
                     if (e.code === 'Space') { e.preventDefault(); onFlip(); }
                 }}
-                aria-label={isFlipped ? '点击翻回正面' : '点击翻转查看释义'}
+                aria-label={isFlipped ? t.vocab.common.flipFront : t.vocab.common.flipBack}
             >
                 <div
                     className={`fc-card ${isFlipped && !simpleMode ? 'is-flipped' : ''} ${isFlipping ? 'is-flipping' : ''} ${statusCls}`}
@@ -69,13 +73,19 @@ export default function FlashcardMode({
                             type="button"
                             className="fc-speak-btn"
                             onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                            aria-label="朗读发音"
+                            aria-label={t.vocab.common.speakPronunciation}
                         ><Volume2 size={18} /></button>
-                        <div className="fc-word">{currentCard.word}</div>
-                        {currentCard.phonetic && (
-                            <div className="fc-phonetic fc-phonetic-front">
-                                {currentCard.phonetic}
-                            </div>
+                        {zhFirst ? (
+                            <div className="fc-word fc-word--zh">{currentCard.zh}</div>
+                        ) : (
+                            <>
+                                <div className="fc-word">{currentCard.word}</div>
+                                {currentCard.phonetic && (
+                                    <div className="fc-phonetic fc-phonetic-front">
+                                        {currentCard.phonetic}
+                                    </div>
+                                )}
+                            </>
                         )}
                         {currentCard.reps > 0 && (
                             <div className="fc-reps-badge">
@@ -85,7 +95,12 @@ export default function FlashcardMode({
                         )}
                         {simpleMode && (
                             <div className="fc-flashcard-meaning" style={{ marginTop: '30px', fontSize: '1.2rem', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-                                {currentCard.zh}
+                                {zhFirst ? (
+                                    <>
+                                        {currentCard.word}
+                                        {currentCard.phonetic && <span style={{ marginLeft: 8, opacity: 0.7 }}>{currentCard.phonetic}</span>}
+                                    </>
+                                ) : currentCard.zh}
                             </div>
                         )}
                         <div className="fc-tap-hint">
@@ -105,7 +120,7 @@ export default function FlashcardMode({
                                     type="button"
                                     className="fc-speak-btn fc-speak-btn--inline"
                                     onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                                    aria-label="朗读发音"
+                                    aria-label={t.vocab.common.speakPronunciation}
                                 ><Volume2 size={18} /></button>
                             </div>
                             {currentCard.phonetic && (

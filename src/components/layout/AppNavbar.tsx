@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLang } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
+import { mediaUrl } from '../../utils/media';
 import '../../styles/navbar.css';
 
 interface AppNavbarProps {
@@ -127,7 +128,7 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ti
                     <Link to="/profile" className="user-avatar">
                         {user.avatar_url ? (
                             <img
-                                src={user.avatar_url}
+                                src={mediaUrl(user.avatar_url)}
                                 alt={user.username}
                                 className="avatar-image"
                             />

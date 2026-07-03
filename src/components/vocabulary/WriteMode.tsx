@@ -91,13 +91,13 @@ export default function WriteMode({
                                 <button
                                     className="fc-speak-btn fc-speak-btn--inline"
                                     onClick={() => speak(currentCard.word)}
-                                    title="朗读"
+                                    title={t.vocab.common.speak}
                                 >🔊</button>
                             </div>
                         )}
                         {completionDueHint && (
                             <div className="fc-completion-hint fc-completion-hint--in-card" role="status" aria-live="polite">
-                                <span className="fc-completion-hint__label">下次学习</span>
+                                <span className="fc-completion-hint__label">{t.vocab.common.nextStudy}</span>
                                 <span className="fc-completion-hint__word">{completionDueHint.word}</span>
                                 <span className="fc-completion-hint__date">{formatDueDate(completionDueHint.dueAt)}</span>
                             </div>
@@ -137,12 +137,12 @@ export default function WriteMode({
                         onClick={onWriteSubmit}
                         disabled={writeSubmitted || !writeInput.trim() || submitting}
                     >
-                        {t.vocab.submit} <span className="fc-qa-key">[键盘↵]</span>
+                        {t.vocab.submit} <span className="fc-qa-key">[{t.vocab.common.keyboard}↵]</span>
                     </button>
                     <button
                         className="fc-speak-btn fc-speak-btn--standalone"
                         onClick={() => speak(currentCard.word)}
-                        title="朗读单词"
+                        title={t.vocab.common.speakWord}
                     >🔊</button>
                 </div>
                 {!writeSubmitted && !unknownMode && !writeInput.trim() && (
@@ -151,12 +151,12 @@ export default function WriteMode({
                             className="fc-qa-btn fc-qa-unknown"
                             onClick={() => onQuickAssess(false)}
                             disabled={submitting}
-                        >不会 <span className="fc-qa-key">[键盘↓]</span></button>
+                        >{t.vocab.dontKnow} <span className="fc-qa-key">[{t.vocab.common.keyboard}↓]</span></button>
                         <button
                             className="fc-qa-btn fc-qa-proficient"
                             onClick={() => onQuickAssess(true)}
                             disabled={submitting}
-                        >熟练 <span className="fc-qa-key">[键盘↑]</span></button>
+                        >{t.vocab.common.proficient} <span className="fc-qa-key">[{t.vocab.common.keyboard}↑]</span></button>
                     </div>
                 )}
                 {unknownMode && !writeSubmitted && (

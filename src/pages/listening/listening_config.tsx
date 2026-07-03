@@ -27,6 +27,7 @@ export default function ListeningConfig() {
 
     const { lang } = useLang();
     const t = translations[lang].listeningConfig;
+    const tAll = translations[lang];
     useEffect(() => {
         listPlans().then(({ plans: ps }) => {
             setPlans(ps);
@@ -46,21 +47,20 @@ export default function ListeningConfig() {
             const { plan: detail } = await getPlanDetail(importPlanId);
             const todayWords = detail.today_words || [];
             if (todayWords.length === 0) {
-                showToast('该计划今日暂无待学单词', 'error');
+                showToast(tAll.common.planImport.noWords, 'error');
                 return;
             }
-            // 过滤掉中文释义为空的单词（VocabInput 要求每行必须包含中文）
             const validWords = todayWords.filter(w => w.zh && w.zh.trim());
             const skipped = todayWords.length - validWords.length;
             const lines = validWords.map(w => `${w.word} - ${w.zh}`).join('\n');
             handleVocabChange(lines);
             if (skipped > 0) {
-                showToast(`已导入 ${validWords.length} 个单词，${skipped} 个因缺少中文释义被跳过`, 'error');
+                showToast(tAll.common.planImport.skipped.replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
             } else {
-                showToast(`已导入 ${validWords.length} 个单词`, 'success');
+                showToast(tAll.common.planImport.success.replace('{n}', String(validWords.length)), 'success');
             }
         } catch {
-            showToast('导入失败', 'error');
+            showToast(tAll.common.planImport.failed, 'error');
         } finally {
             setImportingPlan(false);
         }
@@ -144,7 +144,7 @@ export default function ListeningConfig() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                        <span className="row-title">AI 模型</span>
+                                        <span className="row-title">{tAll.components.aiModel.label}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control console-model-selector">
@@ -258,7 +258,7 @@ export default function ListeningConfig() {
                                                     {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                 </select>
                                                 <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
-                                                    {importingPlan ? '导入中…' : '⬇ 导入今日单词'}
+                                                    {importingPlan ? tAll.common.planImport.importing : tAll.common.planImport.btn}
                                                 </button>
                                             </div>
                                         )}
