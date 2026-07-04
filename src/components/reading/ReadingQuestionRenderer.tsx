@@ -9,7 +9,7 @@
  *
  * 用户答案存到外部 answersRef, 通过 onAnswerChange 回调回传.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { sanitize } from '../../utils/safe_html';
 import type { Question, QuizData, FullPassageSection, ReadingQuestionType } from '../../store/reading_page_store';
 
@@ -117,9 +117,9 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
         void qid;
     };
 
-    const instructions = section.instructions;
+    const instructions = 'instructions' in section ? section.instructions : undefined;
 
-    // ── MCQ / TF / YN — radio-based ──
+    // ── MCQ / TF / YN — radio-based (uncontrolled: matches original behaviour) ──
     if (qt === 'multiple_choice' || qt === 'true_false' || qt === 'yes_no') {
         return (
             <>
@@ -136,7 +136,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                                         type="radio"
                                         name={`q${q.id}`}
                                         value={key}
-                                        checked={userAns === key}
+                                        defaultChecked={userAns === key}
                                         onChange={() => onAnswer(q.id, key)}
                                         disabled={reviewMode}
                                     />
@@ -156,44 +156,19 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
         );
     }
 
-    // ── Matching Headings — one dropdown per paragraph ──
+    // ── Matching Headings — drag-and-drop headings onto paragraphs ──
     if (qt === 'matching_headings') {
         const bank = normalizeBank(section.headings_bank);
         return (
             <>
                 {instructions && <p className="section-instructions">{instructions}</p>}
-                <div className="matching-headings-bank">
-                    <strong>Headings:</strong>
-                    <ul>
-                        {Object.entries(bank).map(([roman, text]) => (
-                            <li key={roman}><span className="hb-roman">{roman}.</span> {text}</li>
-                        ))}
-                    </ul>
-                </div>
-                {section.questions.map(q => {
-                    const userAns = getAnswer(q.id);
-                    return (
-                        <div key={q.id} className="question-block">
-                            <div className="question-text">{q.id}. Paragraph <strong>{q.paragraph || '?'}</strong></div>
-                            <select
-                                className="match-select"
-                                value={userAns}
-                                onChange={e => onAnswer(q.id, e.target.value)}
-                                disabled={reviewMode}
-                            >
-                                <option value="">--</option>
-                                {Object.keys(bank).map(r => (
-                                    <option key={r} value={r}>{r}</option>
-                                ))}
-                            </select>
-                            {reviewMode && (
-                                <div className={`review-verdict ${verdict(q.id, q.answer, userAns).correct ? 'ok' : 'ng'}`}>
-                                    {verdict(q.id, q.answer, userAns).msg}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
+                <MatchingHeadingsPanel
+                    bank={bank}
+                    questions={section.questions}
+                    getAnswer={getAnswer}
+                    onAnswer={onAnswer}
+                    reviewMode={reviewMode}
+                />
             </>
         );
     }
@@ -224,7 +199,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                             <div className="question-text" dangerouslySetInnerHTML={{ __html: safeHTML(`${q.id}. ${q.question || ''}`) }} />
                             <select
                                 className="match-select"
-                                value={userAns}
+                                defaultValue={userAns}
                                 onChange={e => onAnswer(q.id, e.target.value)}
                                 disabled={reviewMode}
                             >
@@ -268,7 +243,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                             <span className="question-inline-id">({q.id})</span>
                             <select
                                 className="match-select"
-                                value={userAns}
+                                defaultValue={userAns}
                                 onChange={e => onAnswer(q.id, e.target.value)}
                                 disabled={reviewMode}
                             >
@@ -304,7 +279,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                             <input
                                 type="text"
                                 className="text-answer-input"
-                                value={userAns}
+                                defaultValue={userAns}
                                 onChange={e => onAnswer(q.id, e.target.value)}
                                 disabled={reviewMode}
                                 placeholder="…"
@@ -335,7 +310,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                             <input
                                 type="text"
                                 className="text-answer-input"
-                                value={userAns}
+                                defaultValue={userAns}
                                 onChange={e => onAnswer(q.id, e.target.value)}
                                 disabled={reviewMode}
                                 placeholder="Type your answer…"
@@ -373,3 +348,167 @@ export function scoreSection(section: SectionLike, getAnswer: (qid: number) => s
 
 /** Used only to placate linters — hook usage keeps the file eligible for React fast refresh */
 export const _useReadingRendererHook = () => useMemo(() => 1, []);
+
+
+/* -----------------------------------------------------------------------
+ *  MatchingHeadingsPanel — drag headings from a pool onto paragraph slots.
+ *  Behaviour:
+ *    - Pool shows unused headings; each drops-once (real IELTS rule)
+ *    - Dragging a placed heading to another slot moves it (frees the old slot)
+ *    - Dragging a placed heading to the pool removes it
+ *    - × on a placed chip clears the slot
+ * ---------------------------------------------------------------------*/
+interface MatchingHeadingsPanelProps {
+    bank: Record<string, string>;
+    questions: Question[];
+    getAnswer: (qid: number) => string;
+    onAnswer: (qid: number, value: string) => void;
+    reviewMode: boolean;
+}
+
+function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMode }: MatchingHeadingsPanelProps) {
+    // Local state mirrors the answers so we can trigger re-render on every drop.
+    // Initialised from the ref-backed getAnswer so state survives re-mounts.
+    const [placements, setPlacements] = useState<Record<number, string>>(() => {
+        const init: Record<number, string> = {};
+        for (const q of questions) {
+            const a = getAnswer(q.id);
+            if (a) init[q.id] = a;
+        }
+        return init;
+    });
+
+    const bankKeys = Object.keys(bank);
+    const usedHeadings = new Set(Object.values(placements));
+    const poolHeadings = bankKeys.filter(k => !usedHeadings.has(k));
+
+    const commit = (next: Record<number, string>, changedIds: number[]) => {
+        setPlacements(next);
+        for (const id of changedIds) onAnswer(id, next[id] || '');
+    };
+
+    const placeOnSlot = (targetQid: number, roman: string) => {
+        if (!bank[roman]) return;
+        const next = { ...placements };
+        const changed: number[] = [targetQid];
+        // If this heading was already placed elsewhere, free that slot.
+        for (const [k, v] of Object.entries(next)) {
+            const kNum = Number(k);
+            if (v === roman && kNum !== targetQid) {
+                delete next[kNum];
+                changed.push(kNum);
+            }
+        }
+        next[targetQid] = roman;
+        commit(next, changed);
+    };
+
+    const clearSlot = (qid: number) => {
+        if (!(qid in placements)) return;
+        const next = { ...placements };
+        delete next[qid];
+        commit(next, [qid]);
+    };
+
+    // ── DnD wiring ──
+    const onDragStart = (e: React.DragEvent, roman: string, sourceQid: number | null) => {
+        if (reviewMode) return;
+        e.dataTransfer.setData('text/plain', roman);
+        e.dataTransfer.setData('application/x-mh-source', sourceQid == null ? 'pool' : String(sourceQid));
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const allowDrop = (e: React.DragEvent) => {
+        if (reviewMode) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const dropOnSlot = (e: React.DragEvent, targetQid: number) => {
+        if (reviewMode) return;
+        e.preventDefault();
+        const roman = e.dataTransfer.getData('text/plain');
+        if (roman) placeOnSlot(targetQid, roman);
+    };
+
+    const dropOnPool = (e: React.DragEvent) => {
+        if (reviewMode) return;
+        e.preventDefault();
+        const src = e.dataTransfer.getData('application/x-mh-source');
+        if (src && src !== 'pool') clearSlot(Number(src));
+    };
+
+    return (
+        <div className="mh-panel">
+            {/* Pool */}
+            <div
+                className="mh-pool"
+                onDragOver={allowDrop}
+                onDrop={dropOnPool}
+            >
+                <div className="mh-pool-title">Headings pool — drag onto paragraphs</div>
+                <div className="mh-chip-row">
+                    {poolHeadings.length === 0 && (
+                        <span className="mh-pool-empty">(all headings placed)</span>
+                    )}
+                    {poolHeadings.map(roman => (
+                        <div
+                            key={roman}
+                            className="mh-chip"
+                            draggable={!reviewMode}
+                            onDragStart={e => onDragStart(e, roman, null)}
+                        >
+                            <span className="mh-chip-roman">{roman}</span>
+                            <span className="mh-chip-text">{bank[roman]}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Slots per paragraph */}
+            <div className="mh-slots">
+                {questions.map(q => {
+                    const placed = placements[q.id];
+                    const isCorrect = reviewMode && placed && placed === q.answer;
+                    const isWrong = reviewMode && (!placed || placed !== q.answer);
+                    return (
+                        <div key={q.id} className="mh-slot-row">
+                            <div className="mh-slot-label">
+                                {q.id}. Paragraph <strong>{q.paragraph || '?'}</strong>
+                            </div>
+                            <div
+                                className={`mh-slot-zone ${placed ? 'filled' : 'empty'} ${reviewMode ? (isCorrect ? 'review-ok' : 'review-ng') : ''}`}
+                                onDragOver={allowDrop}
+                                onDrop={e => dropOnSlot(e, q.id)}
+                            >
+                                {placed ? (
+                                    <div
+                                        className="mh-chip mh-chip-placed"
+                                        draggable={!reviewMode}
+                                        onDragStart={e => onDragStart(e, placed, q.id)}
+                                    >
+                                        <span className="mh-chip-roman">{placed}</span>
+                                        <span className="mh-chip-text">{bank[placed] || ''}</span>
+                                        {!reviewMode && (
+                                            <button
+                                                type="button"
+                                                className="mh-chip-remove"
+                                                onClick={() => clearSlot(q.id)}
+                                                aria-label="Remove heading"
+                                            >×</button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <span className="mh-slot-hint">Drop a heading here</span>
+                                )}
+                            </div>
+                            {reviewMode && isWrong && (
+                                <div className="review-verdict ng">❌ (correct: {q.answer})</div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}

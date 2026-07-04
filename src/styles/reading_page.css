@@ -999,3 +999,193 @@
 .review-verdict-inline.ng {
     color: #dc2626;
 }
+
+/* ═════════════════════════════════════════════════════════════════
+   Matching Headings — drag & drop panel
+   ═════════════════════════════════════════════════════════════════ */
+.mh-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Heading pool (top area) */
+.mh-pool {
+    background: #f8fafc;
+    border: 2px dashed var(--color-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    min-height: 96px;
+    transition: background 0.15s, border-color 0.15s;
+}
+.mh-pool-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+.mh-pool-empty {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-style: italic;
+}
+.mh-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Draggable chip */
+.mh-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--color-text);
+    cursor: grab;
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s;
+    max-width: 100%;
+}
+.mh-chip:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 3px 8px rgba(13, 148, 136, 0.15);
+    transform: translateY(-1px);
+}
+.mh-chip:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+.mh-chip[draggable="false"] {
+    cursor: default;
+}
+.mh-chip-roman {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 22px;
+    padding: 0 6px;
+    background: rgba(13, 148, 136, 0.1);
+    color: var(--color-primary);
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.mh-chip-text {
+    white-space: normal;
+    line-height: 1.35;
+}
+.mh-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin-left: 4px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--color-text-secondary);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+}
+.mh-chip-remove:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* Placed-in-slot variant */
+.mh-chip-placed {
+    background: rgba(13, 148, 136, 0.06);
+    border-color: rgba(13, 148, 136, 0.35);
+}
+
+/* Slot area (paragraphs) */
+.mh-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.mh-slot-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: white;
+    border: 1px solid #ecf0f1;
+    border-radius: 10px;
+    transition: box-shadow 0.15s;
+}
+.mh-slot-row:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+.mh-slot-label {
+    font-weight: 600;
+    color: var(--color-text);
+    min-width: 130px;
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+/* The actual drop zone */
+.mh-slot-zone {
+    flex: 1;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border: 2px dashed transparent;
+    border-radius: 8px;
+    transition: background 0.15s, border-color 0.15s;
+}
+.mh-slot-zone.empty {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+.mh-slot-zone.empty:hover,
+.mh-slot-zone.empty:focus-within {
+    border-color: var(--color-primary);
+    background: rgba(13, 148, 136, 0.04);
+}
+.mh-slot-zone.filled {
+    border-color: transparent;
+    background: transparent;
+}
+.mh-slot-hint {
+    color: #94a3b8;
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* Review mode paint */
+.mh-slot-zone.review-ok {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.35);
+}
+.mh-slot-zone.review-ng {
+    background: rgba(220, 38, 38, 0.06);
+    border-color: rgba(220, 38, 38, 0.35);
+}
+
+/* Responsive: on narrow width, stack label above the drop zone */
+@media (max-width: 640px) {
+    .mh-slot-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .mh-slot-label {
+        min-width: 0;
+    }
+}

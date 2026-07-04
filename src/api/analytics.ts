@@ -72,3 +72,47 @@ export async function getWritingAnalytics(): Promise<WritingAnalytics> {
     return res.data;
 }
 
+/* ── Reading + Listening practice accuracy analytics ── */
+export interface PracticeAttempt {
+    id: number;
+    title: string;
+    subtype: string;
+    date: string | null;
+    correct: number;
+    total: number;
+    accuracy: number;        // 0..1
+}
+
+export interface PracticeSubtypeStats {
+    subtype: string;
+    attempts: number;
+    total: number;
+    correct: number;
+    accuracy: number;
+}
+
+export interface PracticeSkillStats {
+    total_questions: number;
+    correct_questions: number;
+    accuracy: number;
+    attempts: number;
+    by_type: PracticeSubtypeStats[];
+    recent: PracticeAttempt[];
+}
+
+export interface PracticeAnalytics {
+    reading: PracticeSkillStats;
+    listening: PracticeSkillStats;
+    combined: {
+        total_questions: number;
+        correct_questions: number;
+        accuracy: number;
+        attempts: number;
+    };
+}
+
+export async function getPracticeAnalytics(): Promise<PracticeAnalytics> {
+    const res = await apiClient.get('/analytics/practice');
+    return res.data;
+}
+

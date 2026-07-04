@@ -13,7 +13,6 @@ import type {
     ShortAnswerListeningData,
     MatchingListeningData,
     FullListeningData,
-    FullListeningSection,
 } from '../../store/listen_page_store';
 import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
@@ -256,7 +255,8 @@ export default function ListeningPage() {
                 setAudioLoading(false);
                 return;
             }
-            if (!content.passage || !Array.isArray(content.questions)) {
+            const singleContent = content as { passage?: string; questions?: unknown };
+            if (!singleContent.passage || !Array.isArray(singleContent.questions)) {
                 showToast(t.listeningDetails.toastContentMissing, 'error');
                 navigate('/practice/ai/bank');
                 return;
@@ -356,8 +356,14 @@ export default function ListeningPage() {
 
     const submitQuiz = () => {
         if (!st.listeningData) return;
-        const totalQuestions = st.listeningData.questions.length;
-        const answeredQuestions = Object.keys(userAnswersRef.current).length;
+        // Total question count spans full-test sections OR single quiz.
+        let totalQuestions = 0;
+        if (st.listeningData.type === 'full') {
+            for (const sec of st.listeningData.sections) totalQuestions += sec.questions.length;
+        } else {
+            totalQuestions = st.listeningData.questions.length;
+        }
+        const answeredQuestions = Object.values(userAnswersRef.current).filter(v => String(v).trim().length > 0).length;
         if (answeredQuestions < totalQuestions) {
             if (!window.confirm(t.readingDetails.submitConfirm)) return;
         }
@@ -627,11 +633,9 @@ export default function ListeningPage() {
                                             type="radio"
                                             name={`q-${q.id}`}
                                             value={key}
-                                            checked={userAnswersRef.current[q.id] === key}
+                                            defaultChecked={userAnswersRef.current[q.id] === key}
                                             onChange={(e) => {
                                                 userAnswersRef.current[q.id] = e.target.value;
-                                                // 触发重渲染以更新选中状态
-                                                setRenderTick(t => t + 1);
                                             }}
                                         />
                                         <span style={{ fontWeight: 600 }}>{key}.</span> <span>{removeMarkdown(optText as string)}</span>
@@ -904,7 +908,7 @@ export default function ListeningPage() {
                                                                         type="radio"
                                                                         name={`q-${mcq.id}`}
                                                                         value={k}
-                                                                        checked={getAnswer(mcq.id) === k}
+                                                                        defaultChecked={getAnswer(mcq.id) === k}
                                                                         onChange={() => setAnswerV2(mcq.id, k)}
                                                                     />
                                                                     <strong>{k}.</strong> <span>{v}</span>
@@ -936,7 +940,7 @@ export default function ListeningPage() {
                                                                     <div className="question-text">Location {mq.id}</div>
                                                                     <select
                                                                         className="match-select"
-                                                                        value={getAnswer(mq.id)}
+                                                                        defaultValue={getAnswer(mq.id)}
                                                                         onChange={e => setAnswerV2(mq.id, e.target.value)}
                                                                     >
                                                                         <option value="">--</option>

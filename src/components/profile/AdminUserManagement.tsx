@@ -158,57 +158,60 @@ export default function AdminUserManagement() {
 
     const handleBanIP = async (user: UserRow) => {
         if (!user.lastIp) {
-            toast.error('该用户尚无 IP 记录（可能未登录过）。');
+            toast.error(t.profile.admin.users.toastNoIpRecord);
             return;
         }
         if (user.isIpBanned) {
-            toast('该 IP 已在封禁列表中。', { icon: 'ℹ️' });
+            toast(t.profile.admin.users.toastIpAlreadyBanned, { icon: 'ℹ️' });
             setShowBannedIPs(true);
             return;
         }
-        const reason = window.prompt(`封禁 IP ${user.lastIp}?\n\n可选：填写封禁原因（会展示在管理列表中）`, `关联用户 ${user.username}`);
+        const reason = window.prompt(
+            t.profile.admin.users.banIpPromptMsg.replace('{ip}', user.lastIp),
+            t.profile.admin.users.banIpReasonDefault.replace('{name}', user.username),
+        );
         if (reason === null) return;
         try {
             await apiClient.post(`/admin/users/${user.id}/ban-ip`, { reason });
-            toast.success(`已封禁 IP ${user.lastIp}`);
+            toast.success(t.profile.admin.users.toastIpBanSuccess.replace('{ip}', user.lastIp));
             setUsers(prev => prev.map(item => item.id === user.id ? { ...item, isIpBanned: true } : item));
             refreshBannedIPs();
         } catch (error) {
             console.error('Ban IP failed:', error);
-            toast.error('封禁 IP 失败。');
+            toast.error(t.profile.admin.users.toastIpBanFail);
         }
     };
 
     const handleUnbanIP = async (row: BannedIP) => {
-        if (!window.confirm(`解除 IP ${row.ip_address} 的封禁?`)) return;
+        if (!window.confirm(t.profile.admin.users.unbanIpConfirm.replace('{ip}', row.ip_address))) return;
         try {
             await apiClient.delete(`/admin/banned-ips/${row.id}`);
-            toast.success('已解封该 IP。');
+            toast.success(t.profile.admin.users.toastIpUnbanSuccess);
             setBannedIPs(prev => prev.filter(x => x.id !== row.id));
             setUsers(prev => prev.map(u => u.lastIp === row.ip_address ? { ...u, isIpBanned: false } : u));
         } catch (error) {
             console.error('Unban IP failed:', error);
-            toast.error('解封失败。');
+            toast.error(t.profile.admin.users.toastIpUnbanFail);
         }
     };
 
     const handleAddBannedIP = async () => {
-        const ip = window.prompt('输入要封禁的 IP 地址：', '');
+        const ip = window.prompt(t.profile.admin.users.banIpInputPrompt, '');
         if (!ip) return;
         const trimmed = ip.trim();
         if (!trimmed) return;
-        const reason = window.prompt('封禁原因（可选）：', '') || '';
+        const reason = window.prompt(t.profile.admin.users.banIpReasonPrompt, '') || '';
         try {
             await apiClient.post('/admin/banned-ips', { ip_address: trimmed, reason });
-            toast.success(`已封禁 IP ${trimmed}`);
+            toast.success(t.profile.admin.users.toastIpBanSuccess.replace('{ip}', trimmed));
             refreshBannedIPs();
             setUsers(prev => prev.map(u => u.lastIp === trimmed ? { ...u, isIpBanned: true } : u));
         } catch (error: unknown) {
             console.error('Add banned IP failed:', error);
             const err = error as { response?: { data?: { error?: string } } };
             const code = err.response?.data?.error;
-            if (code === 'INVALID_IP') toast.error('IP 地址格式不合法。');
-            else toast.error('封禁 IP 失败。');
+            if (code === 'INVALID_IP') toast.error(t.profile.admin.users.toastInvalidIp);
+            else toast.error(t.profile.admin.users.toastIpBanFail);
         }
     };
 
@@ -367,7 +370,7 @@ export default function AdminUserManagement() {
                     <span className="admin-users-stat-pill">{t.profile.admin.users.pageAdmins.replace('{n}', String(pageAdminCount))}</span>
                     <span className="admin-users-stat-pill">{t.profile.admin.users.pageBanned.replace('{n}', String(pageBannedCount))}</span>
                     <button type="button" className="admin-users-stat-pill admin-users-stat-btn" onClick={() => setShowBannedIPs(v => !v)}>
-                        已封禁 IP {bannedIPs.length} 个 {showBannedIPs ? '▲' : '▼'}
+                        {t.profile.admin.users.bannedIpsCount.replace('{n}', String(bannedIPs.length))} {showBannedIPs ? '▲' : '▼'}
                     </button>
                 </div>
             </div>
@@ -375,13 +378,13 @@ export default function AdminUserManagement() {
             {showBannedIPs && (
                 <div className="admin-banned-ips-panel">
                     <div className="admin-banned-ips-header">
-                        <h3>IP 封禁列表</h3>
+                        <h3>{t.profile.admin.users.bannedIpsListTitle}</h3>
                         <button type="button" className="admin-users-btn ip-add-btn" onClick={handleAddBannedIP}>
-                            + 新增封禁 IP
+                            {t.profile.admin.users.btnAddBanIp}
                         </button>
                     </div>
                     {bannedIPs.length === 0 ? (
-                        <div className="admin-banned-ips-empty">目前没有被封禁的 IP。</div>
+                        <div className="admin-banned-ips-empty">{t.profile.admin.users.bannedIpsEmpty}</div>
                     ) : (
                         <div className="admin-banned-ips-list">
                             {bannedIPs.map(row => (
@@ -391,11 +394,11 @@ export default function AdminUserManagement() {
                                         {row.reason && <span className="admin-banned-ips-reason">{row.reason}</span>}
                                     </div>
                                     <div className="admin-banned-ips-meta">
-                                        {row.banned_by && <span>操作人：{row.banned_by}</span>}
+                                        {row.banned_by && <span>{t.profile.admin.users.labelBannedBy.replace('{name}', row.banned_by)}</span>}
                                         {row.banned_at && <span>{formatDateTime(row.banned_at)}</span>}
                                     </div>
                                     <button type="button" className="admin-users-btn ip-unban-btn" onClick={() => handleUnbanIP(row)}>
-                                        解封
+                                        {t.profile.admin.users.btnUnbanIp}
                                     </button>
                                 </div>
                             ))}
@@ -474,8 +477,8 @@ export default function AdminUserManagement() {
                                         </div>
                                         <div className="admin-users-item admin-users-item-ip">
                                             <span className="admin-users-label">
-                                                最近 IP
-                                                {user.isIpBanned && <span className="admin-users-ip-badge">已封禁</span>}
+                                                {t.profile.admin.users.labelLastIp}
+                                                {user.isIpBanned && <span className="admin-users-ip-badge">{t.profile.admin.users.ipBadgeBanned}</span>}
                                             </span>
                                             <span className="admin-users-value">{user.lastIp || '—'}</span>
                                         </div>
@@ -494,9 +497,13 @@ export default function AdminUserManagement() {
                                         className={`admin-users-btn ${user.isIpBanned ? 'ip-banned-btn' : 'ip-ban-btn'}`}
                                         onClick={() => handleBanIP(user)}
                                         disabled={isAdmin || !user.lastIp}
-                                        title={user.lastIp ? (user.isIpBanned ? '该 IP 已封禁 - 点击查看列表' : `封禁此 IP: ${user.lastIp}`) : '该用户尚无 IP 记录'}
+                                        title={user.lastIp
+                                            ? (user.isIpBanned
+                                                ? t.profile.admin.users.titleIpAlreadyBanned
+                                                : t.profile.admin.users.titleBanThisIp.replace('{ip}', user.lastIp))
+                                            : t.profile.admin.users.titleNoIpRecord}
                                     >
-                                        {user.isIpBanned ? '已封禁 IP' : '封禁此 IP'}
+                                        {user.isIpBanned ? t.profile.admin.users.btnIpAlreadyBanned : t.profile.admin.users.btnBanThisIp}
                                     </button>
                                     <button
                                         className={`admin-users-btn ${user.is_staff ? 'demote-btn' : 'promote-btn'}`}

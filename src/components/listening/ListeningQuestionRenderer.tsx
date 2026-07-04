@@ -4,6 +4,7 @@
  *
  * 数据模型: 每题的答案在外部 answersRef 中, 通过 getAnswer/onAnswer 读写.
  */
+import type { ReactElement } from 'react';
 import type {
     FormListeningData,
     TableListeningData,
@@ -69,7 +70,7 @@ function renderStructuredWithBlanks(
     getAnswer: (qid: number) => string,
     onAnswer: (qid: number, v: string) => void,
     disabled: boolean,
-): JSX.Element {
+): ReactElement {
     // Split by "(N)" placeholders; render inputs in between
     const parts = content.split(/(\(\d+\)\s*_+)/g);
     return (
@@ -84,7 +85,7 @@ function renderStructuredWithBlanks(
                             <input
                                 type="text"
                                 className="structured-blank-input"
-                                value={getAnswer(qid)}
+                                defaultValue={getAnswer(qid)}
                                 onChange={e => onAnswer(qid, e.target.value)}
                                 disabled={disabled}
                                 placeholder="…"
@@ -180,7 +181,7 @@ export function ShortAnswerRenderer({ data, getAnswer, onAnswer, reviewMode = fa
                         <input
                             type="text"
                             className="text-answer-input"
-                            value={userAns}
+                            defaultValue={userAns}
                             onChange={e => onAnswer(q.id, e.target.value)}
                             disabled={reviewMode}
                             placeholder="Type your answer…"
@@ -221,7 +222,7 @@ export function MatchingRenderer({ data, getAnswer, onAnswer, reviewMode = false
                         <div className="question-text">{q.id}. {q.question || ''}</div>
                         <select
                             className="match-select"
-                            value={userAns}
+                            defaultValue={userAns}
                             onChange={e => onAnswer(q.id, e.target.value)}
                             disabled={reviewMode}
                         >

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useLang } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getVocabAnalytics, getScheduledWords, type ScheduledBucket, type StateBucket, type PlanBrief } from '../../api/analytics';
+import PracticeAnalyticsPanel from './PracticeAnalyticsPanel';
 import '../../styles/analytics_page.css';
 
 /* ── Shared chart tooltip (same style as calendar .lc-tooltip) ── */
@@ -226,7 +227,7 @@ function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planI
 export default function UserAnalytics() {
     const { translations: t } = useLang();
 
-    const [activeSkill, setActiveSkill] = useState<'vocab' | 'writing'>('vocab');
+    const [activeSkill, setActiveSkill] = useState<'vocab' | 'writing' | 'reading' | 'listening'>('vocab');
 
     const [plans, setPlans] = useState<PlanBrief[]>([]);
     const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
@@ -337,23 +338,27 @@ export default function UserAnalytics() {
             </div>
 
             <div className="analytics-tabs">
-                {(['vocab', 'listening', 'speaking', 'reading', 'writing'] as const).map(sk => (
-                    <button
-                        key={sk}
-                        className={`analytics-tab ${activeSkill === sk ? 'analytics-tab--active' : ''}`}
-                        disabled={sk !== 'vocab' && sk !== 'writing'}
-                        title={sk !== 'vocab' && sk !== 'writing' ? t.analytics.comingSoon : undefined}
-                        onClick={() => {
-                            if (sk === 'vocab' || sk === 'writing') {
-                                setActiveSkill(sk as 'vocab' | 'writing');
-                            }
-                        }}
-                    >
-                        {String(t.analytics[`${sk}Tab` as keyof typeof t.analytics])}
-                        {sk !== 'vocab' && sk !== 'writing' && <span className="analytics-tab-badge">{t.analytics.comingSoon}</span>}
-                    </button>
-                ))}
+                {(['vocab', 'listening', 'speaking', 'reading', 'writing'] as const).map(sk => {
+                    const enabled = sk === 'vocab' || sk === 'writing' || sk === 'reading' || sk === 'listening';
+                    return (
+                        <button
+                            key={sk}
+                            className={`analytics-tab ${activeSkill === sk ? 'analytics-tab--active' : ''}`}
+                            disabled={!enabled}
+                            title={!enabled ? t.analytics.comingSoon : undefined}
+                            onClick={() => {
+                                if (enabled) setActiveSkill(sk as typeof activeSkill);
+                            }}
+                        >
+                            {String(t.analytics[`${sk}Tab` as keyof typeof t.analytics])}
+                            {!enabled && <span className="analytics-tab-badge">{t.analytics.comingSoon}</span>}
+                        </button>
+                    );
+                })}
             </div>
+
+            {activeSkill === 'reading' && <PracticeAnalyticsPanel skill="reading" />}
+            {activeSkill === 'listening' && <PracticeAnalyticsPanel skill="listening" />}
 
             {activeSkill === 'vocab' && (
                 <>

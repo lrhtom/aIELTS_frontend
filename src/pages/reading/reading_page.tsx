@@ -7,7 +7,6 @@ import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
-import { sanitize } from '../../utils/safe_html';
 import ReadingQuestionRenderer, { scoreSection } from '../../components/reading/ReadingQuestionRenderer';
 import ReadingPassageBlock from '../../components/reading/ReadingPassageBlock';
 import '../../styles/reading_page.css';
@@ -174,11 +173,6 @@ export default function Reading_page() {
         }
     };
 
-    const formatHighlight = (text: string): string => {
-        if (!text) return '';
-        return text.replace(/\*\*(.*?)\*\*/g, '<span class="highlight">$1</span>');
-    };
-
     const generateReading = async () => {
         set('isLoading', true);
         // 解析词汇
@@ -259,9 +253,16 @@ export default function Reading_page() {
     };
 
     const submitQuiz = () => {
-        if (!st.quizData) return;
-        const totalQuestions = st.quizData.questions.length;
-        const answeredQuestions = Object.keys(userAnswersRef.current).length;
+        // Total question count spans full-test passages OR single quiz.
+        let totalQuestions = 0;
+        if (st.fullData) {
+            for (const p of st.fullData.passages) for (const sec of p.sections) totalQuestions += sec.questions.length;
+        } else if (st.quizData) {
+            totalQuestions = st.quizData.questions.length;
+        } else {
+            return;
+        }
+        const answeredQuestions = Object.values(userAnswersRef.current).filter(v => String(v).trim().length > 0).length;
         if (answeredQuestions < totalQuestions) {
             if (!window.confirm(t.readingDetails.submitConfirm)) return;
         }

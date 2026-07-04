@@ -110,7 +110,7 @@ export default function AdminAIUsage() {
             </>
         );
         return chartType === 'bar' ? (
-            <ResponsiveContainer width="100%" height={360}>
+            <ResponsiveContainer width="99%" height={360} minWidth={0}>
                 <BarChart data={chartData} margin={{ top: 12, right: 16, bottom: 8, left: 8 }}>
                     {commonAxes}
                     <Bar yAxisId="left" dataKey="at_consumed" name={t.metricAt} fill="#0d9488" />
@@ -118,7 +118,7 @@ export default function AdminAIUsage() {
                 </BarChart>
             </ResponsiveContainer>
         ) : (
-            <ResponsiveContainer width="100%" height={360}>
+            <ResponsiveContainer width="99%" height={360} minWidth={0}>
                 <LineChart data={chartData} margin={{ top: 12, right: 16, bottom: 8, left: 8 }}>
                     {commonAxes}
                     <Line yAxisId="left" type="monotone" dataKey="at_consumed" name={t.metricAt} stroke="#0d9488" strokeWidth={2} dot={false} />

@@ -192,7 +192,7 @@ export default function UserFinance() {
               </div>
             </div>
 
-            <div style={{ height: '300px', width: '100%' }}>
+            <div style={{ height: '300px', width: '100%', minWidth: 0, minHeight: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === 'bar' ? (
                   <BarChart data={stats.daily_usage}>
