@@ -15,7 +15,6 @@ export default function Task1SelectionPage() {
 
     const [selectedType, setSelectedType] = useState<string>('chart');
     const [selectedChart, setSelectedChart] = useState<string>('line');
-    const [selectedMapMode, setSelectedMapMode] = useState<'svg' | 'raster'>('svg');
 
     const taskTypes = [
         { id: 'chart', nameZh: t.task1Selection.types.chart.title, nameEn: t.task1Selection.types.chart.nameEn, icon: '📈', desc: t.task1Selection.types.chart.desc, isBeta: false },
@@ -64,7 +63,7 @@ export default function Task1SelectionPage() {
         }
 
         if (selectedType === 'map') {
-            goToChartPractice('map', { image_mode: selectedMapMode });
+            goToChartPractice('map');
             return;
         }
         if (selectedType === 'flowchart') {
@@ -144,74 +143,47 @@ export default function Task1SelectionPage() {
                                         </div>
                                         <span className="row-desc">{t.task1Selection.mapMode.subheading}</span>
                                     </div>
-                                    <div
-                                        role="radiogroup"
-                                        aria-label={t.task1Selection.mapMode.heading}
-                                        style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                                            gap: 12,
-                                            marginTop: 8,
-                                        }}
-                                    >
-                                        {(['svg', 'raster'] as const).map(mode => {
-                                            const cfg = t.task1Selection.mapMode[mode];
-                                            const active = selectedMapMode === mode;
-                                            return (
-                                                <button
-                                                    key={mode}
-                                                    type="button"
-                                                    role="radio"
-                                                    aria-checked={active}
-                                                    onClick={() => setSelectedMapMode(mode)}
-                                                    style={{
-                                                        textAlign: 'left',
-                                                        padding: '14px 16px',
-                                                        borderRadius: 10,
-                                                        border: active ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                                        background: active ? 'rgba(13,148,136,0.06)' : 'var(--color-surface)',
-                                                        color: 'var(--color-text)',
-                                                        cursor: 'pointer',
-                                                        transition: 'all 0.15s',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        gap: 8,
-                                                    }}
-                                                >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                        <span style={{
-                                                            fontSize: 11,
-                                                            fontWeight: 700,
-                                                            padding: '3px 8px',
-                                                            borderRadius: 999,
-                                                            background: mode === 'svg' ? '#e0f2fe' : '#fef3c7',
-                                                            color: mode === 'svg' ? '#0369a1' : '#b45309',
-                                                        }}>{cfg.badge}</span>
-                                                        <span style={{ fontWeight: 600 }}>{cfg.title}</span>
-                                                    </div>
-                                                    <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
-                                                        {cfg.summary}
-                                                    </div>
-                                                    <ul style={{
-                                                        margin: '4px 0 0 0',
-                                                        paddingLeft: 18,
-                                                        fontSize: 12,
-                                                        color: 'var(--color-text-secondary)',
-                                                        lineHeight: 1.6,
-                                                    }}>
-                                                        {cfg.bullets.map((b, i) => <li key={i}>{b}</li>)}
-                                                    </ul>
-                                                    <div style={{
-                                                        marginTop: 6,
-                                                        fontSize: 12,
-                                                        fontWeight: 600,
-                                                        color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                                                    }}>
-                                                        💰 {cfg.cost}
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
+                                    <div style={{
+                                        marginTop: 8,
+                                        padding: '14px 16px',
+                                        borderRadius: 10,
+                                        border: '1px solid var(--color-border)',
+                                        background: 'rgba(13,148,136,0.06)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 8,
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{
+                                                fontSize: 11,
+                                                fontWeight: 700,
+                                                padding: '3px 8px',
+                                                borderRadius: 999,
+                                                background: '#fef3c7',
+                                                color: '#b45309',
+                                            }}>{t.task1Selection.mapMode.raster.badge}</span>
+                                            <span style={{ fontWeight: 600 }}>{t.task1Selection.mapMode.raster.title}</span>
+                                        </div>
+                                        <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                                            {t.task1Selection.mapMode.raster.summary}
+                                        </div>
+                                        <ul style={{
+                                            margin: '4px 0 0 0',
+                                            paddingLeft: 18,
+                                            fontSize: 12,
+                                            color: 'var(--color-text-secondary)',
+                                            lineHeight: 1.6,
+                                        }}>
+                                            {t.task1Selection.mapMode.raster.bullets.map((b, i) => <li key={i}>{b}</li>)}
+                                        </ul>
+                                        <div style={{
+                                            marginTop: 6,
+                                            fontSize: 12,
+                                            fontWeight: 600,
+                                            color: 'var(--color-primary)',
+                                        }}>
+                                            💰 {t.task1Selection.mapMode.raster.cost}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

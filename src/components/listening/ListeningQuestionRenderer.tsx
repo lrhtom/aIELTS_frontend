@@ -228,7 +228,7 @@ export function MatchingRenderer({ data, getAnswer, onAnswer, reviewMode = false
                         >
                             <option value="">--</option>
                             {bankKeys.map(k => (
-                                <option key={k} value={k}>{k}</option>
+                                <option key={k} value={k}>{k}. {bank[k]}</option>
                             ))}
                         </select>
                         {reviewMode && (

@@ -9,7 +9,7 @@
  *
  * 用户答案存到外部 answersRef, 通过 onAnswerChange 回调回传.
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { sanitize } from '../../utils/safe_html';
 import type { Question, QuizData, FullPassageSection, ReadingQuestionType } from '../../store/reading_page_store';
 
@@ -98,6 +98,94 @@ function normalizeBank(raw: unknown): Record<string, string> {
         return out;
     }
     return {};
+}
+
+/**
+ * Render structured content (summary_text / note_content) with (1)-(N) blanks
+ * replaced by inline <input> elements. Used for note_completion.
+ *
+ * Blank IDs are numbered inside the section (1, 2, 3…) but questions in
+ * full-test mode have global IDs (14, 15…). `startId` is the first question's
+ * global id, so blank (1) maps to qid=startId, blank (2) → startId+1, etc.
+ */
+function renderNoteBlanksInput(
+    content: string,
+    startId: number,
+    getAnswer: (qid: number) => string,
+    onAnswer: (qid: number, v: string) => void,
+    disabled: boolean,
+): ReactElement {
+    const parts = content.split(/(\(\d+\)\s*_+)/g);
+    return (
+        <pre className="rd-inline-blank-block">
+            {parts.map((part, i) => {
+                const m = /^\((\d+)\)\s*_+$/.exec(part);
+                if (m) {
+                    const localNum = Number(m[1]);
+                    const qid = startId + localNum - 1;
+                    return (
+                        <span key={i} className="rd-blank-wrap">
+                            <span className="rd-blank-num">({localNum})</span>
+                            <input
+                                type="text"
+                                className="rd-blank-input"
+                                defaultValue={getAnswer(qid)}
+                                onChange={e => onAnswer(qid, e.target.value)}
+                                disabled={disabled}
+                                placeholder="…"
+                            />
+                        </span>
+                    );
+                }
+                return <span key={i}>{part}</span>;
+            })}
+        </pre>
+    );
+}
+
+/**
+ * Render summary paragraph with (1)-(N) blanks replaced by inline <select>
+ * dropdowns (word bank picks). Used for summary_completion.
+ */
+function renderSummaryBlanksSelect(
+    content: string,
+    startId: number,
+    bank: Record<string, string>,
+    getAnswer: (qid: number) => string,
+    onAnswer: (qid: number, v: string) => void,
+    disabled: boolean,
+): ReactElement {
+    const parts = content.split(/(\(\d+\)\s*_+)/g);
+    const bankKeys = Object.keys(bank);
+    return (
+        <div className="rd-inline-blank-block summary">
+            {parts.map((part, i) => {
+                const m = /^\((\d+)\)\s*_+$/.exec(part);
+                if (m) {
+                    const localNum = Number(m[1]);
+                    const qid = startId + localNum - 1;
+                    return (
+                        <span key={i} className="rd-blank-wrap">
+                            <span className="rd-blank-num">({localNum})</span>
+                            <select
+                                className="rd-blank-select"
+                                defaultValue={getAnswer(qid)}
+                                onChange={e => onAnswer(qid, e.target.value)}
+                                disabled={disabled}
+                            >
+                                <option value="">--</option>
+                                {bankKeys.map(k => (
+                                    <option key={k} value={k}>{k}. {bank[k]}</option>
+                                ))}
+                            </select>
+                        </span>
+                    );
+                }
+                // Regular text — preserve whitespace so surrounding sentences flow naturally
+                return <span key={i} dangerouslySetInnerHTML={{ __html: safeHTML(part) }} />;
+            })}
+        </div>
+    );
 }
 
 export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, reviewMode = false }: Props) {
@@ -205,7 +293,9 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                             >
                                 <option value="">--</option>
                                 {bankKeys.map(k => (
-                                    <option key={k} value={k}>{k}</option>
+                                    <option key={k} value={k}>
+                                        {qt === 'matching_info' ? k : `${k}. ${bank[k]}`}
+                                    </option>
                                 ))}
                             </select>
                             {reviewMode && (
@@ -223,7 +313,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
     // ── Summary Completion — summary_text with (n) blanks, answered by letter picks from word_bank ──
     if (qt === 'summary_completion') {
         const bank = normalizeBank(section.word_bank);
-        const bankKeys = Object.keys(bank);
+        const startId = section.questions[0]?.id ?? 1;
         return (
             <>
                 {section.summary_intro && <p className="section-instructions">{section.summary_intro}</p>}
@@ -235,63 +325,45 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                         ))}
                     </ul>
                 </div>
-                <div className="summary-text" dangerouslySetInnerHTML={{ __html: safeHTML(section.summary_text || '') }} />
-                {section.questions.map(q => {
-                    const userAns = getAnswer(q.id);
-                    return (
-                        <div key={q.id} className="question-block question-block-compact">
-                            <span className="question-inline-id">({q.id})</span>
-                            <select
-                                className="match-select"
-                                defaultValue={userAns}
-                                onChange={e => onAnswer(q.id, e.target.value)}
-                                disabled={reviewMode}
-                            >
-                                <option value="">--</option>
-                                {bankKeys.map(k => (
-                                    <option key={k} value={k}>{k}. {bank[k]}</option>
-                                ))}
-                            </select>
-                            {reviewMode && (
-                                <span className={`review-verdict-inline ${verdict(q.id, q.answer, userAns).correct ? 'ok' : 'ng'}`}>
-                                    {verdict(q.id, q.answer, userAns).msg}
-                                </span>
-                            )}
-                        </div>
-                    );
-                })}
+                {renderSummaryBlanksSelect(section.summary_text || '', startId, bank, getAnswer, onAnswer, reviewMode)}
+                {reviewMode && (
+                    <div className="rd-review-list">
+                        {section.questions.map(q => {
+                            const userAns = getAnswer(q.id);
+                            const v = verdict(q.id, q.answer, userAns);
+                            return (
+                                <div key={q.id} className={`rd-review-row ${v.correct ? 'ok' : 'ng'}`}>
+                                    <strong>{q.id}.</strong> {v.msg}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </>
         );
     }
 
     // ── Note Completion — structured note_content with (n) blanks, answered by text ──
     if (qt === 'note_completion') {
+        const startId = section.questions[0]?.id ?? 1;
         return (
             <>
                 {section.note_intro && <p className="section-instructions">{section.note_intro}</p>}
                 {section.wordLimit && <p className="word-limit-hint">📏 {section.wordLimit}</p>}
-                <pre className="note-content">{section.note_content}</pre>
-                {section.questions.map(q => {
-                    const userAns = getAnswer(q.id);
-                    return (
-                        <div key={q.id} className="question-block question-block-compact">
-                            <span className="question-inline-id">({q.id})</span>
-                            <input
-                                type="text"
-                                className="text-answer-input"
-                                defaultValue={userAns}
-                                onChange={e => onAnswer(q.id, e.target.value)}
-                                disabled={reviewMode}
-                                placeholder="…"
-                            />
-                            {reviewMode && (
-                                <span className={`review-verdict-inline ${verdictArr(q.id, q.answers, userAns).correct ? 'ok' : 'ng'}`}>
-                                    {verdictArr(q.id, q.answers, userAns).msg}
-                                </span>
-                            )}
-                        </div>
-                    );
-                })}
+                {renderNoteBlanksInput(section.note_content || '', startId, getAnswer, onAnswer, reviewMode)}
+                {reviewMode && (
+                    <div className="rd-review-list">
+                        {section.questions.map(q => {
+                            const userAns = getAnswer(q.id);
+                            const v = verdictArr(q.id, q.answers, userAns);
+                            return (
+                                <div key={q.id} className={`rd-review-row ${v.correct ? 'ok' : 'ng'}`}>
+                                    <strong>{q.id}.</strong> {v.msg}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </>
         );
     }

@@ -28,6 +28,7 @@ import {
     NoteRenderer,
     scoreListeningQuestions,
 } from '../../components/listening/ListeningQuestionRenderer';
+import ListeningMapSVG from '../../components/listening/ListeningMapSVG';
 import '../../styles/listening_page.css';
 import '../../styles/reading_page.css';
 
@@ -137,6 +138,29 @@ export default function ListeningPage() {
         if (audioRef.current) audioRef.current.playbackRate = rate;
     };
 
+    const togglePlayPause = async () => {
+        const a = audioRef.current;
+        if (!a) return;
+        try {
+            if (a.paused || a.ended) {
+                if (a.ended) a.currentTime = 0;
+                await a.play();
+            } else {
+                a.pause();
+            }
+        } catch (err) {
+            console.error('togglePlayPause error:', err);
+        }
+    };
+
+    const skipSeconds = (delta: number) => {
+        const a = audioRef.current;
+        if (!a) return;
+        const next = Math.max(0, Math.min(a.duration || 0, a.currentTime + delta));
+        a.currentTime = next;
+        setPlaybackTime(next);
+    };
+
     const toggleControlsHidden = () => {
         setControlsHidden((prev) => {
             const next = !prev;
@@ -215,10 +239,12 @@ export default function ListeningPage() {
         const audio = new Audio(url);
         audio.playbackRate = playbackRate;
         audioRef.current = audio;
-        audio.onended = () => { setTtsSpeaking(false); setTtsStarted(false); };
+        audio.onended = () => { setTtsSpeaking(false); };
         audio.onerror = () => { console.error('Audio playback error'); setTtsSpeaking(false); setTtsStarted(false); };
         audio.onloadedmetadata = () => setAudioDuration(audio.duration || 0);
         audio.ontimeupdate = () => setPlaybackTime(audio.currentTime);
+        audio.onplay = () => setTtsSpeaking(true);
+        audio.onpause = () => setTtsSpeaking(false);
     };
 
     const loadFromBank = async (id: number) => {
@@ -415,6 +441,20 @@ export default function ListeningPage() {
         if (floatBtnRef.current) floatBtnRef.current.classList.remove('visible');
         window.getSelection()?.removeAllRanges();
     };
+
+    useEffect(() => {
+        if (st.step !== 2 || st.isLoading) return;
+        if (!ttsStarted) return;
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.code !== 'Space') return;
+            const target = e.target as HTMLElement;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) return;
+            e.preventDefault();
+            togglePlayPause();
+        };
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
+    }, [st.step, st.isLoading, ttsStarted]);
 
     useEffect(() => {
         if (st.step !== 2 || st.isLoading) return;
@@ -786,29 +826,55 @@ export default function ListeningPage() {
                                     <span className="btn-icon">🔊</span> {t.listeningDetails.startAudio}
                                 </button>
                             ) : (
-                                <span className={`tts-status ${ttsSpeaking ? 'speaking' : 'done'}`}>
-                                    {ttsSpeaking ? `🔊 ${t.listeningDetails.speaking}` : `✅ ${t.listeningDetails.audioDone}`}
-                                </span>
+                                <button
+                                    className={`aielts-player-play ${ttsSpeaking ? 'is-playing' : 'is-paused'}`}
+                                    onClick={togglePlayPause}
+                                    title={ttsSpeaking ? '暂停 (Space)' : '播放 (Space)'}
+                                    aria-label={ttsSpeaking ? 'Pause' : 'Play'}
+                                >
+                                    {ttsSpeaking ? '⏸' : '▶'}
+                                </button>
                             )}
                             {/* Player controls: progress + speed. Hidden together via the 👁 toggle. */}
                             {ttsStarted && !controlsHidden && (
-                                <div className="listening-audio-controls" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '12px' }}>
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={audioDuration || 0.1}
-                                        step={0.1}
-                                        value={playbackTime}
-                                        onChange={(e) => handleSeek(Number(e.target.value))}
-                                        style={{ width: '180px', accentColor: 'var(--color-primary)' }}
-                                    />
-                                    <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', minWidth: '76px', fontVariantNumeric: 'tabular-nums' }}>
+                                <div className="aielts-player-controls">
+                                    <button
+                                        className="aielts-player-skip"
+                                        onClick={() => skipSeconds(-5)}
+                                        title="后退 5 秒"
+                                        aria-label="Rewind 5 seconds"
+                                    >⏪</button>
+                                    <div
+                                        className="aielts-player-progress"
+                                        style={{
+                                            ['--progress' as string]:
+                                                `${audioDuration > 0 ? (playbackTime / audioDuration) * 100 : 0}%`,
+                                        }}
+                                    >
+                                        <input
+                                            type="range"
+                                            min={0}
+                                            max={audioDuration || 0.1}
+                                            step={0.1}
+                                            value={playbackTime}
+                                            onChange={(e) => handleSeek(Number(e.target.value))}
+                                            className="aielts-player-range"
+                                            aria-label="Audio progress"
+                                        />
+                                    </div>
+                                    <button
+                                        className="aielts-player-skip"
+                                        onClick={() => skipSeconds(5)}
+                                        title="前进 5 秒"
+                                        aria-label="Forward 5 seconds"
+                                    >⏩</button>
+                                    <span className="aielts-player-time">
                                         {formatAudioTime(playbackTime)} / {formatAudioTime(audioDuration)}
                                     </span>
                                     <select
                                         value={playbackRate}
                                         onChange={(e) => handleRateChange(Number(e.target.value))}
-                                        style={{ fontSize: '12px', padding: '2px 6px', borderRadius: '6px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}
+                                        className="aielts-player-rate"
                                         title="播放倍速"
                                     >
                                         <option value={0.75}>0.75×</option>
@@ -932,7 +998,13 @@ export default function ListeningPage() {
                                                 )}
                                                 {sub.type === 'map' && (
                                                     <div className="section-map-block">
-                                                        <p style={{ fontSize: 13, opacity: 0.7 }}>Map labelling (5 items). Use dropdowns below.</p>
+                                                        {sub.map && (
+                                                            <ListeningMapSVG
+                                                                map={sub.map}
+                                                                questionIdOffset={sub.startId - 1}
+                                                                maxWidth={720}
+                                                            />
+                                                        )}
                                                         {sub.questions.map(q => {
                                                             const mq = q as { id: number; answer: string };
                                                             return (

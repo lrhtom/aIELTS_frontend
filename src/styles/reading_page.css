@@ -956,6 +956,107 @@
     overflow-x: auto;
 }
 
+/* ─── Inline blanks for summary_completion / note_completion ─────────────── */
+.rd-inline-blank-block {
+    background: white;
+    border: 1px solid var(--color-border);
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    line-height: 2.2;
+    font-size: 14px;
+    color: var(--color-text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: 'Consolas', 'Menlo', monospace;
+}
+.rd-inline-blank-block.summary {
+    line-height: 2;
+    font-size: 15px;
+    font-family: inherit;
+    white-space: normal;
+}
+.rd-blank-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 2px;
+    vertical-align: baseline;
+}
+.rd-blank-num {
+    font-weight: 700;
+    color: var(--color-primary);
+    font-size: 13px;
+}
+.rd-blank-input {
+    padding: 4px 8px;
+    font-size: 13px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: #fafafa;
+    color: var(--color-text);
+    min-width: 100px;
+    max-width: 180px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.rd-blank-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+    background: white;
+}
+.rd-blank-input:disabled {
+    background: #f1f5f9;
+    color: var(--color-text-secondary);
+}
+.rd-blank-select {
+    padding: 4px 8px;
+    font-size: 13px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: #fafafa;
+    color: var(--color-text);
+    max-width: 240px;
+    cursor: pointer;
+}
+.rd-blank-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+    background: white;
+}
+.rd-blank-select:disabled {
+    background: #f1f5f9;
+    cursor: not-allowed;
+}
+.rd-review-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--color-bg);
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+}
+.rd-review-row {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: white;
+    border: 1px solid var(--color-border);
+}
+.rd-review-row.ok {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #15803d;
+}
+.rd-review-row.ng {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+}
+
 /* Compact question row for summary/note completion (inline id + input) */
 .question-block-compact {
     display: flex;
