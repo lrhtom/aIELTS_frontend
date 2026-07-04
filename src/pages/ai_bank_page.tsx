@@ -66,12 +66,32 @@ export default function AIBankPage() {
     useEffect(() => {
         sessionStorage.setItem('ai_bank_active_skill', activeSkill);
         let cancelled = false;
+        let pollId: ReturnType<typeof setTimeout> | null = null;
+
+        const fetchOnce = async () => {
+            try {
+                const r = await listAIQuestions({ skill: activeSkill });
+                if (cancelled) return;
+                setItems(r.items);
+                // If any row is still generating we keep polling so the card
+                // flips to "ready" without the user needing to refresh.
+                const anyGenerating = r.items.some(it => it.status === 'generating');
+                if (anyGenerating && !cancelled) {
+                    pollId = setTimeout(fetchOnce, 3000);
+                }
+            } catch {
+                if (!cancelled) showToast(t.loadFail, 'error');
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
         setLoading(true);
-        listAIQuestions({ skill: activeSkill })
-            .then(r => { if (!cancelled) setItems(r.items); })
-            .catch(() => { if (!cancelled) showToast(t.loadFail, 'error'); })
-            .finally(() => { if (!cancelled) setLoading(false); });
-        return () => { cancelled = true; };
+        fetchOnce();
+        return () => {
+            cancelled = true;
+            if (pollId) clearTimeout(pollId);
+        };
     }, [activeSkill, t.loadFail]);
 
     const sortedItems = useMemo(() => {
@@ -83,6 +103,14 @@ export default function AIBankPage() {
     }, [items, justId]);
 
     const handleClick = (item: AIQuestionSummary) => {
+        if (item.status === 'generating') {
+            showToast('正在生成中，请稍候…', 'info');
+            return;
+        }
+        if (item.status === 'failed') {
+            showToast(item.errorMessage || '生成失败，可删除后重试。', 'error');
+            return;
+        }
         navigate(resolveAnswerRoute(item));
     };
 
@@ -137,19 +165,40 @@ export default function AIBankPage() {
                     <div className="ai-bank-grid">
                         {sortedItems.map(item => {
                             const isJust = justId && Number(justId) === item.id;
+                            const isGenerating = item.status === 'generating';
+                            const isFailed = item.status === 'failed';
+                            const statusLabel = isGenerating
+                                ? '⏳ 生成中'
+                                : isFailed
+                                    ? '⚠️ 生成失败'
+                                    : (item.isAnswered ? (isRedone(item) ? t.statusRedone : t.statusAnswered) : t.statusPending);
+                            const statusClass = isGenerating
+                                ? 'generating'
+                                : isFailed
+                                    ? 'failed'
+                                    : (item.isAnswered ? (isRedone(item) ? 'redone' : 'answered') : 'pending');
+                            const cardStateClass = isGenerating
+                                ? 'is-generating'
+                                : isFailed
+                                    ? 'is-failed'
+                                    : (item.isAnswered ? 'is-answered' : 'is-pending');
                             return (
                                 <div
                                     key={item.id}
-                                    className={`ai-bank-card ${isJust ? 'is-just' : ''} ${item.isAnswered ? 'is-answered' : 'is-pending'}`}
+                                    className={`ai-bank-card ${isJust ? 'is-just' : ''} ${cardStateClass}`}
                                     onClick={() => handleClick(item)}
+                                    aria-disabled={isGenerating || isFailed}
                                 >
                                     <div className="ai-bank-card-head">
-                                        <span className={`ai-bank-status ${item.isAnswered ? (isRedone(item) ? 'redone' : 'answered') : 'pending'}`}>
-                                            {item.isAnswered ? (isRedone(item) ? t.statusRedone : t.statusAnswered) : t.statusPending}
+                                        <span className={`ai-bank-status ${statusClass}`}>
+                                            {statusLabel}
                                         </span>
                                         {item.subtype && <span className="ai-bank-subtype">{item.subtype}</span>}
                                     </div>
                                     <div className="ai-bank-card-title">{item.title || t.unnamedFallback}</div>
+                                    {isFailed && item.errorMessage && (
+                                        <div className="ai-bank-card-error">{item.errorMessage}</div>
+                                    )}
                                     <div className="ai-bank-card-meta">
                                         <span>{t.generatedAt.replace('{time}', formatDate(item.createdAt))}</span>
                                         {item.lastAttemptAt && <span>{t.lastAttemptAt.replace('{time}', formatDate(item.lastAttemptAt))}</span>}

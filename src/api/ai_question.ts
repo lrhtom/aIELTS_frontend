@@ -1,12 +1,15 @@
 import { apiClient } from './client';
 
 export type AIQuestionSkill = 'reading' | 'listening' | 'writing';
+export type AIQuestionStatus = 'generating' | 'ready' | 'failed';
 
 export interface AIQuestionSummary {
     id: number;
     skill: AIQuestionSkill;
     subtype: string;
     title: string;
+    status: AIQuestionStatus;
+    errorMessage: string;
     isAnswered: boolean;
     answeredAt: string | null;
     lastAttemptAt: string | null;
@@ -19,10 +22,11 @@ export interface AIQuestionDetail extends AIQuestionSummary {
     aiFeedback: unknown;
 }
 
-export async function listAIQuestions(params?: { skill?: AIQuestionSkill; answered?: boolean }) {
+export async function listAIQuestions(params?: { skill?: AIQuestionSkill; answered?: boolean; status?: AIQuestionStatus }) {
     const query: Record<string, string> = {};
     if (params?.skill) query.skill = params.skill;
     if (typeof params?.answered === 'boolean') query.answered = params.answered ? 'true' : 'false';
+    if (params?.status) query.status = params.status;
     const resp = await apiClient.get('/ai-questions/', { params: query });
     return resp.data as { items: AIQuestionSummary[]; count: number };
 }

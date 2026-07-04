@@ -113,7 +113,7 @@ export const manualData: ManualData = {
                 {
                     id: 'writing',
                     title: '写作批改与训练',
-                    content: '写作大厅提供三种入口：AI 写作批改（粘贴作文获取四项评分）、Task 1 特训（图表题/地图题/流程图）、Task 2 特训（观点题/报告文/混合文/AI 创新题）。Task 1 支持上传图表图片让 AI 识别。批改从任务完成度、连贯与衔接、词汇资源和语法多样性四个维度评分。另有点子练习题板块，一轮生成多道观点题逐题作答并总结。',
+                    content: '写作大厅提供三种入口：AI 写作批改（粘贴作文获取四项评分）、Task 1 特训（图表题/地图题/流程图）、Task 2 特训（观点题/报告文/混合文/AI 创新题）。Task 1 支持上传图表图片让 AI 识别。地图题提供两种生成模式：SVG 线稿（文字模型生成，仿真雅思考卷风格）和 FLUX.2-pro 光栅图（图像模型生成，更接近插画风）。批改从任务完成度、连贯与衔接、词汇资源和语法多样性四个维度评分。另有点子练习题板块，一轮生成多道观点题逐题作答并总结。',
                     keywords: ['写作', '批改', 'Task1', 'Task2', '图表', '作文', '评分']
                 }
             ]
@@ -314,7 +314,7 @@ export const manualData: ManualData = {
                 {
                     id: 'writing',
                     title: 'Writing Correction & Training',
-                    content: 'The Writing Hall offers three paths: AI Correction (paste essay, get four-criterion scores), Task 1 Training (charts/maps/flowcharts with image upload support), and Task 2 Training (opinion/report/mixed/innovative essays). Correction covers Task Achievement, Coherence & Cohesion, Lexical Resource, and Grammatical Range. The Opinion Drill generates a set of questions for sequential practice.',
+                    content: 'The Writing Hall offers three paths: AI Correction (paste essay, get four-criterion scores), Task 1 Training (charts/maps/flowcharts with image upload support), and Task 2 Training (opinion/report/mixed/innovative essays). Map questions support two generation modes: SVG line-art (driven by your text model, closest to real exam papers) and FLUX.2-pro raster (image model, more illustrated look). Correction covers Task Achievement, Coherence & Cohesion, Lexical Resource, and Grammatical Range. The Opinion Drill generates a set of questions for sequential practice.',
                     keywords: ['writing', 'correction', 'Task 1', 'Task 2', 'chart', 'essay', 'scoring']
                 }
             ]

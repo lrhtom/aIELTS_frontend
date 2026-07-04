@@ -246,6 +246,66 @@
 }
 .ai-bank-status.redone::before { content: '↻'; font-size: 12px; font-weight: 800; }
 
+.ai-bank-status.generating {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    color: #1d4ed8;
+    border: 1px solid rgba(96, 165, 250, 0.35);
+}
+
+.ai-bank-status.failed {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    color: #b91c1c;
+    border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+/* Generating card — animated dashed border + pointer:not-allowed */
+.ai-bank-card.is-generating {
+    cursor: not-allowed;
+    border-style: dashed;
+    border-color: rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, rgba(239, 246, 255, 0.9), rgba(219, 234, 254, 0.85));
+    animation: aiBankPulse 1.6s ease-in-out infinite alternate,
+               scaleIn 0.5s ease-out backwards;
+}
+
+.ai-bank-card.is-generating:hover {
+    transform: none;
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.08), inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.55);
+}
+
+.ai-bank-card.is-failed {
+    cursor: not-allowed;
+    border-color: rgba(248, 113, 113, 0.35);
+    background: linear-gradient(135deg, rgba(254, 242, 242, 0.9), rgba(254, 226, 226, 0.85));
+}
+
+.ai-bank-card.is-failed:hover {
+    transform: none;
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.ai-bank-card-error {
+    font-size: 13px;
+    color: #b91c1c;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(248, 113, 113, 0.25);
+    word-break: break-word;
+}
+
+@keyframes aiBankPulse {
+    from {
+        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.05), inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+    }
+    to {
+        box-shadow: 0 15px 40px rgba(59, 130, 246, 0.15), inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+    }
+}
+
 .ai-bank-subtype {
     font-size: 11px;
     font-weight: 500;

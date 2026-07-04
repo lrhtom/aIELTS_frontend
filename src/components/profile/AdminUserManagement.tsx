@@ -16,6 +16,16 @@ type UserRow = {
     date_joined: string;
     last_login: string | null;
     atBalance: number;
+    lastIp: string | null;
+    isIpBanned: boolean;
+};
+
+type BannedIP = {
+    id: number;
+    ip_address: string;
+    reason: string;
+    banned_at: string | null;
+    banned_by: string | null;
 };
 
 type PaginatedResponse = {
@@ -35,6 +45,19 @@ export default function AdminUserManagement() {
     const [isLoading, setIsLoading] = useState(true);
     const [keyword, setKeyword] = useState('');
     const [roleFilter, setRoleFilter] = useState<'all' | 'normal' | 'admin' | 'banned'>('all');
+    const [bannedIPs, setBannedIPs] = useState<BannedIP[]>([]);
+    const [showBannedIPs, setShowBannedIPs] = useState(false);
+
+    const refreshBannedIPs = useCallback(async () => {
+        try {
+            const resp = await apiClient.get<{ items: BannedIP[] }>('/admin/banned-ips');
+            setBannedIPs(resp.data.items || []);
+        } catch (err) {
+            console.error('Failed to load banned IPs:', err);
+        }
+    }, []);
+
+    useEffect(() => { refreshBannedIPs(); }, [refreshBannedIPs]);
 
     const fetchUsers = useCallback(async (page: number) => {
         setIsLoading(true);
@@ -130,6 +153,62 @@ export default function AdminUserManagement() {
             } else {
                 toast.error(t.profile.admin.users.toastPromoteFail);
             }
+        }
+    };
+
+    const handleBanIP = async (user: UserRow) => {
+        if (!user.lastIp) {
+            toast.error('该用户尚无 IP 记录（可能未登录过）。');
+            return;
+        }
+        if (user.isIpBanned) {
+            toast('该 IP 已在封禁列表中。', { icon: 'ℹ️' });
+            setShowBannedIPs(true);
+            return;
+        }
+        const reason = window.prompt(`封禁 IP ${user.lastIp}?\n\n可选：填写封禁原因（会展示在管理列表中）`, `关联用户 ${user.username}`);
+        if (reason === null) return;
+        try {
+            await apiClient.post(`/admin/users/${user.id}/ban-ip`, { reason });
+            toast.success(`已封禁 IP ${user.lastIp}`);
+            setUsers(prev => prev.map(item => item.id === user.id ? { ...item, isIpBanned: true } : item));
+            refreshBannedIPs();
+        } catch (error) {
+            console.error('Ban IP failed:', error);
+            toast.error('封禁 IP 失败。');
+        }
+    };
+
+    const handleUnbanIP = async (row: BannedIP) => {
+        if (!window.confirm(`解除 IP ${row.ip_address} 的封禁?`)) return;
+        try {
+            await apiClient.delete(`/admin/banned-ips/${row.id}`);
+            toast.success('已解封该 IP。');
+            setBannedIPs(prev => prev.filter(x => x.id !== row.id));
+            setUsers(prev => prev.map(u => u.lastIp === row.ip_address ? { ...u, isIpBanned: false } : u));
+        } catch (error) {
+            console.error('Unban IP failed:', error);
+            toast.error('解封失败。');
+        }
+    };
+
+    const handleAddBannedIP = async () => {
+        const ip = window.prompt('输入要封禁的 IP 地址：', '');
+        if (!ip) return;
+        const trimmed = ip.trim();
+        if (!trimmed) return;
+        const reason = window.prompt('封禁原因（可选）：', '') || '';
+        try {
+            await apiClient.post('/admin/banned-ips', { ip_address: trimmed, reason });
+            toast.success(`已封禁 IP ${trimmed}`);
+            refreshBannedIPs();
+            setUsers(prev => prev.map(u => u.lastIp === trimmed ? { ...u, isIpBanned: true } : u));
+        } catch (error: unknown) {
+            console.error('Add banned IP failed:', error);
+            const err = error as { response?: { data?: { error?: string } } };
+            const code = err.response?.data?.error;
+            if (code === 'INVALID_IP') toast.error('IP 地址格式不合法。');
+            else toast.error('封禁 IP 失败。');
         }
     };
 
@@ -287,8 +366,43 @@ export default function AdminUserManagement() {
                     <span className="admin-users-stat-pill">{t.profile.admin.users.filtered.replace('{n}', String(filteredUsers.length))}</span>
                     <span className="admin-users-stat-pill">{t.profile.admin.users.pageAdmins.replace('{n}', String(pageAdminCount))}</span>
                     <span className="admin-users-stat-pill">{t.profile.admin.users.pageBanned.replace('{n}', String(pageBannedCount))}</span>
+                    <button type="button" className="admin-users-stat-pill admin-users-stat-btn" onClick={() => setShowBannedIPs(v => !v)}>
+                        已封禁 IP {bannedIPs.length} 个 {showBannedIPs ? '▲' : '▼'}
+                    </button>
                 </div>
             </div>
+
+            {showBannedIPs && (
+                <div className="admin-banned-ips-panel">
+                    <div className="admin-banned-ips-header">
+                        <h3>IP 封禁列表</h3>
+                        <button type="button" className="admin-users-btn ip-add-btn" onClick={handleAddBannedIP}>
+                            + 新增封禁 IP
+                        </button>
+                    </div>
+                    {bannedIPs.length === 0 ? (
+                        <div className="admin-banned-ips-empty">目前没有被封禁的 IP。</div>
+                    ) : (
+                        <div className="admin-banned-ips-list">
+                            {bannedIPs.map(row => (
+                                <div key={row.id} className="admin-banned-ips-row">
+                                    <div className="admin-banned-ips-main">
+                                        <span className="admin-banned-ips-ip">{row.ip_address}</span>
+                                        {row.reason && <span className="admin-banned-ips-reason">{row.reason}</span>}
+                                    </div>
+                                    <div className="admin-banned-ips-meta">
+                                        {row.banned_by && <span>操作人：{row.banned_by}</span>}
+                                        {row.banned_at && <span>{formatDateTime(row.banned_at)}</span>}
+                                    </div>
+                                    <button type="button" className="admin-users-btn ip-unban-btn" onClick={() => handleUnbanIP(row)}>
+                                        解封
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="admin-users-toolbar">
                 <div className="admin-users-search-wrap">
@@ -358,6 +472,13 @@ export default function AdminUserManagement() {
                                             <span className="admin-users-label">{t.profile.admin.users.labelLastLogin}</span>
                                             <span className="admin-users-value">{formatDateTime(user.last_login)}</span>
                                         </div>
+                                        <div className="admin-users-item admin-users-item-ip">
+                                            <span className="admin-users-label">
+                                                最近 IP
+                                                {user.isIpBanned && <span className="admin-users-ip-badge">已封禁</span>}
+                                            </span>
+                                            <span className="admin-users-value">{user.lastIp || '—'}</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -368,6 +489,14 @@ export default function AdminUserManagement() {
                                         disabled={isAdmin}
                                     >
                                         {user.is_banned ? t.profile.admin.users.btnUnban : t.profile.admin.users.btnBan}
+                                    </button>
+                                    <button
+                                        className={`admin-users-btn ${user.isIpBanned ? 'ip-banned-btn' : 'ip-ban-btn'}`}
+                                        onClick={() => handleBanIP(user)}
+                                        disabled={isAdmin || !user.lastIp}
+                                        title={user.lastIp ? (user.isIpBanned ? '该 IP 已封禁 - 点击查看列表' : `封禁此 IP: ${user.lastIp}`) : '该用户尚无 IP 记录'}
+                                    >
+                                        {user.isIpBanned ? '已封禁 IP' : '封禁此 IP'}
                                     </button>
                                     <button
                                         className={`admin-users-btn ${user.is_staff ? 'demote-btn' : 'promote-btn'}`}
@@ -716,6 +845,136 @@ export default function AdminUserManagement() {
 
                 .admin-users-btn.demote-btn:hover:not(:disabled) {
                     background: rgba(139, 92, 246, 0.18);
+                }
+
+                .admin-users-btn.ip-ban-btn {
+                    color: #c2410c;
+                    background: rgba(249, 115, 22, 0.1);
+                    border-color: rgba(249, 115, 22, 0.28);
+                }
+                .admin-users-btn.ip-ban-btn:hover:not(:disabled) {
+                    background: rgba(249, 115, 22, 0.2);
+                }
+                .admin-users-btn.ip-banned-btn {
+                    color: #7f1d1d;
+                    background: rgba(239, 68, 68, 0.14);
+                    border-color: rgba(239, 68, 68, 0.32);
+                }
+                .admin-users-btn.ip-add-btn {
+                    width: auto;
+                    padding: 8px 14px;
+                    color: #0d9488;
+                    background: rgba(13, 148, 136, 0.08);
+                    border-color: rgba(13, 148, 136, 0.28);
+                }
+                .admin-users-btn.ip-unban-btn {
+                    width: auto;
+                    padding: 6px 14px;
+                    color: #0f766e;
+                    background: rgba(13, 148, 136, 0.1);
+                    border-color: rgba(13, 148, 136, 0.28);
+                    font-size: 0.8rem;
+                }
+
+                .admin-users-stat-btn {
+                    cursor: pointer;
+                    background: rgba(249, 115, 22, 0.08);
+                    color: #c2410c;
+                    border-color: rgba(249, 115, 22, 0.28);
+                    font-family: inherit;
+                }
+                .admin-users-stat-btn:hover {
+                    background: rgba(249, 115, 22, 0.18);
+                }
+
+                .admin-users-ip-badge {
+                    display: inline-block;
+                    margin-left: 6px;
+                    padding: 1px 6px;
+                    border-radius: 999px;
+                    background: rgba(239, 68, 68, 0.12);
+                    color: #b91c1c;
+                    font-size: 0.66rem;
+                    font-weight: 700;
+                }
+
+                .admin-users-item-ip .admin-users-value {
+                    font-family: 'JetBrains Mono', ui-monospace, monospace;
+                    font-size: 0.8rem;
+                }
+
+                .admin-banned-ips-panel {
+                    border: 1px solid rgba(249, 115, 22, 0.25);
+                    background: rgba(255, 247, 237, 0.65);
+                    border-radius: 14px;
+                    padding: 16px 20px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                .admin-banned-ips-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                }
+                .admin-banned-ips-header h3 {
+                    margin: 0;
+                    color: #9a3412;
+                    font-size: 1rem;
+                }
+                .admin-banned-ips-empty {
+                    text-align: center;
+                    color: #9a3412;
+                    opacity: 0.75;
+                    font-size: 0.88rem;
+                    padding: 12px 0;
+                }
+                .admin-banned-ips-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+                .admin-banned-ips-row {
+                    display: grid;
+                    grid-template-columns: 1fr auto auto;
+                    gap: 12px;
+                    align-items: center;
+                    padding: 10px 14px;
+                    background: rgba(255, 255, 255, 0.85);
+                    border: 1px solid rgba(249, 115, 22, 0.2);
+                    border-radius: 10px;
+                }
+                .admin-banned-ips-main {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    min-width: 0;
+                }
+                .admin-banned-ips-ip {
+                    font-family: 'JetBrains Mono', ui-monospace, monospace;
+                    font-weight: 700;
+                    color: #0f172a;
+                }
+                .admin-banned-ips-reason {
+                    font-size: 0.82rem;
+                    color: #64748b;
+                }
+                .admin-banned-ips-meta {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    color: #64748b;
+                    font-size: 0.78rem;
+                    text-align: right;
+                }
+                @media (max-width: 640px) {
+                    .admin-banned-ips-row {
+                        grid-template-columns: 1fr;
+                    }
+                    .admin-banned-ips-meta {
+                        text-align: left;
+                    }
                 }
 
                 .admin-users-state {

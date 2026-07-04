@@ -27,9 +27,12 @@ export default function ChartPracticePage() {
 
     const [searchParams] = useSearchParams();
     const type = searchParams.get('type') || 'line';
+    const imageMode = (searchParams.get('image_mode') || '').toLowerCase() === 'raster' ? 'raster' : 'svg';
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
-    const cacheKey = bankId ? `writing_task1_chart_bank_${bankId}` : `writing_task1_chart_session_${type}`;
+    const cacheKey = bankId
+        ? `writing_task1_chart_bank_${bankId}`
+        : `writing_task1_chart_session_${type}_${imageMode}`;
 
     const [step, setStep] = useState<WritingStep>('loading');
     const [chartData, setChartData] = useState<ChartData | null>(null);
@@ -131,9 +134,11 @@ export default function ChartPracticePage() {
         async function fetchChart() {
             setStep('loading');
             try {
+                const body: Record<string, unknown> = { type };
+                if (type === 'map') body.image_mode = imageMode;
                 const res = await api<ChartData & { aiQuestionId?: number | null }>('/writing/chart/generate', {
                     method: 'POST',
-                    body: { type },
+                    body,
                 });
                 sessionStorage.removeItem(cacheKey);
                 showToast(translations[lang].aiBank.toastGeneratedSaved, 'success');

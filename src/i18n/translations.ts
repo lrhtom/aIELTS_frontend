@@ -215,26 +215,69 @@ export interface Translations {
         heading: string;
         subheading: string;
         targetScore: string;
+        modeToggle: {
+            label: string;
+            single: string;
+            full: string;
+        };
         questionType: {
             label: string;
-            multipleChoice: {
-                title: string;
-                desc: string;
+            groups: {
+                choice: string;
+                judgement: string;
+                matching: string;
+                completion: string;
             };
-            trueFalse: {
-                title: string;
-                desc: string;
-            };
+            multipleChoice: { title: string; desc: string };
+            trueFalse: { title: string; desc: string };
+            yesNo: { title: string; desc: string };
+            matchingHeadings: { title: string; desc: string };
+            matchingInfo: { title: string; desc: string };
+            matchingFeatures: { title: string; desc: string };
+            matchingSentence: { title: string; desc: string };
+            sentenceCompletion: { title: string; desc: string };
+            summaryCompletion: { title: string; desc: string };
+            noteCompletion: { title: string; desc: string };
+            shortAnswer: { title: string; desc: string };
         };
         judgementMode: {
             label: string;
-            easy: {
-                title: string;
-                desc: string;
+            easy: { title: string; desc: string };
+            normal: { title: string; desc: string };
+        };
+        wordCount: {
+            label: string;
+            min: string;
+            max: string;
+            hintExact: string;
+            hintRange: string;
+        };
+        topic: {
+            label: string;
+            desc: string;
+            random: string;
+            list: Record<string, string>;
+        };
+        fullTest: {
+            title: string;
+            desc: string;
+            summary: string;
+            startBtn: string;
+            scope: {
+                label: string;
+                all: string;
+                single: string;
             };
-            normal: {
-                title: string;
+            singlePassage: {
+                label: string;
+                p1: string;
+                p2: string;
+                p3: string;
+            };
+            singleMix: {
+                label: string;
                 desc: string;
+                clear: string;
             };
         };
         customVocab: {
@@ -430,12 +473,53 @@ export interface Translations {
         backToAI: string;
         heading: string;
         subheading: string;
+        modeToggle: {
+            label: string;
+            single: string;
+            full: string;
+        };
         practiceType: {
             label: string;
+            groups: {
+                completion: string;
+                choice: string;
+                matching: string;
+                other: string;
+            };
             article: { title: string; desc: string };
             sentence: { title: string; desc: string };
             multipleChoice: { title: string; desc: string };
             mapLabelling: { title: string; desc: string };
+            form: { title: string; desc: string };
+            table: { title: string; desc: string };
+            flowchart: { title: string; desc: string };
+            matching: { title: string; desc: string };
+            shortAnswer: { title: string; desc: string };
+        };
+        scenario: {
+            label: string;
+            desc: string;
+            random: string;
+            list: Record<string, string>;
+            sectionLabels: { s1: string; s2: string; s3: string; s4: string };
+        };
+        fullTest: {
+            title: string;
+            desc: string;
+            summary: string;
+            startBtn: string;
+            scope: {
+                label: string;
+                all: string;
+                single: string;
+            };
+            singleSection: {
+                label: string;
+                s1: string;
+                s2: string;
+                s3: string;
+                s4: string;
+            };
         };
         targetScore: string;
         wordCount: {
@@ -570,6 +654,25 @@ export interface Translations {
         beta: string;
         startBtn: string;
         comingSoon: string;
+        mapMode: {
+            heading: string;
+            subheading: string;
+            svg: {
+                badge: string;
+                title: string;
+                summary: string;
+                bullets: string[];
+                cost: string;
+            };
+            raster: {
+                badge: string;
+                title: string;
+                summary: string;
+                bullets: string[];
+                cost: string;
+            };
+            differencesTitle: string;
+        };
     };
     chartSelection: {
         backToHub: string;

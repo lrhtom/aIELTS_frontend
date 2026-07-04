@@ -1,12 +1,34 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { createListeningState } from '../../store/listen_page_store';
-import type { VocabItem, ListeningData, MapLandmark, MapDecoration } from '../../store/listen_page_store';
+import type {
+    VocabItem,
+    ListeningData,
+    LegacyListeningData,
+    MapLandmark,
+    MapDecoration,
+    FormListeningData,
+    TableListeningData,
+    FlowchartListeningData,
+    ShortAnswerListeningData,
+    MatchingListeningData,
+    FullListeningData,
+    FullListeningSection,
+} from '../../store/listen_page_store';
 import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import { sanitize } from '../../utils/safe_html';
+import {
+    FormRenderer,
+    TableRenderer,
+    FlowchartRenderer,
+    ShortAnswerRenderer,
+    MatchingRenderer,
+    NoteRenderer,
+    scoreListeningQuestions,
+} from '../../components/listening/ListeningQuestionRenderer';
 import '../../styles/listening_page.css';
 import '../../styles/reading_page.css';
 
@@ -44,7 +66,15 @@ export default function ListeningPage() {
     const difficulty: string = state?.difficulty ?? '7.0';
     const wordCountMin: number = state?.wordCountMin ?? 1;
     const wordCountMax: number = state?.wordCountMax ?? 2;
-    const practiceType: 'article' | 'sentence' | 'multiple_choice' | 'map' = state?.practiceType ?? 'article';
+    const practiceType: string = state?.practiceType ?? 'article';
+    const mode: 'single' | 'full' = state?.mode === 'full' ? 'full' : 'single';
+    const scenario: string = state?.scenario ?? 'random';
+    const scenarioS1: string = state?.scenarioS1 ?? 'random';
+    const scenarioS2: string = state?.scenarioS2 ?? 'random';
+    const scenarioS3: string = state?.scenarioS3 ?? 'random';
+    const scenarioS4: string = state?.scenarioS4 ?? 'random';
+    const fullScope: 'all' | 'single' = state?.fullScope === 'single' ? 'single' : 'all';
+    const sectionNum: number | undefined = state?.sectionNum;
     const navigate = useNavigate();
     const onReturnHome = () => navigate(bankId ? '/practice/ai/bank' : '/');
     const { translations: t } = useLang();
@@ -80,6 +110,14 @@ export default function ListeningPage() {
     const [controlsHidden, setControlsHidden] = useState<boolean>(
         () => localStorage.getItem(CONTROLS_HIDDEN_KEY) === 'true',
     );
+
+    // ── Answer helpers for v2 renderers (must be declared BEFORE any early
+    // return so the hook order stays stable across renders — see Rules of Hooks). ──
+    const getAnswer = useCallback((qid: number) => userAnswersRef.current[qid] || '', []);
+    const setAnswerV2 = useCallback((qid: number, value: string) => {
+        userAnswersRef.current[qid] = value;
+        setRenderTick(t => t + 1);
+    }, []);
 
     const formatAudioTime = (secs: number): string => {
         if (!isFinite(secs) || secs < 0) return '0:00';
@@ -188,7 +226,36 @@ export default function ListeningPage() {
         set('isLoading', true);
         try {
             const detail = await getAIQuestion(id);
-            const content = (detail.content || {}) as Partial<ListeningData>;
+            const content = (detail.content || {}) as Partial<ListeningData> & Partial<FullListeningData>;
+            const isFull = content.type === 'full' || Array.isArray((content as FullListeningData).sections);
+            if (isFull) {
+                const fullContent = content as FullListeningData;
+                if (!Array.isArray(fullContent.sections) || fullContent.sections.length === 0) {
+                    showToast(t.listeningDetails.toastContentMissing, 'error');
+                    navigate('/practice/ai/bank');
+                    return;
+                }
+                setSt(s => ({
+                    ...s,
+                    listeningData: fullContent,
+                    activeSection: (fullContent.sections[0]?.sectionNum || 1) as 1 | 2 | 3 | 4,
+                    vocabList: [],
+                    isLoading: false,
+                    isRightOpen: true,
+                    step: 2,
+                }));
+                const saved = (detail.userAnswer || null) as Record<number, string> | null;
+                if (saved && typeof saved === 'object') {
+                    userAnswersRef.current = { ...saved };
+                    setSt(s => ({ ...s, step: 3 }));
+                } else {
+                    userAnswersRef.current = {};
+                }
+                setAudioLoading(true);
+                await fetchAudioForPassage(fullContent.sections[0]?.passage || '');
+                setAudioLoading(false);
+                return;
+            }
             if (!content.passage || !Array.isArray(content.questions)) {
                 showToast(t.listeningDetails.toastContentMissing, 'error');
                 navigate('/practice/ai/bank');
@@ -213,7 +280,7 @@ export default function ListeningPage() {
             }
 
             setAudioLoading(true);
-            await fetchAudioForPassage(listeningData.passage);
+            await fetchAudioForPassage((listeningData as LegacyListeningData).passage || '');
             setAudioLoading(false);
         } catch (err: unknown) {
             console.error('Bank load error:', err);
@@ -250,19 +317,28 @@ export default function ListeningPage() {
         const words = parsedList.map(v => v.word);
 
         try {
-            const parsedData = await api<ListeningData & { aiQuestionId?: number | null }>('/listening/generate', {
-                method: 'POST',
-                body: { words, difficulty, wordCountMin, wordCountMax, practiceType, absurdMode },
-            });
-
-            // 前端防御：确保 questions 存在
-            if (!parsedData.questions || parsedData.questions.length === 0) {
-                showToast(t.listeningDetails.noQuestions, 'error');
-                onReturnHome();
-                return;
+            // Backend now returns 202 { aiQuestionId, status: 'generating', title } instantly.
+            // We navigate straight to the AI bank; the "generating" card shows there until
+            // the background thread flips status → 'ready'.
+            let parsedData: { aiQuestionId?: number | null; status?: string };
+            if (mode === 'full') {
+                const body: Record<string, unknown> = {
+                    difficulty,
+                    absurdMode,
+                    scenarioS1,
+                    scenarioS2,
+                    scenarioS3,
+                    scenarioS4,
+                };
+                if (fullScope === 'single' && sectionNum) body.sectionNum = sectionNum;
+                parsedData = await api('/listening/full', { method: 'POST', body });
+            } else {
+                parsedData = await api('/listening/generate', {
+                    method: 'POST',
+                    body: { words, difficulty, wordCountMin, wordCountMax, practiceType, absurdMode, scenario },
+                });
             }
 
-            // 生成成功后跳转到 AI 题库，由用户在题库内挑题作答
             sessionStorage.removeItem(CACHE_KEY);
             const justId = parsedData.aiQuestionId ?? null;
             showToast(t.aiBank.toastGeneratedSaved, 'success');
@@ -441,11 +517,35 @@ export default function ListeningPage() {
         );
     }
 
+    // Fetch a new audio for the given passage (used when full-test section changes)
+    const switchFullSection = async (sn: 1 | 2 | 3 | 4) => {
+        if (!st.listeningData || st.listeningData.type !== 'full') return;
+        const sec = st.listeningData.sections.find(s => s.sectionNum === sn);
+        if (!sec) return;
+        set('activeSection', sn);
+        setTtsStarted(false);
+        setTtsSpeaking(false);
+        if (audioRef.current) audioRef.current.pause();
+        setAudioLoading(true);
+        try {
+            await fetchAudioForPassage(sec.passage);
+        } finally {
+            setAudioLoading(false);
+        }
+    };
+
     // Practice Page
     if (st.step === 2 && st.listeningData) {
+        const isFull = st.listeningData.type === 'full';
         const isArticleMode = st.listeningData.type === 'article';
         const isMultipleChoiceMode = st.listeningData.type === 'multiple_choice';
         const isMapMode = st.listeningData.type === 'map';
+        // v2 new types
+        const isFormMode = st.listeningData.type === 'form';
+        const isTableMode = st.listeningData.type === 'table';
+        const isFlowchartMode = st.listeningData.type === 'flowchart';
+        const isShortAnswerMode = st.listeningData.type === 'short_answer';
+        const isMatchingMode = st.listeningData.type === 'matching';
 
         // 去除原文所有的 ** 标记（考试呈现时不需要加粗高亮）
         const removeMarkdown = (text: string) => {
@@ -752,7 +852,120 @@ export default function ListeningPage() {
                     </div>
 
                     <div className="listening-content-area" id="listeningContent">
-                        {isMapMode ? renderMapMode() : isArticleMode ? renderArticleMode() : isMultipleChoiceMode ? renderMultipleChoiceMode() : renderSentenceMode()}
+                        {/* Full-test: section tabs + delegate rendering per section */}
+                        {isFull && (() => {
+                            const fullData = st.listeningData as FullListeningData;
+                            const activeSec = fullData.sections.find(s => s.sectionNum === st.activeSection) || fullData.sections[0];
+                            const offset = ((activeSec.sectionNum || 1) - 1) * 10;
+                            return (
+                                <>
+                                    {fullData.sections.length > 1 && (
+                                        <div className="passage-tabs">
+                                            {fullData.sections.map(sec => (
+                                                <button
+                                                    key={sec.sectionNum}
+                                                    className={`passage-tab ${st.activeSection === sec.sectionNum ? 'active' : ''}`}
+                                                    onClick={() => switchFullSection(sec.sectionNum)}
+                                                >
+                                                    Section {sec.sectionNum}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="full-section-block">
+                                        <h4 className="full-section-heading">Section {activeSec.sectionNum} — {activeSec.title}</h4>
+                                        {activeSec.sectionType === 'form' && (
+                                            <FormRenderer
+                                                data={{ form_intro: activeSec.form_intro, form_content: activeSec.form_content || '', questions: activeSec.questions as { id: number; answers?: string[]; explanation?: string }[] }}
+                                                getAnswer={getAnswer}
+                                                onAnswer={setAnswerV2}
+                                                sectionOffset={offset}
+                                            />
+                                        )}
+                                        {activeSec.sectionType === 'note' && (
+                                            <NoteRenderer
+                                                data={{ note_intro: activeSec.note_intro, note_content: activeSec.note_content || '', questions: activeSec.questions as { id: number; answers?: string[] }[] }}
+                                                getAnswer={getAnswer}
+                                                onAnswer={setAnswerV2}
+                                                sectionOffset={offset}
+                                            />
+                                        )}
+                                        {activeSec.sectionType === 'mixed' && activeSec.subsections?.map((sub, i) => (
+                                            <div key={i} className="mixed-subsection">
+                                                {sub.instructions && <p className="section-instructions">{sub.instructions}</p>}
+                                                {sub.type === 'multiple_choice' && sub.questions.map(q => {
+                                                    const mcq = q as { id: number; question: string; options: Record<string, string>; answer: string };
+                                                    return (
+                                                        <div key={mcq.id} className="question-block">
+                                                            <div className="question-text">{mcq.id}. {mcq.question}</div>
+                                                            {mcq.options && Object.entries(mcq.options).map(([k, v]) => (
+                                                                <label key={k} className="option-label">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name={`q-${mcq.id}`}
+                                                                        value={k}
+                                                                        checked={getAnswer(mcq.id) === k}
+                                                                        onChange={() => setAnswerV2(mcq.id, k)}
+                                                                    />
+                                                                    <strong>{k}.</strong> <span>{v}</span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    );
+                                                })}
+                                                {sub.type === 'matching' && (
+                                                    <MatchingRenderer
+                                                        data={{
+                                                            type: 'matching',
+                                                            title: '',
+                                                            passage: '',
+                                                            options_bank: sub.options_bank || {},
+                                                            questions: sub.questions as MatchingListeningData['questions'],
+                                                        }}
+                                                        getAnswer={getAnswer}
+                                                        onAnswer={setAnswerV2}
+                                                    />
+                                                )}
+                                                {sub.type === 'map' && (
+                                                    <div className="section-map-block">
+                                                        <p style={{ fontSize: 13, opacity: 0.7 }}>Map labelling (5 items). Use dropdowns below.</p>
+                                                        {sub.questions.map(q => {
+                                                            const mq = q as { id: number; answer: string };
+                                                            return (
+                                                                <div key={mq.id} className="question-block">
+                                                                    <div className="question-text">Location {mq.id}</div>
+                                                                    <select
+                                                                        className="match-select"
+                                                                        value={getAnswer(mq.id)}
+                                                                        onChange={e => setAnswerV2(mq.id, e.target.value)}
+                                                                    >
+                                                                        <option value="">--</option>
+                                                                        {(sub.options || []).map(opt => {
+                                                                            const letter = opt.split('.')[0]?.trim() || '';
+                                                                            return <option key={letter} value={letter}>{opt}</option>;
+                                                                        })}
+                                                                    </select>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            );
+                        })()}
+
+                        {/* Legacy 4 types (unchanged) */}
+                        {!isFull && (isMapMode ? renderMapMode() : isArticleMode ? renderArticleMode() : isMultipleChoiceMode ? renderMultipleChoiceMode() :
+                            /* v2 new types */
+                            isFormMode ? <FormRenderer data={st.listeningData as FormListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
+                            isTableMode ? <TableRenderer data={st.listeningData as TableListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
+                            isFlowchartMode ? <FlowchartRenderer data={st.listeningData as FlowchartListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
+                            isShortAnswerMode ? <ShortAnswerRenderer data={st.listeningData as ShortAnswerListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
+                            isMatchingMode ? <MatchingRenderer data={st.listeningData as MatchingListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
+                            renderSentenceMode())}
 
                         <div className="submit-quiz-container" style={{ marginTop: '40px', paddingBottom: '40px' }}>
                             <button onClick={submitQuiz}>{t.readingDetails.submitBtn}</button>
@@ -765,21 +978,35 @@ export default function ListeningPage() {
 
     // Results Page
     if (st.step === 3 && st.listeningData) {
-        let score = 0;
+        const isFullResults = st.listeningData.type === 'full';
         const isMultipleChoiceMode = st.listeningData.type === 'multiple_choice';
         const isMapMode = st.listeningData.type === 'map';
 
-        st.listeningData.questions.forEach((q: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-            const userAns = userAnswersRef.current[q.id] || '';
-            if (isMapMode || isMultipleChoiceMode) {
-                if (userAns.trim().toUpperCase() === q.answer?.trim().toUpperCase()) score++;
-            } else {
-                if (checkAnswer(userAns, q.answers)) score++;
+        // Collect all questions from either legacy single or full sections
+        const allResultQuestions: { id: number; question?: string; answer?: string; answers?: string[]; options?: Record<string, string>; explanation?: string; sectionType?: string; sectionNum?: number }[] = [];
+        if (isFullResults) {
+            const full = st.listeningData as FullListeningData;
+            for (const sec of full.sections) {
+                for (const q of sec.questions) {
+                    const qq = q as { id: number; question?: string; answer?: string; answers?: string[]; options?: Record<string, string>; explanation?: string };
+                    allResultQuestions.push({ ...qq, sectionType: sec.sectionType, sectionNum: sec.sectionNum });
+                }
             }
-        });
-        const total = st.listeningData.questions.length;
-        const pct = Math.round((score / total) * 100);
-        const passageParagraphs = st.listeningData.passage.split('\n\n');
+        } else {
+            for (const q of (st.listeningData as LegacyListeningData).questions) {
+                allResultQuestions.push(q as { id: number; question?: string; answer?: string; answers?: string[]; options?: Record<string, string>; explanation?: string });
+            }
+        }
+
+        // Score all types
+        const { correct: score } = scoreListeningQuestions(allResultQuestions, id => userAnswersRef.current[id] || '');
+        const total = allResultQuestions.length;
+        const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+        // Concatenate passages for the "show passage" sidebar
+        const passageText = isFullResults
+            ? (st.listeningData as FullListeningData).sections.map(s => `[Section ${s.sectionNum}] ${s.title}\n\n${s.passage}`).join('\n\n---\n\n')
+            : (st.listeningData as LegacyListeningData).passage;
+        const passageParagraphs = passageText.split('\n\n');
 
         return (
             <div className="results-container">
@@ -833,22 +1060,34 @@ export default function ListeningPage() {
 
                     {/* Analysis Content */}
                     <div className="results-content">
-                        {st.listeningData.questions.map((q: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+                        {allResultQuestions.map(q => {
                             const userAns = userAnswersRef.current[q.id] || 'None';
-                            let isCorrect = false;
+                            const hasOptions = Boolean(q.options && Object.keys(q.options).length > 0);
+                            const hasLetterAnswer = q.answer !== undefined && q.answer !== null && q.answers === undefined;
+                            const hasTextAnswers = Array.isArray(q.answers) && q.answers.length > 0;
 
-                            if (isMultipleChoiceMode) {
-                                isCorrect = userAns.trim().toUpperCase() === q.answer?.trim().toUpperCase();
+                            let isCorrect = false;
+                            if (hasLetterAnswer) {
+                                isCorrect = userAns.trim().toUpperCase() === String(q.answer).trim().toUpperCase();
+                            } else if (hasTextAnswers) {
+                                isCorrect = checkAnswer(userAns, q.answers as string[]);
+                            }
+
+                            // Legacy MCQ / Map special renderings preserved
+                            if ((isMultipleChoiceMode || q.sectionType === 'mixed') && hasOptions) {
                                 return (
                                     <div key={q.id} className="result-block">
-                                        <div className="question-text">{q.id}. {q.question.replace(/\*\*/g, '')}</div>
+                                        <div className="question-text">
+                                            {q.id}. {(q.question || '').replace(/\*\*/g, '')}
+                                            {q.sectionNum !== undefined && <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[Section {q.sectionNum}]</span>}
+                                        </div>
                                         {q.options && Object.entries(q.options).map(([k, v]) => (
                                             <div key={k} style={{
                                                 marginLeft: '12px',
                                                 color: k === q.answer ? '#16a34a' : (k === userAns && !isCorrect ? '#dc2626' : 'inherit'),
-                                                fontWeight: k === q.answer ? 'bold' : 'normal'
+                                                fontWeight: k === q.answer ? 'bold' : 'normal',
                                             }}>
-                                                {k}. {v as string} {k === q.answer ? ' ✓' : (k === userAns && !isCorrect ? ' ✗' : '')}
+                                                {k}. {v} {k === q.answer ? ' ✓' : (k === userAns && !isCorrect ? ' ✗' : '')}
                                             </div>
                                         ))}
                                         <p style={{ marginTop: '12px' }}>
@@ -857,16 +1096,17 @@ export default function ListeningPage() {
                                         <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
                                             {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
                                         </p>
-                                        <div className="explanation">
-                                            <strong>{t.results.explanation}:</strong> {q.explanation}
-                                        </div>
+                                        {q.explanation && (
+                                            <div className="explanation">
+                                                <strong>{t.results.explanation}:</strong> {q.explanation}
+                                            </div>
+                                        )}
                                     </div>
                                 );
-                            } else if (isMapMode) {
-                                isCorrect = userAns.trim().toUpperCase() === q.answer?.trim().toUpperCase();
-                                // 找到对应的选项文字
+                            }
+                            if (isMapMode) {
                                 const mapOptions = st.listeningData && st.listeningData.type === 'map' ? st.listeningData.options : [];
-                                const correctOptText = mapOptions.find((o: string) => o.startsWith(q.answer)) || q.answer;
+                                const correctOptText = mapOptions.find((o: string) => o.startsWith(String(q.answer || ''))) || q.answer;
                                 const userOptText = mapOptions.find((o: string) => o.startsWith(userAns)) || userAns;
                                 return (
                                     <div key={q.id} className="result-block">
@@ -877,26 +1117,34 @@ export default function ListeningPage() {
                                         <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
                                             {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
                                         </p>
-                                        <div className="explanation">
-                                            <strong>{t.results.explanation}:</strong> {q.explanation}
-                                        </div>
-                                    </div>
-                                );
-                            } else {
-                                isCorrect = checkAnswer(userAns, q.answers);
-                                return (
-                                    <div key={q.id} className="result-block">
-                                        <div className="question-text">{q.id}. {q.question.replace(/\*\*/g, '')}</div>
-                                        <p>{t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.acceptableAnswers}: <strong>{q.answers.join(' / ')}</strong></p>
-                                        <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                            {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
-                                        </p>
-                                        <div className="explanation">
-                                            <strong>{t.results.explanation}:</strong> {q.explanation}
-                                        </div>
+                                        {q.explanation && (
+                                            <div className="explanation">
+                                                <strong>{t.results.explanation}:</strong> {q.explanation}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             }
+                            // Default renderer: text answers OR letter matching / summary etc.
+                            return (
+                                <div key={q.id} className="result-block">
+                                    <div className="question-text">
+                                        {q.id}. {(q.question || '').replace(/\*\*/g, '')}
+                                        {q.sectionNum !== undefined && <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[Section {q.sectionNum}]</span>}
+                                    </div>
+                                    <p>
+                                        {t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {hasTextAnswers ? t.results.acceptableAnswers : t.results.correctAnswer}: <strong>{hasTextAnswers ? (q.answers as string[]).join(' / ') : (q.answer || '—')}</strong>
+                                    </p>
+                                    <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
+                                        {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
+                                    </p>
+                                    {q.explanation && (
+                                        <div className="explanation">
+                                            <strong>{t.results.explanation}:</strong> {q.explanation}
+                                        </div>
+                                    )}
+                                </div>
+                            );
                         })}
                     </div>
                 </div>

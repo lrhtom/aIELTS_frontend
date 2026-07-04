@@ -749,3 +749,253 @@
         padding: 16px 20px;
     }
 }
+
+/* ═════════════════════════════════════════════════════════════════
+   v2: 11-type + full-test extensions
+   ═════════════════════════════════════════════════════════════════ */
+
+/* Wrapper that behaves like .main-content but stacks tabs above article.
+   Mirrors .main-content { flex: 1; overflow-y: auto } so the resizer keeps working. */
+.main-content-with-tabs {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.main-content-with-tabs .main-content {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+/* Passage tabs (full-test with 3 passages) */
+.passage-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 20px 0;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    flex-shrink: 0;
+}
+.passage-tab {
+    padding: 8px 20px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: -1px;
+    transition: background 0.15s, color 0.15s;
+}
+.passage-tab:hover {
+    background: rgba(13, 148, 136, 0.05);
+    color: var(--color-primary);
+}
+.passage-tab.active {
+    background: var(--color-bg);
+    border-color: var(--color-border);
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+/* Labelled paragraph marker */
+.labelled-paragraph .para-label {
+    display: inline-block;
+    color: var(--color-primary);
+    font-weight: 700;
+    margin-right: 6px;
+}
+
+/* Section block wrapping questions within a full-test passage */
+.full-section-block {
+    border-left: 3px solid var(--color-primary);
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    background: rgba(13, 148, 136, 0.03);
+    border-radius: 0 8px 8px 0;
+}
+.full-section-heading {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: var(--color-primary);
+    text-transform: capitalize;
+}
+
+/* Instructions banner above a group of questions */
+.section-instructions {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    background: #f1f5f9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-style: italic;
+}
+
+/* Word-limit hint above completion questions */
+.word-limit-hint {
+    font-size: 12px;
+    color: var(--color-primary);
+    font-weight: 600;
+    margin: 0 0 12px 0;
+}
+
+/* Headings / features / endings bank lists */
+.matching-headings-bank,
+.matching-features-bank,
+.summary-word-bank {
+    background: #f8fafc;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+.matching-headings-bank strong,
+.matching-features-bank strong,
+.summary-word-bank strong {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--color-text);
+}
+.matching-headings-bank ul,
+.matching-features-bank ul,
+.summary-word-bank ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.matching-headings-bank li,
+.matching-features-bank li,
+.summary-word-bank li {
+    padding: 4px 0;
+    color: var(--color-text-secondary);
+}
+.hb-roman {
+    display: inline-block;
+    min-width: 28px;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+/* Dropdown for matching-style answers */
+.match-select {
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--color-text);
+    cursor: pointer;
+    min-width: 80px;
+    margin-top: 8px;
+}
+.match-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+}
+.match-select:disabled {
+    background: #f1f5f9;
+    cursor: not-allowed;
+}
+
+/* Text input for completion answers */
+.text-answer-input {
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--color-text);
+    min-width: 180px;
+    margin-top: 8px;
+    width: 100%;
+    max-width: 320px;
+}
+.text-answer-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+}
+.text-answer-input:disabled {
+    background: #f1f5f9;
+    color: var(--color-text-secondary);
+}
+
+/* Summary text (paragraph with (1)(2) blanks) */
+.summary-text {
+    background: white;
+    border: 1px solid var(--color-border);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    line-height: 1.7;
+    font-size: 15px;
+}
+
+/* Note completion structured content */
+.note-content {
+    background: white;
+    border: 1px solid var(--color-border);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-family: 'Consolas', 'Menlo', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    color: var(--color-text);
+    overflow-x: auto;
+}
+
+/* Compact question row for summary/note completion (inline id + input) */
+.question-block-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    margin-bottom: 4px;
+}
+.question-block-compact:hover {
+    background: rgba(13, 148, 136, 0.04);
+    border-radius: 6px;
+}
+.question-inline-id {
+    font-weight: 700;
+    color: var(--color-primary);
+    min-width: 32px;
+}
+
+/* Review-mode verdict pills */
+.review-verdict {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.review-verdict.ok {
+    color: #059669;
+}
+.review-verdict.ng {
+    color: #dc2626;
+}
+.review-verdict-inline {
+    font-size: 13px;
+    font-weight: 600;
+    margin-left: 4px;
+}
+.review-verdict-inline.ok {
+    color: #059669;
+}
+.review-verdict-inline.ng {
+    color: #dc2626;
+}

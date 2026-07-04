@@ -15,6 +15,7 @@ export default function Task1SelectionPage() {
 
     const [selectedType, setSelectedType] = useState<string>('chart');
     const [selectedChart, setSelectedChart] = useState<string>('line');
+    const [selectedMapMode, setSelectedMapMode] = useState<'svg' | 'raster'>('svg');
 
     const taskTypes = [
         { id: 'chart', nameZh: t.task1Selection.types.chart.title, nameEn: t.task1Selection.types.chart.nameEn, icon: '📈', desc: t.task1Selection.types.chart.desc, isBeta: false },
@@ -35,9 +36,10 @@ export default function Task1SelectionPage() {
 
     const selected = taskTypes.find(x => x.id === selectedType) ?? taskTypes[0];
 
-    const goToChartPractice = (subtype: string) => {
+    const goToChartPractice = (subtype: string, extraParams?: Record<string, string>) => {
         sessionStorage.removeItem(`writing_task1_chart_session_${subtype}`);
-        navigate(`/writing/chart/doing?type=${subtype}`);
+        const params = new URLSearchParams({ type: subtype, ...(extraParams || {}) });
+        navigate(`/writing/chart/doing?${params.toString()}`);
     };
 
     const handleStart = () => {
@@ -61,7 +63,11 @@ export default function Task1SelectionPage() {
             return;
         }
 
-        if (selectedType === 'flowchart' || selectedType === 'map') {
+        if (selectedType === 'map') {
+            goToChartPractice('map', { image_mode: selectedMapMode });
+            return;
+        }
+        if (selectedType === 'flowchart') {
             goToChartPractice(selectedType);
             return;
         }
@@ -127,6 +133,89 @@ export default function Task1SelectionPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {selectedType === 'map' && (
+                            <div className="uc-card-group">
+                                <div className="uc-list-row uc-row-vertical">
+                                    <div className="uc-row-label-flex">
+                                        <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <span className="uc-row-icon" style={{ color: '#7c3aed', background: '#ede9fe' }}>🗺️</span>
+                                            <span className="row-title">{t.task1Selection.mapMode.heading}</span>
+                                        </div>
+                                        <span className="row-desc">{t.task1Selection.mapMode.subheading}</span>
+                                    </div>
+                                    <div
+                                        role="radiogroup"
+                                        aria-label={t.task1Selection.mapMode.heading}
+                                        style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                                            gap: 12,
+                                            marginTop: 8,
+                                        }}
+                                    >
+                                        {(['svg', 'raster'] as const).map(mode => {
+                                            const cfg = t.task1Selection.mapMode[mode];
+                                            const active = selectedMapMode === mode;
+                                            return (
+                                                <button
+                                                    key={mode}
+                                                    type="button"
+                                                    role="radio"
+                                                    aria-checked={active}
+                                                    onClick={() => setSelectedMapMode(mode)}
+                                                    style={{
+                                                        textAlign: 'left',
+                                                        padding: '14px 16px',
+                                                        borderRadius: 10,
+                                                        border: active ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                                        background: active ? 'rgba(13,148,136,0.06)' : 'var(--color-surface)',
+                                                        color: 'var(--color-text)',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: 8,
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                        <span style={{
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
+                                                            padding: '3px 8px',
+                                                            borderRadius: 999,
+                                                            background: mode === 'svg' ? '#e0f2fe' : '#fef3c7',
+                                                            color: mode === 'svg' ? '#0369a1' : '#b45309',
+                                                        }}>{cfg.badge}</span>
+                                                        <span style={{ fontWeight: 600 }}>{cfg.title}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                                                        {cfg.summary}
+                                                    </div>
+                                                    <ul style={{
+                                                        margin: '4px 0 0 0',
+                                                        paddingLeft: 18,
+                                                        fontSize: 12,
+                                                        color: 'var(--color-text-secondary)',
+                                                        lineHeight: 1.6,
+                                                    }}>
+                                                        {cfg.bullets.map((b, i) => <li key={i}>{b}</li>)}
+                                                    </ul>
+                                                    <div style={{
+                                                        marginTop: 6,
+                                                        fontSize: 12,
+                                                        fontWeight: 600,
+                                                        color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                                                    }}>
+                                                        💰 {cfg.cost}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {selectedType === 'chart' && (
                             <div className="uc-card-group">

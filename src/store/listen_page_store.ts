@@ -5,18 +5,19 @@ export interface VocabItem {
     meaning: string;
 }
 
+// ── 现有 4 种题型的 Question ──
 export interface ListeningQuestion {
     id: number;
-    question: string;        // 填空题目文本，空格用 _____ 表示
-    answers: string[];       // 多个可接受答案
+    question: string;
+    answers: string[];
     explanation: string;
 }
 
 export interface MultipleChoiceQuestion {
     id: number;
     question: string;
-    options: Record<string, string>; // A, B, C, D
-    answer: string;                  // 正确答案字母
+    options: Record<string, string>;
+    answer: string;
     explanation: string;
 }
 
@@ -24,14 +25,14 @@ export interface ArticleListeningData {
     type: 'article';
     title: string;
     passage: string;
-    blanked_passage: string; // 文章填空模式独有
+    blanked_passage: string;
     questions: ListeningQuestion[];
 }
 
 export interface SentenceListeningData {
     type: 'sentence';
     title: string;
-    passage: string;         // 用于语音合成和结果核对
+    passage: string;
     questions: ListeningQuestion[];
 }
 
@@ -42,8 +43,7 @@ export interface MultipleChoiceListeningData {
     questions: MultipleChoiceQuestion[];
 }
 
-// ─── 地图标注题类型 ─────────────────────────────────────────────────────────
-
+// ── 地图 (保留) ──
 export interface MapLandmark {
     id: string;
     label: string;
@@ -93,15 +93,126 @@ export interface MapListeningData {
     questions: MapQuestion[];
 }
 
-export type ListeningData = ArticleListeningData | SentenceListeningData | MultipleChoiceListeningData | MapListeningData;
+// ── 5 种新题型的 Data ──
+// Form / Table / Flowchart / ShortAnswer 都是 text-answer 类型: 只是 layout 不同
+export interface FormListeningData {
+    type: 'form';
+    title: string;
+    passage: string;
+    scenario?: string;
+    form_intro?: string;
+    form_content: string;
+    questions: ListeningQuestion[];   // answers[]
+}
+
+export interface TableListeningData {
+    type: 'table';
+    title: string;
+    passage: string;
+    scenario?: string;
+    table_intro?: string;
+    table_content: string;
+    questions: ListeningQuestion[];
+}
+
+export interface FlowchartListeningData {
+    type: 'flowchart';
+    title: string;
+    passage: string;
+    scenario?: string;
+    flowchart_intro?: string;
+    flowchart_content: string;
+    questions: ListeningQuestion[];
+}
+
+export interface ShortAnswerListeningData {
+    type: 'short_answer';
+    title: string;
+    passage: string;
+    scenario?: string;
+    short_intro?: string;
+    questions: ListeningQuestion[];    // has question text + answers[]
+}
+
+// Matching: 5 items each mapped to letter A-G
+export interface MatchingListeningItem {
+    id: number;
+    question: string;   // 项目名字
+    answer: string;     // 字母 A-G
+    explanation: string;
+}
+
+export interface MatchingListeningData {
+    type: 'matching';
+    title: string;
+    passage: string;
+    scenario?: string;
+    matching_intro?: string;
+    options_bank: Record<string, string>;
+    questions: MatchingListeningItem[];
+}
+
+export type SingleListeningData =
+    | ArticleListeningData
+    | SentenceListeningData
+    | MultipleChoiceListeningData
+    | MapListeningData
+    | FormListeningData
+    | TableListeningData
+    | FlowchartListeningData
+    | ShortAnswerListeningData
+    | MatchingListeningData;
+
+// ── 综合套题 (4 sections) ──
+export interface SectionSubsection {
+    type: 'multiple_choice' | 'map' | 'matching';
+    instructions?: string;
+    startId: number;
+    endId: number;
+    questions: (MultipleChoiceQuestion | MapQuestion | MatchingListeningItem)[];
+    // 可能出现的字段
+    options?: string[];                         // map: 选项列表 A-H
+    map?: MapData;                              // map
+    options_bank?: Record<string, string>;      // matching
+}
+
+export interface FullListeningSection {
+    sectionNum: 1 | 2 | 3 | 4;
+    sectionType: 'form' | 'mixed' | 'note';
+    title: string;
+    passage: string;
+    scenario?: string;
+    // Section 1: form / Section 4: note — 单题型
+    form_intro?: string;
+    form_content?: string;
+    note_intro?: string;
+    note_content?: string;
+    // Section 2/3: subsections
+    subsections?: SectionSubsection[];
+    // 平铺后的完整题目 (backend 已合并到 flat questions)
+    questions: (ListeningQuestion | MultipleChoiceQuestion | MapQuestion | MatchingListeningItem)[];
+}
+
+export interface FullListeningData {
+    type: 'full';
+    title: string;
+    singleSection: boolean;
+    sections: FullListeningSection[];
+}
+
+export type ListeningData = SingleListeningData | FullListeningData;
+
+// Legacy narrowed union for existing render paths
+export type LegacyListeningData = ArticleListeningData | SentenceListeningData | MultipleChoiceListeningData | MapListeningData;
 
 // ─── Store 初始状态工厂 ────────────────────────────────────────────────────────
 
 export interface ListeningState {
-    step: number;              // 2 = 练习界面, 3 = 结果界面
+    step: number;
     isLoading: boolean;
     vocabList: VocabItem[];
     listeningData: ListeningData | null;
+    activeSection: 1 | 2 | 3 | 4;
     isRightOpen: boolean;
     isPassageOpen: boolean;
 }
@@ -112,6 +223,7 @@ export function createListeningState(): ListeningState {
         isLoading: true,
         vocabList: [],
         listeningData: null,
+        activeSection: 1,
         isRightOpen: true,
         isPassageOpen: false,
     };

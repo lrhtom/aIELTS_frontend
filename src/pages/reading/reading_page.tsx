@@ -1,13 +1,15 @@
 import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { createReadingState } from '../../store/reading_page_store';
-import type { VocabItem, QuizData } from '../../store/reading_page_store';
+import type { VocabItem, QuizData, FullQuizData, FullPassage, FullPassageSection, Question } from '../../store/reading_page_store';
 import type { ReadingQuestionType, ReadingJudgementMode } from '../../store/reading_page_store';
 import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import { sanitize } from '../../utils/safe_html';
+import ReadingQuestionRenderer, { scoreSection } from '../../components/reading/ReadingQuestionRenderer';
+import ReadingPassageBlock from '../../components/reading/ReadingPassageBlock';
 import '../../styles/reading_page.css';
 
 export default function Reading_page() {
@@ -21,8 +23,15 @@ export default function Reading_page() {
     const onReturnHome = () => navigate(bankId ? '/practice/ai/bank' : '/');
     const { translations: t } = useLang();
     const absurdMode: boolean = Boolean(state?.absurdMode);
-    const questionType: ReadingQuestionType = state?.questionType === 'true_false' ? 'true_false' : 'multiple_choice';
+    const mode: 'single' | 'full' = state?.mode === 'full' ? 'full' : 'single';
+    const questionType: ReadingQuestionType = state?.questionType || 'multiple_choice';
     const judgementMode: ReadingJudgementMode = state?.judgementMode === 'easy' ? 'easy' : 'normal';
+    const topic: string = state?.topic || 'random';
+    const wordCountMin: number = state?.wordCountMin ?? 1;
+    const wordCountMax: number = state?.wordCountMax ?? 3;
+    const fullScope: 'all' | 'single' = state?.fullScope === 'single' ? 'single' : 'all';
+    const passageNum: number | undefined = state?.passageNum;
+    const mixTypes: string[] | undefined = Array.isArray(state?.mixTypes) ? state.mixTypes : undefined;
 
     // 用单一 useState 替代 reactive store
     const [st, setSt] = useState(createReadingState);
@@ -73,7 +82,44 @@ export default function Reading_page() {
         set('isLoading', true);
         try {
             const detail = await getAIQuestion(id);
-            const content = (detail.content || {}) as Partial<QuizData>;
+            const content = (detail.content || {}) as Partial<QuizData> & Partial<FullQuizData>;
+            const isFull = content.questionType === 'full' || Array.isArray((content as FullQuizData).passages);
+            if (isFull) {
+                const fullContent = content as FullQuizData;
+                if (!Array.isArray(fullContent.passages) || fullContent.passages.length === 0) {
+                    showToast(t.aiBank.toastMissingContent, 'error');
+                    navigate('/practice/ai/bank');
+                    return;
+                }
+                setSt(s => ({
+                    ...s,
+                    quizData: null,
+                    fullData: {
+                        title: fullContent.title || 'Reading Full Test',
+                        topic: fullContent.topic,
+                        questionType: 'full',
+                        singlePassage: Boolean(fullContent.singlePassage),
+                        passages: fullContent.passages,
+                    },
+                    activePassage: fullContent.passages[0]?.passageNum ?? 1,
+                    vocabList: [],
+                    isLoading: false,
+                    searchQuery: '',
+                    isLeftOpen: false,
+                    isRightOpen: true,
+                    startTime: Date.now(),
+                    elapsedSeconds: 0,
+                    step: 2,
+                }));
+                const saved = (detail.userAnswer || null) as Record<number, string> | null;
+                if (saved && typeof saved === 'object') {
+                    userAnswersRef.current = { ...saved };
+                    setSt(s => ({ ...s, step: 3 }));
+                } else {
+                    userAnswersRef.current = {};
+                }
+                return;
+            }
             if (!content.passage || !Array.isArray(content.questions)) {
                 showToast(t.aiBank.toastMissingContent, 'error');
                 navigate('/practice/ai/bank');
@@ -85,10 +131,23 @@ export default function Reading_page() {
                 questions: content.questions,
                 questionType: content.questionType || 'multiple_choice',
                 judgementMode: content.judgementMode ?? null,
+                topic: content.topic,
+                headings_bank: content.headings_bank,
+                paragraph_labels: content.paragraph_labels,
+                features_bank: content.features_bank,
+                endings_bank: content.endings_bank,
+                summary_intro: content.summary_intro,
+                summary_text: content.summary_text,
+                word_bank: content.word_bank,
+                note_intro: content.note_intro,
+                note_content: content.note_content,
+                layout: content.layout,
+                wordLimit: content.wordLimit,
             } as QuizData;
             setSt(s => ({
                 ...s,
                 quizData: normalizedQuizData,
+                fullData: null,
                 vocabList: [],
                 isLoading: false,
                 searchQuery: '',
@@ -135,13 +194,37 @@ export default function Reading_page() {
         const words = parsedList.map(v => v.word);
 
         try {
-            // 调用后端 API，不再直接调 AI
-            const parsedData = await api<QuizData & { aiQuestionId?: number | null }>('/reading/generate', {
-                method: 'POST',
-                body: { words, difficulty, absurdMode, questionType, judgementMode },
-            });
+            // Backend returns 202 { aiQuestionId, status: 'generating' } instantly and runs
+            // the AI call on a background daemon thread. We navigate straight to the bank —
+            // the row shows as a "generating" card until the worker flips status → 'ready'.
+            let parsedData: { aiQuestionId?: number | null; status?: string };
+            if (mode === 'full') {
+                const body: Record<string, unknown> = {
+                    difficulty,
+                    absurdMode,
+                    topic,
+                };
+                if (fullScope === 'single' && passageNum) {
+                    body.passageNum = passageNum;
+                    if (mixTypes && mixTypes.length > 0) body.mixTypes = mixTypes;
+                }
+                parsedData = await api('/reading/full', { method: 'POST', body });
+            } else {
+                parsedData = await api('/reading/generate', {
+                    method: 'POST',
+                    body: {
+                        words,
+                        difficulty,
+                        absurdMode,
+                        questionType,
+                        judgementMode,
+                        topic,
+                        wordCountMin,
+                        wordCountMax,
+                    },
+                });
+            }
 
-            // 生成成功后直接跳转到 AI 题库，由用户在题库内挑题作答
             sessionStorage.removeItem(CACHE_KEY);
             const justId = parsedData.aiQuestionId ?? null;
             showToast(t.aiBank.toastGeneratedSaved, 'success');
@@ -383,48 +466,72 @@ export default function Reading_page() {
         };
     }, [st.step, st.isPassageOpen]);
 
+    // Answer helpers used by the renderer
+    const [answerVersion, setAnswerVersion] = useState(0);
+    const getAnswer = useCallback((qid: number) => userAnswersRef.current[qid] || '', []);
+    const setAnswer = useCallback((qid: number, value: string) => {
+        userAnswersRef.current[qid] = value;
+        setAnswerVersion(v => v + 1);
+    }, []);
+
+    // Active passage for full-test view
+    const activePassageData: FullPassage | null = st.fullData
+        ? (st.fullData.passages.find(p => p.passageNum === st.activePassage) || st.fullData.passages[0] || null)
+        : null;
+
     // Memoized Blocks
     const articleMemoBlock = useMemo(() => {
-        if (!st.quizData) return null;
-        const passageParagraphs = st.quizData.passage.split('\n\n');
+        const showTabs = Boolean(st.fullData && st.fullData.passages.length > 1);
+        const inner = st.fullData && activePassageData
+            ? <ReadingPassageBlock title={activePassageData.title} passage={activePassageData.passage} />
+            : (st.quizData ? <ReadingPassageBlock title={st.quizData.title} passage={st.quizData.passage} /> : null);
+        if (!inner) return null;
+        if (!showTabs) return inner;
+        // In full-test mode with multiple passages: prepend tabs inside the article column.
         return (
-            <div className="main-content">
-                <h2 style={{ marginTop: 0 }} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(st.quizData.title)) }}></h2>
-                <div
-                    id="articleContent"
-                    style={{ outline: 'none', WebkitTouchCallout: 'none' }}
-                    onContextMenu={(e) => e.preventDefault()}
-                >
-                    {passageParagraphs.map((p, idx) => (
-                        <p key={idx} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(p)) }}></p>
+            <div className="main-content-with-tabs">
+                <div className="passage-tabs">
+                    {st.fullData!.passages.map(p => (
+                        <button
+                            key={p.passageNum}
+                            className={`passage-tab ${st.activePassage === p.passageNum ? 'active' : ''}`}
+                            onClick={() => set('activePassage', p.passageNum)}
+                        >
+                            Passage {p.passageNum}
+                        </button>
                     ))}
                 </div>
+                {inner}
             </div>
         );
-    }, [st.quizData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [st.quizData, st.fullData, activePassageData, st.activePassage]);
 
     const questionsMemoBlock = useMemo(() => {
+        // Full-test: render each section for the active passage
+        if (st.fullData && activePassageData) {
+            return (
+                <div id="questionsForm" style={{ outline: 'none' }} onContextMenu={e => e.preventDefault()}>
+                    {activePassageData.sections.map((sec, idx) => (
+                        <div key={idx} className="full-section-block">
+                            <h4 className="full-section-heading">
+                                Questions {sec.startId}-{sec.endId}
+                                <span style={{ marginLeft: 8, opacity: 0.7, fontWeight: 400 }}>{sec.questionType.replace(/_/g, ' ')}</span>
+                            </h4>
+                            <ReadingQuestionRenderer section={sec} getAnswer={getAnswer} onAnswer={setAnswer} />
+                        </div>
+                    ))}
+                </div>
+            );
+        }
         if (!st.quizData) return null;
         return (
-            <div id="questionsForm" style={{ outline: 'none', WebkitTouchCallout: 'none' }} onContextMenu={(e) => e.preventDefault()}>
-                {st.quizData.questions.map((q) => (
-                    <div key={q.id} className="question-block">
-                        <div className="question-text" dangerouslySetInnerHTML={{ __html: sanitize(`${q.id}. ${formatHighlight(q.question)}`) }}></div>
-                        {Object.entries(q.options).map(([key, value]) => (
-                            <label key={key} className="option-label">
-                                <input
-                                    type="radio" name={`q${q.id}`} value={key}
-                                    defaultChecked={userAnswersRef.current[q.id] === key}
-                                    onChange={() => { userAnswersRef.current[q.id] = key; }}
-                                />
-                                <strong>{key.length === 1 ? `${key}.` : key}</strong> <span dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(value)) }}></span>
-                            </label>
-                        ))}
-                    </div>
-                ))}
+            <div id="questionsForm" style={{ outline: 'none' }} onContextMenu={e => e.preventDefault()}>
+                <ReadingQuestionRenderer section={st.quizData} getAnswer={getAnswer} onAnswer={setAnswer} />
             </div>
         );
-    }, [st.quizData]);
+        // answerVersion in deps to force re-render on answer change
+    }, [st.quizData, st.fullData, activePassageData, getAnswer, setAnswer, answerVersion]);
 
     // Loading State
     if (st.isLoading) {
@@ -438,14 +545,16 @@ export default function Reading_page() {
     }
 
     // Page 2: Reading Interface
-    if (st.step === 2 && st.quizData) {
+    if (st.step === 2 && (st.quizData || st.fullData)) {
         const filteredVocab = st.vocabList.filter(v =>
             v.word.toLowerCase().includes(st.searchQuery.toLowerCase()) ||
             v.meaning.toLowerCase().includes(st.searchQuery.toLowerCase())
         );
-        const questionPanelTitle = st.quizData.questionType === 'true_false'
-            ? (st.quizData.judgementMode === 'easy' ? t.readingDetails.questionsTrueFalseEasy : t.readingDetails.questionsTrueFalseNormal)
-            : t.readingDetails.questionsMcq;
+        const questionPanelTitle = st.fullData
+            ? (st.fullData.singlePassage ? `Full Test — Passage ${st.activePassage}` : 'Full Test')
+            : (st.quizData!.questionType === 'true_false'
+                ? (st.quizData!.judgementMode === 'easy' ? t.readingDetails.questionsTrueFalseEasy : t.readingDetails.questionsTrueFalseNormal)
+                : t.readingDetails.questionsMcq);
 
         return (
             <div className="reading-container">
@@ -531,14 +640,27 @@ export default function Reading_page() {
     }
 
     // Page 3: Results
-    if (st.step === 3 && st.quizData) {
-        let score = 0;
-        st.quizData.questions.forEach(q => {
-            if (userAnswersRef.current[q.id] === q.answer) score++;
-        });
-        const total = st.quizData.questions.length;
-        const pct = Math.round((score / total) * 100);
-        const passageParagraphs = st.quizData.passage.split('\n\n');
+    if (st.step === 3 && (st.quizData || st.fullData)) {
+        // Collect all sections to score
+        const sectionsToScore: (FullPassageSection | QuizData)[] = st.fullData
+            ? st.fullData.passages.flatMap(p => p.sections)
+            : [st.quizData!];
+        let score = 0, total = 0;
+        for (const sec of sectionsToScore) {
+            const r = scoreSection(sec, getAnswer);
+            score += r.correct;
+            total += r.total;
+        }
+        const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+
+        // Which passages to show for the "show passage" sidebar
+        const passageBlocks = st.fullData ? st.fullData.passages : [{ passageNum: 1, title: st.quizData!.title, passage: st.quizData!.passage, topic: st.quizData!.topic, sections: [] as FullPassageSection[] }];
+
+        // Flatten sections into a single review list
+        const allQuestions: Array<{ q: Question; sec: FullPassageSection | QuizData }> = [];
+        for (const sec of sectionsToScore) {
+            for (const q of sec.questions) allQuestions.push({ q, sec });
+        }
 
         return (
             <div className="results-container">
@@ -570,12 +692,9 @@ export default function Reading_page() {
                     {/* Passage Sidebar */}
                     <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="passageSidebar">
                         <h3>{t.results.originalPassage}</h3>
-                        <h4 dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(st.quizData.title)) }}></h4>
-                        <div className="passage-text">
-                            {passageParagraphs.map((p, idx) => (
-                                <p key={idx} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(p)) }}></p>
-                            ))}
-                        </div>
+                        {passageBlocks.map(pb => (
+                            <ReadingPassageBlock key={pb.passageNum} title={pb.title} passage={pb.passage} idPrefix={`passage-${pb.passageNum}`} />
+                        ))}
                     </div>
 
                     {/* Resizer */}
@@ -583,14 +702,20 @@ export default function Reading_page() {
 
                     {/* Analysis Content */}
                     <div className="results-content">
-                        {st.quizData.questions.map(q => {
-                            const userAns = userAnswersRef.current[q.id] || 'None';
-                            const isCorrect = userAns === q.answer;
+                        {allQuestions.map(({ q, sec }) => {
+                            const userAns = getAnswer(q.id) || 'None';
+                            const correctList: string[] = Array.isArray(q.answers) ? q.answers as string[] : (q.answer !== undefined ? [String(q.answer)] : []);
+                            const isCorrect = correctList.some(a => a.trim().toLowerCase() === userAns.trim().toLowerCase());
+                            const correctDisplay = correctList.join(' / ') || '—';
+                            const questionText = q.question || (q.paragraph ? `Paragraph ${q.paragraph}` : '');
 
                             return (
                                 <div key={q.id} className="result-block">
-                                    <div className="question-text">{q.id}. {q.question.replace(/\*\*/g, '')}</div>
-                                    <p>{t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.correctAnswer}: <strong>{q.answer}</strong></p>
+                                    <div className="question-text">
+                                        {q.id}. {questionText.replace(/\*\*/g, '')}
+                                        <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[{sec.questionType.replace(/_/g, ' ')}]</span>
+                                    </div>
+                                    <p>{t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.correctAnswer}: <strong>{correctDisplay}</strong></p>
                                     <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
                                         {isCorrect ? `✅ ${t.results.statusCorrect}` : `❌ ${t.results.statusIncorrect}`}
                                     </p>
