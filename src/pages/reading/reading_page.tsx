@@ -31,6 +31,8 @@ export default function Reading_page() {
     const fullScope: 'all' | 'single' = state?.fullScope === 'single' ? 'single' : 'all';
     const passageNum: number | undefined = state?.passageNum;
     const mixTypes: string[] | undefined = Array.isArray(state?.mixTypes) ? state.mixTypes : undefined;
+    const customName: string = typeof state?.customName === 'string' ? state.customName.trim() : '';
+    const customDescription: string = typeof state?.customDescription === 'string' ? state.customDescription.trim() : '';
 
     // 用单一 useState 替代 reactive store
     const [st, setSt] = useState(createReadingState);
@@ -202,20 +204,25 @@ export default function Reading_page() {
                     body.passageNum = passageNum;
                     if (mixTypes && mixTypes.length > 0) body.mixTypes = mixTypes;
                 }
+                if (customName) body.customName = customName;
+                if (customDescription) body.customDescription = customDescription;
                 parsedData = await api('/reading/full', { method: 'POST', body });
             } else {
+                const body: Record<string, unknown> = {
+                    words,
+                    difficulty,
+                    absurdMode,
+                    questionType,
+                    judgementMode,
+                    topic,
+                    wordCountMin,
+                    wordCountMax,
+                };
+                if (customName) body.customName = customName;
+                if (customDescription) body.customDescription = customDescription;
                 parsedData = await api('/reading/generate', {
                     method: 'POST',
-                    body: {
-                        words,
-                        difficulty,
-                        absurdMode,
-                        questionType,
-                        judgementMode,
-                        topic,
-                        wordCountMin,
-                        wordCountMax,
-                    },
+                    body,
                 });
             }
 
@@ -256,9 +263,13 @@ export default function Reading_page() {
         // Total question count spans full-test passages OR single quiz.
         let totalQuestions = 0;
         if (st.fullData) {
-            for (const p of st.fullData.passages) for (const sec of p.sections) totalQuestions += sec.questions.length;
+            for (const p of (st.fullData.passages || [])) {
+                for (const sec of (p.sections || [])) {
+                    totalQuestions += (sec.questions || []).length;
+                }
+            }
         } else if (st.quizData) {
-            totalQuestions = st.quizData.questions.length;
+            totalQuestions = (st.quizData.questions || []).length;
         } else {
             return;
         }
@@ -477,7 +488,7 @@ export default function Reading_page() {
 
     // Active passage for full-test view
     const activePassageData: FullPassage | null = st.fullData
-        ? (st.fullData.passages.find(p => p.passageNum === st.activePassage) || st.fullData.passages[0] || null)
+        ? ((st.fullData.passages || []).find(p => p.passageNum === st.activePassage) || (st.fullData.passages || [])[0] || null)
         : null;
 
     // Memoized Blocks
@@ -492,7 +503,7 @@ export default function Reading_page() {
         return (
             <div className="main-content-with-tabs">
                 <div className="passage-tabs">
-                    {st.fullData!.passages.map(p => (
+                    {(st.fullData!.passages || []).map(p => (
                         <button
                             key={p.passageNum}
                             className={`passage-tab ${st.activePassage === p.passageNum ? 'active' : ''}`}
@@ -513,11 +524,11 @@ export default function Reading_page() {
         if (st.fullData && activePassageData) {
             return (
                 <div id="questionsForm" style={{ outline: 'none' }} onContextMenu={e => e.preventDefault()}>
-                    {activePassageData.sections.map((sec, idx) => (
+                    {(activePassageData.sections || []).map((sec, idx) => (
                         <div key={idx} className="full-section-block">
                             <h4 className="full-section-heading">
                                 Questions {sec.startId}-{sec.endId}
-                                <span style={{ marginLeft: 8, opacity: 0.7, fontWeight: 400 }}>{sec.questionType.replace(/_/g, ' ')}</span>
+                                <span style={{ marginLeft: 8, opacity: 0.7, fontWeight: 400 }}>{(sec.questionType || '').replace(/_/g, ' ')}</span>
                             </h4>
                             <ReadingQuestionRenderer section={sec} getAnswer={getAnswer} onAnswer={setAnswer} />
                         </div>
@@ -644,7 +655,7 @@ export default function Reading_page() {
     if (st.step === 3 && (st.quizData || st.fullData)) {
         // Collect all sections to score
         const sectionsToScore: (FullPassageSection | QuizData)[] = st.fullData
-            ? st.fullData.passages.flatMap(p => p.sections)
+            ? (st.fullData.passages || []).flatMap(p => p.sections || [])
             : [st.quizData!];
         let score = 0, total = 0;
         for (const sec of sectionsToScore) {
@@ -655,12 +666,12 @@ export default function Reading_page() {
         const pct = total > 0 ? Math.round((score / total) * 100) : 0;
 
         // Which passages to show for the "show passage" sidebar
-        const passageBlocks = st.fullData ? st.fullData.passages : [{ passageNum: 1, title: st.quizData!.title, passage: st.quizData!.passage, topic: st.quizData!.topic, sections: [] as FullPassageSection[] }];
+        const passageBlocks = st.fullData ? (st.fullData.passages || []) : [{ passageNum: 1, title: st.quizData!.title, passage: st.quizData!.passage, topic: st.quizData!.topic, sections: [] as FullPassageSection[] }];
 
         // Flatten sections into a single review list
         const allQuestions: Array<{ q: Question; sec: FullPassageSection | QuizData }> = [];
         for (const sec of sectionsToScore) {
-            for (const q of sec.questions) allQuestions.push({ q, sec });
+            for (const q of (sec.questions || [])) allQuestions.push({ q, sec });
         }
 
         return (
@@ -705,7 +716,9 @@ export default function Reading_page() {
                     <div className="results-content">
                         {allQuestions.map(({ q, sec }) => {
                             const userAns = getAnswer(q.id) || 'None';
-                            const correctList: string[] = Array.isArray(q.answers) ? q.answers as string[] : (q.answer !== undefined ? [String(q.answer)] : []);
+                            const correctList: string[] = Array.isArray(q.answers)
+                                ? (q.answers as unknown[]).map(a => (a == null ? '' : String(a)))
+                                : (q.answer !== undefined ? [String(q.answer)] : []);
                             const isCorrect = correctList.some(a => a.trim().toLowerCase() === userAns.trim().toLowerCase());
                             const correctDisplay = correctList.join(' / ') || '—';
                             const questionText = q.question || (q.paragraph ? `Paragraph ${q.paragraph}` : '');

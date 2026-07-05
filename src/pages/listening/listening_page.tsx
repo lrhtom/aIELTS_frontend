@@ -5,6 +5,7 @@ import type {
     VocabItem,
     ListeningData,
     LegacyListeningData,
+    MapData,
     MapLandmark,
     MapDecoration,
     FormListeningData,
@@ -19,6 +20,7 @@ import { showToast } from '../../components/common/Toast';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import { sanitize } from '../../utils/safe_html';
+import { mapImageSrc } from '../../utils/media';
 import {
     FormRenderer,
     TableRenderer,
@@ -29,6 +31,7 @@ import {
     scoreListeningQuestions,
 } from '../../components/listening/ListeningQuestionRenderer';
 import ListeningMapSVG from '../../components/listening/ListeningMapSVG';
+import MatchingLetterGrid from '../../components/common/MatchingLetterGrid';
 import '../../styles/listening_page.css';
 import '../../styles/reading_page.css';
 
@@ -52,9 +55,10 @@ function normalizeAnswer(ans: string): string {
     return s;
 }
 
-function checkAnswer(userAns: string, acceptableAnswers: string[]): boolean {
+function checkAnswer(userAns: string, acceptableAnswers: unknown): boolean {
+    if (!Array.isArray(acceptableAnswers)) return false;
     const norm = normalizeAnswer(userAns);
-    return acceptableAnswers.some(a => normalizeAnswer(a) === norm);
+    return acceptableAnswers.some(a => normalizeAnswer(String(a ?? '')) === norm);
 }
 
 export default function ListeningPage() {
@@ -75,6 +79,8 @@ export default function ListeningPage() {
     const scenarioS4: string = state?.scenarioS4 ?? 'random';
     const fullScope: 'all' | 'single' = state?.fullScope === 'single' ? 'single' : 'all';
     const sectionNum: number | undefined = state?.sectionNum;
+    const customName: string = typeof state?.customName === 'string' ? state.customName.trim() : '';
+    const customDescription: string = typeof state?.customDescription === 'string' ? state.customDescription.trim() : '';
     const navigate = useNavigate();
     const onReturnHome = () => navigate(bankId ? '/practice/ai/bank' : '/');
     const { translations: t } = useLang();
@@ -357,11 +363,18 @@ export default function ListeningPage() {
                     scenarioS4,
                 };
                 if (fullScope === 'single' && sectionNum) body.sectionNum = sectionNum;
+                if (customName) body.customName = customName;
+                if (customDescription) body.customDescription = customDescription;
                 parsedData = await api('/listening/full', { method: 'POST', body });
             } else {
+                const body: Record<string, unknown> = {
+                    words, difficulty, wordCountMin, wordCountMax, practiceType, absurdMode, scenario,
+                };
+                if (customName) body.customName = customName;
+                if (customDescription) body.customDescription = customDescription;
                 parsedData = await api('/listening/generate', {
                     method: 'POST',
-                    body: { words, difficulty, wordCountMin, wordCountMax, practiceType, absurdMode, scenario },
+                    body,
                 });
             }
 
@@ -601,11 +614,12 @@ export default function ListeningPage() {
 
         // 辅助渲染内联填空
         const renderInlineInput = (qId: number, idx: number) => {
+            // 与阅读 note/summary/sentence completion 共用 .rd-blank-input 样式
             return (
                 <input
                     key={`input-${qId}-${idx}`}
                     type="text"
-                    className="inline-answer-input"
+                    className="rd-blank-input"
                     placeholder={qId.toString()}
                     defaultValue={userAnswersRef.current[qId] || ''}
                     onChange={(e) => { userAnswersRef.current[qId] = e.target.value; }}
@@ -615,11 +629,13 @@ export default function ListeningPage() {
 
         const renderSentenceMode = () => {
             if (st.listeningData?.type !== 'sentence') return null;
-            return st.listeningData.questions.slice(0, 10).map(q => {
+            // 与阅读 sentence_completion 共用 .rd-inline-q-block / .rd-blank-* 样式
+            const qs = Array.isArray(st.listeningData.questions) ? st.listeningData.questions : [];
+            return qs.slice(0, 10).map(q => {
                 const parts = q.question.split('_____');
                 return (
-                    <div key={q.id} className="inline-q-block">
-                        <span className="q-number">{q.id}.</span>
+                    <div key={q.id} className="rd-inline-q-block">
+                        <span className="rd-blank-num">{q.id}.</span>{' '}
                         {parts.map((p: string, i: number) => (
                             <span key={i}>
                                 <span>{removeMarkdown(p)}</span>
@@ -633,7 +649,7 @@ export default function ListeningPage() {
 
         const renderArticleMode = () => {
             if (st.listeningData?.type !== 'article') return null;
-            const textToSplit = st.listeningData.blanked_passage || st.listeningData.passage;
+            const textToSplit = st.listeningData.blanked_passage || st.listeningData.passage || '';
             const paragraphs = textToSplit.split('\n\n');
             let blankCounter = 1;
 
@@ -659,29 +675,30 @@ export default function ListeningPage() {
 
         const renderMultipleChoiceMode = () => {
             if (st.listeningData?.type !== 'multiple_choice') return null;
+            // 与阅读 MCQ 共用 .question-block / .question-text / .option-label 样式
+            const qs = Array.isArray(st.listeningData.questions) ? st.listeningData.questions : [];
             return (
                 <div className="listening-mc-mode" key={`tick-${renderTick}`}>
-                    {st.listeningData.questions.map((q: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
-                        <div key={q.id} className="mc-q-block" style={{ marginBottom: '24px' }}>
-                            <div className="q-number" style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                    {qs.map((q: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
+                        <div key={q.id} className="question-block">
+                            <div className="question-text">
                                 {q.id}. {removeMarkdown(q.question)}
                             </div>
-                            <div className="mc-options" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {Object.entries(q.options || {}).map(([key, optText]) => (
-                                    <label key={key} className="mc-option-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                        <input
-                                            type="radio"
-                                            name={`q-${q.id}`}
-                                            value={key}
-                                            defaultChecked={userAnswersRef.current[q.id] === key}
-                                            onChange={(e) => {
-                                                userAnswersRef.current[q.id] = e.target.value;
-                                            }}
-                                        />
-                                        <span style={{ fontWeight: 600 }}>{key}.</span> <span>{removeMarkdown(optText as string)}</span>
-                                    </label>
-                                ))}
-                            </div>
+                            {Object.entries(q.options || {}).map(([key, optText]) => (
+                                <label key={key} className="option-label">
+                                    <input
+                                        type="radio"
+                                        name={`q-${q.id}`}
+                                        value={key}
+                                        defaultChecked={userAnswersRef.current[q.id] === key}
+                                        onChange={(e) => {
+                                            userAnswersRef.current[q.id] = e.target.value;
+                                        }}
+                                    />
+                                    <strong>{key}.</strong>{' '}
+                                    <span>{removeMarkdown(optText as string)}</span>
+                                </label>
+                            ))}
                         </div>
                     ))}
                 </div>
@@ -691,9 +708,9 @@ export default function ListeningPage() {
         // ─── 地图题模式 ─────────────────────────────────────
         const renderMapMode = () => {
             if (st.listeningData?.type !== 'map') return null;
-            const mapData = st.listeningData.map;
-            const options = st.listeningData.options;
-            const questions = st.listeningData.questions;
+            const mapData = st.listeningData.map || ({} as MapData);
+            const options = Array.isArray(st.listeningData.options) ? st.listeningData.options : [];
+            const questions = Array.isArray(st.listeningData.questions) ? st.listeningData.questions : [];
             const vw = mapData.width || 600;
             const vh = mapData.height || 400;
 
@@ -716,24 +733,20 @@ export default function ListeningPage() {
                 }
             };
 
+            // Reference IELTS format: buildings labelled with letters A-J directly,
+            // no numbered red markers. Legacy questionId falls through to the label
+            // path so old records still render cleanly.
             const renderLandmark = (lm: MapLandmark) => {
-                const isQuestion = lm.questionId != null;
-                if (isQuestion) {
-                    // 编号红色标记圆圈
-                    return (
-                        <g key={lm.id}>
-                            <circle cx={lm.x} cy={lm.y} r={16} fill="#ef4444" opacity={0.9} />
-                            <text x={lm.x} y={lm.y + 5} textAnchor="middle" fontSize={13} fontWeight="bold" fill="white">{lm.questionId}</text>
-                        </g>
-                    );
-                }
-                // 已标注地标
+                const label = String(lm.label ?? '');
+                const isLetter = label.length === 1 && /^[A-Z]$/.test(label);
+                const fontSize = isLetter ? 22 : 11;
+                const fontWeight = isLetter ? 800 : 600;
                 if (lm.shape === 'circle') {
                     const r = lm.r || 25;
                     return (
                         <g key={lm.id}>
-                            <circle cx={lm.x} cy={lm.y} r={r} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={1.5} />
-                            <text x={lm.x} y={lm.y + 4} textAnchor="middle" fontSize={10} fontWeight="600" fill="#334155">{lm.label}</text>
+                            <circle cx={lm.x} cy={lm.y} r={r} fill="white" stroke="#1f2937" strokeWidth={1.5} />
+                            <text x={lm.x} y={lm.y + fontSize / 3} textAnchor="middle" fontSize={fontSize} fontWeight={fontWeight} fill="#1f2937">{label}</text>
                         </g>
                     );
                 }
@@ -741,8 +754,8 @@ export default function ListeningPage() {
                 const h = lm.h || 45;
                 return (
                     <g key={lm.id}>
-                        <rect x={lm.x - w / 2} y={lm.y - h / 2} width={w} height={h} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={1.5} rx={4} />
-                        <text x={lm.x} y={lm.y + 4} textAnchor="middle" fontSize={10} fontWeight="600" fill="#334155">{lm.label}</text>
+                        <rect x={lm.x - w / 2} y={lm.y - h / 2} width={w} height={h} fill="white" stroke="#1f2937" strokeWidth={1.5} rx={2} />
+                        <text x={lm.x} y={lm.y + fontSize / 3} textAnchor="middle" fontSize={fontSize} fontWeight={fontWeight} fill="#1f2937">{label}</text>
                     </g>
                 );
             };
@@ -751,6 +764,25 @@ export default function ListeningPage() {
                 <div className="map-layout">
                     <div className="map-svg-container">
                         <h3 style={{ margin: '0 0 8px 0', color: '#0f172a' }}>🗺️ {mapData.name}</h3>
+                        {(() => {
+                            const resolvedSrc = mapImageSrc(mapData.imagePath, mapData.imageUrl);
+                            return resolvedSrc ? (
+                                // FLUX.2-pro rendered map — bypass the SVG landmark
+                                // render entirely so users see the real map image.
+                                <img
+                                    src={resolvedSrc}
+                                    alt={mapData.name || 'Listening map'}
+                                    style={{
+                                        width: '100%',
+                                        height: 'auto',
+                                        display: 'block',
+                                        borderRadius: 8,
+                                        border: '1px solid var(--color-border)',
+                                        background: '#fefce8',
+                                    }}
+                                />
+                            ) : null;
+                        })() || (
                         <svg viewBox={`0 0 ${vw} ${vh}`} className="map-svg">
                             {/* Background */}
                             <rect width={vw} height={vh} fill="#fefce8" rx={8} />
@@ -764,50 +796,75 @@ export default function ListeningPage() {
                             {/* Decorations */}
                             {mapData.decorations?.map((d, i) => renderDecoration(d, i))}
                             {/* Paths */}
-                            {mapData.paths?.map((p, i) => (
-                                <g key={`path-${i}`}>
-                                    <polyline
-                                        points={p.points.map(pt => pt.join(',')).join(' ')}
-                                        fill="none" stroke="#94a3b8" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
-                                    />
-                                    {p.label && p.points.length >= 2 && (
-                                        <text
-                                            x={(p.points[0][0] + p.points[1][0]) / 2}
-                                            y={(p.points[0][1] + p.points[1][1]) / 2 - 6}
-                                            textAnchor="middle" fontSize={9} fill="#6b7280" fontStyle="italic"
-                                        >{p.label}</text>
-                                    )}
-                                </g>
-                            ))}
+                            {mapData.paths?.map((p, i) => {
+                                const pts = Array.isArray(p?.points) ? p.points : [];
+                                if (pts.length === 0) return null;
+                                // Points can be [[x,y],...] (spec), ["x,y",...] (AI drift → string), or
+                                // [{x,y},...]. Coerce every shape to "x,y" so .join never hits a non-array.
+                                const ptToStr = (pt: unknown): string => {
+                                    if (Array.isArray(pt)) return pt.join(',');
+                                    if (typeof pt === 'string') return pt;
+                                    if (pt && typeof pt === 'object') {
+                                        const o = pt as { x?: unknown; y?: unknown };
+                                        if (typeof o.x === 'number' && typeof o.y === 'number') return `${o.x},${o.y}`;
+                                    }
+                                    return '';
+                                };
+                                return (
+                                    <g key={`path-${i}`}>
+                                        <polyline
+                                            points={pts.map(ptToStr).filter(Boolean).join(' ')}
+                                            fill="none" stroke="#94a3b8" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
+                                        />
+                                        {p.label && pts.length >= 2 && Array.isArray(pts[0]) && Array.isArray(pts[1]) && (
+                                            <text
+                                                x={(pts[0][0] + pts[1][0]) / 2}
+                                                y={(pts[0][1] + pts[1][1]) / 2 - 6}
+                                                textAnchor="middle" fontSize={9} fill="#6b7280" fontStyle="italic"
+                                            >{p.label}</text>
+                                        )}
+                                    </g>
+                                );
+                            })}
                             {/* Landmarks */}
                             {mapData.landmarks?.map(lm => renderLandmark(lm))}
                         </svg>
+                        )}
                     </div>
                     <div className="map-options-panel">
                         <h3 style={{ margin: '0 0 12px 0' }}>{t.listeningDetails.mapInstructions}</h3>
-                        <div className="map-options-list">
-                            {options.map((opt, i) => (
-                                <div key={i} className="map-option-item">{opt}</div>
-                            ))}
-                        </div>
-                        <div className="map-questions-list">
-                            {questions.map(q => (
-                                <div key={q.id} className="map-q-row">
-                                    <span className="map-q-number">{q.id}.</span>
-                                    <select
-                                        className="map-select"
-                                        defaultValue={userAnswersRef.current[q.id] || ''}
-                                        onChange={e => { userAnswersRef.current[q.id] = e.target.value; setRenderTick(t => t + 1); }}
-                                    >
-                                        <option value="">{t.listeningDetails.selectOption}</option>
-                                        {options.map((opt, i) => {
-                                            const letter = opt.split('.')[0]?.trim();
-                                            return <option key={i} value={letter}>{opt}</option>;
-                                        })}
-                                    </select>
-                                </div>
-                            ))}
-                        </div>
+                        {(() => {
+                            const letters: string[] = [];
+                            const titles: Record<string, string> = {};
+                            options.forEach((opt, i) => {
+                                const optStr = typeof opt === 'string' ? opt : String(opt ?? '');
+                                const [rawLetter, ...rest] = optStr.split('.');
+                                const letter = (rawLetter?.trim() || String(i)).toUpperCase();
+                                letters.push(letter);
+                                titles[letter] = rest.join('.').trim() || optStr;
+                            });
+                            const rows = questions.map(q => {
+                                const qText = (q as { question?: string }).question;
+                                return {
+                                    id: q.id,
+                                    label: qText
+                                        ? <span><strong>{q.id}</strong> {qText}</span>
+                                        : <strong>{q.id}</strong>,
+                                };
+                            });
+                            return (
+                                <MatchingLetterGrid
+                                    rows={rows}
+                                    letters={letters}
+                                    letterTitles={titles}
+                                    getAnswer={id => userAnswersRef.current[Number(id)] || ''}
+                                    onAnswer={(id, letter) => {
+                                        userAnswersRef.current[Number(id)] = letter;
+                                        setRenderTick(t => t + 1);
+                                    }}
+                                />
+                            );
+                        })()}
                     </div>
                 </div>
             );
@@ -925,13 +982,16 @@ export default function ListeningPage() {
                         {/* Full-test: section tabs + delegate rendering per section */}
                         {isFull && (() => {
                             const fullData = st.listeningData as FullListeningData;
-                            const activeSec = fullData.sections.find(s => s.sectionNum === st.activeSection) || fullData.sections[0];
+                            const sections = fullData.sections || [];
+                            if (sections.length === 0) return null;
+                            const activeSec = sections.find(s => s.sectionNum === st.activeSection) || sections[0];
+                            if (!activeSec) return null;
                             const offset = ((activeSec.sectionNum || 1) - 1) * 10;
                             return (
                                 <>
-                                    {fullData.sections.length > 1 && (
+                                    {sections.length > 1 && (
                                         <div className="passage-tabs">
-                                            {fullData.sections.map(sec => (
+                                            {sections.map(sec => (
                                                 <button
                                                     key={sec.sectionNum}
                                                     className={`passage-tab ${st.activeSection === sec.sectionNum ? 'active' : ''}`}
@@ -960,10 +1020,10 @@ export default function ListeningPage() {
                                                 sectionOffset={offset}
                                             />
                                         )}
-                                        {activeSec.sectionType === 'mixed' && activeSec.subsections?.map((sub, i) => (
+                                        {activeSec.sectionType === 'mixed' && (activeSec.subsections || []).map((sub, i) => (
                                             <div key={i} className="mixed-subsection">
                                                 {sub.instructions && <p className="section-instructions">{sub.instructions}</p>}
-                                                {sub.type === 'multiple_choice' && sub.questions.map(q => {
+                                                {sub.type === 'multiple_choice' && (sub.questions || []).map(q => {
                                                     const mcq = q as { id: number; question: string; options: Record<string, string>; answer: string };
                                                     return (
                                                         <div key={mcq.id} className="question-block">
@@ -996,31 +1056,67 @@ export default function ListeningPage() {
                                                         onAnswer={setAnswerV2}
                                                     />
                                                 )}
-                                                {sub.type === 'map' && (
-                                                    <div className="section-map-block">
-                                                        {sub.map && (
-                                                            <ListeningMapSVG
-                                                                map={sub.map}
-                                                                questionIdOffset={sub.startId - 1}
-                                                                maxWidth={720}
-                                                            />
-                                                        )}
-                                                        {sub.questions.map(q => {
-                                                            const mq = q as { id: number; answer: string };
+                                                {sub.type === 'map' && (() => {
+                                                    const mapQs = (sub.questions || []) as { id: number; question?: string; answer: string }[];
+                                                    const letters: string[] = [];
+                                                    const titles: Record<string, string> = {};
+                                                    (sub.options || []).forEach((opt, i) => {
+                                                        const optStr = typeof opt === 'string' ? opt : String(opt ?? '');
+                                                        const [rawLetter, ...rest] = optStr.split('.');
+                                                        const letter = (rawLetter?.trim() || String(i)).toUpperCase();
+                                                        letters.push(letter);
+                                                        titles[letter] = rest.join('.').trim() || optStr;
+                                                    });
+                                                    const rows = mapQs.map(mq => ({
+                                                        id: mq.id,
+                                                        label: mq.question
+                                                            ? <span><strong>{mq.id}</strong> {mq.question}</span>
+                                                            : <span>Location <strong>{mq.id}</strong></span>,
+                                                    }));
+                                                    const correctById: Record<number, string> = {};
+                                                    for (const mq of mapQs) correctById[mq.id] = mq.answer;
+                                                    return (
+                                                        // Layout rule: image LEFT, questions (grid + legend) RIGHT
+                                                        <div className="section-map-block-v2">
+                                                            <div className="section-map-image">
+                                                                {sub.map && (
+                                                                    <ListeningMapSVG
+                                                                        map={sub.map}
+                                                                        questionIdOffset={sub.startId - 1}
+                                                                        maxWidth={720}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                            <div className="section-map-questions">
+                                                                <MatchingLetterGrid
+                                                                    rows={rows}
+                                                                    letters={letters}
+                                                                    letterTitles={titles}
+                                                                    getAnswer={id => getAnswer(Number(id))}
+                                                                    onAnswer={(id, letter) => setAnswerV2(Number(id), letter)}
+                                                                    correctById={correctById}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                                {sub.type !== 'multiple_choice' && sub.type !== 'matching' && sub.type !== 'map' && (sub.questions || []).length > 0 && (
+                                                    // Fallback: unknown subsection type (e.g. 'note', 'short_answer' from legacy
+                                                    // bank data). Render text inputs so the questions aren't silently dropped.
+                                                    <div className="section-fallback-block" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                        {(sub.questions || []).map(q => {
+                                                            const fq = q as { id: number; question?: string };
                                                             return (
-                                                                <div key={mq.id} className="question-block">
-                                                                    <div className="question-text">Location {mq.id}</div>
-                                                                    <select
-                                                                        className="match-select"
-                                                                        defaultValue={getAnswer(mq.id)}
-                                                                        onChange={e => setAnswerV2(mq.id, e.target.value)}
-                                                                    >
-                                                                        <option value="">--</option>
-                                                                        {(sub.options || []).map(opt => {
-                                                                            const letter = opt.split('.')[0]?.trim() || '';
-                                                                            return <option key={letter} value={letter}>{opt}</option>;
-                                                                        })}
-                                                                    </select>
+                                                                <div key={fq.id} className="question-block">
+                                                                    <div className="question-text">{fq.id}. {fq.question || ''}</div>
+                                                                    <input
+                                                                        type="text"
+                                                                        className="rd-blank-input"
+                                                                        defaultValue={getAnswer(fq.id)}
+                                                                        onChange={e => setAnswerV2(fq.id, e.target.value)}
+                                                                        placeholder="Type your answer…"
+                                                                        style={{ maxWidth: 320 }}
+                                                                    />
                                                                 </div>
                                                             );
                                                         })}
@@ -1062,14 +1158,14 @@ export default function ListeningPage() {
         const allResultQuestions: { id: number; question?: string; answer?: string; answers?: string[]; options?: Record<string, string>; explanation?: string; sectionType?: string; sectionNum?: number }[] = [];
         if (isFullResults) {
             const full = st.listeningData as FullListeningData;
-            for (const sec of full.sections) {
-                for (const q of sec.questions) {
+            for (const sec of (full.sections || [])) {
+                for (const q of (sec.questions || [])) {
                     const qq = q as { id: number; question?: string; answer?: string; answers?: string[]; options?: Record<string, string>; explanation?: string };
                     allResultQuestions.push({ ...qq, sectionType: sec.sectionType, sectionNum: sec.sectionNum });
                 }
             }
         } else {
-            for (const q of (st.listeningData as LegacyListeningData).questions) {
+            for (const q of ((st.listeningData as LegacyListeningData).questions || [])) {
                 allResultQuestions.push(q as { id: number; question?: string; answer?: string; answers?: string[]; options?: Record<string, string>; explanation?: string });
             }
         }
@@ -1080,8 +1176,8 @@ export default function ListeningPage() {
         const pct = total > 0 ? Math.round((score / total) * 100) : 0;
         // Concatenate passages for the "show passage" sidebar
         const passageText = isFullResults
-            ? (st.listeningData as FullListeningData).sections.map(s => `[Section ${s.sectionNum}] ${s.title}\n\n${s.passage}`).join('\n\n---\n\n')
-            : (st.listeningData as LegacyListeningData).passage;
+            ? ((st.listeningData as FullListeningData).sections || []).map(s => `[Section ${s.sectionNum}] ${s.title || ''}\n\n${s.passage || ''}`).join('\n\n---\n\n')
+            : ((st.listeningData as LegacyListeningData).passage || '');
         const passageParagraphs = passageText.split('\n\n');
 
         return (
@@ -1181,9 +1277,10 @@ export default function ListeningPage() {
                                 );
                             }
                             if (isMapMode) {
-                                const mapOptions = st.listeningData && st.listeningData.type === 'map' ? st.listeningData.options : [];
-                                const correctOptText = mapOptions.find((o: string) => o.startsWith(String(q.answer || ''))) || q.answer;
-                                const userOptText = mapOptions.find((o: string) => o.startsWith(userAns)) || userAns;
+                                const rawOpts = st.listeningData && st.listeningData.type === 'map' ? st.listeningData.options : [];
+                                const mapOptions = Array.isArray(rawOpts) ? rawOpts.filter((o: unknown): o is string => typeof o === 'string') : [];
+                                const correctOptText = mapOptions.find(o => o.startsWith(String(q.answer || ''))) || q.answer;
+                                const userOptText = mapOptions.find(o => o.startsWith(userAns)) || userAns;
                                 return (
                                     <div key={q.id} className="result-block">
                                         <div className="question-text">📍 Location {q.id}</div>
@@ -1209,7 +1306,7 @@ export default function ListeningPage() {
                                         {q.sectionNum !== undefined && <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[Section {q.sectionNum}]</span>}
                                     </div>
                                     <p>
-                                        {t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {hasTextAnswers ? t.results.acceptableAnswers : t.results.correctAnswer}: <strong>{hasTextAnswers ? (q.answers as string[]).join(' / ') : (q.answer || '—')}</strong>
+                                        {t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {hasTextAnswers ? t.results.acceptableAnswers : t.results.correctAnswer}: <strong>{hasTextAnswers ? (q.answers as unknown[]).map(a => (a == null ? '' : String(a))).join(' / ') : (q.answer || '—')}</strong>
                                     </p>
                                     <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
                                         {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}

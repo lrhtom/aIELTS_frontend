@@ -17,6 +17,8 @@ interface Props {
     simpleMode?: boolean;
     /** 'en' → 正面英文(默认); 'zh' → 正面中文,背面英文 */
     frontFace?: 'en' | 'zh';
+    /** false 时正面锁死不可翻（用于「必须听完发音再翻面」） */
+    canFlip?: boolean;
 }
 
 function speak(word: string) {
@@ -35,9 +37,11 @@ export default function FlashcardMode({
     previewNextDueLabel,
     simpleMode,
     frontFace = 'en',
+    canFlip = true,
 }: Props) {
     const zhFirst = frontFace === 'zh';
     const { translations: t } = useLang();
+    const flipLocked = !simpleMode && !canFlip;
 
     const RATING_INFO = [
         { id: 1, label: t.vocab.ratings.again, cls: 'btn-again', key: '1' },
@@ -56,14 +60,16 @@ export default function FlashcardMode({
     return (
         <>
             <div
-                className="fc-scene"
-                onClick={!simpleMode ? onFlip : undefined}
+                className={`fc-scene${flipLocked ? ' is-locked' : ''}`}
+                onClick={!simpleMode && !flipLocked ? onFlip : undefined}
                 role="button"
                 tabIndex={0}
                 onKeyDown={e => {
-                    if (e.code === 'Space') { e.preventDefault(); onFlip(); }
+                    if (e.code === 'Space' && !flipLocked) { e.preventDefault(); onFlip(); }
                 }}
+                aria-disabled={flipLocked}
                 aria-label={isFlipped ? t.vocab.common.flipFront : t.vocab.common.flipBack}
+                style={flipLocked ? { cursor: 'not-allowed' } : undefined}
             >
                 <div
                     className={`fc-card ${isFlipped && !simpleMode ? 'is-flipped' : ''} ${isFlipping ? 'is-flipping' : ''} ${statusCls}`}
@@ -104,11 +110,20 @@ export default function FlashcardMode({
                             </div>
                         )}
                         <div className="fc-tap-hint">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                                <path d="M12 5v14M5 12l7 7 7-7" />
-                            </svg>
-                            {t.vocab.tapToFlip}
+                            {flipLocked ? (
+                                <>
+                                    <Volume2 size={13} />
+                                    语音播放中，请稍候…
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                                        <path d="M12 5v14M5 12l7 7 7-7" />
+                                    </svg>
+                                    {t.vocab.tapToFlip}
+                                </>
+                            )}
                         </div>
                     </div>
 

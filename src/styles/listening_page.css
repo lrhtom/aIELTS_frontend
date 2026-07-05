@@ -10,7 +10,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 40px;
-    max-width: 800px;
+    max-width: 100%;
     margin: 0 auto;
     width: 100%;
 }
@@ -462,6 +462,54 @@
     .map-svg-container,
     .map-options-panel {
         flex: 1;
+    }
+}
+
+/* ─── Section 2 混合题地图子题:图片在左 / 网格在右 ────────────────── */
+.section-map-block-v2 {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+}
+.section-map-block-v2 .section-map-image {
+    flex: 0 1 42%;
+    min-width: 0;
+}
+.section-map-block-v2 .section-map-questions {
+    flex: 1 1 58%;
+    min-width: 0;
+}
+@media (max-width: 1200px) {
+    .section-map-block-v2 { flex-direction: column; }
+    .section-map-block-v2 .section-map-image,
+    .section-map-block-v2 .section-map-questions { flex: 1; }
+}
+
+/* ─── 匹配题:答题网格在左 / 选项方块在右 ─────────────────────────── */
+.matching-two-col {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+.matching-two-col .matching-grid-col {
+    flex: 1 1 65%;
+    min-width: 0;
+}
+.matching-two-col .matching-features-bank {
+    flex: 0 0 300px;
+    margin-bottom: 0;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+@media (max-width: 1000px) {
+    .matching-two-col { flex-direction: column; }
+    .matching-two-col .matching-grid-col { flex: 1; }
+    .matching-two-col .matching-features-bank {
+        flex: 1;
+        position: static;
+        max-height: none;
     }
 }
 

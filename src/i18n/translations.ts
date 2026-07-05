@@ -47,6 +47,14 @@ export interface Translations {
             success: string;
             skipped: string;
         };
+        customQuestion: {
+            sectionTitle: string;
+            sectionDesc: string;
+            nameLabel: string;
+            namePlaceholder: string;
+            descLabel: string;
+            descPlaceholder: string;
+        };
     };
     auth: {
         loginTitle: string;
@@ -192,6 +200,8 @@ export interface Translations {
         statusPending: string;
         statusAnswered: string;
         statusRedone: string;
+        statusGenerating: string;
+        statusFailed: string;
         untitled: string;
         unnamedFallback: string;
         loading: string;
@@ -207,6 +217,8 @@ export interface Translations {
         loadFail: string;
         toastGeneratedSaved: string;
         toastMissingContent: string;
+        toastStillGenerating: string;
+        toastGenerationFailed: string;
         backToBank: string;
         redoBtn: string;
     };

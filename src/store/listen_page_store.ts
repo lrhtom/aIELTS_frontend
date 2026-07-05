@@ -76,6 +76,16 @@ export interface MapData {
     landmarks: MapLandmark[];
     paths: MapPath[];
     decorations: MapDecoration[];
+    // FLUX.2-pro rendered map image. When present the frontend renders <img>
+    // instead of the landmark-based SVG (see ListeningMapSVG). Legacy bank
+    // records without this field keep working via the SVG fallback.
+    //
+    // `imagePath` is a media-relative key (e.g. `maps/2/abc.png`) — pass through
+    // `mediaUrl()` to get the env-appropriate full URL. `imageUrl` is retained
+    // only to read very old records that stored an absolute `/media/...` URL.
+    imagePath?: string;
+    imageUrl?: string;
+    imageModel?: string;
 }
 
 export interface MapQuestion {

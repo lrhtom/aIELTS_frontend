@@ -12,6 +12,7 @@
 import { useMemo, useState, type ReactElement } from 'react';
 import { sanitize } from '../../utils/safe_html';
 import type { Question, QuizData, FullPassageSection, ReadingQuestionType } from '../../store/reading_page_store';
+import MatchingLetterGrid from '../common/MatchingLetterGrid';
 
 interface SectionLike {
     questionType: ReadingQuestionType;
@@ -189,6 +190,13 @@ function renderSummaryBlanksSelect(
 }
 
 export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, reviewMode = false }: Props) {
+    // Bank 记录经 AI 生成后偶尔会出现 questions 字段缺失/非数组的情况
+    // (老的失败记录、部分被 admin 编辑掉、AI 出错等)。所有分支都靠 questions.map
+    // 渲染,所以顶部先兜底再往下走,避免 "Cannot read properties of undefined
+    // (reading 'map')" 崩掉整页。
+    if (!section || !Array.isArray(section.questions) || section.questions.length === 0) {
+        return null;
+    }
     const qt = section.questionType;
 
     // Common "verdict" pill for review mode
@@ -198,10 +206,13 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
         void qid;
     };
 
-    const verdictArr = (qid: number, correctList: string[] | undefined, userAns: string): { correct: boolean; msg: string } => {
+    const verdictArr = (qid: number, correctList: unknown, userAns: string): { correct: boolean; msg: string } => {
+        const safeList: string[] = Array.isArray(correctList)
+            ? correctList.map(a => (a == null ? '' : String(a)))
+            : (correctList == null ? [] : [String(correctList)]);
         const userLc = userAns.trim().toLowerCase();
-        const ok = Boolean(correctList && correctList.some(a => String(a).trim().toLowerCase() === userLc));
-        return { correct: ok, msg: ok ? '✅' : `❌ (${(correctList || []).join(' / ')})` };
+        const ok = safeList.some(a => a.trim().toLowerCase() === userLc);
+        return { correct: ok, msg: ok ? '✅' : `❌ (${safeList.join(' / ')})` };
         void qid;
     };
 
@@ -261,51 +272,53 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
         );
     }
 
-    // ── Matching Info / Features / Sentence — dropdown per item ──
+    // ── Matching Info / Features / Sentence — radio-letter grid ──
     if (qt === 'matching_info' || qt === 'matching_features' || qt === 'matching_sentence') {
         const bank: Record<string, string> = qt === 'matching_info'
             ? Object.fromEntries((section.paragraph_labels || ['A','B','C','D','E','F']).map(l => [String(l), `Paragraph ${l}`]))
             : normalizeBank(qt === 'matching_features' ? section.features_bank : section.endings_bank);
         const bankKeys = Object.keys(bank);
+        const rows = section.questions.map(q => ({
+            id: q.id,
+            label: <span dangerouslySetInnerHTML={{ __html: safeHTML(`${q.id}. ${q.question || ''}`) }} />,
+        }));
+        const correctById: Record<number | string, string> = {};
+        for (const q of section.questions) {
+            if (q.answer != null) correctById[q.id] = String(q.answer);
+        }
+        const grid = (
+            <MatchingLetterGrid
+                rows={rows}
+                letters={bankKeys}
+                letterTitles={qt === 'matching_info' ? undefined : bank}
+                getAnswer={id => getAnswer(Number(id))}
+                onAnswer={(id, letter) => onAnswer(Number(id), letter)}
+                reviewMode={reviewMode}
+                correctById={correctById}
+            />
+        );
         return (
             <>
                 {instructions && <p className="section-instructions">{instructions}</p>}
-                {(qt !== 'matching_info') && (
-                    <div className="matching-features-bank">
-                        <strong>{qt === 'matching_features' ? 'Categories:' : 'Endings:'}</strong>
-                        <ul>
-                            {Object.entries(bank).map(([letter, text]) => (
-                                <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
-                            ))}
-                        </ul>
+                {qt === 'matching_info' ? (
+                    // matching_info: no external bank needed (letter = paragraph
+                    // label, self-evident) — full-width grid.
+                    grid
+                ) : (
+                    // matching_features / matching_sentence: layout rule —
+                    // answer grid on LEFT, options bank on RIGHT.
+                    <div className="matching-two-col">
+                        <div className="matching-grid-col">{grid}</div>
+                        <div className="matching-features-bank">
+                            <strong>{qt === 'matching_features' ? 'Categories:' : 'Endings:'}</strong>
+                            <ul>
+                                {Object.entries(bank).map(([letter, text]) => (
+                                    <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
                 )}
-                {section.questions.map(q => {
-                    const userAns = getAnswer(q.id);
-                    return (
-                        <div key={q.id} className="question-block">
-                            <div className="question-text" dangerouslySetInnerHTML={{ __html: safeHTML(`${q.id}. ${q.question || ''}`) }} />
-                            <select
-                                className="match-select"
-                                defaultValue={userAns}
-                                onChange={e => onAnswer(q.id, e.target.value)}
-                                disabled={reviewMode}
-                            >
-                                <option value="">--</option>
-                                {bankKeys.map(k => (
-                                    <option key={k} value={k}>
-                                        {qt === 'matching_info' ? k : `${k}. ${bank[k]}`}
-                                    </option>
-                                ))}
-                            </select>
-                            {reviewMode && (
-                                <div className={`review-verdict ${verdict(q.id, q.answer, userAns).correct ? 'ok' : 'ng'}`}>
-                                    {verdict(q.id, q.answer, userAns).msg}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
             </>
         );
     }
@@ -368,8 +381,48 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
         );
     }
 
-    // ── Sentence Completion / Short Answer — text input per question ──
-    if (qt === 'sentence_completion' || qt === 'short_answer') {
+    // ── Sentence Completion — inline `_____` → inline <input> (与听力 sentence 一致) ──
+    if (qt === 'sentence_completion') {
+        return (
+            <>
+                {instructions && <p className="section-instructions">{instructions}</p>}
+                {section.wordLimit && <p className="word-limit-hint">📏 {section.wordLimit}</p>}
+                {section.questions.map(q => {
+                    const userAns = getAnswer(q.id);
+                    const raw = q.question || '';
+                    const parts = raw.split(/_{2,}/);
+                    return (
+                        <div key={q.id} className="rd-inline-q-block">
+                            <span className="rd-blank-num">{q.id}.</span>{' '}
+                            {parts.map((seg, i) => (
+                                <span key={i}>
+                                    <span dangerouslySetInnerHTML={{ __html: safeHTML(seg) }} />
+                                    {i < parts.length - 1 && (
+                                        <input
+                                            type="text"
+                                            className="rd-blank-input"
+                                            defaultValue={userAns}
+                                            onChange={e => onAnswer(q.id, e.target.value)}
+                                            disabled={reviewMode}
+                                            placeholder="…"
+                                        />
+                                    )}
+                                </span>
+                            ))}
+                            {reviewMode && (
+                                <div className={`review-verdict ${verdictArr(q.id, q.answers, userAns).correct ? 'ok' : 'ng'}`}>
+                                    {verdictArr(q.id, q.answers, userAns).msg}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </>
+        );
+    }
+
+    // ── Short Answer — question text + separate text input (no inline blank) ──
+    if (qt === 'short_answer') {
         return (
             <>
                 {instructions && <p className="section-instructions">{instructions}</p>}

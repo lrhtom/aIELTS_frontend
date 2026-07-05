@@ -104,11 +104,11 @@ export default function AIBankPage() {
 
     const handleClick = (item: AIQuestionSummary) => {
         if (item.status === 'generating') {
-            showToast('正在生成中，请稍候…', 'info');
+            showToast(t.toastStillGenerating, 'info');
             return;
         }
         if (item.status === 'failed') {
-            showToast(item.errorMessage || '生成失败，可删除后重试。', 'error');
+            showToast(item.errorMessage || t.toastGenerationFailed, 'error');
             return;
         }
         navigate(resolveAnswerRoute(item));
@@ -168,9 +168,9 @@ export default function AIBankPage() {
                             const isGenerating = item.status === 'generating';
                             const isFailed = item.status === 'failed';
                             const statusLabel = isGenerating
-                                ? '⏳ 生成中'
+                                ? t.statusGenerating
                                 : isFailed
-                                    ? '⚠️ 生成失败'
+                                    ? t.statusFailed
                                     : (item.isAnswered ? (isRedone(item) ? t.statusRedone : t.statusAnswered) : t.statusPending);
                             const statusClass = isGenerating
                                 ? 'generating'
@@ -196,6 +196,9 @@ export default function AIBankPage() {
                                         {item.subtype && <span className="ai-bank-subtype">{item.subtype}</span>}
                                     </div>
                                     <div className="ai-bank-card-title">{item.title || t.unnamedFallback}</div>
+                                    {item.description && (
+                                        <div className="ai-bank-card-description">{item.description}</div>
+                                    )}
                                     {isFailed && item.errorMessage && (
                                         <div className="ai-bank-card-error">{item.errorMessage}</div>
                                     )}

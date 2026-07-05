@@ -385,16 +385,47 @@ export default function VocabularyFlashcardDoingPage() {
         }
     }, [mode, planId, initialized]);
 
+    // canFlip 用于「必须听完发音才能翻面」逻辑：新卡进入时先锁死翻面，
+    // TTS 的 onEnd/onError 触发时解锁；5s 兜底以防 TTS 被下一次 speakWord 取消
+    // (取消不触发 onended，会导致 canFlip 永远停在 false)。
+    const [canFlip, setCanFlip] = useState(true);
+
     /* 每张新卡自动播放一次单词读音（所有模式）
      * setTimeout 解决 Chrome cancel/speak 竞争：cancel() 后立即 speak() 会被吞掉
      * 朗读模式(read-aloud)由组件内部编排发音+识别时机,跳过外层自动播放避免双播 */
     useEffect(() => {
-        if (!initialized || queue.length === 0 || !autoSpeakEnabled) return;
+        if (!initialized || queue.length === 0) return;
         if (mode === 'read-aloud') return;
         const word = cards[queue[0]]?.word;
         if (!word) return;
-        const timer = setTimeout(() => speakWord(word), 150);
-        return () => clearTimeout(timer);
+
+        // 仅普通 flashcard 需要锁翻面；simple 模式没有翻面动作，其它模式不涉及
+        const shouldGateFlip = mode === 'flashcard';
+
+        if (!autoSpeakEnabled) {
+            if (shouldGateFlip) setCanFlip(true);
+            return;
+        }
+
+        if (shouldGateFlip) setCanFlip(false);
+
+        let unlocked = false;
+        const unlock = () => {
+            if (unlocked) return;
+            unlocked = true;
+            if (shouldGateFlip) setCanFlip(true);
+        };
+
+        const speakTimer = setTimeout(() => {
+            speakWord(word, { onEnd: unlock, onError: unlock });
+        }, 150);
+        // 兜底：TTS 被取消时 onended 不会触发，5s 后强制解锁
+        const safetyTimer = setTimeout(unlock, 5000);
+
+        return () => {
+            clearTimeout(speakTimer);
+            clearTimeout(safetyTimer);
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visitKey, mode]);
 
@@ -940,6 +971,9 @@ export default function VocabularyFlashcardDoingPage() {
             switch (e.code) {
                 case 'Space':
                     if (mode === 'flashcard-simple') return;
+                    // 语音播放未结束时不允许翻面（只在首次翻面到背面时拦截；
+                    // 已翻到背面后允许自由翻回正面）
+                    if (!canFlip && !isFlipped) return;
                     e.preventDefault();
                     setIsFlipping(true);
                     setIsFlipped(!isFlipped);
@@ -953,7 +987,7 @@ export default function VocabularyFlashcardDoingPage() {
         };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [step, isFlipped, submitting, handleFlashcardRating, mode, setIsFlipped, setIsFlipping]);
+    }, [step, isFlipped, submitting, handleFlashcardRating, mode, canFlip, setIsFlipped, setIsFlipping]);
 
     /* 键盘快捷键（写单词模式）：快速自评可用时（输入框为空、未提交）：↑ 熟练  ↓ 不会 */
     useEffect(() => {
@@ -1228,7 +1262,9 @@ export default function VocabularyFlashcardDoingPage() {
                         isFlipping={isFlipping}
                         statusCls={statusCls}
                         submitting={submitting}
+                        canFlip={canFlip || isFlipped}
                         onFlip={() => {
+                            if (!canFlip && !isFlipped) return;
                             setIsFlipping(true);
                             setIsFlipped(!isFlipped);
                             setTimeout(() => setIsFlipping(false), 350);
@@ -1262,7 +1298,9 @@ export default function VocabularyFlashcardDoingPage() {
                         statusCls={statusCls}
                         submitting={submitting}
                         trackingMode={trackingMode as 'eye' | 'mouse'}
+                        canFlip={canFlip || isFlipped}
                         onFlip={() => {
+                            if (!canFlip && !isFlipped) return;
                             setIsFlipping(true);
                             setIsFlipped(!isFlipped);
                             setTimeout(() => setIsFlipping(false), 350);

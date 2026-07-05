@@ -77,6 +77,8 @@ export default function ListeningConfig() {
     // Full-test scope controls
     const [fullScope, setFullScope] = useState<'all' | 'single'>('all');
     const [sectionNum, setSectionNum] = useState<1 | 2 | 3 | 4>(1);
+    const [customName, setCustomName] = useState('');
+    const [customDescription, setCustomDescription] = useState('');
 
     const { lang } = useLang();
     const t = translations[lang].listeningConfig;
@@ -173,6 +175,8 @@ export default function ListeningConfig() {
                 // Full-test scope
                 fullScope: mode === 'full' ? fullScope : undefined,
                 sectionNum: mode === 'full' && fullScope === 'single' ? sectionNum : undefined,
+                customName: customName.trim(),
+                customDescription: customDescription.trim(),
             },
         });
     };
@@ -254,6 +258,56 @@ export default function ListeningConfig() {
                     </div>
 
                     <div className="uc-settings-list">
+                        {/* Custom name + description (both optional) */}
+                        <div className="uc-card-group">
+                            <div className="uc-list-row uc-row-vertical">
+                                <div className="uc-row-label-flex">
+                                    <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>🏷️</span>
+                                        <span className="row-title">{tAll.common.customQuestion.sectionTitle}</span>
+                                    </div>
+                                    <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                                        {tAll.common.customQuestion.sectionDesc}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+                                    <input
+                                        type="text"
+                                        maxLength={80}
+                                        placeholder={tAll.common.customQuestion.namePlaceholder}
+                                        value={customName}
+                                        onChange={e => setCustomName(e.target.value)}
+                                        style={{
+                                            padding: '8px 12px',
+                                            borderRadius: 8,
+                                            border: '1px solid var(--color-border)',
+                                            background: 'var(--color-surface)',
+                                            color: 'var(--color-text)',
+                                            fontSize: 14,
+                                        }}
+                                        aria-label={tAll.common.customQuestion.nameLabel}
+                                    />
+                                    <textarea
+                                        maxLength={300}
+                                        rows={2}
+                                        placeholder={tAll.common.customQuestion.descPlaceholder}
+                                        value={customDescription}
+                                        onChange={e => setCustomDescription(e.target.value)}
+                                        style={{
+                                            padding: '8px 12px',
+                                            borderRadius: 8,
+                                            border: '1px solid var(--color-border)',
+                                            background: 'var(--color-surface)',
+                                            color: 'var(--color-text)',
+                                            fontSize: 14,
+                                            resize: 'vertical',
+                                            fontFamily: 'inherit',
+                                        }}
+                                        aria-label={tAll.common.customQuestion.descLabel}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                         {/* Full-test scope controls */}
                         {mode === 'full' && (
                             <div className="uc-card-group">

@@ -1,0 +1,198 @@
+/* MatchingLetterGrid — paper-style radio grid for listening/reading matching questions */
+
+.matching-grid-wrap {
+    width: 100%;
+    overflow-x: auto;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    padding: 0;
+}
+
+.matching-grid {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    font-family: var(--font);
+    color: var(--color-text);
+}
+
+.matching-grid th,
+.matching-grid td {
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Top-left empty corner cell */
+.matching-grid .mg-corner {
+    background: white;
+    border-bottom: 2px solid #1f2937;
+    border-right: 2px solid #1f2937;
+    min-width: 200px;
+    width: 26%;
+}
+
+/* Header letters A, B, C, ... */
+.matching-grid .mg-letter-head {
+    font-size: 15px;
+    font-weight: 700;
+    padding: 16px 0;
+    color: #1f2937;
+    border-bottom: 2px solid #1f2937;
+    background: white;
+    min-width: 48px;
+    letter-spacing: 0.5px;
+}
+
+/* Optional legend row under the letter header (letter → description) */
+.matching-grid .mg-legend-row td {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--color-border);
+    padding: 12px 16px;
+}
+.matching-grid .mg-legend-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px 20px;
+    font-size: 13px;
+    color: var(--color-text);
+    justify-content: flex-start;
+    text-align: left;
+    line-height: 1.5;
+}
+.matching-grid .mg-legend-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.matching-grid .mg-legend-item strong {
+    color: var(--color-primary);
+    margin-right: 6px;
+    font-weight: 700;
+}
+
+/* Left-column row label */
+.matching-grid .mg-row-label {
+    text-align: left;
+    padding: 22px 24px;
+    font-weight: 400;
+    font-size: 15px;
+    color: var(--color-text);
+    border-right: 2px solid #1f2937;
+    border-bottom: 1px solid #f1f5f9;
+    line-height: 1.4;
+    max-width: 340px;
+    background: white;
+}
+.matching-grid .mg-row-label strong {
+    font-weight: 500;
+    color: var(--color-text);
+    margin-right: 4px;
+}
+.matching-grid tbody tr:last-child .mg-row-label { border-bottom: none; }
+
+/* Cell (radio grid) — no inner column borders (reference IELTS style) */
+.matching-grid .mg-cell {
+    border-bottom: 1px solid #f1f5f9;
+    background: white;
+    transition: background 0.15s;
+}
+.matching-grid tbody tr:last-child .mg-cell { border-bottom: none; }
+.matching-grid .mg-cell:hover { background: rgba(13, 148, 136, 0.04); }
+.matching-grid .mg-cell.is-checked { background: rgba(13, 148, 136, 0.08); }
+
+/* The label wraps the invisible radio + visible dot for a big click target */
+.mg-cell-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 22px 0;
+    cursor: pointer;
+    position: relative;
+}
+.mg-cell-label input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
+/* Visible radio dot */
+.mg-dot {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    background: white;
+    transition: all 0.15s;
+    position: relative;
+}
+.mg-cell-label:hover .mg-dot {
+    border-color: var(--color-primary);
+    transform: scale(1.08);
+}
+.mg-cell.is-checked .mg-dot {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    box-shadow: 0 0 0 5px rgba(13, 148, 136, 0.18);
+}
+.mg-cell.is-checked .mg-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: white;
+    transform: translate(-50%, -50%);
+}
+
+/* Review mode: highlight correct / wrong cells */
+.mg-cell.is-cell-correct .mg-dot {
+    border-color: #10b981;
+    background: #10b981;
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.2);
+}
+.mg-cell.is-cell-wrong .mg-dot {
+    border-color: #ef4444;
+    background: #ef4444;
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.2);
+}
+.mg-cell.is-cell-answer .mg-dot {
+    border-color: #10b981;
+    background: white;
+    border-style: dashed;
+}
+.mg-cell.is-cell-answer .mg-dot::before {
+    content: '✓';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #10b981;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+}
+.mg-row.is-wrong .mg-row-label {
+    color: #dc2626;
+    background: rgba(239, 68, 68, 0.04) !important;
+}
+.mg-row.is-correct .mg-row-label {
+    color: #059669;
+    background: rgba(16, 185, 129, 0.04) !important;
+}
+
+/* Disabled (review mode) — dim the whole grid slightly */
+.matching-grid input:disabled ~ .mg-dot { cursor: not-allowed; opacity: 0.9; }
+.matching-grid input:disabled ~ * { cursor: not-allowed; }
+
+/* Responsive: on narrow screens make sure horizontal scroll works */
+@media (max-width: 720px) {
+    .matching-grid .mg-corner,
+    .matching-grid .mg-row-label { min-width: 150px; max-width: 150px; padding: 14px 12px; font-size: 14px; }
+    .matching-grid .mg-letter-head { min-width: 40px; padding: 12px 0; font-size: 15px; }
+    .mg-cell-label { padding: 16px 0; }
+    .mg-dot { width: 20px; height: 20px; }
+}

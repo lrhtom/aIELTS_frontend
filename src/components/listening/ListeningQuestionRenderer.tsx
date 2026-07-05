@@ -12,6 +12,7 @@ import type {
     ShortAnswerListeningData,
     MatchingListeningData,
 } from '../../store/listen_page_store';
+import MatchingLetterGrid from '../common/MatchingLetterGrid';
 
 /**
  * Coerce an AI bank field to a normalized Record<string, string> — same shape
@@ -62,7 +63,9 @@ interface CommonProps {
 
 /* -----------------------------------------------------------------------
  *  Helper: render structured text (form/table/flowchart) with (1)-(N)
- *  blanks replaced by inline <input> elements.
+ *  blanks replaced by inline <input> elements. Returns the rendered element
+ *  plus the set of global qids that received an inline input, so callers can
+ *  render fallback inputs for any question whose blank was dropped by AI drift.
  * ---------------------------------------------------------------------*/
 function renderStructuredWithBlanks(
     content: string,
@@ -70,21 +73,23 @@ function renderStructuredWithBlanks(
     getAnswer: (qid: number) => string,
     onAnswer: (qid: number, v: string) => void,
     disabled: boolean,
-): ReactElement {
-    // Split by "(N)" placeholders; render inputs in between
+): { element: ReactElement; renderedIds: Set<number> } {
+    // 与阅读 note_completion / summary_completion 共用 .rd-inline-blank-block / .rd-blank-* 样式
     const parts = content.split(/(\(\d+\)\s*_+)/g);
-    return (
-        <pre className="listening-structured">
+    const renderedIds = new Set<number>();
+    const element = (
+        <pre className="rd-inline-blank-block">
             {parts.map((part, i) => {
                 const m = /^\((\d+)\)\s*_+$/.exec(part);
                 if (m) {
                     const qid = Number(m[1]) + (startingBlankId - 1);
+                    renderedIds.add(qid);
                     return (
-                        <span key={i} className="structured-blank-wrap">
-                            <span className="structured-blank-num">({m[1]})</span>
+                        <span key={i} className="rd-blank-wrap">
+                            <span className="rd-blank-num">({m[1]})</span>
                             <input
                                 type="text"
-                                className="structured-blank-input"
+                                className="rd-blank-input"
                                 defaultValue={getAnswer(qid)}
                                 onChange={e => onAnswer(qid, e.target.value)}
                                 disabled={disabled}
@@ -97,25 +102,77 @@ function renderStructuredWithBlanks(
             })}
         </pre>
     );
+    return { element, renderedIds };
 }
 
-function verdictText(userAns: string, correctList: string[]): { ok: boolean; msg: string } {
+/**
+ * Render fallback text inputs for any question whose blank was dropped from
+ * the structured content (empty note_content, missing `(N) _____` marker,
+ * off-by-N numbering). Without this, blanks that never make it into the pre
+ * block silently disappear — the user sees notes but has no way to answer
+ * those questions.
+ */
+function renderFallbackInputs(
+    questions: { id: number }[],
+    renderedIds: Set<number>,
+    getAnswer: (qid: number) => string,
+    onAnswer: (qid: number, v: string) => void,
+    disabled: boolean,
+    hasStructuredContent: boolean,
+): ReactElement | null {
+    const missing = questions.filter(q => !renderedIds.has(q.id));
+    if (missing.length === 0) return null;
+    return (
+        <div className="listening-fallback-inputs" style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {hasStructuredContent && (
+                <p className="section-instructions" style={{ fontStyle: 'italic', opacity: 0.85 }}>
+                    Answer the remaining questions:
+                </p>
+            )}
+            {missing.map(q => (
+                <div key={q.id} className="rd-blank-wrap" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="rd-blank-num">{q.id}.</span>
+                    <input
+                        type="text"
+                        className="rd-blank-input"
+                        defaultValue={getAnswer(q.id)}
+                        onChange={e => onAnswer(q.id, e.target.value)}
+                        disabled={disabled}
+                        placeholder="Type your answer…"
+                        style={{ flex: 1, maxWidth: 320 }}
+                    />
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function verdictText(userAns: string, correctList: unknown): { ok: boolean; msg: string } {
+    const safeList: string[] = Array.isArray(correctList)
+        ? correctList.map(a => (a == null ? '' : String(a)))
+        : (correctList == null ? [] : [String(correctList)]);
     const userLc = userAns.trim().toLowerCase();
-    const ok = Boolean(correctList.length && correctList.some(a => String(a).trim().toLowerCase() === userLc));
-    return { ok, msg: ok ? '✅' : `❌ (${correctList.join(' / ')})` };
+    const ok = safeList.some(a => a.trim().toLowerCase() === userLc);
+    return { ok, msg: ok ? '✅' : `❌ (${safeList.join(' / ')})` };
 }
 
 /* -----------------------------------------------------------------------
  *  Form completion
  * ---------------------------------------------------------------------*/
 export function FormRenderer({ data, getAnswer, onAnswer, reviewMode = false, sectionOffset = 0 }: { data: FormListeningData | { form_intro?: string; form_content: string; questions: { id: number; answers?: string[]; explanation?: string }[] }; sectionOffset?: number } & CommonProps) {
+    if (!data) return null;
+    const questions = Array.isArray(data.questions) ? data.questions : [];
+    const formContent = data.form_content || '';
+    const startId = questions[0]?.id ?? sectionOffset + 1;
+    const { element, renderedIds } = renderStructuredWithBlanks(formContent, startId, getAnswer, onAnswer, reviewMode);
     return (
         <div className="listening-form-block">
             {data.form_intro && <p className="section-instructions">{data.form_intro}</p>}
-            {renderStructuredWithBlanks(data.form_content || '', sectionOffset + 1, getAnswer, onAnswer, reviewMode)}
+            {formContent && element}
+            {renderFallbackInputs(questions, renderedIds, getAnswer, onAnswer, reviewMode, Boolean(formContent))}
             {reviewMode && (
                 <div className="review-answer-list">
-                    {data.questions.map(q => {
+                    {questions.map(q => {
                         const v = verdictText(getAnswer(q.id), q.answers || []);
                         return <div key={q.id} className={`review-verdict-row ${v.ok ? 'ok' : 'ng'}`}>{q.id}. {v.msg}</div>;
                     })}
@@ -130,13 +187,19 @@ export function FormRenderer({ data, getAnswer, onAnswer, reviewMode = false, se
  *  For simplicity render it as-is inside <pre> with the same blank substitution.
  * ---------------------------------------------------------------------*/
 export function TableRenderer({ data, getAnswer, onAnswer, reviewMode = false, sectionOffset = 0 }: { data: TableListeningData; sectionOffset?: number } & CommonProps) {
+    if (!data) return null;
+    const questions = Array.isArray(data.questions) ? data.questions : [];
+    const tableContent = data.table_content || '';
+    const startId = questions[0]?.id ?? sectionOffset + 1;
+    const { element, renderedIds } = renderStructuredWithBlanks(tableContent, startId, getAnswer, onAnswer, reviewMode);
     return (
         <div className="listening-table-block">
             {data.table_intro && <p className="section-instructions">{data.table_intro}</p>}
-            {renderStructuredWithBlanks(data.table_content || '', sectionOffset + 1, getAnswer, onAnswer, reviewMode)}
+            {tableContent && element}
+            {renderFallbackInputs(questions, renderedIds, getAnswer, onAnswer, reviewMode, Boolean(tableContent))}
             {reviewMode && (
                 <div className="review-answer-list">
-                    {data.questions.map(q => {
+                    {questions.map(q => {
                         const v = verdictText(getAnswer(q.id), q.answers || []);
                         return <div key={q.id} className={`review-verdict-row ${v.ok ? 'ok' : 'ng'}`}>{q.id}. {v.msg}</div>;
                     })}
@@ -150,13 +213,19 @@ export function TableRenderer({ data, getAnswer, onAnswer, reviewMode = false, s
  *  Flowchart completion
  * ---------------------------------------------------------------------*/
 export function FlowchartRenderer({ data, getAnswer, onAnswer, reviewMode = false, sectionOffset = 0 }: { data: FlowchartListeningData; sectionOffset?: number } & CommonProps) {
+    if (!data) return null;
+    const questions = Array.isArray(data.questions) ? data.questions : [];
+    const flowContent = data.flowchart_content || '';
+    const startId = questions[0]?.id ?? sectionOffset + 1;
+    const { element, renderedIds } = renderStructuredWithBlanks(flowContent, startId, getAnswer, onAnswer, reviewMode);
     return (
         <div className="listening-flowchart-block">
             {data.flowchart_intro && <p className="section-instructions">{data.flowchart_intro}</p>}
-            {renderStructuredWithBlanks(data.flowchart_content || '', sectionOffset + 1, getAnswer, onAnswer, reviewMode)}
+            {flowContent && element}
+            {renderFallbackInputs(questions, renderedIds, getAnswer, onAnswer, reviewMode, Boolean(flowContent))}
             {reviewMode && (
                 <div className="review-answer-list">
-                    {data.questions.map(q => {
+                    {questions.map(q => {
                         const v = verdictText(getAnswer(q.id), q.answers || []);
                         return <div key={q.id} className={`review-verdict-row ${v.ok ? 'ok' : 'ng'}`}>{q.id}. {v.msg}</div>;
                     })}
@@ -170,10 +239,12 @@ export function FlowchartRenderer({ data, getAnswer, onAnswer, reviewMode = fals
  *  Short-answer questions
  * ---------------------------------------------------------------------*/
 export function ShortAnswerRenderer({ data, getAnswer, onAnswer, reviewMode = false }: { data: ShortAnswerListeningData } & CommonProps) {
+    if (!data) return null;
+    const questions = Array.isArray(data.questions) ? data.questions : [];
     return (
         <div className="listening-short-block">
             {data.short_intro && <p className="section-instructions">{data.short_intro}</p>}
-            {data.questions.map(q => {
+            {questions.map(q => {
                 const userAns = getAnswer(q.id);
                 return (
                     <div key={q.id} className="question-block">
@@ -202,43 +273,41 @@ export function ShortAnswerRenderer({ data, getAnswer, onAnswer, reviewMode = fa
  *  Matching — items → letter from a bank
  * ---------------------------------------------------------------------*/
 export function MatchingRenderer({ data, getAnswer, onAnswer, reviewMode = false }: { data: MatchingListeningData } & CommonProps) {
+    if (!data) return null;
     const bank = normalizeBank(data.options_bank);
     const bankKeys = Object.keys(bank);
+    const questions = Array.isArray(data.questions) ? data.questions : [];
+    const rows = questions.map(q => ({
+        id: q.id,
+        label: <span>{q.id}. {q.question || ''}</span>,
+    }));
+    const correctById: Record<number, string> = {};
+    for (const q of questions) correctById[q.id] = q.answer;
     return (
         <div className="listening-matching-block">
             {data.matching_intro && <p className="section-instructions">{data.matching_intro}</p>}
-            <div className="matching-features-bank">
-                <strong>Options:</strong>
-                <ul>
-                    {Object.entries(bank).map(([letter, text]) => (
-                        <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
-                    ))}
-                </ul>
+            {/* Layout rule: answer grid on LEFT, options bank on RIGHT */}
+            <div className="matching-two-col">
+                <div className="matching-grid-col">
+                    <MatchingLetterGrid
+                        rows={rows}
+                        letters={bankKeys}
+                        letterTitles={bank}
+                        getAnswer={id => getAnswer(Number(id))}
+                        onAnswer={(id, letter) => onAnswer(Number(id), letter)}
+                        reviewMode={reviewMode}
+                        correctById={correctById}
+                    />
+                </div>
+                <div className="matching-features-bank">
+                    <strong>Options:</strong>
+                    <ul>
+                        {Object.entries(bank).map(([letter, text]) => (
+                            <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
+                        ))}
+                    </ul>
+                </div>
             </div>
-            {data.questions.map(q => {
-                const userAns = getAnswer(q.id);
-                return (
-                    <div key={q.id} className="question-block">
-                        <div className="question-text">{q.id}. {q.question || ''}</div>
-                        <select
-                            className="match-select"
-                            defaultValue={userAns}
-                            onChange={e => onAnswer(q.id, e.target.value)}
-                            disabled={reviewMode}
-                        >
-                            <option value="">--</option>
-                            {bankKeys.map(k => (
-                                <option key={k} value={k}>{k}. {bank[k]}</option>
-                            ))}
-                        </select>
-                        {reviewMode && (
-                            <div className={`review-verdict ${userAns.trim().toUpperCase() === q.answer ? 'ok' : 'ng'}`}>
-                                {userAns.trim().toUpperCase() === q.answer ? '✅' : `❌ (${q.answer})`}
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
         </div>
     );
 }
@@ -247,13 +316,19 @@ export function MatchingRenderer({ data, getAnswer, onAnswer, reviewMode = false
  *  Note completion (Section 4 style; same as form but different intro)
  * ---------------------------------------------------------------------*/
 export function NoteRenderer({ data, getAnswer, onAnswer, reviewMode = false, sectionOffset = 0 }: { data: { note_intro?: string; note_content?: string; questions: { id: number; answers?: string[] }[] }; sectionOffset?: number } & CommonProps) {
+    if (!data) return null;
+    const questions = Array.isArray(data.questions) ? data.questions : [];
+    const noteContent = data.note_content || '';
+    const startId = questions[0]?.id ?? sectionOffset + 1;
+    const { element, renderedIds } = renderStructuredWithBlanks(noteContent, startId, getAnswer, onAnswer, reviewMode);
     return (
         <div className="listening-note-block">
             {data.note_intro && <p className="section-instructions">{data.note_intro}</p>}
-            {renderStructuredWithBlanks(data.note_content || '', sectionOffset + 1, getAnswer, onAnswer, reviewMode)}
+            {noteContent && element}
+            {renderFallbackInputs(questions, renderedIds, getAnswer, onAnswer, reviewMode, Boolean(noteContent))}
             {reviewMode && (
                 <div className="review-answer-list">
-                    {data.questions.map(q => {
+                    {questions.map(q => {
                         const v = verdictText(getAnswer(q.id), q.answers || []);
                         return <div key={q.id} className={`review-verdict-row ${v.ok ? 'ok' : 'ng'}`}>{q.id}. {v.msg}</div>;
                     })}
@@ -270,9 +345,10 @@ export function scoreListeningQuestions(
     questions: { id: number; answers?: string[]; answer?: string }[],
     getAnswer: (qid: number) => string,
 ): { correct: number; total: number } {
+    const safeQs = Array.isArray(questions) ? questions : [];
     let correct = 0;
-    const total = questions.length;
-    for (const q of questions) {
+    const total = safeQs.length;
+    for (const q of safeQs) {
         const userLc = (getAnswer(q.id) || '').trim().toLowerCase();
         if (!userLc) continue;
         if (Array.isArray(q.answers) && q.answers.length > 0) {

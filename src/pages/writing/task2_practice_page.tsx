@@ -1,6 +1,6 @@
 import Layout from '../../components/layout/Layout';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { showToast } from '../../components/common/Toast';
@@ -34,10 +34,13 @@ export default function Task2PracticePage() {
     const t = translations[lang];
 
     const [searchParams] = useSearchParams();
+    const { state } = useLocation();
     const type = searchParams.get('type') || 'opinion';
     const topicCategory = (searchParams.get('topic') || 'all').trim().toLowerCase() || 'all';
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
+    const customName: string = typeof (state as { customName?: string })?.customName === 'string' ? (state as { customName: string }).customName.trim() : '';
+    const customDescription: string = typeof (state as { customDescription?: string })?.customDescription === 'string' ? (state as { customDescription: string }).customDescription.trim() : '';
     const cacheKey = bankId ? `writing_task2_bank_${bankId}` : `writing_task2_session_${type}_${topicCategory}`;
 
     const [step, setStep] = useState<WritingStep>('loading');
@@ -122,12 +125,15 @@ export default function Task2PracticePage() {
         async function fetchPrompt() {
             setStep('loading');
             try {
+                const body: Record<string, unknown> = {
+                    type,
+                    topic_category: topicCategory,
+                };
+                if (customName) body.customName = customName;
+                if (customDescription) body.customDescription = customDescription;
                 const res = await api<Task2Data & { aiQuestionId?: number | null }>('/writing/task2/generate', {
                     method: 'POST',
-                    body: {
-                        type,
-                        topic_category: topicCategory,
-                    },
+                    body,
                 });
                 // 生成后直接进入 AI 题库
                 sessionStorage.removeItem(cacheKey);

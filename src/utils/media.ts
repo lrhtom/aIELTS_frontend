@@ -16,6 +16,19 @@ const MEDIA_BASE = (import.meta.env.VITE_MEDIA_BASE ?? '/media').replace(/\/+$/,
 export function mediaUrl(value?: string | null): string {
   if (!value) return ''
   if (/^(?:https?:|data:|blob:)/i.test(value)) return value
-  const key = value.replace(/^\/+/, '')
+  // Strip a leading `/media/` (old rows stored the fully-prefixed path); we always
+  // want a media-relative key so MEDIA_BASE isn't accidentally duplicated.
+  const key = value.replace(/^\/+/, '').replace(/^media\/+/, '')
   return `${MEDIA_BASE}/${key}`
+}
+
+/**
+ * Resolve a listening/writing map image src from the two fields the backend may
+ * emit: preferred relative `imagePath` (new, dev/prod unified) OR legacy
+ * absolute `imageUrl` (old records). Both funnel through `mediaUrl()`.
+ */
+export function mapImageSrc(imagePath?: string | null, imageUrl?: string | null): string {
+  if (imagePath) return mediaUrl(imagePath)
+  if (imageUrl) return mediaUrl(imageUrl)
+  return ''
 }

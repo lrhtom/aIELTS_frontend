@@ -18,6 +18,8 @@ interface Props {
     /** Returns the formatted absolute date (e.g. "06-25" / "今天") the card will next surface at after this rating. */
     previewNextDueLabel?: (card: VocabCard, rating: number) => string;
     simpleMode?: boolean;
+    /** false 时正面锁死不可翻（用于「必须听完发音再翻面」） */
+    canFlip?: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,8 +45,10 @@ export default function GazeMode({
     estimateInterval,
     previewNextDueLabel,
     simpleMode,
+    canFlip = true,
 }: Props) {
     const { translations: t } = useLang();
+    const flipLocked = !simpleMode && !canFlip;
 
     const [activeTracking, setActiveTracking] = useState<'eye' | 'mouse'>(trackingMode);
     const [gazeReady, setGazeReady] = useState(false);
@@ -98,14 +102,14 @@ export default function GazeMode({
         autoFlippedRef.current = false;
     }, [currentCard.word]);
 
-    // Auto-flip when all letters scanned
+    // Auto-flip when all letters scanned (also blocked when TTS is still playing)
     useEffect(() => {
-        if (allScanned && !isFlipped && !submitting && gazeReady && !simpleMode && !autoFlippedRef.current) {
+        if (allScanned && !isFlipped && !submitting && gazeReady && !simpleMode && !flipLocked && !autoFlippedRef.current) {
             autoFlippedRef.current = true;
             const timer = setTimeout(() => onFlip(), 400);
             return () => clearTimeout(timer);
         }
-    }, [allScanned, isFlipped, submitting, gazeReady, onFlip, simpleMode]);
+    }, [allScanned, isFlipped, submitting, gazeReady, onFlip, simpleMode, flipLocked]);
 
     const markLetterScanned = useCallback((index: number) => {
         if (scannedRef.current.has(index)) return;
@@ -505,17 +509,19 @@ export default function GazeMode({
             )}
 
             <div
-                className="fc-scene"
+                className={`fc-scene${flipLocked ? ' is-locked' : ''}`}
                 role="button"
                 tabIndex={0}
                 onKeyDown={e => {
-                    if (e.code === 'Space') { e.preventDefault(); onFlip(); }
+                    if (e.code === 'Space' && !flipLocked) { e.preventDefault(); onFlip(); }
                 }}
+                aria-disabled={flipLocked}
                 aria-label={isFlipped ? t.vocab.common.flipFront : t.vocab.common.flipBack}
+                style={flipLocked ? { cursor: 'not-allowed' } : undefined}
             >
                 <div
                     className={`fc-card ${isFlipped && !simpleMode ? 'is-flipped' : ''} ${isFlipping ? 'is-flipping' : ''} ${statusCls}`}
-                    onClick={!simpleMode ? onFlip : undefined}
+                    onClick={!simpleMode && !flipLocked ? onFlip : undefined}
                 >
                     <div className="fc-face">
                         <button

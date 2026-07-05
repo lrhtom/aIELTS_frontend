@@ -8,6 +8,8 @@ export interface AIQuestionSummary {
     skill: AIQuestionSkill;
     subtype: string;
     title: string;
+    /** 用户在生成时填写的简介，未填则空串 */
+    description: string;
     status: AIQuestionStatus;
     errorMessage: string;
     isAnswered: boolean;

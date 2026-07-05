@@ -11,6 +11,7 @@
  * global qid range is [16..20] — pass `startId - 1 = 15` as the offset.
  */
 import type { MapData, MapDecoration, MapLandmark } from '../../store/listen_page_store';
+import { mapImageSrc } from '../../utils/media';
 
 interface Props {
     map: MapData;
@@ -67,24 +68,20 @@ function renderDecoration(d: MapDecoration, i: number) {
     }
 }
 
-function renderLandmark(lm: MapLandmark, questionIdOffset: number) {
-    if (lm.questionId != null) {
-        const displayId = lm.questionId + questionIdOffset;
-        return (
-            <g key={lm.id}>
-                <circle cx={lm.x} cy={lm.y} r={16} fill="#ef4444" opacity={0.9} />
-                <text x={lm.x} y={lm.y + 5} textAnchor="middle" fontSize={13} fontWeight="bold" fill="white">
-                    {displayId}
-                </text>
-            </g>
-        );
-    }
+function renderLandmark(lm: MapLandmark, _questionIdOffset: number) {
+    // Reference IELTS format: buildings are labelled by a SINGLE letter (A-J).
+    // No red numbered markers — legacy `questionId` field is ignored so old
+    // records fall back to the letter label cleanly.
+    const label = String(lm.label ?? '');
+    const isLetter = label.length === 1 && /^[A-Z]$/.test(label);
+    const fontSize = isLetter ? 22 : 11;
+    const fontWeight = isLetter ? 800 : 600;
     if (lm.shape === 'circle') {
         const r = lm.r || 25;
         return (
             <g key={lm.id}>
-                <circle cx={lm.x} cy={lm.y} r={r} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={1.5} />
-                <text x={lm.x} y={lm.y + 4} textAnchor="middle" fontSize={10} fontWeight="600" fill="#334155">{lm.label}</text>
+                <circle cx={lm.x} cy={lm.y} r={r} fill="white" stroke="#1f2937" strokeWidth={1.5} />
+                <text x={lm.x} y={lm.y + fontSize / 3} textAnchor="middle" fontSize={fontSize} fontWeight={fontWeight} fill="#1f2937">{label}</text>
             </g>
         );
     }
@@ -92,13 +89,44 @@ function renderLandmark(lm: MapLandmark, questionIdOffset: number) {
     const h = lm.h || 45;
     return (
         <g key={lm.id}>
-            <rect x={lm.x - w / 2} y={lm.y - h / 2} width={w} height={h} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={1.5} rx={4} />
-            <text x={lm.x} y={lm.y + 4} textAnchor="middle" fontSize={10} fontWeight="600" fill="#334155">{lm.label}</text>
+            <rect x={lm.x - w / 2} y={lm.y - h / 2} width={w} height={h} fill="white" stroke="#1f2937" strokeWidth={1.5} rx={2} />
+            <text x={lm.x} y={lm.y + fontSize / 3} textAnchor="middle" fontSize={fontSize} fontWeight={fontWeight} fill="#1f2937">{label}</text>
         </g>
     );
 }
 
 export default function ListeningMapSVG({ map, questionIdOffset = 0, maxWidth = 640 }: Props) {
+    if (!map) return null;
+    // Prefer FLUX.2-pro rendered image when available — the landmark-based SVG
+    // is only a fallback for legacy bank records generated before the image
+    // pipeline was wired up.
+    // Prefer relative imagePath through mediaUrl() so dev / prod both work
+    // (dev VITE_MEDIA_BASE=https://aielts.xyz/media; prod =/media).
+    // Legacy imageUrl (`/media/...`) is also handled by mapImageSrc's stripping.
+    const resolvedSrc = mapImageSrc(map.imagePath, map.imageUrl);
+    if (resolvedSrc) {
+        return (
+            <div className="listening-map-svg-wrap" style={{ maxWidth, margin: '0 0 16px 0' }}>
+                {map.name && (
+                    <h5 style={{ margin: '0 0 8px 0', color: 'var(--color-text)', fontSize: 14, fontWeight: 600 }}>
+                        🗺️ {map.name}
+                    </h5>
+                )}
+                <img
+                    src={resolvedSrc}
+                    alt={map.name || 'Listening map'}
+                    style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block',
+                        borderRadius: 8,
+                        border: '1px solid var(--color-border)',
+                        background: '#fefce8',
+                    }}
+                />
+            </div>
+        );
+    }
     const vw = map.width || 600;
     const vh = map.height || 400;
     return (
@@ -119,17 +147,32 @@ export default function ListeningMapSVG({ map, questionIdOffset = 0, maxWidth = 
                     <line key={`gh-${i}`} x1={0} y1={(i + 1) * 50} x2={vw} y2={(i + 1) * 50} stroke="#e5e7eb" strokeWidth={0.5} />
                 ))}
                 {(map.decorations || []).map((d, i) => renderDecoration(d, i))}
-                {(map.paths || []).map((p, i) => (
-                    <polyline
-                        key={`path-${i}`}
-                        points={p.points.map(pt => pt.join(',')).join(' ')}
-                        fill="none"
-                        stroke="#94a3b8"
-                        strokeWidth={3}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    />
-                ))}
+                {(map.paths || []).map((p, i) => {
+                    const pts = Array.isArray(p?.points) ? p.points : [];
+                    if (pts.length === 0) return null;
+                    // Points can be [[x,y],...] (spec), ["x,y",...] (AI drift → string), or
+                    // [{x,y},...]. Coerce every shape to "x,y" so .join never hits a non-array.
+                    const ptToStr = (pt: unknown): string => {
+                        if (Array.isArray(pt)) return pt.join(',');
+                        if (typeof pt === 'string') return pt;
+                        if (pt && typeof pt === 'object') {
+                            const o = pt as { x?: unknown; y?: unknown };
+                            if (typeof o.x === 'number' && typeof o.y === 'number') return `${o.x},${o.y}`;
+                        }
+                        return '';
+                    };
+                    return (
+                        <polyline
+                            key={`path-${i}`}
+                            points={pts.map(ptToStr).filter(Boolean).join(' ')}
+                            fill="none"
+                            stroke="#94a3b8"
+                            strokeWidth={3}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    );
+                })}
                 {(map.landmarks || []).map(lm => renderLandmark(lm, questionIdOffset))}
             </svg>
         </div>

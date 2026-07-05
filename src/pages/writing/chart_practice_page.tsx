@@ -1,7 +1,7 @@
 import Layout from '../../components/layout/Layout';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import DOMPurify from 'dompurify';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { getAIQuestion } from '../../api/ai_question';
@@ -26,9 +26,12 @@ export default function ChartPracticePage() {
     const t = translations[lang];
 
     const [searchParams] = useSearchParams();
+    const { state } = useLocation();
     const type = searchParams.get('type') || 'line';
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
+    const customName: string = typeof (state as { customName?: string })?.customName === 'string' ? (state as { customName: string }).customName.trim() : '';
+    const customDescription: string = typeof (state as { customDescription?: string })?.customDescription === 'string' ? (state as { customDescription: string }).customDescription.trim() : '';
     const cacheKey = bankId
         ? `writing_task1_chart_bank_${bankId}`
         : `writing_task1_chart_session_${type}`;
@@ -134,6 +137,8 @@ export default function ChartPracticePage() {
             setStep('loading');
             try {
                 const body: Record<string, unknown> = { type };
+                if (customName) body.customName = customName;
+                if (customDescription) body.customDescription = customDescription;
                 const res = await api<ChartData & { aiQuestionId?: number | null }>('/writing/chart/generate', {
                     method: 'POST',
                     body,

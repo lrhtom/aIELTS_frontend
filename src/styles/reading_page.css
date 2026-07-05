@@ -983,6 +983,24 @@
     margin: 0 2px;
     vertical-align: baseline;
 }
+/* One sentence-completion row: text with inline <input> replacing `_____`. */
+.rd-inline-q-block {
+    background: white;
+    border: 1px solid var(--color-border);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    line-height: 2;
+    font-size: 15px;
+    color: var(--color-text);
+}
+.rd-inline-q-block .rd-blank-num {
+    margin-right: 4px;
+}
+.rd-inline-q-block .rd-blank-input {
+    margin: 0 4px;
+    vertical-align: baseline;
+}
 .rd-blank-num {
     font-weight: 700;
     color: var(--color-primary);

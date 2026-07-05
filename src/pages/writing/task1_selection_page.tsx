@@ -15,6 +15,8 @@ export default function Task1SelectionPage() {
 
     const [selectedType, setSelectedType] = useState<string>('chart');
     const [selectedChart, setSelectedChart] = useState<string>('line');
+    const [customName, setCustomName] = useState('');
+    const [customDescription, setCustomDescription] = useState('');
 
     const taskTypes = [
         { id: 'chart', nameZh: t.task1Selection.types.chart.title, nameEn: t.task1Selection.types.chart.nameEn, icon: '📈', desc: t.task1Selection.types.chart.desc, isBeta: false },
@@ -38,7 +40,12 @@ export default function Task1SelectionPage() {
     const goToChartPractice = (subtype: string, extraParams?: Record<string, string>) => {
         sessionStorage.removeItem(`writing_task1_chart_session_${subtype}`);
         const params = new URLSearchParams({ type: subtype, ...(extraParams || {}) });
-        navigate(`/writing/chart/doing?${params.toString()}`);
+        navigate(`/writing/chart/doing?${params.toString()}`, {
+            state: {
+                customName: customName.trim(),
+                customDescription: customDescription.trim(),
+            },
+        });
     };
 
     const handleStart = () => {
@@ -129,6 +136,40 @@ export default function Task1SelectionPage() {
                                 </div>
                                 <div className="uc-row-control console-model-selector">
                                     <AiModelSelector label="" description="" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="uc-card-group">
+                            <div className="uc-list-row uc-row-vertical">
+                                <div className="uc-row-label-flex">
+                                    <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>🏷️</span>
+                                        <span className="row-title">{t.common.customQuestion.sectionTitle}</span>
+                                    </div>
+                                    <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                                        {t.common.customQuestion.sectionDesc}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+                                    <input
+                                        type="text"
+                                        maxLength={80}
+                                        placeholder={t.common.customQuestion.namePlaceholder}
+                                        value={customName}
+                                        onChange={e => setCustomName(e.target.value)}
+                                        style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 14 }}
+                                        aria-label={t.common.customQuestion.nameLabel}
+                                    />
+                                    <textarea
+                                        maxLength={300}
+                                        rows={2}
+                                        placeholder={t.common.customQuestion.descPlaceholder}
+                                        value={customDescription}
+                                        onChange={e => setCustomDescription(e.target.value)}
+                                        style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 14, resize: 'vertical', fontFamily: 'inherit' }}
+                                        aria-label={t.common.customQuestion.descLabel}
+                                    />
                                 </div>
                             </div>
                         </div>

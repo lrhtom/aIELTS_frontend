@@ -28,6 +28,8 @@ export default function Task2SelectionPage() {
 
     const [selectedType, setSelectedType] = useState<string>('opinion');
     const [selectedTopicCategory, setSelectedTopicCategory] = useState<Task2TopicCategory>('all');
+    const [customName, setCustomName] = useState('');
+    const [customDescription, setCustomDescription] = useState('');
 
     const taskTypes = [
         { id: 'opinion', nameZh: t.task2Selection.types.opinion.title, nameEn: t.task2Selection.types.opinion.nameEn, icon: '⚖️', desc: t.task2Selection.types.opinion.desc },
@@ -54,6 +56,10 @@ export default function Task2SelectionPage() {
 
     const selected = taskTypes.find(x => x.id === selectedType) ?? taskTypes[0];
     const topicQuery = `topic=${encodeURIComponent(selectedTopicCategory)}`;
+    const navigateState = {
+        customName: customName.trim(),
+        customDescription: customDescription.trim(),
+    };
 
     const handleStart = () => {
         if (selectedType === 'random') {
@@ -64,10 +70,10 @@ export default function Task2SelectionPage() {
                 const opinionPool = ['opinion_agree', 'opinion_discuss', 'opinion_advantages'];
                 const randomOpinion = opinionPool[Math.floor(Math.random() * opinionPool.length)];
                 clearTask2Session(randomOpinion);
-                navigate(`/writing/task2/doing?type=${randomOpinion}&${topicQuery}`);
+                navigate(`/writing/task2/doing?type=${randomOpinion}&${topicQuery}`, { state: navigateState });
             } else {
                 clearTask2Session(randomMain);
-                navigate(`/writing/task2/doing?type=${randomMain}&${topicQuery}`);
+                navigate(`/writing/task2/doing?type=${randomMain}&${topicQuery}`, { state: navigateState });
             }
             return;
         }
@@ -75,10 +81,10 @@ export default function Task2SelectionPage() {
         const target = taskTypes.find(x => x.id === selectedType);
         if (target) {
             if (target.id === 'opinion') {
-                navigate(`/writing/task2/opinion?${topicQuery}`);
+                navigate(`/writing/task2/opinion?${topicQuery}`, { state: navigateState });
             } else {
                 clearTask2Session(target.id);
-                navigate(`/writing/task2/doing?type=${target.id}&${topicQuery}`);
+                navigate(`/writing/task2/doing?type=${target.id}&${topicQuery}`, { state: navigateState });
             }
         }
     };
@@ -133,7 +139,41 @@ export default function Task2SelectionPage() {
                             <div className="uc-list-row uc-row-vertical">
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>🏷️</span>
+                                        <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>🏷️</span>
+                                        <span className="row-title">{t.common.customQuestion.sectionTitle}</span>
+                                    </div>
+                                    <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                                        {t.common.customQuestion.sectionDesc}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+                                    <input
+                                        type="text"
+                                        maxLength={80}
+                                        placeholder={t.common.customQuestion.namePlaceholder}
+                                        value={customName}
+                                        onChange={e => setCustomName(e.target.value)}
+                                        style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 14 }}
+                                        aria-label={t.common.customQuestion.nameLabel}
+                                    />
+                                    <textarea
+                                        maxLength={300}
+                                        rows={2}
+                                        placeholder={t.common.customQuestion.descPlaceholder}
+                                        value={customDescription}
+                                        onChange={e => setCustomDescription(e.target.value)}
+                                        style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 14, resize: 'vertical', fontFamily: 'inherit' }}
+                                        aria-label={t.common.customQuestion.descLabel}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="uc-card-group">
+                            <div className="uc-list-row uc-row-vertical">
+                                <div className="uc-row-label-flex">
+                                    <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>🎯</span>
                                         <span className="row-title">{t.task2Selection.topicLabel}</span>
                                     </div>
                                     <span className="row-desc">{t.task2Selection.topicHint}</span>
