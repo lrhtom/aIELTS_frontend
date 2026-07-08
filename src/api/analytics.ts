@@ -116,3 +116,24 @@ export async function getPracticeAnalytics(): Promise<PracticeAnalytics> {
     return res.data;
 }
 
+/* ── Speaking session analytics（只含有 summary 报告的会话）── */
+export interface SpeakingTrendItem {
+    id: number;
+    date: string;          // MM-DD HH:MM
+    mode: string;          // chat/call/scenario/part1/part2/part3/fullTest
+    overall: number;
+    dims: Record<string, number>;
+}
+
+export interface SpeakingAnalytics {
+    trend: SpeakingTrendItem[];
+    skills_avg: Record<string, number>;
+    by_mode: Record<string, number>;
+    total_sessions: number;
+}
+
+export async function getSpeakingAnalytics(): Promise<SpeakingAnalytics> {
+    const res = await apiClient.get('/analytics/speaking');
+    return res.data;
+}
+

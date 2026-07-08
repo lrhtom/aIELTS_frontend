@@ -15,9 +15,12 @@ import '../../styles/speaking_page.css';
 
 export type IeltsPart = 'part1' | 'part2' | 'part3';
 export type SpeakingMode = 'chat' | 'call' | 'exam' | 'scenario' | 'fullTest' | 'part1' | 'part2' | 'part3';
+// 2026-07-07 起全套考试并入全真模拟：Part 选择器多一档 'full'，
+// 选中后仍走 mode='fullTest' 的既有聊天页机器（fullTestPhase 自动过渡等零改动）
+type ExamScope = IeltsPart | 'full';
 
 interface PartInfo {
-    id: IeltsPart;
+    id: ExamScope;
     emoji: string;
     title: string;
     desc: string;
@@ -40,8 +43,11 @@ export default function Speaking() {
         { id: 'part1', emoji: '💬', title: sc.ieltsPart.parts.part1.title, desc: sc.ieltsPart.parts.part1.desc },
         { id: 'part2', emoji: '🗣️', title: sc.ieltsPart.parts.part2.title, desc: sc.ieltsPart.parts.part2.desc },
         { id: 'part3', emoji: '🧠', title: sc.ieltsPart.parts.part3.title, desc: sc.ieltsPart.parts.part3.desc },
+        { id: 'full', emoji: '📋', title: sc.ieltsPart.parts.full.title, desc: sc.ieltsPart.parts.full.desc },
     ];
 
+    // 2026-07-07 起 call（通话）模式并入 chat：唯一差异只是隐藏键盘，
+    // 降级为"纯语音模式"开关；旧 call 会话在题库恢复时自动映射。
     const MODES: ModeInfo[] = [
         {
             id: 'chat',
@@ -49,13 +55,6 @@ export default function Speaking() {
             title: sc.modes.items.chat.title,
             desc: sc.modes.items.chat.desc,
             color: 'mode-chat',
-        },
-        {
-            id: 'call',
-            emoji: '📞',
-            title: sc.modes.items.call.title,
-            desc: sc.modes.items.call.desc,
-            color: 'mode-call',
         },
         {
             id: 'exam',
@@ -71,18 +70,11 @@ export default function Speaking() {
             desc: sc.modes.items.scenario.desc,
             color: 'mode-scenario',
         },
-        {
-            id: 'fullTest',
-            emoji: '📋',
-            title: sc.modes.items.fullTest.title,
-            desc: sc.modes.items.fullTest.desc,
-            color: 'mode-fulltest',
-        },
     ];
 
     const [vocabInput, setVocabInput] = useState(() => getInitialVocabInput());
     const [useCustomVocab, setUseCustomVocab] = useState(false);
-    const [selectedPart, setSelectedPart] = useState<IeltsPart>('part1');
+    const [selectedPart, setSelectedPart] = useState<ExamScope>('part1');
     const [showSubtitles, setShowSubtitles] = useState(true);
     const [selectedMode, setSelectedMode] = useState<SpeakingMode>('chat');
     const [scenarioInput, setScenarioInput] = useState('');
@@ -90,6 +82,11 @@ export default function Speaking() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isChecking, setIsChecking] = useState(false);
     const [isGeneratingScenario, setIsGeneratingScenario] = useState(false);
+    // 自定义题库卡片标题/简介（留空 = 自动用话题名，卡片无简介）
+    const [customName, setCustomName] = useState('');
+    const [customDescription, setCustomDescription] = useState('');
+    // 纯语音模式（原通话模式）：隐藏键盘输入，仅 chat 模式生效
+    const [voiceOnly, setVoiceOnly] = useState(false);
     
     // Plan Import State
     const [plans, setPlans] = useState<LearningPlan[]>([]);
@@ -169,7 +166,7 @@ export default function Speaking() {
     const isExamPart1 = selectedMode === 'exam' && selectedPart === 'part1';
     const isExamPart2 = selectedMode === 'exam' && selectedPart === 'part2';
     const isExamPart3 = selectedMode === 'exam' && selectedPart === 'part3';
-    const isFullTest = selectedMode === 'fullTest';
+    const isFullTest = selectedMode === 'exam' && selectedPart === 'full';
     const isStartDisabled = isChecking || isGeneratingScenario;
 
     const handleStart = async () => {
@@ -196,16 +193,19 @@ export default function Speaking() {
             }
         }
 
-        if (selectedMode === 'chat' || selectedMode === 'call' || selectedMode === 'scenario') {
+        if (selectedMode === 'chat' || selectedMode === 'scenario') {
             speakingStore.isChatAllowed = true;
             navigate('/speaking/chat', {
                 state: {
                     vocabInput: useCustomVocab ? vocabInput : '',
                     mode: selectedMode,
                     showSubtitles,
-                    part: selectedPart,
+                    part: selectedPart === 'full' ? 'part1' : selectedPart,
                     scenarioInput: scenarioInput.trim(),
                     scenarioFiles: selectedMode === 'scenario' ? scenarioFiles : undefined,
+                    customTitle: customName.trim(),
+                    customDesc: customDescription.trim(),
+                    voiceOnly: selectedMode === 'chat' ? voiceOnly : false,
                 },
             });
         } else if (isExamPart1) {
@@ -220,6 +220,8 @@ export default function Speaking() {
                         showSubtitles,
                         part: 'part1',
                         bankSource: res.data.source,
+                        customTitle: customName.trim(),
+                        customDesc: customDescription.trim(),
                     }
                 });
             } catch (err: unknown) {
@@ -239,6 +241,8 @@ export default function Speaking() {
                         showSubtitles,
                         part: 'part2',
                         bankSource: res.data.source,
+                        customTitle: customName.trim(),
+                        customDesc: customDescription.trim(),
                     }
                 });
             } catch (err: unknown) {
@@ -258,6 +262,8 @@ export default function Speaking() {
                         showSubtitles,
                         part: 'part3',
                         bankSource: res.data.source,
+                        customTitle: customName.trim(),
+                        customDesc: customDescription.trim(),
                     }
                 });
             } catch (err: unknown) {
@@ -278,6 +284,8 @@ export default function Speaking() {
                         showSubtitles,
                         part: 'part1',
                         bankSource: res.data.source,
+                        customTitle: customName.trim(),
+                        customDesc: customDescription.trim(),
                     }
                 });
             } catch (err: unknown) {
@@ -324,8 +332,8 @@ export default function Speaking() {
 
                         <div className="uc-settings-list">
                             <div className="uc-card-group">
-                                {/* IELTS Part Segmented Control */}
-                                {(selectedMode === 'exam' || selectedMode === 'fullTest') && (
+                                {/* IELTS Part Segmented Control（含"全套"档 = 原全套考试模式） */}
+                                {selectedMode === 'exam' && (
                                     <div className="uc-list-row">
                                         <div className="uc-row-label-flex">
                                             <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -333,21 +341,20 @@ export default function Speaking() {
                                                 <span className="row-title">{sc.ieltsPart.title}</span>
                                             </div>
                                         </div>
-                                    <div className="uc-row-control">
-                                        {selectedMode === 'fullTest' ? (
+                                    <div className="uc-row-control" style={selectedPart === 'full' ? { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 } : undefined}>
+                                        <div className="uc-segmented-control">
+                                            {PARTS.map(p => (
+                                                <button
+                                                    key={p.id}
+                                                    className={`seg-btn ${selectedPart === p.id ? 'active' : ''}`}
+                                                    onClick={() => setSelectedPart(p.id)}
+                                                >
+                                                    {p.title}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {selectedPart === 'full' && (
                                             <span className="ft-inline-text">📋 {sc.ieltsPart.fullTestHint}</span>
-                                        ) : (
-                                            <div className="uc-segmented-control">
-                                                {PARTS.map(p => (
-                                                    <button
-                                                        key={p.id}
-                                                        className={`seg-btn ${selectedPart === p.id ? 'active' : ''}`}
-                                                        onClick={() => setSelectedPart(p.id)}
-                                                    >
-                                                        {p.title}
-                                                    </button>
-                                                ))}
-                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -439,7 +446,26 @@ export default function Speaking() {
                                     </label>
                                 </div>
                             </div>
-                            
+
+                                {/* 纯语音模式（原通话模式）：只在自由对话下显示 */}
+                                {selectedMode === 'chat' && (
+                                    <div className="uc-list-row">
+                                        <div className="uc-row-label">
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <span className="uc-row-icon" style={{ color: '#6366f1', background: '#e0e7ff' }}>📞</span>
+                                                <span className="row-title">{sc.voiceOnly.title}</span>
+                                            </div>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{sc.voiceOnly.desc}</span>
+                                        </div>
+                                        <div className="uc-row-control">
+                                            <label className="toggle-switch-console">
+                                                <input type="checkbox" checked={voiceOnly} onChange={e => setVoiceOnly(e.target.checked)} />
+                                                <span className="toggle-slider-console" />
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Vocab Accordion */}
                                 <div className={`uc-list-group uc-vocab-group ${useCustomVocab ? 'expanded' : ''}`} style={{ borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: 0 }}>
                                     <div className="uc-list-row" style={{ borderBottom: 'none' }}>
@@ -473,6 +499,57 @@ export default function Speaking() {
                                     </div>
                                 )}
                             </div>
+                            </div>
+
+                            {/* 自定义题库卡片标题/简介（与听/读/写配置页同一套 customQuestion 文案） */}
+                            <div className="uc-card-group">
+                                <div className="uc-list-row uc-row-vertical">
+                                    <div className="uc-row-label-flex">
+                                        <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>🏷️</span>
+                                            <span className="row-title">{tAll.common.customQuestion.sectionTitle}</span>
+                                        </div>
+                                    </div>
+                                    <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                                        {tAll.common.customQuestion.sectionDesc}
+                                    </span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8, width: '100%' }}>
+                                        <input
+                                            type="text"
+                                            maxLength={80}
+                                            placeholder={tAll.common.customQuestion.namePlaceholder}
+                                            value={customName}
+                                            onChange={e => setCustomName(e.target.value)}
+                                            style={{
+                                                padding: '8px 12px',
+                                                borderRadius: 8,
+                                                border: '1px solid var(--color-border)',
+                                                background: 'var(--color-surface)',
+                                                color: 'var(--color-text)',
+                                                fontSize: 14,
+                                            }}
+                                            aria-label={tAll.common.customQuestion.nameLabel}
+                                        />
+                                        <textarea
+                                            maxLength={300}
+                                            rows={2}
+                                            placeholder={tAll.common.customQuestion.descPlaceholder}
+                                            value={customDescription}
+                                            onChange={e => setCustomDescription(e.target.value)}
+                                            style={{
+                                                padding: '8px 12px',
+                                                borderRadius: 8,
+                                                border: '1px solid var(--color-border)',
+                                                background: 'var(--color-surface)',
+                                                color: 'var(--color-text)',
+                                                fontSize: 14,
+                                                resize: 'vertical',
+                                                fontFamily: 'inherit',
+                                            }}
+                                            aria-label={tAll.common.customQuestion.descLabel}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

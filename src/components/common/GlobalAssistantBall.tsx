@@ -1275,11 +1275,13 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             if (result.ok) {
                 setHasCheckedInToday(true);
             }
-            const embed = `**${result.message}**\n\n` +
-                (result.ok
-                    ? `${t.assistant.checkin.balance}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
-                      `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}`
-                    : `${t.assistant.checkin.comeBack}`);
+            // Compose from structured fields — the backend `message` string is
+            // Chinese-only and bypasses i18n.
+            const embed = result.ok
+                ? `**${t.assistant.checkin.successMessage.replace('{bonus}', (result.bonus ?? 0).toLocaleString())}**\n\n` +
+                  `${t.assistant.checkin.balance}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
+                  `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}`
+                : `**${t.assistant.checkin.alreadyMessage}**`;
             const assistantMessage: AgentChatMessage = {
                 id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
                 role: 'assistant',
@@ -1334,11 +1336,11 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             if (isCheckinQuery(trimmed)) {
                 try {
                     const result = await checkinApi.doCheckin();
-                    const embed = `**${result.message}**\n\n` +
-                        (result.ok
-                            ? `${t.assistant.checkin.balance}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
-                              `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}`
-                            : `${t.assistant.checkin.comeBack}`);
+                    const embed = result.ok
+                        ? `**${t.assistant.checkin.successMessage.replace('{bonus}', (result.bonus ?? 0).toLocaleString())}**\n\n` +
+                          `${t.assistant.checkin.balance}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
+                          `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}`
+                        : `**${t.assistant.checkin.alreadyMessage}**`;
                     const assistantMessage: AgentChatMessage = {
                         id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
                         role: 'assistant',

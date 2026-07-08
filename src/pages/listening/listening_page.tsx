@@ -886,8 +886,8 @@ export default function ListeningPage() {
                                 <button
                                     className={`aielts-player-play ${ttsSpeaking ? 'is-playing' : 'is-paused'}`}
                                     onClick={togglePlayPause}
-                                    title={ttsSpeaking ? '暂停 (Space)' : '播放 (Space)'}
-                                    aria-label={ttsSpeaking ? 'Pause' : 'Play'}
+                                    title={ttsSpeaking ? t.listeningDetails.player.pause : t.listeningDetails.player.play}
+                                    aria-label={ttsSpeaking ? t.listeningDetails.player.pause : t.listeningDetails.player.play}
                                 >
                                     {ttsSpeaking ? '⏸' : '▶'}
                                 </button>
@@ -898,8 +898,8 @@ export default function ListeningPage() {
                                     <button
                                         className="aielts-player-skip"
                                         onClick={() => skipSeconds(-5)}
-                                        title="后退 5 秒"
-                                        aria-label="Rewind 5 seconds"
+                                        title={t.listeningDetails.player.back5}
+                                        aria-label={t.listeningDetails.player.back5}
                                     >⏪</button>
                                     <div
                                         className="aielts-player-progress"
@@ -916,14 +916,14 @@ export default function ListeningPage() {
                                             value={playbackTime}
                                             onChange={(e) => handleSeek(Number(e.target.value))}
                                             className="aielts-player-range"
-                                            aria-label="Audio progress"
+                                            aria-label={t.listeningDetails.player.progress}
                                         />
                                     </div>
                                     <button
                                         className="aielts-player-skip"
                                         onClick={() => skipSeconds(5)}
-                                        title="前进 5 秒"
-                                        aria-label="Forward 5 seconds"
+                                        title={t.listeningDetails.player.fwd5}
+                                        aria-label={t.listeningDetails.player.fwd5}
                                     >⏩</button>
                                     <span className="aielts-player-time">
                                         {formatAudioTime(playbackTime)} / {formatAudioTime(audioDuration)}
@@ -932,7 +932,7 @@ export default function ListeningPage() {
                                         value={playbackRate}
                                         onChange={(e) => handleRateChange(Number(e.target.value))}
                                         className="aielts-player-rate"
-                                        title="播放倍速"
+                                        title={t.listeningDetails.player.speed}
                                     >
                                         <option value={0.75}>0.75×</option>
                                         <option value={1}>1×</option>
@@ -947,10 +947,10 @@ export default function ListeningPage() {
                                     className="toolbar-btn toolbar-btn-outline"
                                     onClick={toggleControlsHidden}
                                     style={{ marginLeft: '8px' }}
-                                    title={controlsHidden ? '显示播放控件' : '隐藏播放控件'}
+                                    title={controlsHidden ? t.listeningDetails.player.showControls : t.listeningDetails.player.hideControls}
                                 >
                                     <span className="btn-icon">{controlsHidden ? '👁' : '🙈'}</span>
-                                    {controlsHidden ? '显示控件' : '隐藏控件'}
+                                    {controlsHidden ? t.listeningDetails.player.showBtn : t.listeningDetails.player.hideBtn}
                                 </button>
                             )}
                         </div>

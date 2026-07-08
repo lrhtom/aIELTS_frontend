@@ -13,6 +13,7 @@ import type {
     MatchingListeningData,
 } from '../../store/listen_page_store';
 import MatchingLetterGrid from '../common/MatchingLetterGrid';
+import { useLang } from '../../i18n/LanguageContext';
 
 /**
  * Coerce an AI bank field to a normalized Record<string, string> — same shape
@@ -112,21 +113,22 @@ function renderStructuredWithBlanks(
  * block silently disappear — the user sees notes but has no way to answer
  * those questions.
  */
-function renderFallbackInputs(
-    questions: { id: number }[],
-    renderedIds: Set<number>,
-    getAnswer: (qid: number) => string,
-    onAnswer: (qid: number, v: string) => void,
-    disabled: boolean,
-    hasStructuredContent: boolean,
-): ReactElement | null {
+function FallbackInputs({ questions, renderedIds, getAnswer, onAnswer, disabled, hasStructuredContent }: {
+    questions: { id: number }[];
+    renderedIds: Set<number>;
+    getAnswer: (qid: number) => string;
+    onAnswer: (qid: number, v: string) => void;
+    disabled: boolean;
+    hasStructuredContent: boolean;
+}): ReactElement | null {
+    const { translations: t } = useLang();
     const missing = questions.filter(q => !renderedIds.has(q.id));
     if (missing.length === 0) return null;
     return (
         <div className="listening-fallback-inputs" style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {hasStructuredContent && (
                 <p className="section-instructions" style={{ fontStyle: 'italic', opacity: 0.85 }}>
-                    Answer the remaining questions:
+                    {t.components.questionRenderer.answerRemaining}
                 </p>
             )}
             {missing.map(q => (
@@ -138,7 +140,7 @@ function renderFallbackInputs(
                         defaultValue={getAnswer(q.id)}
                         onChange={e => onAnswer(q.id, e.target.value)}
                         disabled={disabled}
-                        placeholder="Type your answer…"
+                        placeholder={t.components.questionRenderer.typeAnswer}
                         style={{ flex: 1, maxWidth: 320 }}
                     />
                 </div>
@@ -169,7 +171,7 @@ export function FormRenderer({ data, getAnswer, onAnswer, reviewMode = false, se
         <div className="listening-form-block">
             {data.form_intro && <p className="section-instructions">{data.form_intro}</p>}
             {formContent && element}
-            {renderFallbackInputs(questions, renderedIds, getAnswer, onAnswer, reviewMode, Boolean(formContent))}
+            <FallbackInputs questions={questions} renderedIds={renderedIds} getAnswer={getAnswer} onAnswer={onAnswer} disabled={reviewMode} hasStructuredContent={Boolean(formContent)} />
             {reviewMode && (
                 <div className="review-answer-list">
                     {questions.map(q => {
@@ -196,7 +198,7 @@ export function TableRenderer({ data, getAnswer, onAnswer, reviewMode = false, s
         <div className="listening-table-block">
             {data.table_intro && <p className="section-instructions">{data.table_intro}</p>}
             {tableContent && element}
-            {renderFallbackInputs(questions, renderedIds, getAnswer, onAnswer, reviewMode, Boolean(tableContent))}
+            <FallbackInputs questions={questions} renderedIds={renderedIds} getAnswer={getAnswer} onAnswer={onAnswer} disabled={reviewMode} hasStructuredContent={Boolean(tableContent)} />
             {reviewMode && (
                 <div className="review-answer-list">
                     {questions.map(q => {
@@ -222,7 +224,7 @@ export function FlowchartRenderer({ data, getAnswer, onAnswer, reviewMode = fals
         <div className="listening-flowchart-block">
             {data.flowchart_intro && <p className="section-instructions">{data.flowchart_intro}</p>}
             {flowContent && element}
-            {renderFallbackInputs(questions, renderedIds, getAnswer, onAnswer, reviewMode, Boolean(flowContent))}
+            <FallbackInputs questions={questions} renderedIds={renderedIds} getAnswer={getAnswer} onAnswer={onAnswer} disabled={reviewMode} hasStructuredContent={Boolean(flowContent)} />
             {reviewMode && (
                 <div className="review-answer-list">
                     {questions.map(q => {
@@ -239,6 +241,7 @@ export function FlowchartRenderer({ data, getAnswer, onAnswer, reviewMode = fals
  *  Short-answer questions
  * ---------------------------------------------------------------------*/
 export function ShortAnswerRenderer({ data, getAnswer, onAnswer, reviewMode = false }: { data: ShortAnswerListeningData } & CommonProps) {
+    const { translations: t } = useLang();
     if (!data) return null;
     const questions = Array.isArray(data.questions) ? data.questions : [];
     return (
@@ -255,7 +258,7 @@ export function ShortAnswerRenderer({ data, getAnswer, onAnswer, reviewMode = fa
                             defaultValue={userAns}
                             onChange={e => onAnswer(q.id, e.target.value)}
                             disabled={reviewMode}
-                            placeholder="Type your answer…"
+                            placeholder={t.components.questionRenderer.typeAnswer}
                         />
                         {reviewMode && (
                             <div className={`review-verdict ${verdictText(userAns, q.answers || []).ok ? 'ok' : 'ng'}`}>
@@ -325,7 +328,7 @@ export function NoteRenderer({ data, getAnswer, onAnswer, reviewMode = false, se
         <div className="listening-note-block">
             {data.note_intro && <p className="section-instructions">{data.note_intro}</p>}
             {noteContent && element}
-            {renderFallbackInputs(questions, renderedIds, getAnswer, onAnswer, reviewMode, Boolean(noteContent))}
+            <FallbackInputs questions={questions} renderedIds={renderedIds} getAnswer={getAnswer} onAnswer={onAnswer} disabled={reviewMode} hasStructuredContent={Boolean(noteContent)} />
             {reviewMode && (
                 <div className="review-answer-list">
                     {questions.map(q => {

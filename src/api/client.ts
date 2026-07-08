@@ -1,4 +1,5 @@
 import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
+import { currentT } from '../i18n/currentT';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/send-code'];
@@ -99,7 +100,7 @@ apiClient.interceptors.response.use(
             }));
         }
         if (error.response?.status === 402) {
-            const errorMessage = error.response?.data?.message || 'AT币余额不足';
+            const errorMessage = error.response?.data?.message || currentT().billing.insufficientBalance;
             console.error('AT币余额不足:', errorMessage);
             window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
                 detail: {
@@ -248,26 +249,27 @@ export async function fetchStream(path: string, options: RequestOptions = {}): P
     }
 
     if (response.status === 402) {
+        // Parse failure must not swallow the deliberate 402 throw below — only
+        // the .json() call is guarded, so err.status survives to the caller.
+        let errorMessage = currentT().billing.insufficientBalance;
+        let requiredBalance: number | undefined;
+        let currentBalance: number | undefined;
         try {
             const data = await response.json();
-            const errorMessage = data.message || data.error || 'AT币余额不足';
-            window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
-                detail: {
-                    message: errorMessage,
-                    requiredBalance: data.requiredBalance,
-                    currentBalance: data.currentBalance,
-                },
-            }));
-            const err = new Error(errorMessage) as ApiError;
-            err.status = 402;
-            throw err;
-        } catch {
-            throw new Error('AT币余额不足');
-        }
+            errorMessage = data.message || data.error || errorMessage;
+            requiredBalance = data.requiredBalance;
+            currentBalance = data.currentBalance;
+        } catch { /* unparseable body — keep the i18n fallback message */ }
+        window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
+            detail: { message: errorMessage, requiredBalance, currentBalance },
+        }));
+        const err = new Error(errorMessage) as ApiError;
+        err.status = 402;
+        throw err;
     }
 
     if (!response.ok) {
-        let msg = '请求失败';
+        let msg = currentT().billing.requestFailed;
         try {
             const data = await response.json();
             msg = data.error || data.message || msg;

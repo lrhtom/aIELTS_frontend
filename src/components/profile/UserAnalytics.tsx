@@ -227,7 +227,7 @@ function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planI
 export default function UserAnalytics() {
     const { translations: t } = useLang();
 
-    const [activeSkill, setActiveSkill] = useState<'vocab' | 'writing' | 'reading' | 'listening'>('vocab');
+    const [activeSkill, setActiveSkill] = useState<'vocab' | 'writing' | 'reading' | 'listening' | 'speaking'>('vocab');
 
     const [plans, setPlans] = useState<PlanBrief[]>([]);
     const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
@@ -339,7 +339,7 @@ export default function UserAnalytics() {
 
             <div className="analytics-tabs">
                 {(['vocab', 'listening', 'speaking', 'reading', 'writing'] as const).map(sk => {
-                    const enabled = sk === 'vocab' || sk === 'writing' || sk === 'reading' || sk === 'listening';
+                    const enabled = sk === 'vocab' || sk === 'writing' || sk === 'reading' || sk === 'listening' || sk === 'speaking';
                     return (
                         <button
                             key={sk}
@@ -359,6 +359,7 @@ export default function UserAnalytics() {
 
             {activeSkill === 'reading' && <PracticeAnalyticsPanel skill="reading" />}
             {activeSkill === 'listening' && <PracticeAnalyticsPanel skill="listening" />}
+            {activeSkill === 'speaking' && <SpeakingAnalyticsPanel t={t.analytics} />}
 
             {activeSkill === 'vocab' && (
                 <>
@@ -1159,9 +1160,282 @@ function WritingSkillsRadarChart({ skills, targetScore }: { skills: WritingSkill
                 const x = cx + (radius + textOffset) * Math.cos(angles[i]);
                 const y = cy + (radius + textOffset) * Math.sin(angles[i]);
                 const displayScore = (typeof d.score === 'number' && !isNaN(d.score)) ? d.score.toFixed(1) : '-';
-                
+
                 return (
                     <text key={i} x={x} y={y} textAnchor="middle" alignmentBaseline="middle" fontSize="14" fontWeight="600" fill="var(--color-text)">
+                        {d.label} <tspan fill="var(--color-primary)">({displayScore})</tspan>
+                    </text>
+                );
+            })}
+        </svg>
+    );
+}
+
+/* ── Speaking Analytics Components ── */
+import { getSpeakingAnalytics, type SpeakingAnalytics, type SpeakingTrendItem } from '../../api/analytics';
+
+function SpeakingAnalyticsPanel({ t }: { t: any }) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const { user } = useAuth();
+    const { translations: tAll } = useLang();
+    const sm = tAll.speakingConfig.summary;
+    const [data, setData] = useState<SpeakingAnalytics | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        getSpeakingAnalytics()
+            .then(res => setData(res))
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="analytics-loading">
+                <div className="analytics-skeleton-chart" />
+                <div className="analytics-skeleton-chart" />
+            </div>
+        );
+    }
+
+    // 数据源 = AI 题库里已生成总结报告的口语会话（聊到一半没出报告的不计入）
+    if (!data || data.trend.length === 0) {
+        return <div className="analytics-empty">{t.noData}</div>;
+    }
+
+    const trend = data.trend;
+    const latest = trend[trend.length - 1];
+    const avgOverall = trend.reduce((a, r) => a + r.overall, 0) / trend.length;
+    const target = user?.target_speaking ? Number(user.target_speaking) : null;
+
+    // 雷达图只用 7 个核心维度（所有模式共有）；ARE/coherence/depth 属模式专有，不进雷达
+    const RADAR_DIMS: { key: string; label: string }[] = [
+        { key: 'accuracy',      label: sm.metricAccuracy },
+        { key: 'pronunciation', label: sm.metricPronunciation },
+        { key: 'fluency',       label: sm.metricFluency },
+        { key: 'completeness',  label: sm.metricCompleteness },
+        { key: 'grammar',       label: sm.metricGrammar },
+        { key: 'vocab',         label: sm.metricVocab },
+        { key: 'relevance',     label: sm.metricRelevance },
+    ];
+    const radarData = RADAR_DIMS.map(d => ({ label: d.label, score: data.skills_avg[d.key] ?? 0 }));
+
+    return (
+        <div className="analytics-charts">
+            <div className="analytics-stats" style={{ marginBottom: '24px', display: 'flex', gap: '16px' }}>
+                <div className="analytics-stat-card" style={{ flex: 1 }}>
+                    <span className="analytics-stat-num">{data.total_sessions}</span>
+                    <span className="analytics-stat-label">{t.speakingSessions}</span>
+                </div>
+                <div className="analytics-stat-card" style={{ flex: 1 }}>
+                    <span className="analytics-stat-num">{latest ? latest.overall.toFixed(1) : '—'}</span>
+                    <span className="analytics-stat-label">{t.latestScore}</span>
+                </div>
+                <div className="analytics-stat-card" style={{ flex: 1 }}>
+                    <span className="analytics-stat-num">{avgOverall.toFixed(1)}</span>
+                    <span className="analytics-stat-label">{t.avgScore}</span>
+                </div>
+            </div>
+
+            <div className="analytics-chart-card">
+                <h3 className="analytics-chart-title">{t.speakingTrend}</h3>
+                <SpeakingScoreLineChart data={trend} color="#14b8a6" t={t} targetScore={target} />
+            </div>
+
+            <div className="analytics-chart-card" style={{ maxWidth: '560px' }}>
+                <h3 className="analytics-chart-title">{t.speakingRadar}</h3>
+                <SpeakingSkillsRadarChart data={radarData} targetScore={target} />
+            </div>
+        </div>
+    );
+}
+
+function SpeakingScoreLineChart({ data, color, t, targetScore }: { data: SpeakingTrendItem[]; color: string; t: any; targetScore?: number | null }) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const [tip, setTip] = useState<{ x: number; y: number; lines: React.ReactNode[] } | null>(null);
+    const hide = useCallback(() => setTip(null), []);
+
+    const W = 760;
+    const H = 280;
+    const padL = 40;
+    const padR = 24;
+    const padT = 24;
+    const padB = 40;
+    const graphW = W - padL - padR;
+    const graphH = H - padT - padB;
+
+    // 与写作趋势图相同的自适应 Y 轴：默认下限 4，低分数据出现时按 0.5 档下探
+    const maxScore = 9;
+    const minScore = useMemo(() => {
+        let lo = 4;
+        for (const d of data) {
+            if (d.overall > 0 && d.overall < lo) lo = Math.floor(d.overall * 2) / 2;
+        }
+        return Math.max(0, Math.min(lo, maxScore - 1));
+    }, [data]);
+
+    const getX = (idx: number) => padL + (data.length > 1 ? (idx / (data.length - 1)) * graphW : graphW / 2);
+    const getY = (score: number) => padT + graphH - ((score - minScore) / (maxScore - minScore)) * graphH;
+
+    const overallPoints = data.map((d, i) => `${getX(i)},${getY(d.overall)}`);
+
+    const yTicks = useMemo(() => {
+        const step = (maxScore - minScore) >= 5 ? 1 : 0.5;
+        const out: number[] = [];
+        for (let v = minScore; v <= maxScore + 1e-6; v += step) out.push(Math.round(v * 2) / 2);
+        return out;
+    }, [minScore]);
+
+    const xLabels: { idx: number; label: string; x: number }[] = useMemo(() => {
+        if (data.length === 0) return [];
+        const xLabelCount = Math.min(8, data.length);
+        const picked: { idx: number; label: string; x: number }[] = [];
+        let lastLabel = '';
+        for (let i = 0; i < xLabelCount; i++) {
+            const idx = Math.round((i / (xLabelCount - 1 || 1)) * (data.length - 1));
+            const labelStr = (data[idx].date || '').split(' ')[0]; // MM-DD
+            if (labelStr === lastLabel) continue;
+            picked.push({ idx, label: labelStr, x: getX(idx) });
+            lastLabel = labelStr;
+        }
+        return picked;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data]);
+
+    const handleMouseEnter = (ev: React.MouseEvent, d: SpeakingTrendItem) => {
+        const lines: React.ReactNode[] = [
+            <div key="date" style={{fontWeight: 'bold', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '4px', marginBottom: '4px'}}>{d.date} · {d.mode}</div>,
+            <div key="overall" style={{display: 'flex', justifyContent: 'space-between', gap: '16px'}}>
+                <span>{t.overallScore}:</span> <strong style={{color: color}}>{d.overall.toFixed(1)}</strong>
+            </div>,
+        ];
+        setTip({ x: ev.clientX, y: ev.clientY, lines });
+    };
+
+    return (
+        <>
+            <svg viewBox={`0 0 ${W} ${H}`} className="analytics-svg" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <filter id="spkShadow" x="-10%" y="-10%" width="120%" height="120%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1" />
+                    </filter>
+                </defs>
+
+                {/* Target Score Line */}
+                {targetScore !== undefined && targetScore !== null && Number(targetScore) >= minScore && Number(targetScore) <= maxScore && (
+                    <g>
+                        <line x1={padL} y1={getY(Number(targetScore))} x2={W - padR} y2={getY(Number(targetScore))} stroke="var(--color-primary)" strokeWidth="1.5" strokeDasharray="5 5" />
+                        <text x={W - padR - 5} y={getY(Number(targetScore)) - 6} textAnchor="end" fontSize="12" fill="var(--color-primary)" fontWeight="bold">{t.skillsAvg.target} {Number(targetScore).toFixed(1)}</text>
+                    </g>
+                )}
+
+                {yTicks.map(v => (
+                    <g key={v}>
+                        <line x1={padL} y1={getY(v)} x2={W - padR} y2={getY(v)} stroke="var(--color-border)" strokeWidth="0.5" strokeDasharray="3 3" />
+                        <text x={padL - 10} y={getY(v) + 4} textAnchor="end" className="analytics-axis-label" fill="var(--color-text-dim)">{v}</text>
+                    </g>
+                ))}
+
+                {overallPoints.length > 1 && (
+                    <polyline points={overallPoints.join(' ')} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#spkShadow)" />
+                )}
+
+                {data.map((d, i) => (
+                    <g key={d.id}>
+                        <circle cx={getX(i)} cy={getY(d.overall)} r="12" fill="transparent" style={{ cursor: 'pointer' }}
+                            onMouseEnter={(ev) => handleMouseEnter(ev, d)}
+                            onMouseMove={ev => setTip(prev => prev ? { ...prev, x: ev.clientX, y: ev.clientY } : null)}
+                            onMouseLeave={hide} />
+                        <circle cx={getX(i)} cy={getY(d.overall)} r="4" fill="var(--color-surface)" stroke={color} strokeWidth="2.5" style={{ pointerEvents: 'none' }} />
+                    </g>
+                ))}
+
+                {xLabels.map((xl, i) => (
+                    <text key={i} x={xl.x} y={H - 12} textAnchor="middle" className="analytics-axis-label" fill="var(--color-text-dim)">
+                        {xl.label}
+                    </text>
+                ))}
+            </svg>
+            {tip && <ChartTooltip x={tip.x} y={tip.y} lines={tip.lines as any} />}
+        </>
+    );
+}
+
+/** N 维雷达图（口语 7 个核心维度）；结构沿用 WritingSkillsRadarChart，轴数自适应 */
+function SpeakingSkillsRadarChart({ data, targetScore }: { data: { label: string; score: number }[]; targetScore?: number | null }) {
+    const W = 460;
+    const H = 400;
+    const cx = W / 2;
+    const cy = H / 2;
+    const radius = 125;
+    const maxScore = 9;
+
+    const n = Math.max(data.length, 1);
+    const angles = data.map((_, i) => -Math.PI / 2 + (i * 2 * Math.PI) / n);
+
+    const getPoint = (score: number, index: number) => {
+        const safeScore = (typeof score === 'number' && !isNaN(score)) ? score : 0;
+        const r = (safeScore / maxScore) * radius;
+        return {
+            x: cx + r * Math.cos(angles[index]),
+            y: cy + r * Math.sin(angles[index])
+        };
+    };
+
+    const polygonPoints = data.map((d, i) => {
+        const p = getPoint(d.score, i);
+        return `${p.x},${p.y}`;
+    }).join(' ');
+
+    const targetPoints = targetScore !== undefined && targetScore !== null
+        ? angles.map((_, i) => {
+            const p = getPoint(Number(targetScore), i);
+            return `${p.x},${p.y}`;
+        }).join(' ')
+        : null;
+
+    const ticks = [2, 4, 6, 8];
+
+    return (
+        <svg viewBox={`0 0 ${W} ${H}`} className="analytics-svg" preserveAspectRatio="xMidYMid meet" style={{ margin: '0 auto', display: 'block', maxWidth: '460px', overflow: 'visible' }}>
+            <defs>
+                <linearGradient id="speakingRadarGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.05" />
+                </linearGradient>
+            </defs>
+
+            {ticks.map(tick => {
+                const r = (tick / maxScore) * radius;
+                return (
+                    <g key={tick}>
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--color-border)" strokeWidth="1" strokeDasharray="4 4" />
+                        {tick > 2 ? <text x={cx + 4} y={cy - r + 12} fontSize="11" fill="var(--color-text-dim)" opacity="0.7">{tick}</text> : null}
+                    </g>
+                );
+            })}
+
+            {angles.map((a, i) => (
+                <line key={i} x1={cx} y1={cy} x2={cx + radius * Math.cos(a)} y2={cy + radius * Math.sin(a)} stroke="var(--color-border)" strokeWidth="1" />
+            ))}
+
+            {targetPoints && (
+                <polygon points={targetPoints} fill="none" stroke="var(--color-primary)" strokeWidth="1.5" strokeDasharray="5 5" strokeLinejoin="round" />
+            )}
+
+            <polygon points={polygonPoints} fill="url(#speakingRadarGrad)" stroke="var(--color-primary)" strokeWidth="3" strokeLinejoin="round" />
+
+            {data.map((d, i) => {
+                const p = getPoint(d.score, i);
+                return <circle key={i} cx={p.x} cy={p.y} r="4.5" fill="var(--color-primary)" stroke="var(--color-surface)" strokeWidth="2" />;
+            })}
+
+            {data.map((d, i) => {
+                const textOffset = 30;
+                const x = cx + (radius + textOffset) * Math.cos(angles[i]);
+                const y = cy + (radius + textOffset) * Math.sin(angles[i]);
+                const displayScore = (typeof d.score === 'number' && !isNaN(d.score)) ? d.score.toFixed(1) : '-';
+
+                return (
+                    <text key={i} x={x} y={y} textAnchor="middle" alignmentBaseline="middle" fontSize="12" fontWeight="600" fill="var(--color-text)">
                         {d.label} <tspan fill="var(--color-primary)">({displayScore})</tspan>
                     </text>
                 );

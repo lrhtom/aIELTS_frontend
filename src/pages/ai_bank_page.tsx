@@ -11,6 +11,10 @@ function resolveAnswerRoute(item: AIQuestionSummary): string {
     const id = item.id;
     if (item.skill === 'reading') return `/reading?bankId=${id}`;
     if (item.skill === 'listening') return `/listening?bankId=${id}`;
+    if (item.skill === 'speaking') {
+        // 有总结报告 → 直达报告页；进行中 → 回聊天页续聊
+        return item.hasFeedback ? `/speaking/summary?bankId=${id}` : `/speaking/chat?bankId=${id}`;
+    }
     if (item.skill === 'writing') {
         // 已批改且未重做 → 看批改结果；其余（pending 或 redone）→ 进答题页
         if (item.isAnswered && !isRedone(item)) return `/writing/correction?bankId=${id}`;
@@ -53,11 +57,15 @@ export default function AIBankPage() {
         { key: 'listening', label: t.tabs.listening, emoji: '🎧' },
         { key: 'reading',   label: t.tabs.reading,   emoji: '📖' },
         { key: 'writing',   label: t.tabs.writing,   emoji: '✍️' },
+        { key: 'speaking',  label: t.tabs.speaking,  emoji: '🗣️' },
     ];
 
     const [activeSkill, setActiveSkill] = useState<AIQuestionSkill>(() => {
+        // ?skill= 直达指定 tab（口语退出按钮用），优先级高于上次记住的 tab
+        const fromQuery = searchParams.get('skill');
+        if (fromQuery === 'reading' || fromQuery === 'listening' || fromQuery === 'writing' || fromQuery === 'speaking') return fromQuery;
         const stored = sessionStorage.getItem('ai_bank_active_skill');
-        if (stored === 'reading' || stored === 'listening' || stored === 'writing') return stored;
+        if (stored === 'reading' || stored === 'listening' || stored === 'writing' || stored === 'speaking') return stored;
         return 'listening';
     });
     const [items, setItems] = useState<AIQuestionSummary[]>([]);
@@ -167,21 +175,27 @@ export default function AIBankPage() {
                             const isJust = justId && Number(justId) === item.id;
                             const isGenerating = item.status === 'generating';
                             const isFailed = item.status === 'failed';
+                            // speaking：对话开始即有 userAnswer，"完成"以有总结报告为准；
+                            // 且每轮都会同步 lastAttemptAt，redone 概念不适用
+                            const isSpeaking = item.skill === 'speaking';
+                            const answeredFlag = isSpeaking ? item.hasFeedback : item.isAnswered;
                             const statusLabel = isGenerating
                                 ? t.statusGenerating
                                 : isFailed
                                     ? t.statusFailed
-                                    : (item.isAnswered ? (isRedone(item) ? t.statusRedone : t.statusAnswered) : t.statusPending);
+                                    : (answeredFlag
+                                        ? (!isSpeaking && isRedone(item) ? t.statusRedone : t.statusAnswered)
+                                        : (isSpeaking ? t.statusInProgress : t.statusPending));
                             const statusClass = isGenerating
                                 ? 'generating'
                                 : isFailed
                                     ? 'failed'
-                                    : (item.isAnswered ? (isRedone(item) ? 'redone' : 'answered') : 'pending');
+                                    : (answeredFlag ? (!isSpeaking && isRedone(item) ? 'redone' : 'answered') : 'pending');
                             const cardStateClass = isGenerating
                                 ? 'is-generating'
                                 : isFailed
                                     ? 'is-failed'
-                                    : (item.isAnswered ? 'is-answered' : 'is-pending');
+                                    : (answeredFlag ? 'is-answered' : 'is-pending');
                             return (
                                 <div
                                     key={item.id}

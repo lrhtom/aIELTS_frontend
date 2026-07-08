@@ -268,7 +268,7 @@ function ExplanationBlock({ arg }: { arg: BilingualArg }) {
     const steps: ExplanationStep[] = arg.explanation_steps?.length ? arg.explanation_steps : (() => {
         const enSentences = arg.explanation_en.split(/(?<=\.|\?|\!)\s+/).filter(s => s.trim());
         const zhSentences = arg.explanation_zh.split(/(?<=[。？！])\s*/).filter(s => s.trim());
-        const labels = ['背景', '顺推', '反推'];
+        const labels = [t.writingAiTeacher.lesson.stepBg, t.writingAiTeacher.lesson.stepForward, t.writingAiTeacher.lesson.stepBackward];
         const fallbackSteps: ExplanationStep[] = [];
         const maxLen = Math.max(enSentences.length, zhSentences.length, 1);
         for (let i = 0; i < maxLen; i++) {
@@ -787,7 +787,7 @@ export default function AiTeacherLessonPage() {
                 const steps = arg.explanation_steps?.length ? arg.explanation_steps : (() => {
                     const enSentences = (arg.explanation_en || '').split(/(?<=\.|\?|\!)\s+/).filter((s: string) => s.trim());
                     const zhSentences = (arg.explanation_zh || '').split(/(?<=[。？！])\s*/).filter((s: string) => s.trim());
-                    const labels = ['背景', '顺推', '反推'];
+                    const labels = [t.writingAiTeacher.lesson.stepBg, t.writingAiTeacher.lesson.stepForward, t.writingAiTeacher.lesson.stepBackward];
                     const fallbackSteps = [];
                     const maxLen = Math.max(enSentences.length, zhSentences.length, 1);
                     for (let k = 0; k < maxLen; k++) {

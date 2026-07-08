@@ -113,7 +113,7 @@ export default function FlashcardMode({
                             {flipLocked ? (
                                 <>
                                     <Volume2 size={13} />
-                                    语音播放中，请稍候…
+                                    {t.vocab.common.speakWait}
                                 </>
                             ) : (
                                 <>

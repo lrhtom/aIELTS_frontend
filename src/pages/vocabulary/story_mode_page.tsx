@@ -290,7 +290,7 @@ export default function StoryModePage() {
                                 fontSize: '0.85rem', whiteSpace: 'nowrap',
                             }}
                         >
-                            返回
+                            {t.common.back}
                         </button>
                     </div>
                 </div>

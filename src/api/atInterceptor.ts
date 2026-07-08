@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { balanceApi } from './balance';
 import { calculateCost } from '../config/ai_cost';
+import { currentT } from '../i18n/currentT';
 
 export interface ATInterceptorOptions {
     service: string;
@@ -20,10 +21,14 @@ export class ATInterceptor {
         // We warn when balance is low but never block; the backend handles billing.
         if (balance.atBalance < estimatedCost) {
             console.warn(`AT币余额可能不足 (预估): ${balance.atBalance} AT < ${estimatedCost} AT`);
-            window.dispatchEvent(new CustomEvent('at-balance-low', {
+            // 'at-balance-insufficient' is the event ATBalanceMonitor actually
+            // listens for ('at-balance-low' had no listener, so this advisory
+            // warning was never shown). Monitor renders it as
+            // needMoreBalance: '{message} (需要{required} AT，当前{current} AT)'.
+            window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
                 detail: {
-                    message: `预估消耗 ${estimatedCost} AT，当前余额 ${balance.atBalance} AT。实际扣费以服务端为准。`,
-                    estimatedCost,
+                    message: currentT().billing.estimatedShort,
+                    requiredBalance: estimatedCost,
                     currentBalance: balance.atBalance
                 }
             }));

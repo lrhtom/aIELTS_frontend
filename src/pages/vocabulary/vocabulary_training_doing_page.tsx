@@ -760,8 +760,8 @@ export default function VocabularyTrainingDoingPage() {
                 {/* Progress */}
                 <div style={{ marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                        <span>第 {currentIndex + 1} / {total} 题</span>
-                        <span style={{ color: '#16a34a', fontWeight: 600 }}>✅ {score} 正确</span>
+                        <span>{t.vocab.trainingDoing.questionProgress.replace('{i}', String(currentIndex + 1)).replace('{n}', String(total))}</span>
+                        <span style={{ color: '#16a34a', fontWeight: 600 }}>✅ {t.vocab.trainingDoing.correctCount.replace('{n}', String(score))}</span>
                     </div>
                     <div style={{ height: '6px', borderRadius: '999px', background: 'var(--color-border)', overflow: 'hidden' }}>
                         <div style={{

@@ -178,7 +178,7 @@ export default function WriteMode({
                             onClick={onWriteNext}
                             disabled={submitting}
                         >
-                            {t.vocab.next} → <span className="fc-qa-key">[键盘↵]</span>
+                            {t.vocab.next} → <span className="fc-qa-key">{t.vocab.common.enterKeyHint}</span>
                         </button>
                         <button
                             className="fc-write-undo"

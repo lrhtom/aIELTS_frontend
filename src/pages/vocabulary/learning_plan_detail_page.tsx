@@ -6,6 +6,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { retryWithBackoff } from '../../utils/retry';
 import { type StudyMode, type MasterySetting } from '../../utils/vocab_flashcard_utils';
 import { useLang } from '../../i18n/LanguageContext';
+import type { Translations } from '../../i18n/translations';
 import { sanitize } from '../../utils/safe_html';
 import { listNotebooks, type Notebook } from '../../api/notebook';
 import {
@@ -22,14 +23,14 @@ import '../../styles/vocabulary_learning_plan.css';
 type AddTab = 'manual' | 'notebook' | 'book';
 type BookSubMode = 'all' | 'range' | 'select';
 
-const STUDY_MODES: [StudyMode, string][] = [
-    ['flashcard', '记忆卡'],
-    ['read-aloud', '朗读单词'],
-    ['choice', '4选1'],
-    ['write', '看中文写英文'],
-    ['copy', '抄写模式'],
-    ['article_copy', '文章抄写'],
-    ['story_mode', '追剧背词'],
+const STUDY_MODES: [StudyMode, keyof Translations['vocab']['modes']][] = [
+    ['flashcard', 'flashcard'],
+    ['read-aloud', 'readAloud'],
+    ['choice', 'choice'],
+    ['write', 'write'],
+    ['copy', 'copy'],
+    ['article_copy', 'articleCopy'],
+    ['story_mode', 'storyModeDrama'],
 ];
 
 function clampCopyRepetitions(value: number): number {
@@ -330,7 +331,7 @@ export default function LearningPlanDetailPage() {
     const saveDaily = useCallback(async () => {
         if (!plan || dailyCount === plan.daily_count) return;
         if (plan.has_activity_today) {
-            showToast('今日已学习过单词，今日不能修改每日词数，请明天再调整。', 'error');
+            showToast(t.vocab.details.toastDailyLocked, 'error');
             setDailyCount(plan.daily_count);
             return;
         }
@@ -372,10 +373,10 @@ export default function LearningPlanDetailPage() {
             setPlan(updated);
             setCopyRepetitions(clampCopyRepetitions(updated.copy_repetitions ?? nextRepeats));
             setCopyReviewDays(clampCopyReviewDays(updated.copy_review_days ?? nextReviewDays));
-            showToast('抄写配置已保存', 'success');
+            showToast(t.vocab.details.toastCopyCfgSaved, 'success');
         } catch (e: unknown) {
             const errorMsg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            showToast(errorMsg || '抄写配置保存失败', 'error');
+            showToast(errorMsg || t.vocab.details.toastCopyCfgFail, 'error');
             setCopyRepetitions(clampCopyRepetitions(plan.copy_repetitions ?? 3));
             setCopyReviewDays(clampCopyReviewDays(plan.copy_review_days ?? 2));
         }
@@ -396,10 +397,10 @@ export default function LearningPlanDetailPage() {
             });
             setPlan(updated);
             setArticleReviewDays(clampArticleReviewDays(updated.article_review_days ?? nextDays));
-            showToast('文章抄写配置已保存', 'success');
+            showToast(t.vocab.details.toastArticleCfgSaved, 'success');
         } catch (e: unknown) {
             const errorMsg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            showToast(errorMsg || '文章抄写配置保存失败', 'error');
+            showToast(errorMsg || t.vocab.details.toastArticleCfgFail, 'error');
             setArticleReviewDays(clampArticleReviewDays(plan.article_review_days ?? 7));
         }
     }, [articleReviewDays, plan, planId]);
@@ -415,7 +416,7 @@ export default function LearningPlanDetailPage() {
             await getArticleCopy(planId, true);
             const result = await startPlan(planId);
             if (result.cards.length === 0) {
-                showToast('今日没有待学习的单词', 'success');
+                showToast(t.vocab.details.toastNoWordsToday, 'success');
                 return;
             }
             navigate(`/vocabulary/plans/${planId}/article-copy`, {
@@ -429,7 +430,7 @@ export default function LearningPlanDetailPage() {
             });
         } catch (err: unknown) {
             const errorMsg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            showToast(errorMsg || '重新生成文章失败', 'error');
+            showToast(errorMsg || t.vocab.details.toastRegenFail, 'error');
         } finally {
             articleRegeneratingRef.current = false;
             setArticleRegenerating(false);
@@ -707,12 +708,12 @@ export default function LearningPlanDetailPage() {
     const handlePageJump = () => {
         const rawValue = pageJumpInput.trim();
         if (!rawValue) {
-            showToast('请输入页码', 'error');
+            showToast(t.vocab.details.toastPageEmpty, 'error');
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            showToast(`请输入 1 到 ${totalPages} 的整数页码`, 'error');
+            showToast(t.vocab.details.toastPageRange.replace('{n}', String(totalPages)), 'error');
             return;
         }
         setPage(Math.min(totalPages, Math.max(1, parsed)));
@@ -722,12 +723,12 @@ export default function LearningPlanDetailPage() {
     const handleBookPageJump = () => {
         const rawValue = bookPageJumpInput.trim();
         if (!rawValue) {
-            showToast('请输入页码', 'error');
+            showToast(t.vocab.details.toastPageEmpty, 'error');
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            showToast(`请输入 1 到 ${bookTotalPages} 的整数页码`, 'error');
+            showToast(t.vocab.details.toastPageRange.replace('{n}', String(bookTotalPages)), 'error');
             return;
         }
         setBookPage(Math.min(bookTotalPages, Math.max(1, parsed)));
@@ -749,14 +750,14 @@ export default function LearningPlanDetailPage() {
 
     // ──────────────────────────────────────────────────────────────────────
     return (
-        <Layout backUrl="/vocabulary/plans" backText="返回词汇库" noPadding={true}>
+        <Layout backUrl="/vocabulary/plans" backText={t.vocab.details.backToVocab} noPadding={true}>
             <div className="uc-console" style={{ margin: 0, height: 'calc(100vh - 60px)' }}>
                 {/* ── Left Pane: Study Modes ── */}
                 <div className="uc-sidebar" style={{ width: leftWidth, flex: 'none', borderRight: 'none', overflowY: 'hidden', minHeight: 0 }}>
                     <div style={{ padding: "24px 24px 0 24px" }}>
-<div className="uc-sidebar-title" style={{ marginTop: 8 }}>学习模式</div>
+<div className="uc-sidebar-title" style={{ marginTop: 8 }}>{t.vocab.details.studyModeTitle}</div>
                     <nav className="uc-sidebar-nav" style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                        {STUDY_MODES.map(([m, label]) => (
+                        {STUDY_MODES.map(([m, labelKey]) => (
                             <button
                                 key={m}
                                 type="button"
@@ -770,7 +771,7 @@ export default function LearningPlanDetailPage() {
                                 <span className="nav-icon">
                                     {m === 'flashcard' ? '🃏' : m === 'read-aloud' ? '🎙️' : m === 'choice' ? '🎯' : m === 'write' ? '✍️' : m === 'copy' ? '📝' : m === 'article_copy' ? '📄' : '🍿'}
                                 </span>
-                                <span className="nav-text">{label}</span>
+                                <span className="nav-text">{t.vocab.modes[labelKey]}</span>
                             </button>
                         ))}
                     </nav>
@@ -783,9 +784,9 @@ export default function LearningPlanDetailPage() {
                                         <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📝</span>
-                                                <span className="row-title">每个单词抄写几遍</span>
+                                                <span className="row-title">{t.vocab.details.copyTimesTitle}</span>
                                             </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>必须完全正确。每次抄完一遍按规则重新插入</span>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t.vocab.details.copyTimesDesc}</span>
                                         </div>
                                         <div className="uc-row-control" style={{ width: '100%' }}>
                                             <input
@@ -804,11 +805,11 @@ export default function LearningPlanDetailPage() {
                                         <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>📅</span>
-                                                <span className="row-title">增加复习间隔（天）</span>
+                                                <span className="row-title">{t.vocab.details.reviewDaysTitle}</span>
                                             </div>
                                             <span className="row-desc" style={{ marginLeft: '40px' }}>
-                                                完成后额外增加 {copyReviewDays} 天
-                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>（今日已学，明日生效）</span>}
+                                                {t.vocab.details.copyReviewDesc.replace('{n}', String(copyReviewDays))}
+                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>{t.vocab.details.lockedHint}</span>}
                                             </span>
                                         </div>
                                         <div className="uc-row-control" style={{ width: '100%' }}>
@@ -836,11 +837,11 @@ export default function LearningPlanDetailPage() {
                                         <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>📅</span>
-                                                <span className="row-title">增加复习间隔（天）</span>
+                                                <span className="row-title">{t.vocab.details.reviewDaysTitle}</span>
                                             </div>
                                             <span className="row-desc" style={{ marginLeft: '40px' }}>
-                                                AI 生成短文，抄写完成后所有单词标记已学，增加相应天数
-                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>（今日已学，明日生效）</span>}
+                                                {t.vocab.details.articleReviewDesc}
+                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>{t.vocab.details.lockedHint}</span>}
                                             </span>
                                         </div>
                                         <div className="uc-row-control" style={{ width: '100%' }}>
@@ -861,9 +862,9 @@ export default function LearningPlanDetailPage() {
                                         <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>✨</span>
-                                                <span className="row-title">重新生成文章</span>
+                                                <span className="row-title">{t.vocab.details.regenTitle}</span>
                                             </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>如果不满意可让 AI 重写</span>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t.vocab.details.regenDesc}</span>
                                         </div>
                                         <div className="uc-row-control" style={{ width: '100%' }}>
                                             <button
@@ -873,7 +874,7 @@ export default function LearningPlanDetailPage() {
                                                 disabled={articleRegenerating}
                                                 onClick={handleRegenerateArticle}
                                             >
-                                                {articleRegenerating ? '生成中...' : '重新生成文章'}
+                                                {articleRegenerating ? t.vocab.details.regenning : t.vocab.details.regenTitle}
                                             </button>
                                         </div>
                                     </div>
@@ -901,7 +902,7 @@ export default function LearningPlanDetailPage() {
                                 min={1} max={200}
                                 value={dailyCount}
                                 disabled={isTodayConfigLocked}
-                                title={isTodayConfigLocked ? '今日已学习，明天可调整每日词数' : ''}
+                                title={isTodayConfigLocked ? t.vocab.details.dailyLockedTip : ''}
                                 onChange={e => setDailyCount(Number(e.target.value))}
                                 onBlur={saveDaily}
                                 onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
@@ -909,7 +910,7 @@ export default function LearningPlanDetailPage() {
                             />
                             <span>{t.vocab.details.dailySuffix}</span>
                             {isTodayConfigLocked && (
-                                <span style={{ color: 'var(--color-warning)', fontSize: '12px', marginLeft: 8 }}>今日已锁定</span>
+                                <span style={{ color: 'var(--color-warning)', fontSize: '12px', marginLeft: 8 }}>{t.vocab.details.todayLockedBadge}</span>
                             )}
                         </div>
 
@@ -1154,7 +1155,7 @@ export default function LearningPlanDetailPage() {
                                                     {t.vocab.details.bookNextPage}
                                                 </button>
                                                 <div className="lp-page-jump">
-                                                    <span>跳到</span>
+                                                    <span>{t.vocab.details.jumpTo}</span>
                                                     <input
                                                         type="text"
                                                         inputMode="numeric"
@@ -1166,8 +1167,8 @@ export default function LearningPlanDetailPage() {
                                                             }
                                                         }}
                                                         onKeyDown={e => { if (e.key === 'Enter') handleBookPageJump(); }}
-                                                        placeholder="页码"
-                                                        aria-label="跳转到指定页"
+                                                        placeholder={t.vocab.details.pagePlaceholder}
+                                                        aria-label={t.vocab.details.jumpAria}
                                                     />
                                                     <button
                                                         type="button"
@@ -1241,13 +1242,13 @@ export default function LearningPlanDetailPage() {
                         <input
                             className="lp-search"
                             type="text"
-                            placeholder={`${t.vocab.details.listSearch}（如 7天）`}
+                            placeholder={`${t.vocab.details.listSearch}${t.vocab.details.searchEg}`}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                         {hasSearchText && (
                             <div className="lp-search-result-count">
-                                搜索结果：{filtered.length} 词
+                                {t.vocab.details.searchResult.replace('{n}', String(filtered.length))}
                             </div>
                         )}
                     </div>
@@ -1291,7 +1292,7 @@ export default function LearningPlanDetailPage() {
                                         {t.vocab.details.nextPage}
                                     </button>
                                     <div className="lp-page-jump">
-                                        <span>跳到</span>
+                                        <span>{t.vocab.details.jumpTo}</span>
                                         <input
                                             type="text"
                                             inputMode="numeric"
@@ -1303,8 +1304,8 @@ export default function LearningPlanDetailPage() {
                                                 }
                                             }}
                                             onKeyDown={e => { if (e.key === 'Enter') handlePageJump(); }}
-                                            placeholder="页码"
-                                            aria-label="跳转到指定页"
+                                            placeholder={t.vocab.details.pagePlaceholder}
+                                            aria-label={t.vocab.details.jumpAria}
                                         />
                                         <button
                                             type="button"
@@ -1325,7 +1326,7 @@ export default function LearningPlanDetailPage() {
 
             <ConfirmDialog
                 open={deletingEntry !== null}
-                title="确认删除"
+                title={t.vocab.details.confirmDeleteTitle}
                 message={t.vocab.details.msgDeleteConfirm.replace('{word}', deletingEntry?.word ?? '')}
                 variant="danger"
                 onConfirm={handleDeleteConfirmed}

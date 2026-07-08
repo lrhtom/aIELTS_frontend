@@ -1,8 +1,9 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useRef, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import Layout from '../../components/layout/Layout';
 import { useLang } from '../../i18n/LanguageContext';
+import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import '../../styles/speaking_summary.css';
 
 interface ChatMessage {
@@ -36,6 +37,63 @@ const to05 = (n: number) => Math.round(n * 2) / 2;
 const azureTo9 = (v: number | undefined) => v != null ? to05(v * 9 / 100) : 0;
 
 type DimKey = string;
+
+// ── 汇总统计（纯函数：渲染与写回题库共用同一套口径）──────────────────────
+const CORE_DIM_KEYS = ['accuracy', 'pronunciation', 'fluency', 'completeness', 'grammar', 'vocab', 'relevance'];
+
+function activeKeysFor(mode?: string): string[] {
+    if (mode === 'part1') return [...CORE_DIM_KEYS, 'are_a', 'are_r', 'are_e'];
+    if (mode === 'part2' || mode === 'part3') return [...CORE_DIM_KEYS, 'coherence', 'depth'];
+    if (mode === 'fullTest') return [...CORE_DIM_KEYS, 'are_a', 'are_r', 'are_e', 'coherence', 'depth'];
+    return [...CORE_DIM_KEYS];
+}
+
+function computeRounds(chatHistory: ChatMessage[]) {
+    // Always pull all possible dimensions so that fullTest mode (which shows
+    // are_a/r/e + coherence/depth together) never leaks undefined into averages.
+    return chatHistory
+        .filter(m => m.role === 'assistant' && m.scores)
+        .map((m, i) => {
+            const sc = m.scores!;
+            const vals: Record<string, number> = {
+                accuracy:      azureTo9(sc.accuracy),
+                pronunciation: azureTo9(sc.pronunciation),
+                fluency:       azureTo9(sc.fluency),
+                completeness:  azureTo9(sc.completeness),
+                grammar:       sc.grammar ?? 0,
+                vocab:         sc.vocab ?? 0,
+                relevance:     sc.relevance ?? 0,
+                coherence:     sc.coherence ?? 0,
+                depth:         sc.depth ?? 0,
+                are_a:         sc.are_a ?? 0,
+                are_r:         sc.are_r ?? 0,
+                are_e:         sc.are_e ?? 0,
+            };
+            return { round: i + 1, ...vals };
+        });
+}
+
+function computeSummaryStats(chatHistory: ChatMessage[], mode?: string) {
+    const keys = activeKeysFor(mode);
+    const rounds = computeRounds(chatHistory);
+    const count = rounds.length || 1;
+    const avgs: Record<DimKey, number> = {};
+    for (const k of keys) {
+        avgs[k] = to05(rounds.reduce((a, r) => a + ((r as Record<string, number>)[k] ?? 0), 0) / count);
+    }
+    const allAvgValues = Object.values(avgs);
+    const overall = allAvgValues.length ? to05(allAvgValues.reduce((a, v) => a + v, 0) / allAvgValues.length) : 0;
+    return { rounds, avgs, overall };
+}
+
+interface SummaryNavState {
+    chatHistory: ChatMessage[];
+    scenarioPrompt: string;
+    words: Word[];
+    mode?: string;
+    /** 从聊天页进来时的题库会话 id；有值则把总结写回题库 */
+    sessionId?: number | null;
+}
 
 export default function SpeakingSummaryPage() {
     const location = useLocation();
@@ -91,25 +149,74 @@ export default function SpeakingSummaryPage() {
         }
     };
 
-    const state = location.state as {
-        chatHistory: ChatMessage[];
-        scenarioPrompt: string;
-        words: Word[];
-        mode?: string;
-    };
+    const navState = (location.state ?? null) as SummaryNavState | null;
+    const [searchParams] = useSearchParams();
+    const bankIdRaw = searchParams.get('bankId');
+    const bankId = bankIdRaw && !Number.isNaN(Number(bankIdRaw)) ? Number(bankIdRaw) : null;
+    const [data, setData] = useState<SummaryNavState | null>(navState);
+    const [loadFailed, setLoadFailed] = useState(false);
 
-    if (!state) {
+    // ── 从 AI 题库打开（?bankId=）：取回已落库的对话与配置渲染报告 ──────────
+    useEffect(() => {
+        if (data || !bankId) return;
+        getAIQuestion(bankId).then(detail => {
+            const ua = (detail.userAnswer || {}) as Record<string, unknown>;
+            const content = (detail.content || {}) as Record<string, unknown>;
+            setData({
+                chatHistory: Array.isArray(ua.chatHistory) ? ua.chatHistory as ChatMessage[] : [],
+                scenarioPrompt: String(content.scenarioPrompt || ''),
+                words: Array.isArray(ua.words) ? ua.words as Word[] : [],
+                mode: String(ua.activeMode || detail.subtype || 'chat'),
+            });
+        }).catch(() => setLoadFailed(true));
+    }, [bankId, data]);
+
+    // ── 首次从聊天页进来（带 sessionId）：把总结写回题库 ────────────────────
+    // 写入后该会话在题库中视为"有结果"，点击卡片直达本报告页。
+    const savedRef = useRef(false);
+    useEffect(() => {
+        if (savedRef.current || !navState?.sessionId || !navState.chatHistory?.length) return;
+        savedRef.current = true;
+        const stats = computeSummaryStats(navState.chatHistory, navState.mode);
+        submitAIQuestion(navState.sessionId, {
+            chatHistory: navState.chatHistory,
+            words: navState.words ?? [],
+            activeMode: navState.mode ?? 'chat',
+            scenarioPrompt: navState.scenarioPrompt ?? '',
+            finished: true,
+        }, {
+            mode: navState.mode ?? 'chat',
+            overall: stats.overall,
+            dims: stats.avgs,
+            rounds: stats.rounds.length,
+            savedAt: new Date().toISOString(),
+        }).catch(() => {});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const backTarget = bankId ? '/practice/ai/bank?skill=speaking' : '/speaking';
+
+    if (!data) {
+        if (bankId && !loadFailed) {
+            return (
+                <Layout>
+                    <div className="ss-empty">
+                        <h2>{sm.loadingReport}</h2>
+                    </div>
+                </Layout>
+            );
+        }
         return (
             <Layout>
                 <div className="ss-empty">
-                    <h2>No data available.</h2>
-                    <button className="ss-back-btn" onClick={() => navigate('/speaking')}>← Back</button>
+                    <h2>{sm.noData}</h2>
+                    <button className="ss-back-btn" onClick={() => navigate(backTarget)}>{s.backBtn}</button>
                 </div>
             </Layout>
         );
     }
 
-    const { chatHistory, scenarioPrompt, words, mode } = state;
+    const { chatHistory, scenarioPrompt, words, mode } = data;
     const isPart1 = mode === 'part1';
     const isPart2 = mode === 'part2';
     const isPart3 = mode === 'part3';
@@ -141,40 +248,9 @@ export default function SpeakingSummaryPage() {
         ];
     }
 
-    // Extract rounds with scores — always pull all possible dimensions
-    // so that fullTest mode (which shows are_a/r/e + coherence/depth together)
-    // never leaks undefined into the averages.
-    const rounds = chatHistory
-        .filter(m => m.role === 'assistant' && m.scores)
-        .map((m, i) => {
-            const sc = m.scores!;
-            const vals: Record<string, number> = {
-                accuracy:      azureTo9(sc.accuracy),
-                pronunciation: azureTo9(sc.pronunciation),
-                fluency:       azureTo9(sc.fluency),
-                completeness:  azureTo9(sc.completeness),
-                grammar:       sc.grammar ?? 0,
-                vocab:         sc.vocab ?? 0,
-                relevance:     sc.relevance ?? 0,
-                coherence:     sc.coherence ?? 0,
-                depth:         sc.depth ?? 0,
-                are_a:         sc.are_a ?? 0,
-                are_r:         sc.are_r ?? 0,
-                are_e:         sc.are_e ?? 0,
-            };
-            return { round: i + 1, ...vals };
-        });
-
-    // Averages per dimension
-    const count = rounds.length || 1;
-    const avgs: Record<DimKey, number> = {};
-    for (const dim of activeDims) {
-        avgs[dim.key] = to05(rounds.reduce((a, r) => a + (r as any)[dim.key], 0) / count);
-    }
-
-    // Overall = average of all dimensions
-    const allAvgValues = Object.values(avgs);
-    const overall = to05(allAvgValues.reduce((a, v) => a + v, 0) / allAvgValues.length);
+    // 统一走 computeSummaryStats —— 渲染与写回题库口径一致
+    // （activeDims 的 key 顺序与 activeKeysFor(mode) 完全对应，仅补充展示标签/颜色）
+    const { rounds, avgs, overall } = computeSummaryStats(chatHistory, mode);
 
     // Vocab coverage
     const usedWords = words.filter(w => w.count > 0).length;
@@ -281,7 +357,7 @@ export default function SpeakingSummaryPage() {
                     <button className="ss-share-btn" onClick={handleShare} disabled={sharing}>
                         {sharing ? sm.sharing : sm.shareBtn}
                     </button>
-                    <button className="ss-back-btn" onClick={() => navigate('/speaking')}>
+                    <button className="ss-back-btn" onClick={() => navigate(backTarget)}>
                         {s.backBtn}
                     </button>
                 </div>

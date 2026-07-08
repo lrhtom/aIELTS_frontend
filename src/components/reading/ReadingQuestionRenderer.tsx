@@ -13,6 +13,7 @@ import { useMemo, useState, type ReactElement } from 'react';
 import { sanitize } from '../../utils/safe_html';
 import type { Question, QuizData, FullPassageSection, ReadingQuestionType } from '../../store/reading_page_store';
 import MatchingLetterGrid from '../common/MatchingLetterGrid';
+import { useLang } from '../../i18n/LanguageContext';
 
 interface SectionLike {
     questionType: ReadingQuestionType;
@@ -190,6 +191,7 @@ function renderSummaryBlanksSelect(
 }
 
 export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, reviewMode = false }: Props) {
+    const { translations: t } = useLang();
     // Bank 记录经 AI 生成后偶尔会出现 questions 字段缺失/非数组的情况
     // (老的失败记录、部分被 admin 编辑掉、AI 出错等)。所有分支都靠 questions.map
     // 渲染,所以顶部先兜底再往下走,避免 "Cannot read properties of undefined
@@ -438,7 +440,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                                 defaultValue={userAns}
                                 onChange={e => onAnswer(q.id, e.target.value)}
                                 disabled={reviewMode}
-                                placeholder="Type your answer…"
+                                placeholder={t.components.questionRenderer.typeAnswer}
                             />
                             {reviewMode && (
                                 <div className={`review-verdict ${verdictArr(q.id, q.answers, userAns).correct ? 'ok' : 'ng'}`}>
@@ -492,6 +494,7 @@ interface MatchingHeadingsPanelProps {
 }
 
 function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMode }: MatchingHeadingsPanelProps) {
+    const { translations: t } = useLang();
     // Local state mirrors the answers so we can trigger re-render on every drop.
     // Initialised from the ref-backed getAnswer so state survives re-mounts.
     const [placements, setPlacements] = useState<Record<number, string>>(() => {
@@ -619,16 +622,16 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
                                                 type="button"
                                                 className="mh-chip-remove"
                                                 onClick={() => clearSlot(q.id)}
-                                                aria-label="Remove heading"
+                                                aria-label={t.components.questionRenderer.removeHeading}
                                             >×</button>
                                         )}
                                     </div>
                                 ) : (
-                                    <span className="mh-slot-hint">Drop a heading here</span>
+                                    <span className="mh-slot-hint">{t.components.questionRenderer.dropHeading}</span>
                                 )}
                             </div>
                             {reviewMode && isWrong && (
-                                <div className="review-verdict ng">❌ (correct: {q.answer})</div>
+                                <div className="review-verdict ng">{t.components.questionRenderer.correctIs.replace('{a}', q.answer ?? '')}</div>
                             )}
                         </div>
                     );

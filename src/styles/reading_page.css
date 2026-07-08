@@ -64,6 +64,7 @@
 .toolbar-left-group,
 .toolbar-right-group {
     display: flex;
+    align-items: center;
     gap: 12px;
 }
 

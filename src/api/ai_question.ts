@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 
-export type AIQuestionSkill = 'reading' | 'listening' | 'writing';
+export type AIQuestionSkill = 'reading' | 'listening' | 'writing' | 'speaking';
 export type AIQuestionStatus = 'generating' | 'ready' | 'failed';
 
 export interface AIQuestionSummary {
@@ -13,6 +13,8 @@ export interface AIQuestionSummary {
     status: AIQuestionStatus;
     errorMessage: string;
     isAnswered: boolean;
+    /** ai_feedback_json 非空。speaking 用它区分"进行中"与"已出报告" */
+    hasFeedback: boolean;
     answeredAt: string | null;
     lastAttemptAt: string | null;
     createdAt: string | null;
@@ -47,4 +49,10 @@ export async function submitAIQuestion(id: number, userAnswer: unknown, aiFeedba
 
 export async function deleteAIQuestion(id: number) {
     await apiClient.delete(`/ai-questions/${id}/`);
+}
+
+/** 口语会话开局建行（不调 AI、不扣 AT），后续每轮经 submitAIQuestion 覆盖式同步 */
+export async function startSpeakingSession(mode: string, title: string, content: Record<string, unknown>) {
+    const resp = await apiClient.post('/speaking/session/start', { mode, title, content });
+    return resp.data as { id: number };
 }

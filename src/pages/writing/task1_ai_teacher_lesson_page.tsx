@@ -524,11 +524,11 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
             <div className="at-split-layout">
                 <div className="at-split-main">
                     <div className="at-section-card">
-                        <h3>1. Introduction (引言段)</h3>
+                        <h3>{t.writingAiTeacher.task1.introHeading}</h3>
                         <BilingualBlock en={io.intro.text_en} zh={io.intro.text_zh} label="Paraphrase" />
                     </div>
                     <div className="at-section-card">
-                        <h3>2. Overview (概述段)</h3>
+                        <h3>{t.writingAiTeacher.task1.overviewHeading}</h3>
                         <BilingualBlock en={io.overview.text_en} zh={io.overview.text_zh} label="Main Features" />
                     </div>
                 </div>

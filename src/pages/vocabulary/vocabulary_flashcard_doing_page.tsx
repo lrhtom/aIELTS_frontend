@@ -48,13 +48,13 @@ export default function VocabularyFlashcardDoingPage() {
 
     const MODE_LABELS: Record<StudyMode, string> = useMemo(() => ({
         flashcard: t.vocab.modes.flashcard,
-        'flashcard-simple': '记忆卡简单模式',
-        'read-aloud': '朗读单词',
+        'flashcard-simple': t.vocab.modes.flashcardSimple,
+        'read-aloud': t.vocab.modes.readAloud,
         choice:    t.vocab.modes.choice,
         write:     t.vocab.modes.write,
         copy:      t.vocab.modes.copy,
-        article_copy: '文章抄写',
-        story_mode: '故事模式',
+        article_copy: t.vocab.modes.articleCopy,
+        story_mode: t.vocab.modes.storyMode,
     }), [t]);
 
     const TRACKING_LABELS: Record<TrackingMode, string> = useMemo(() => ({
@@ -474,7 +474,7 @@ export default function VocabularyFlashcardDoingPage() {
                     updatedCard = nextCard;
                 }
             } catch {
-                showToast(t.vocab.toastSyncFail || '评分同步失败，请检查网络后重试', 'error');
+                showToast(t.vocab.toastSyncFail, 'error');
                 submittedFsrsIndices.current.delete(ci);
                 setSubmitting(false);
                 return;
@@ -814,7 +814,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         const normalizedInput = copyInput.trim().toLowerCase();
         if (!normalizedInput) {
-            showToast('请先输入抄写内容', 'error');
+            showToast(t.vocab.flashcardDoing.toastCopyEmpty, 'error');
             return;
         }
         const currentRemaining = Math.max(0, copyRemaining[currentCardIdx] ?? copyRepetitions);
@@ -822,7 +822,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         const correctCount = countCopies(copyInput, currentCard.word);
         if (correctCount < currentRemaining) {
-            showToast(`抄写次数不足，需完整抄写 ${currentRemaining} 次`, 'error');
+            showToast(t.vocab.flashcardDoing.toastCopyNotEnough.replace('{n}', String(currentRemaining)), 'error');
             return;
         }
 
@@ -833,7 +833,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         if (remainingAfterSubmit === 0) {
             if (!planId || !currentCard.entry_id) {
-                showToast('缺少计划词条信息，无法写回应复习时间', 'error');
+                showToast(t.vocab.flashcardDoing.toastEntryMissing, 'error');
                 return;
             }
 
@@ -857,7 +857,7 @@ export default function VocabularyFlashcardDoingPage() {
                     last_review: new Date().toISOString(),
                 });
             } catch {
-                showToast('写回应复习时间失败，请稍后重试', 'error');
+                showToast(t.vocab.flashcardDoing.toastWriteBackFail, 'error');
                 setSubmitting(false);
                 return;
             } finally {
@@ -1027,7 +1027,7 @@ export default function VocabularyFlashcardDoingPage() {
             })
             .catch((error) => {
                 console.error('[词汇学习] 退出前同步失败', error);
-                showToast('退出前同步失败，请稍后重试', 'error');
+                showToast(t.vocab.flashcardDoing.toastExitSyncFail, 'error');
                 setLeaving(false);
             });
     }, [backPath, navigate, leaving, submitting, syncCurrentAnsweredBeforeExit, syncLearningTimerOnExit, setLeaving]);
@@ -1104,9 +1104,9 @@ export default function VocabularyFlashcardDoingPage() {
                             justifyContent: 'center', fontSize: 13,
                             color: 'var(--color-text-secondary)',
                         }}>
-                            <span>✅ 毕业 <strong style={{ color: 'var(--color-text)' }}>{graduatedTotal}</strong> 词</span>
-                            <span>🖱 累计评分 <strong style={{ color: 'var(--color-text)' }}>{totalClicks}</strong> 次</span>
-                            <span>❌ 遗忘 <strong style={{ color: totalForgets > 0 ? '#dc2626' : 'var(--color-text)' }}>{totalForgets}</strong> 次</span>
+                            <span>✅ {t.vocab.flashcardDoing.statGraduated} <strong style={{ color: 'var(--color-text)' }}>{graduatedTotal}</strong> {t.vocab.flashcardDoing.statWordUnit}</span>
+                            <span>🖱 {t.vocab.flashcardDoing.statRated} <strong style={{ color: 'var(--color-text)' }}>{totalClicks}</strong> {t.vocab.flashcardDoing.statTimesUnit}</span>
+                            <span>❌ {t.vocab.flashcardDoing.statForgot} <strong style={{ color: totalForgets > 0 ? '#dc2626' : 'var(--color-text)' }}>{totalForgets}</strong> {t.vocab.flashcardDoing.statTimesUnit}</span>
                         </div>
                     </div>
                     <div className="config-card">
@@ -1160,12 +1160,12 @@ export default function VocabularyFlashcardDoingPage() {
                             type="button"
                             className="fc-auto-speak-btn"
                             onClick={toggleAutoSpeak}
-                            aria-label={autoSpeakEnabled ? "关闭自动发音" : "开启自动发音"}
+                            aria-label={autoSpeakEnabled ? t.vocab.flashcardDoing.autoSpeakDisableAria : t.vocab.flashcardDoing.autoSpeakEnableAria}
                         >
-                            {autoSpeakEnabled ? <><Volume2 size={14} /> 自动发音开</> : <><VolumeX size={14} /> 自动发音关</>}
+                            {autoSpeakEnabled ? <><Volume2 size={14} /> {t.vocab.flashcardDoing.autoSpeakOn}</> : <><VolumeX size={14} /> {t.vocab.flashcardDoing.autoSpeakOff}</>}
                         </button>
-                        <span className="fc-learning-timer" title="今日学习时长（跨计划共享）">
-                            今日时长 {todayLearningDuration}
+                        <span className="fc-learning-timer" title={t.vocab.flashcardDoing.timerTitle}>
+                            {t.vocab.flashcardDoing.todayDuration.replace('{t}', todayLearningDuration)}
                         </span>
                         <div className="fc-mode-badge-wrap" ref={trackingMenuRef}>
                             {(() => {
@@ -1176,20 +1176,20 @@ export default function VocabularyFlashcardDoingPage() {
                                         <button
                                             className={`fc-mode-badge${isCardMode ? ' has-submenu' : ''}`}
                                             onClick={() => isCardMode && setTrackingMenuOpen((v) => !v)}
-                                            title={isCardMode ? '模式与显示选项' : undefined}
+                                            title={isCardMode ? t.vocab.flashcardDoing.modeMenuTitle : undefined}
                                         >
                                             {MODE_LABELS[mode]}
                                             {isFlashcardOnly && trackingMode !== 'none' && (
                                                 <span className="fc-mode-badge-sub">· {TRACKING_LABELS[trackingMode]}</span>
                                             )}
                                             {isFlashcardOnly && cardFrontFace === 'zh' && (
-                                                <span className="fc-mode-badge-sub">· 中文正面</span>
+                                                <span className="fc-mode-badge-sub">{t.vocab.flashcardDoing.zhFrontBadge}</span>
                                             )}
                                             {isCardMode && <span className="fc-mode-badge-arrow">▾</span>}
                                         </button>
                                         {trackingMenuOpen && isCardMode && (
                                             <div className="fc-tracking-menu">
-                                                <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>学习模式</div>
+                                                <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t.vocab.flashcardDoing.menuStudyMode}</div>
                                                 {(['flashcard', 'flashcard-simple', 'read-aloud'] as StudyMode[]).map((m) => (
                                                     <button
                                                         key={m}
@@ -1204,8 +1204,8 @@ export default function VocabularyFlashcardDoingPage() {
                                                 {isFlashcardOnly && (
                                                     <>
                                                         <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
-                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>卡面正反</div>
-                                                        {([['en', '英文正面（默认）'], ['zh', '中文正面']] as [('en' | 'zh'), string][]).map(([face, label]) => (
+                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t.vocab.flashcardDoing.menuCardFace}</div>
+                                                        {([['en', t.vocab.flashcardDoing.faceEn], ['zh', t.vocab.flashcardDoing.faceZh]] as [('en' | 'zh'), string][]).map(([face, label]) => (
                                                             <button
                                                                 key={face}
                                                                 className={`fc-tracking-menu-item${cardFrontFace === face ? ' active' : ''}`}
@@ -1217,7 +1217,7 @@ export default function VocabularyFlashcardDoingPage() {
                                                             </button>
                                                         ))}
                                                         <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
-                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>追踪模式</div>
+                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t.vocab.flashcardDoing.menuTracking}</div>
                                                         {(['none', 'eye', 'mouse'] as TrackingMode[]).map((tm) => (
                                                             <button
                                                                 key={tm}
@@ -1239,7 +1239,7 @@ export default function VocabularyFlashcardDoingPage() {
                         </div>
                         <span className="fc-state-label-inline">
                             {STATE_LABELS[currentCard.state] ?? ''}
-                            {currentCard.reps > 0 && ` · 复习 ${currentCard.reps} 次`}
+                            {currentCard.reps > 0 && t.vocab.flashcardDoing.reviewTimes.replace('{n}', String(currentCard.reps))}
                         </span>
                     </div>
                 </div>
@@ -1249,7 +1249,7 @@ export default function VocabularyFlashcardDoingPage() {
                     aria-valuenow={progress}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-label="学习进度"
+                    aria-label={t.vocab.flashcardDoing.progressAria}
                 >
                     <div className="fc-progress-fill" style={{ width: `${progress}%` }} />
                 </div>

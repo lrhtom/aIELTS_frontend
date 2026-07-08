@@ -107,8 +107,8 @@ export const manualData: ManualData = {
                 {
                     id: 'speaking',
                     title: 'AI 模拟口语',
-                    content: '支持五种练习模式：聊天（文字对话）、通话（语音对话）、全真模拟（1v1 考官计时）、场景对话（角色扮演）和全套考试（Part 1→2→3 连续）。覆盖雅思口语 Part 1-3 全部题型。练习结束后生成总结报告。',
-                    keywords: ['口语', '对话', '模拟', '语音', '考试']
+                    content: '支持三种练习模式：自由对话（语音或键盘输入，可开启纯语音模式模拟通话）、全真模拟（1v1 考官计时，Part 选择器可选 Part 1/2/3 单项或"全套"Part 1→2→3 连续）和场景对话（角色扮演）。覆盖雅思口语 Part 1-3 全部题型。练习结束后生成总结报告。所有口语会话自动保存到 AI 题库：每轮对话与 AI 评分实时落库，中途退出可从题库"口语"标签继续；已生成报告的会话点击直达报告页。完成报告后，个人主页 → 学习分析 → 口语 标签会展示分数趋势和七维能力雷达。',
+                    keywords: ['口语', '对话', '模拟', '语音', '考试', '题库', '会话', '分析']
                 },
                 {
                     id: 'writing',
@@ -308,8 +308,8 @@ export const manualData: ManualData = {
                 {
                     id: 'speaking',
                     title: 'AI Speaking',
-                    content: 'Five practice modes: Chat (text), Call (voice), Mock Exam (timed 1-on-1), Scenario (role-play), and Full Test (Part 1→2→3). Covers all IELTS Speaking parts. A summary report is generated after each session.',
-                    keywords: ['speaking', 'mock', 'voice', 'exam', 'scenario']
+                    content: 'Three practice modes: Free Talk (voice or keyboard, with a voice-only toggle for call-style practice), Mock Exam (timed 1-on-1; pick Part 1/2/3 or "Full Test" for Part 1→2→3 consecutively), and Scenario (role-play). Covers all IELTS Speaking parts. A summary report is generated after each session. Every speaking session is auto-saved to the AI Question Bank: each turn and its AI scores are persisted in real time, so you can resume an unfinished session from the Speaking tab; sessions with a report open straight to the report page. Once a report exists, Profile → Analytics → Speaking shows your score trend and a 7-dimension skills radar.',
+                    keywords: ['speaking', 'mock', 'voice', 'exam', 'scenario', 'bank', 'session', 'analytics']
                 },
                 {
                     id: 'writing',

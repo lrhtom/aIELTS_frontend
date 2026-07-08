@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import type { User } from './auth';
+import { currentT } from '../i18n/currentT';
 
 export interface AvatarResponse {
     message: string;
@@ -36,7 +37,7 @@ export const avatarApi = {
         if (!allowedTypes.includes(file.type)) {
             return {
                 isValid: false,
-                error: '只支持以下图片格式: JPG, PNG, GIF, WebP'
+                error: currentT().profile.avatarUpload.errFormat
             };
         }
 
@@ -45,7 +46,7 @@ export const avatarApi = {
         if (file.size > maxSize) {
             return {
                 isValid: false,
-                error: '图片大小不能超过5MB'
+                error: currentT().profile.avatarUpload.errSize
             };
         }
 

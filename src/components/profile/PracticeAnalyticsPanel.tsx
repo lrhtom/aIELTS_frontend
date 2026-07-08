@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { getPracticeAnalytics, type PracticeAnalytics, type PracticeSkillStats, type PracticeAttempt } from '../../api/analytics';
+import { useLang } from '../../i18n/LanguageContext';
 
 type Skill = 'reading' | 'listening';
 
@@ -82,15 +83,16 @@ function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: st
         }
     }
 
+    const { translations: t } = useLang();
     const showTip = useCallback((ev: React.MouseEvent, p: TrendPoint) => {
         const pct = `${Math.round(p.accuracy * 100)}%`;
         const dateStr = p.date ? new Date(p.date).toLocaleString(undefined, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
         setTip({
             x: ev.clientX,
             y: ev.clientY,
-            lines: [`${dateStr}`, `正确率 ${pct}`, `${p.correct}/${p.total}${p.title ? ' · ' + p.title : ''}`],
+            lines: [`${dateStr}`, t.analytics.practice.tooltipAccuracy.replace('{pct}', pct), `${p.correct}/${p.total}${p.title ? ' · ' + p.title : ''}`],
         });
-    }, []);
+    }, [t]);
 
     return (
         <>
@@ -180,6 +182,8 @@ function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: st
 }
 
 function SkillCard({ skill, stats, label }: { skill: Skill; stats: PracticeSkillStats; label: string }) {
+    const { translations: t } = useLang();
+    const pt = t.analytics.practice;
     const icon = skill === 'reading' ? '📖' : '🎧';
     const accClass = accuracyClass(stats.accuracy);
     // Recent attempts come back newest-first; the trend chart wants oldest-left → reverse.
@@ -205,9 +209,9 @@ function SkillCard({ skill, stats, label }: { skill: Skill; stats: PracticeSkill
             {stats.attempts === 0 ? (
                 <div className="pa-empty">
                     <div className="pa-empty-icon">📊</div>
-                    <div className="pa-empty-title">尚无{label}作答记录</div>
+                    <div className="pa-empty-title">{pt.emptyTitle.replace('{label}', label)}</div>
                     <div className="pa-empty-hint">
-                        完成任意一套{skill === 'reading' ? '阅读' : '听力'}题目并提交后，此处会显示正确率统计和趋势曲线。
+                        {pt.emptyHint.replace('{skill}', skill === 'reading' ? pt.skillReading : pt.skillListening)}
                     </div>
                 </div>
             ) : (
@@ -215,23 +219,23 @@ function SkillCard({ skill, stats, label }: { skill: Skill; stats: PracticeSkill
                     <div className="pa-kpi-row">
                         <div className={`pa-kpi-main ${accClass}`}>
                             <div className="pa-kpi-value">{fmtPct(stats.accuracy)}</div>
-                            <div className="pa-kpi-label">总正确率</div>
+                            <div className="pa-kpi-label">{pt.kpiAccuracy}</div>
                         </div>
                         <div className="pa-kpi-sub">
                             <div><span className="pa-kpi-num">{stats.correct_questions}</span> / {stats.total_questions}</div>
-                            <div className="pa-kpi-sublabel">题目 (答对 / 总数)</div>
+                            <div className="pa-kpi-sublabel">{pt.kpiQuestions}</div>
                         </div>
                         <div className="pa-kpi-sub">
                             <div><span className="pa-kpi-num">{stats.attempts}</span></div>
-                            <div className="pa-kpi-sublabel">套题次数</div>
+                            <div className="pa-kpi-sublabel">{pt.kpiSets}</div>
                         </div>
                     </div>
 
                     {trendPoints.length >= 1 && (
                         <div className="pa-section">
                             <div className="pa-section-title">
-                                正确率趋势 · 近 {trendPoints.length} 套
-                                {trendPoints.length === 1 && <span className="pa-section-hint"> · 再做 1 套就能看到走势线</span>}
+                                {pt.trendTitle.replace('{n}', String(trendPoints.length))}
+                                {trendPoints.length === 1 && <span className="pa-section-hint">{pt.trendHint}</span>}
                             </div>
                             <div className="pa-trend-chart">
                                 <AccuracyTrendChart points={trendPoints} color={trendColor} />
@@ -241,7 +245,7 @@ function SkillCard({ skill, stats, label }: { skill: Skill; stats: PracticeSkill
 
                     {stats.by_type.length > 0 && (
                         <div className="pa-section">
-                            <div className="pa-section-title">按题型细分</div>
+                            <div className="pa-section-title">{pt.byType}</div>
                             <div className="pa-type-list">
                                 {stats.by_type.map(row => (
                                     <div key={row.subtype} className="pa-type-row">
@@ -254,7 +258,7 @@ function SkillCard({ skill, stats, label }: { skill: Skill; stats: PracticeSkill
                                         </div>
                                         <span className="pa-type-stat">
                                             <strong>{fmtPct(row.accuracy)}</strong>
-                                            <span className="pa-type-tally"> ({row.correct}/{row.total}, {row.attempts}套)</span>
+                                            <span className="pa-type-tally"> ({row.correct}/{row.total}, {row.attempts}{pt.setsSuffix})</span>
                                         </span>
                                     </div>
                                 ))}
@@ -264,12 +268,12 @@ function SkillCard({ skill, stats, label }: { skill: Skill; stats: PracticeSkill
 
                     {stats.recent.length > 0 && (
                         <div className="pa-section">
-                            <div className="pa-section-title">最近作答</div>
+                            <div className="pa-section-title">{pt.recent}</div>
                             <div className="pa-attempts-list">
                                 {stats.recent.map(a => (
                                     <div key={a.id} className="pa-attempt-row">
                                         <span className="pa-attempt-date">{fmtDate(a.date)}</span>
-                                        <span className="pa-attempt-title" title={a.title}>{a.title || '(未命名)'}</span>
+                                        <span className="pa-attempt-title" title={a.title}>{a.title || pt.untitled}</span>
                                         <span className="pa-attempt-subtype">{a.subtype.replace(/_/g, ' ')}</span>
                                         <span className={`pa-attempt-acc ${accuracyClass(a.accuracy)}`}>
                                             {fmtPct(a.accuracy)}
@@ -291,6 +295,8 @@ interface Props {
 }
 
 export default function PracticeAnalyticsPanel({ skill }: Props) {
+    const { translations: t } = useLang();
+    const pt = t.analytics.practice;
     const [data, setData] = useState<PracticeAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState<string | null>(null);
@@ -305,14 +311,14 @@ export default function PracticeAnalyticsPanel({ skill }: Props) {
     }, []);
 
     if (loading) {
-        return <div className="analytics-page"><div className="pa-loading">加载中…</div></div>;
+        return <div className="analytics-page"><div className="pa-loading">{pt.loading}</div></div>;
     }
     if (err || !data) {
-        return <div className="analytics-page"><div className="pa-loading">加载失败 {err}</div></div>;
+        return <div className="analytics-page"><div className="pa-loading">{pt.loadFail} {err}</div></div>;
     }
 
     const stats = data[skill];
-    const label = skill === 'reading' ? '阅读练习' : '听力练习';
+    const label = skill === 'reading' ? pt.readingLabel : pt.listeningLabel;
     return (
         <div className="pa-panel">
             <SkillCard skill={skill} stats={stats} label={label} />

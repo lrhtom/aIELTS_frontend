@@ -39,11 +39,12 @@ export default function HomePage() {
         setRewardMsg('');
         try {
             const res = await checkinApi.doCheckin();
+            // Backend `message` is Chinese-only; compose from structured fields.
             if (res.ok) {
-                setRewardMsg(res.message);
+                setRewardMsg(t.assistant.checkin.successMessage.replace('{bonus}', (res.bonus ?? 0).toLocaleString()));
                 await loadCheckinStatus();
             } else {
-                setRewardMsg(res.message);
+                setRewardMsg(t.assistant.checkin.alreadyMessage);
             }
         } catch {
             setRewardMsg(t.home.checkin.errorToast);

@@ -14,13 +14,14 @@
  *  loading    — welcome message loading on entry (button disabled)
  */
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import RecordRTC, { StereoAudioRecorder } from 'recordrtc';
 import { speakingStore } from '../../store/speaking_page_store';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { ATInterceptor } from '../../api/atInterceptor';
+import { startSpeakingSession, getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { showToast } from '../../components/common/Toast';
 import type { SpeakingMode, IeltsPart } from './speaking';
 import { useLang } from '../../i18n/LanguageContext';
@@ -88,6 +89,34 @@ function countMatches(text: string, word: string): number {
     return (text.match(rx) || []).length;
 }
 
+// 欢迎语是对话内容（英文），不走 i18n —— 与 AI 回复同语言
+function buildWelcome(mode: SpeakingMode, isFullTest: boolean, questions: ExamQuestion[], scenario: string): string {
+    if (mode === 'scenario') {
+        return `Acting for scenario: "${scenario}". I am ready to start. What would you like to say first?`;
+    }
+    if (isFullTest && questions.length > 0) {
+        return `Welcome to the IELTS Full Speaking Test. We will go through Part 1, Part 2, and Part 3 consecutively. Let's begin with Part 1. Our first topic is ${questions[0].topic}. ${questions[0].question}`;
+    }
+    if ((mode === 'part1' || mode === 'part2' || mode === 'part3') && questions.length > 0) {
+        const partLabel = mode === 'part1' ? 'Part 1' : mode === 'part2' ? 'Part 2' : 'Part 3';
+        return `Welcome to IELTS Speaking ${partLabel}. Our first topic is ${questions[0].topic}. ${questions[0].question}`;
+    }
+    return "Welcome to IELTS speaking practice. Tell me when you are ready.";
+}
+
+// 题库卡片标题是落库数据（同 AI 生成的英文题目名），不走 i18n
+function buildSessionTitle(mode: SpeakingMode, questions: ExamQuestion[], scenario: string): string {
+    const topic = questions[0]?.topic || '';
+    if (mode === 'fullTest') return topic ? `IELTS Full Test · ${topic}` : 'IELTS Full Speaking Test';
+    if (mode === 'part1' || mode === 'part2' || mode === 'part3') {
+        const label = mode === 'part1' ? 'Part 1' : mode === 'part2' ? 'Part 2' : 'Part 3';
+        return topic ? `IELTS ${label} · ${topic}` : `IELTS Speaking ${label}`;
+    }
+    if (mode === 'scenario') return scenario ? `Scenario · ${scenario.slice(0, 60)}` : 'Scenario Role-play';
+    if (mode === 'call') return 'Phone Call Practice';
+    return 'Free Talk';
+}
+
 function MarkdownBubble({ content, className = 'sc-markdown' }: { content: string; className?: string }) {
     return (
         <div className={className}>
@@ -132,18 +161,30 @@ function SpeakingChatPage() {
         questions?: ExamQuestion[],
         bankSource?: string,
         scenarioFiles?: File[],
+        customTitle?: string,
+        customDesc?: string,
+        voiceOnly?: boolean,
     };
+    // 从 AI 题库恢复会话：/speaking/chat?bankId=123
+    const [searchParams] = useSearchParams();
+    const bankIdRaw = searchParams.get('bankId');
+    const resumeId = bankIdRaw && !Number.isNaN(Number(bankIdRaw)) ? Number(bankIdRaw) : null;
+
     const vocabRaw: string = state?.vocabInput ?? '';
     const initialMode: SpeakingMode = state?.mode ?? 'chat';
-    const scenarioPrompt: string = state?.scenarioInput ?? '';
+    // rootMode/scenarioPrompt 需要在恢复会话时被覆写，所以是 state 而不是 const
+    const [rootMode, setRootMode] = useState<SpeakingMode>(initialMode);
+    const [scenarioPrompt, setScenarioPrompt] = useState<string>(state?.scenarioInput ?? '');
+    // 纯语音模式（原 call 模式并入 chat 后的开关）：隐藏键盘输入
+    const [voiceOnly, setVoiceOnly] = useState<boolean>(state?.voiceOnly ?? false);
     const [activeMode, setActiveMode] = useState<SpeakingMode>(initialMode);
     const [activeExamQuestions, setActiveExamQuestions] = useState<ExamQuestion[]>(state?.questions ?? []);
-    const isFullTestMode = initialMode === 'fullTest';
+    const isFullTestMode = rootMode === 'fullTest';
     const isExamMode = activeMode === 'part1' || activeMode === 'part2' || activeMode === 'part3' || isFullTestMode;
 
-    // ── 路由守卫：防止刷新或直接跳转进来 ────────────────────────────────────
+    // ── 路由守卫：防止刷新或直接跳转进来（带 bankId 的恢复入口放行）─────────
     useEffect(() => {
-        if (!speakingStore.isChatAllowed) {
+        if (!speakingStore.isChatAllowed && !resumeId) {
             navigate('/speaking', { replace: true });
             return;
         }
@@ -212,6 +253,14 @@ function SpeakingChatPage() {
     // Prevent concurrent handleSend calls
     const pendingRef = useRef(false);
 
+    // ── 会话持久化（AI 题库）──
+    const sessionIdRef = useRef<number | null>(null);
+    const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingSyncRef = useRef<Record<string, unknown> | null>(null);
+    // Prevent double session creation from React StrictMode double-mount.
+    // NOTE: never reset in a cleanup — StrictMode's synthetic unmount would re-arm it.
+    const sessionCreateFiredRef = useRef(false);
+
     // Audio & STT refs
     const micStreamRef = useRef<MediaStream | null>(null);
     const audioCtxRef = useRef<AudioContext | null>(null);
@@ -245,26 +294,107 @@ function SpeakingChatPage() {
         // useEffect 中调用会被拦截并返回 NotFoundError
         // 麦克风权限在实际点击录音按钮时（toggleRecording）申请。
         // 后端各端点已通过 skills.py 注入正确?system prompt，前端不再硬编码
-        let welcomeMsg = '';
+        let isUnmounted = false;
+        const controller = new AbortController();
 
-        if (activeMode === 'scenario') {
-            // Fallback welcome ?will be replaced by AI-generated opening below
-            welcomeMsg = `Acting for scenario: "${scenarioPrompt}". I am ready to start. What would you like to say first?`;
-        } else if (isFullTestMode && activeExamQuestions.length > 0) {
-            // Full Test mode: start with Part 1
-            welcomeMsg = `Welcome to the IELTS Full Speaking Test. We will go through Part 1, Part 2, and Part 3 consecutively. Let's begin with Part 1. Our first topic is ${activeExamQuestions[0].topic}. ${activeExamQuestions[0].question}`;
-        } else if (isExamMode && activeExamQuestions.length > 0) {
-            const partLabel = activeMode === 'part1' ? 'Part 1' : activeMode === 'part2' ? 'Part 2' : 'Part 3';
-            welcomeMsg = `Welcome to IELTS Speaking ${partLabel}. Our first topic is ${activeExamQuestions[0].topic}. ${activeExamQuestions[0].question}`;
-        } else {
-            welcomeMsg = "Welcome to IELTS speaking practice. Tell me when you are ready.";
+        if (resumeId) {
+            // ── 从 AI 题库恢复会话：取回落库状态；已有总结报告则直接看结果 ──
+            (async () => {
+                try {
+                    const detail = await getAIQuestion(resumeId);
+                    if (isUnmounted) return;
+                    if (detail.aiFeedback) {
+                        navigate(`/speaking/summary?bankId=${resumeId}`, { replace: true });
+                        return;
+                    }
+                    const content = (detail.content || {}) as Record<string, unknown>;
+                    const ua = (detail.userAnswer || {}) as Record<string, unknown>;
+                    let mode = ((content.mode as SpeakingMode) || (detail.subtype as SpeakingMode) || 'chat');
+                    if (mode === 'call') {
+                        // 旧"通话模式"会话 → 自由对话 + 纯语音
+                        mode = 'chat';
+                        setVoiceOnly(true);
+                    } else {
+                        setVoiceOnly(Boolean(content.voiceOnly));
+                    }
+                    sessionIdRef.current = resumeId;
+                    setRootMode(mode);
+                    const savedScenario = String(content.scenarioPrompt || '');
+                    setScenarioPrompt(savedScenario);
+                    setActiveMode((ua.activeMode as SpeakingMode) || mode);
+                    const savedQuestions = (ua.examQuestions ?? content.questions ?? []) as ExamQuestion[];
+                    setActiveExamQuestions(savedQuestions);
+                    setCurrentQuestionIndex(Number(ua.currentQuestionIndex ?? 0));
+                    const savedPhase = ua.fullTestPhase;
+                    if (savedPhase === 'part1' || savedPhase === 'part2' || savedPhase === 'part3') {
+                        setFullTestPhase(savedPhase);
+                    }
+                    const savedWords = Array.isArray(ua.words) && ua.words.length > 0
+                        ? (ua.words as Word[])
+                        : parseWords(String(content.vocabInput || ''));
+                    setWordsSync(() => savedWords);
+                    const savedHistory = Array.isArray(ua.chatHistory) ? (ua.chatHistory as ChatMessage[]) : [];
+                    if (savedHistory.length > 0) {
+                        setChatHistory(savedHistory);
+                        // 恢复 AI 上下文：只取正文对话（system 提示与评分面板不进上下文）
+                        contextRef.current = savedHistory
+                            .filter(m => (m.role === 'user' || m.role === 'assistant') && m.content)
+                            .map(m => ({ role: m.role, content: m.content }));
+                    } else {
+                        contextRef.current = [];
+                        setChatHistory([{ role: 'assistant', content: buildWelcome(mode, mode === 'fullTest', savedQuestions, savedScenario) }]);
+                    }
+                    setStatusSync(ua.finished === true ? 'finished' : 'idle');
+                } catch {
+                    if (!isUnmounted) {
+                        showToast(t.speakingChat.errLoadSession, 'error');
+                        navigate('/practice/ai/bank?skill=speaking', { replace: true });
+                    }
+                }
+            })();
+
+            const resumeTtsTimer = ttsTimerRef.current;
+            return () => {
+                isUnmounted = true;
+                controller.abort();
+                stopAudio();
+                if (srRef.current) {
+                    try { srRef.current.abort(); } catch { /* ignore */ }
+                }
+                if (recorderRef.current) {
+                    recorderRef.current.destroy();
+                    recorderRef.current = null;
+                }
+                micStreamRef.current?.getTracks().forEach(t => t.stop());
+                if (recTimerRef.current) clearInterval(recTimerRef.current);
+                if (resumeTtsTimer) clearTimeout(resumeTtsTimer);
+            };
         }
 
+        const welcomeMsg = buildWelcome(activeMode, isFullTestMode, activeExamQuestions, scenarioPrompt);
         contextRef.current = [];
         setChatHistory([{ role: 'assistant', content: welcomeMsg }]);
 
-        let isUnmounted = false;
-        const controller = new AbortController();
+        // 开局建会话行（不调 AI、不扣 AT）；失败不阻塞练习，仅本次不落库。
+        // sessionCreateFiredRef 挡掉 StrictMode 第二次 effect，避免生成重复 session。
+        if (!sessionCreateFiredRef.current) {
+            sessionCreateFiredRef.current = true;
+            const customTitle = (state?.customTitle ?? '').trim();
+            startSpeakingSession(
+                initialMode,
+                customTitle || buildSessionTitle(initialMode, state?.questions ?? [], state?.scenarioInput ?? ''),
+                {
+                    part: state?.part ?? '',
+                    questions: state?.questions ?? [],
+                    scenarioPrompt: state?.scenarioInput ?? '',
+                    vocabInput: vocabRaw,
+                    bankSource: state?.bankSource ?? '',
+                    voiceOnly: state?.voiceOnly ?? false,
+                    // 题库卡片简介从 content.description 读取（与听/读/写一致）
+                    description: (state?.customDesc ?? '').trim(),
+                },
+            ).then(res => { sessionIdRef.current = res.id; }).catch(() => {});
+        }
 
         (async () => {
             try {
@@ -357,6 +487,43 @@ function SpeakingChatPage() {
     // Because uploading transcript takes time, use refs
     const liveTranscriptRef = useRef('');
     useEffect(() => { liveTranscriptRef.current = liveTranscript; }, [liveTranscript]);
+
+    // ── 会话同步：每次对话/进度变化后防抖 800ms 覆盖式写回 AI 题库 ──────────
+    // 载荷包含恢复会话所需的全部动态状态；分数（含异步并入的 Azure 发音分）
+    // 已经在 chatHistory 消息体里，随之一起落库。
+    useEffect(() => {
+        if (!sessionIdRef.current) return;
+        if (chatHistory.length <= 1) return; // 只有欢迎语时不同步
+        const payload: Record<string, unknown> = {
+            chatHistory,
+            words: wordsRef.current,
+            currentQuestionIndex,
+            examQuestions: activeExamQuestions,
+            fullTestPhase,
+            activeMode,
+            scenarioPrompt,
+            finished: status === 'finished',
+        };
+        pendingSyncRef.current = payload;
+        if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = setTimeout(() => {
+            const sid = sessionIdRef.current;
+            const body = pendingSyncRef.current;
+            pendingSyncRef.current = null;
+            if (sid && body) submitAIQuestion(sid, body).catch(() => {});
+        }, 800);
+    }, [chatHistory, status, currentQuestionIndex, activeExamQuestions, fullTestPhase, activeMode, scenarioPrompt]);
+
+    // 卸载时冲刷最后一次未发出的同步，避免丢最后一轮
+    useEffect(() => () => {
+        if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+        const sid = sessionIdRef.current;
+        const body = pendingSyncRef.current;
+        if (sid && body) {
+            pendingSyncRef.current = null;
+            submitAIQuestion(sid, body).catch(() => {});
+        }
+    }, []);
 
     // ── Audio visualizer ──────────────────────────────────────────────────
     const setupAudioVisualizer = async () => {
@@ -949,6 +1116,7 @@ function SpeakingChatPage() {
                 scenarioPrompt,
                 words,
                 mode: isFullTestMode ? 'fullTest' : activeMode,
+                sessionId: sessionIdRef.current,
             }
         });
     };
@@ -1033,7 +1201,7 @@ function SpeakingChatPage() {
             {/* ── Sidebar: Word Basket & Ai Settings ── */}
             <aside className="sc-sidebar">
                 <div className="sc-sidebar-header">
-                    <button className="sc-back-btn" onClick={() => navigate('/speaking')}>{t.speakingChat.backBtn}</button>
+                    <button className="sc-back-btn" onClick={() => navigate('/practice/ai/bank?skill=speaking')}>{t.speakingChat.backBtn}</button>
                     <h3>{t.speakingChat.vocabHeading}</h3>
                 </div>
 
@@ -1318,8 +1486,8 @@ function SpeakingChatPage() {
                             {MIC_LABEL[status]}
                         </button>
 
-                        {/* Text Input Toggle & Area */}
-                        {(activeMode === 'chat' || isMicUnusable) && (
+                        {/* Text Input Toggle & Area（纯语音模式隐藏键盘；麦克风不可用时始终降级显示） */}
+                        {((activeMode === 'chat' && !voiceOnly) || isMicUnusable) && (
                             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
                                 {!showTextInput ? (
                                     <button 

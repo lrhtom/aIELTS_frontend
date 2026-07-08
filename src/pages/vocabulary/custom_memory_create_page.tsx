@@ -184,9 +184,7 @@ export default function CustomMemoryCreatePage() {
                                 placeholder={batchByLine
                                     ? [
                                         t.vocab.customMemory.frontMultiHint,
-                                        'abandon',
-                                        'sustainable',
-                                        'This sentence is important.',
+                                        t.vocab.customMemory.frontExamples,
                                     ].join('\n')
                                     : t.vocab.customMemory.frontSingleHint}
                             />
@@ -201,9 +199,7 @@ export default function CustomMemoryCreatePage() {
                                 placeholder={batchByLine
                                     ? [
                                         t.vocab.customMemory.backMultiHint,
-                                        '放弃',
-                                        '可持续的',
-                                        '这句话在雅思写作中很重要。',
+                                        t.vocab.customMemory.backExamples,
                                     ].join('\n')
                                     : t.vocab.customMemory.backSingleHint}
                             />
