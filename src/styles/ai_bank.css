@@ -354,10 +354,59 @@
     border-top: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-.ai-bank-card-delete {
+/* Top-right action cluster (favorite + delete) */
+.ai-bank-card-actions {
     position: absolute;
     top: 14px;
     right: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+}
+
+.ai-bank-card-favorite {
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    color: #94a3b8;
+    font-size: 15px;
+    line-height: 1;
+    border-radius: 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.ai-bank-card:hover .ai-bank-card-favorite { opacity: 1; }
+
+.ai-bank-card-favorite:hover {
+    background: #fffbeb;
+    border-color: #fcd34d;
+    color: #f59e0b;
+    transform: scale(1.15);
+}
+
+.ai-bank-card-favorite.is-on {
+    opacity: 1;
+    color: #f59e0b;
+    background: #fffbeb;
+    border-color: rgba(251, 191, 36, 0.5);
+}
+
+/* Favorited card gets a warm amber accent */
+.ai-bank-card.is-favorite {
+    border-color: rgba(251, 191, 36, 0.4);
+    box-shadow: 0 10px 30px rgba(245, 158, 11, 0.08), inset 0 0 0 1px rgba(251, 191, 36, 0.25);
+}
+
+.ai-bank-card-delete {
     padding: 6px 14px;
     display: flex;
     align-items: center;
@@ -378,8 +427,9 @@
 }
 
 @media (max-width: 768px) {
-    .ai-bank-card-delete {
-        opacity: 0.8;
+    .ai-bank-card-delete,
+    .ai-bank-card-favorite {
+        opacity: 0.85;
         transform: scale(1);
     }
 }

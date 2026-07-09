@@ -149,6 +149,25 @@ export const profile = {
   backpack: {
     empty: '你的背包还是空的',
     emptyHint: '参加练习或活动可以获得道具哦！',
+    loading: '加载中...',
+    items: {
+      makeup_card: {
+        name: '补签卡',
+        icon: '🎫',
+        desc: '补回最近 {n} 天内的一次漏签，接续你的连续签到',
+        use: '去补签',
+      },
+    },
+    makeup: {
+      title: '选择要补回的漏签日期',
+      hint: '每次补签消耗 1 张补签卡，发放 {bonus} AT 币基础奖励',
+      noGap: '最近 {n} 天没有可补的漏签日 🎉',
+      noCard: '补签卡不足，去商城购买或连续签到 30 天获取',
+      confirm: '补签',
+      cancel: '取消',
+      success: '补签成功！',
+      today: '今天',
+    },
   },
   feedback: {
     title: 'Bug 反馈',

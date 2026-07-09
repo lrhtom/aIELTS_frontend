@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import ProtectedRoute from './components/guards/ProtectedRoute';
 import ToastContainer from './components/common/Toast';
+import ConfirmServiceContainer from './components/common/ConfirmService';
 import GlobalAssistantBall from './components/common/GlobalAssistantBall';
 import ChromeOnlyGuard from './components/guards/ChromeOnlyGuard';
 import ATBalanceMonitor from './components/billing/ATBalanceMonitor';
@@ -91,6 +92,7 @@ export default function App() {
   return (
     <ChromeOnlyGuard>
       <ToastContainer />
+      <ConfirmServiceContainer />
       <ATBalanceMonitor />
       {!isLoading && user && <GlobalAssistantBall />}
       <Routes>

@@ -12,6 +12,10 @@ export interface AIQuestionSummary {
     description: string;
     status: AIQuestionStatus;
     errorMessage: string;
+    /** 是否已收藏 */
+    isFavorite: boolean;
+    /** 收藏时刻 ISO 串，未收藏为 null；用于"后收藏的排前面"排序 */
+    favoritedAt: string | null;
     isAnswered: boolean;
     /** ai_feedback_json 非空。speaking 用它区分"进行中"与"已出报告" */
     hasFeedback: boolean;
@@ -49,6 +53,12 @@ export async function submitAIQuestion(id: number, userAnswer: unknown, aiFeedba
 
 export async function deleteAIQuestion(id: number) {
     await apiClient.delete(`/ai-questions/${id}/`);
+}
+
+/** 切换收藏状态，返回更新后的详情（含新的 favoritedAt / isFavorite）。 */
+export async function toggleFavoriteAIQuestion(id: number) {
+    const resp = await apiClient.post(`/ai-questions/${id}/favorite/`);
+    return resp.data as AIQuestionDetail;
 }
 
 /** 口语会话开局建行（不调 AI、不扣 AT），后续每轮经 submitAIQuestion 覆盖式同步 */

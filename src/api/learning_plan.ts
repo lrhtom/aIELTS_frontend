@@ -20,6 +20,8 @@ export interface LearningPlan {
     studied_today:  number;
     studied_total:  number;
     today_words:    TodayWord[];
+    is_favorite:    boolean;
+    favorited_at:   string | null;
     created_at:     string;
     updated_at:     string;
 }
@@ -96,6 +98,7 @@ export async function updatePlan(
         copy_repetitions: number;
         copy_review_days: number;
         article_review_days: number;
+        is_favorite: boolean;
     }>,
 ): Promise<{ plan: LearningPlan }> {
     const resp = await apiClient.patch(`/plans/${id}/`, data);

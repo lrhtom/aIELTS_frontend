@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { showConfirm } from '../common/ConfirmService';
 import { useAuth } from '../../contexts/AuthContext';
 import { avatarApi } from '../../api/avatar';
 import { showToast } from '../common/Toast';
@@ -75,7 +76,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
     const handleDeleteAvatar = async () => {
         if (!user?.avatar_url) return;
 
-        if (!window.confirm(t.deleteConfirm)) {
+        if (!(await showConfirm({ message: t.deleteConfirm, danger: true }))) {
             return;
         }
 

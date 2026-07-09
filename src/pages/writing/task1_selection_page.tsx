@@ -2,6 +2,7 @@ import Layout from '../../components/layout/Layout';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AiModelSelector from '../../components/common/AiModelSelector';
+import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
@@ -78,7 +79,7 @@ export default function Task1SelectionPage() {
             return;
         }
 
-        alert(`${t.task1Selection.comingSoon}${selected.nameZh} (${selected.nameEn})`);
+        showToast(`${t.task1Selection.comingSoon}${selected.nameZh} (${selected.nameEn})`, 'info');
     };
 
     return (

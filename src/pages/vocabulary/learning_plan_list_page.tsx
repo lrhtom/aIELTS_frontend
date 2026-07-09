@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { showConfirm } from '../../components/common/ConfirmService';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    listPlans, createPlan, deletePlan, startPlan,
+    listPlans, createPlan, deletePlan, startPlan, updatePlan,
     type LearningPlan,
 } from '../../api/learning_plan';
 import {
@@ -174,13 +175,34 @@ export default function LearningPlanListPage() {
     /* ── delete ── */
     const handleDelete = async (e: React.MouseEvent, plan: LearningPlan) => {
         e.stopPropagation();
-        if (!confirm(t.vocab.plans.msgDeleteConfirm.replace('{name}', plan.name))) return;
+        if (!(await showConfirm({ message: t.vocab.plans.msgDeleteConfirm.replace('{name}', plan.name), danger: true }))) return;
         try {
             await deletePlan(plan.id);
             setPlans(prev => prev.filter(p => p.id !== plan.id));
             showToast(t.vocab.plans.msgDeleteSuccess, 'success');
         } catch {
             showToast(t.vocab.plans.msgDeleteFail, 'error');
+        }
+    };
+
+    /* ── favorite ── */
+    const handleToggleFavorite = async (e: React.MouseEvent, plan: LearningPlan) => {
+        e.stopPropagation();
+        // 乐观更新：立即翻转收藏态，让计划马上重排（后收藏的置顶）。
+        const nextFav = plan.is_favorite ? null : new Date().toISOString();
+        setPlans(prev => prev.map(p => p.id === plan.id
+            ? { ...p, is_favorite: !p.is_favorite, favorited_at: nextFav }
+            : p));
+        try {
+            const { plan: updated } = await updatePlan(plan.id, { is_favorite: !plan.is_favorite });
+            setPlans(prev => prev.map(p => p.id === plan.id
+                ? { ...p, is_favorite: updated.is_favorite, favorited_at: updated.favorited_at }
+                : p));
+        } catch {
+            setPlans(prev => prev.map(p => p.id === plan.id
+                ? { ...p, is_favorite: plan.is_favorite, favorited_at: plan.favorited_at }
+                : p));
+            showToast(t.vocab.plans.favoriteFail, 'error');
         }
     };
 
@@ -251,6 +273,14 @@ export default function LearningPlanListPage() {
 
     const canCreate = user?.is_staff || plans.length < MAX_PLANS;
 
+    // 收藏优先：已收藏排最前，后收藏的更靠前；其余按创建顺序。
+    const sortedPlans = [...plans].sort((a, b) => {
+        const fa = a.favorited_at ? Date.parse(a.favorited_at) : 0;
+        const fb = b.favorited_at ? Date.parse(b.favorited_at) : 0;
+        if (fa !== fb) return fb - fa;
+        return Date.parse(a.created_at) - Date.parse(b.created_at);
+    });
+
     return (
         <Layout
             pageTitle={t.vocab.plans.title}
@@ -319,19 +349,30 @@ export default function LearningPlanListPage() {
                                     </div>
                                 ) : (
                                     <div className="lp-plan-list">
-                                        {plans.map((plan, idx) => (
-                                            <div key={plan.id} className="lp-plan-card" data-idx={idx}>
+                                        {sortedPlans.map((plan, idx) => (
+                                            <div key={plan.id} className={`lp-plan-card ${plan.is_favorite ? 'is-favorite' : ''}`} data-idx={idx}>
                                                 <div className="lp-plan-accent" />
                                                 <div className="lp-plan-body">
                                                     <div className="lp-plan-top">
                                                         <span className="lp-plan-name">{plan.name}</span>
-                                                        <button
-                                                            className="lp-plan-del"
-                                                            onClick={(e) => handleDelete(e, plan)}
-                                                            title={t.vocab.plans.deleteTitle}
-                                                        >
-                                                            ✕
-                                                        </button>
+                                                        <div className="lp-plan-top-actions">
+                                                            <button
+                                                                className={`lp-plan-fav ${plan.is_favorite ? 'is-on' : ''}`}
+                                                                onClick={(e) => handleToggleFavorite(e, plan)}
+                                                                title={plan.is_favorite ? t.vocab.plans.unfavoriteTitle : t.vocab.plans.favoriteTitle}
+                                                                aria-label={plan.is_favorite ? t.vocab.plans.unfavoriteTitle : t.vocab.plans.favoriteTitle}
+                                                                aria-pressed={plan.is_favorite}
+                                                            >
+                                                                {plan.is_favorite ? '★' : '☆'}
+                                                            </button>
+                                                            <button
+                                                                className="lp-plan-del"
+                                                                onClick={(e) => handleDelete(e, plan)}
+                                                                title={t.vocab.plans.deleteTitle}
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                     <div className="lp-plan-meta">
                                                         <span className="lp-meta-item">

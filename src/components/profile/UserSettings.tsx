@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { showConfirm } from '../common/ConfirmService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
 import AiModelSelector from '../common/AiModelSelector';
@@ -40,7 +41,7 @@ export default function UserSettings() {
             setChangeUsernameError(t.profile.rename.errors.sameName);
             return;
         }
-        if (!window.confirm(t.profile.rename.errors.confirmMsg.replace('{name}', trimmed))) return;
+        if (!(await showConfirm(t.profile.rename.errors.confirmMsg.replace('{name}', trimmed)))) return;
 
         setIsChangingUsername(true);
         setChangeUsernameMsg('');
@@ -60,7 +61,7 @@ export default function UserSettings() {
     };
 
     const handleDeleteAccount = async () => {
-        if (!window.confirm(t.profile.account.confirmDelete)) {
+        if (!(await showConfirm({ message: t.profile.account.confirmDelete, danger: true }))) {
             return;
         }
 

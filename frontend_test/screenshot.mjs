@@ -23,7 +23,7 @@
  */
 
 import { chromium } from 'playwright';
-import { mkdirSync, writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createInterface } from 'readline/promises';
@@ -52,6 +52,8 @@ const DYNAMIC_PARAMS = {
 //   opts.ignoreErrors: RegExp  → 匹配到的页面报错不计入 ⚠️
 //   opts.actions: [...]        → 截图前依次执行 { click: '<Playwright 选择器>', wait?: ms }，
 //                                用于同一 URL 内的不同视图 (tab / 面板 / 手风琴)
+//                                每步可选: optional=true (选择器不存在则跳过整页, 不算失败),
+//                                waitNav=true (点击后等页面导航/网络空闲), skipReason (跳过时的说明)
 //   path 含 ':xxxId'           → 见 DYNAMIC_PARAMS
 const PAGES = [
     // 公开页 (登录前截)
@@ -96,6 +98,13 @@ const PAGES = [
     ['/practice/ai/others', 'practice_ai_others'],
     ['/practice/ai/reading', 'practice_reading_config'],
     ['/practice/ai/listening', 'practice_listening_config'],
+
+    // 题库里点开“第一个题目”进入答题页 (每门一张；题库为空则自动跳过)
+    //   click 选择器排除生成中/失败卡片，只点可作答的第一张；optional=空题库不算失败
+    ['/practice/ai/bank?skill=listening', 'practice_ai_bank_listening_open', { actions: [{ click: '.ai-bank-card:not(.is-generating):not(.is-failed)', optional: true, waitNav: true, wait: 1500, skipReason: '听力题库为空，无题目可打开' }] }],
+    ['/practice/ai/bank?skill=reading',   'practice_ai_bank_reading_open',   { actions: [{ click: '.ai-bank-card:not(.is-generating):not(.is-failed)', optional: true, waitNav: true, wait: 1500, skipReason: '阅读题库为空，无题目可打开' }] }],
+    ['/practice/ai/bank?skill=writing',   'practice_ai_bank_writing_open',   { actions: [{ click: '.ai-bank-card:not(.is-generating):not(.is-failed)', optional: true, waitNav: true, wait: 1500, skipReason: '写作题库为空，无题目可打开' }] }],
+    ['/practice/ai/bank?skill=speaking',  'practice_ai_bank_speaking_open',  { actions: [{ click: '.ai-bank-card:not(.is-generating):not(.is-failed)', optional: true, waitNav: true, wait: 1500, skipReason: '口语题库为空，无题目可打开' }] }],
 
     // 阅读/听力/口语 运行时
     ['/reading', 'reading'],
@@ -286,6 +295,11 @@ async function resolveDynamicParams(context, pages) {
 // ============================================================
 // 单页截图 (带重试 + 失败检测 + console 错误收集)
 // ============================================================
+// optional action 找不到目标时抛出，shootAll 据此把该页记为“跳过”而非“失败”
+class SkipPage extends Error {
+    constructor(message) { super(message); this.skip = true; }
+}
+
 async function capturePage(page, path, opts, filepath, errors) {
     const url = `${BASE_URL}${path}`;
     // networkidle 在有轮询/长连接的页面会一直等不到，作为尽力等待而非硬条件
@@ -298,9 +312,22 @@ async function capturePage(page, path, opts, filepath, errors) {
         throw new Error('被重定向到 /login (登录态失效？)');
     }
 
-    // 同一 URL 内的视图切换 (点 tab / 展开面板)
+    // 同一 URL 内的视图切换 (点 tab / 展开面板)，或点开列表首项进入下一页
     for (const step of opts?.actions ?? []) {
-        if (step.click) await page.click(step.click, { timeout: 5000 });
+        if (step.click) {
+            if (step.optional) {
+                // 目标可能不存在 (如题库为空)：等一小会儿，仍无则跳过整页
+                const el = await page.waitForSelector(step.click, { timeout: 4000 }).catch(() => null);
+                if (!el) throw new SkipPage(step.skipReason || `未找到 ${step.click}，跳过`);
+                await el.click();
+            } else {
+                await page.click(step.click, { timeout: 5000 });
+            }
+        }
+        // 点击若触发跳转，等页面稳定后再截 (答题页需要按 bankId 拉取内容)
+        if (step.waitNav) {
+            await page.waitForLoadState('networkidle', { timeout: CONFIG.settleTimeout }).catch(() => {});
+        }
         await page.waitForTimeout(step.wait ?? 400);
     }
 
@@ -327,6 +354,7 @@ async function shootAll(page, pages, outDir, results, lang) {
         console.log(`  [${i + 1}/${pages.length}] ${BASE_URL}${path}`);
 
         let lastErr = null;
+        let skipped = null;
         let pageErrors = [];
         for (let attempt = 0; attempt <= CONFIG.retries; attempt++) {
             errors.length = 0;
@@ -337,12 +365,17 @@ async function shootAll(page, pages, outDir, results, lang) {
                 lastErr = null;
                 break;
             } catch (err) {
+                // optional action 主动跳过：不重试、不算失败
+                if (err.skip) { skipped = err; lastErr = null; break; }
                 lastErr = err;
             }
         }
 
         const ms = Date.now() - started;
-        if (lastErr) {
+        if (skipped) {
+            console.log(`    ⏭️ 跳过: ${skipped.message}`);
+            results.push({ lang, name, path, file: null, status: 'skip', errors: [skipped.message], ms });
+        } else if (lastErr) {
             console.log(`    ❌ 失败: ${lastErr.message}`);
             results.push({ lang, name, path, file: null, status: 'fail', errors: [lastErr.message], ms });
         } else if (pageErrors.length > 0) {
@@ -474,6 +507,14 @@ async function run() {
         };
     }
     console.log(`🖥️ 视口 ${CONFIG.viewport.width}x${CONFIG.viewport.height} @${CONFIG.deviceScaleFactor}x (缩放 ${Math.round(CONFIG.zoom * 100)}%)`);
+
+    // 每次拍照前清空旧截图目录，避免改名/删页后的旧图残留混进本轮结果
+    try {
+        rmSync(CONFIG.outputDir, { recursive: true, force: true });
+        console.log(`🧹 已清空旧截图目录: ${CONFIG.outputDir}`);
+    } catch (e) {
+        console.log(`  ⚠️ 清空旧截图目录失败 (忽略): ${e.message}`);
+    }
 
     const langs = langChoice === 'both' ? ['zh', 'en'] : [langChoice];
 

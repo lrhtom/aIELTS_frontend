@@ -1,0 +1,114 @@
+/* ======= 全局命令式确认弹窗（showConfirm） =======
+   独立作用域类名 at-confirm-*，不依赖任何页面级样式；主题感知（CSS 变量 + 兜底值）。 */
+
+.at-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100001; /* 高于 toast(99999)，阻塞式弹窗置顶 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    animation: at-confirm-fade 0.18s ease;
+}
+
+.at-confirm-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 26px 26px 22px;
+    border-radius: 16px;
+    background: var(--color-surface, #ffffff);
+    color: var(--color-text, #1f2937);
+    border: 1px solid var(--color-border, #e5e7eb);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+    text-align: center;
+    animation: at-confirm-pop 0.22s cubic-bezier(0.21, 1.02, 0.73, 1);
+}
+
+.at-confirm-title {
+    margin: 0 0 10px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-text, #1f2937);
+}
+
+.at-confirm-message {
+    margin: 0 0 22px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text-secondary, #4b5563);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.at-confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.at-confirm-btn {
+    min-width: 100px;
+    padding: 9px 18px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.05s ease;
+}
+
+.at-confirm-btn:active {
+    transform: translateY(1px);
+}
+
+.at-confirm-btn--cancel {
+    background: transparent;
+    color: var(--color-text-secondary, #4b5563);
+    border-color: var(--color-border, #d1d5db);
+}
+
+.at-confirm-btn--cancel:hover {
+    background: var(--color-bg, #f3f4f6);
+}
+
+.at-confirm-btn--primary {
+    background: var(--color-primary, #0d9488);
+    color: #ffffff;
+}
+
+.at-confirm-btn--primary:hover {
+    background: var(--color-primary-hover, #0f766e);
+}
+
+.at-confirm-btn--danger {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+.at-confirm-btn--danger:hover {
+    background: #dc2626;
+}
+
+.at-confirm-btn:focus-visible {
+    outline: 2px solid var(--color-primary, #0d9488);
+    outline-offset: 2px;
+}
+
+@keyframes at-confirm-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes at-confirm-pop {
+    from { opacity: 0; transform: translateY(10px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 480px) {
+    .at-confirm-card { max-width: 100%; }
+    .at-confirm-actions { flex-direction: column-reverse; }
+    .at-confirm-btn { width: 100%; }
+}

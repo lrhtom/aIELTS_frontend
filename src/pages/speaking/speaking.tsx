@@ -107,12 +107,12 @@ export default function Speaking() {
         if (selected.length === 0) return;
         const total = scenarioFiles.length + selected.length;
         if (total > 3) {
-            alert(sc.toastMaxFiles);
+            showToast(sc.toastMaxFiles);
             return;
         }
         const oversized = selected.filter(f => f.size > 5 * 1024 * 1024);
         if (oversized.length > 0) {
-            alert(sc.toastFileTooBig);
+            showToast(sc.toastFileTooBig);
             return;
         }
         setScenarioFiles(prev => [...prev, ...selected]);
@@ -127,7 +127,7 @@ export default function Speaking() {
                 setScenarioInput(res.data.scenario);
             }
         } catch (err: unknown) {
-            alert(sc.toastRandomScenarioFail.replace('{msg}', (err as { message?: string }).message ?? ''));
+            showToast(sc.toastRandomScenarioFail.replace('{msg}', (err as { message?: string }).message ?? ''));
         } finally {
             setIsGeneratingScenario(false);
         }
@@ -171,7 +171,7 @@ export default function Speaking() {
 
     const handleStart = async () => {
         if (selectedMode === 'scenario' && !scenarioInput.trim()) {
-            alert(sc.toastEnterScenario);
+            showToast(sc.toastEnterScenario);
             return;
         }
 
@@ -180,12 +180,12 @@ export default function Speaking() {
                 setIsChecking(true);
                 const checkRes = await ATInterceptor.checkScenario(scenarioInput.trim());
                 if (!checkRes.data.valid) {
-                    alert(sc.toastScenarioBlocked.replace('{reason}', checkRes.data.reason || sc.toastScenarioBlockedFallback));
+                    showToast(sc.toastScenarioBlocked.replace('{reason}', checkRes.data.reason || sc.toastScenarioBlockedFallback));
                     setIsChecking(false);
                     return;
                 }
             } catch (err: unknown) {
-                alert(sc.toastSafetyFail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(sc.toastSafetyFail.replace('{msg}', (err as { message?: string }).message ?? ''));
                 setIsChecking(false);
                 return;
             } finally {
@@ -225,7 +225,7 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                alert(sc.toastPart1Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(sc.toastPart1Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
@@ -246,7 +246,7 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                alert(sc.toastPart2Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(sc.toastPart2Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
@@ -267,7 +267,7 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                alert(sc.toastPart3Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(sc.toastPart3Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
@@ -289,12 +289,12 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                alert(sc.toastFullTestFail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(sc.toastFullTestFail.replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
         } else {
-            alert(sc.comingSoon);
+            showToast(sc.comingSoon, 'info');
         }
     };
 

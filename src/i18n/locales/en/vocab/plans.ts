@@ -58,6 +58,9 @@ export const plans: typeof zh.plans = {
   modeCustomTitle: 'Custom Memory Card Mode',
   modeCustomSub: 'After creation, stay on this page; synced to backend',
   deleteTitle: 'Delete',
+  favoriteTitle: 'Favorite',
+  unfavoriteTitle: 'Remove from favorites',
+  favoriteFail: 'Failed to update favorite, please retry',
 };
 
 export const details: typeof zh.details = {

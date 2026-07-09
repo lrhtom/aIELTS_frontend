@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { showConfirm } from '../common/ConfirmService';
 import { useLang } from '../../i18n/LanguageContext';
 import { apiClient } from '../../api/client';
 import { toast } from 'react-hot-toast';
@@ -59,7 +60,7 @@ export default function AdminFeedback() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm(t.profile.account.confirmDelete)) return;
+        if (!(await showConfirm({ message: t.profile.account.confirmDelete, danger: true }))) return;
 
         try {
             await apiClient.delete(`/admin/feedback/${id}/delete`);

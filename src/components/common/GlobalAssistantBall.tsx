@@ -1280,7 +1280,11 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             const embed = result.ok
                 ? `**${t.assistant.checkin.successMessage.replace('{bonus}', (result.bonus ?? 0).toLocaleString())}**\n\n` +
                   `${t.assistant.checkin.balance}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
-                  `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}`
+                  `${t.assistant.checkin.streak}: ${result.checkin_streak ?? 0} ${t.assistant.checkin.daysUnit}\n` +
+                  `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}` +
+                  (result.card_awarded
+                      ? `\n\n${t.assistant.checkin.cardAwarded.replace('{n}', String(result.checkin_streak ?? 0))}`
+                      : '')
                 : `**${t.assistant.checkin.alreadyMessage}**`;
             const assistantMessage: AgentChatMessage = {
                 id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,

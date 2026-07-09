@@ -151,6 +151,25 @@ export const profile: typeof zh.profile = {
   backpack: {
     empty: 'Your backpack is empty',
     emptyHint: 'Get items by participating in practice or events!',
+    loading: 'Loading...',
+    items: {
+      makeup_card: {
+        name: 'Make-up Card',
+        icon: '🎫',
+        desc: 'Recover one missed day within the last {n} days and keep your streak',
+        use: 'Make up',
+      },
+    },
+    makeup: {
+      title: 'Pick a missed day to make up',
+      hint: 'Each make-up costs 1 card and grants {bonus} AT base reward',
+      noGap: 'No missed days in the last {n} days 🎉',
+      noCard: 'Not enough cards — buy in the store or check in 30 days in a row',
+      confirm: 'Make up',
+      cancel: 'Cancel',
+      success: 'Made up successfully!',
+      today: 'Today',
+    },
   },
   feedback: {
     title: 'Bug Feedback',

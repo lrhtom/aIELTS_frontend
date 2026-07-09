@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { showConfirm } from '../../components/common/ConfirmService';
 import { useNavigate, useParams } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
@@ -60,9 +61,10 @@ export default function CreativeWorkshopPreviewPage() {
 
     const handleDelete = async () => {
         if (!project) return;
-        const confirmed = window.confirm(
-            t.creativeWorkshop.deleteConfirm.replace('{title}', project.title),
-        );
+        const confirmed = await showConfirm({
+            message: t.creativeWorkshop.deleteConfirm.replace('{title}', project.title),
+            danger: true,
+        });
         if (!confirmed) return;
 
         setDeleting(true);

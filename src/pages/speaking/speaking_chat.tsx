@@ -23,6 +23,7 @@ import AiModelSelector from '../../components/common/AiModelSelector';
 import { ATInterceptor } from '../../api/atInterceptor';
 import { startSpeakingSession, getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { showToast } from '../../components/common/Toast';
+import { devLog } from '../../utils/devLog';
 import type { SpeakingMode, IeltsPart } from './speaking';
 import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/speaking_chat.css';
@@ -447,7 +448,7 @@ function SpeakingChatPage() {
                 // The second strict mode unmount will call stopAudio, meaning play() here might get aborted.
                 if (!isUnmounted) setStatusSync('speaking');
                 await a.play().catch(e => {
-                    console.log("Welcome TTS aborted", e);
+                    devLog("Welcome TTS aborted", e);
                     if (!isUnmounted) setStatusSync('idle');
                 });
             } catch (err: unknown) {
@@ -685,7 +686,7 @@ function SpeakingChatPage() {
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             sr.onerror = (e: any) => {
-                console.log('sr.onerror', e);
+                devLog('sr.onerror', e);
                 if (e.error === 'aborted') return;
                 if (e.error === 'network' && statusRef.current === 'processing') return;
 

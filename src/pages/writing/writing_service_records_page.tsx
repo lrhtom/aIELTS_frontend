@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { showConfirm } from '../../components/common/ConfirmService';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { apiClient } from '../../api/client';
@@ -100,7 +101,7 @@ export default function WritingServiceRecordsPage() {
 
     const handleDelete = async (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        if (!window.confirm(t?.deleteConfirm || 'Are you sure to delete this record?')) return;
+        if (!(await showConfirm({ message: t?.deleteConfirm || 'Are you sure to delete this record?', danger: true }))) return;
         try {
             const res = await apiClient.delete<{status: string}>(`/writing/records/${id}`);
             if (res.data.status === 'success') {

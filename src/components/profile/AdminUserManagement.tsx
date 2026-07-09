@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { showConfirm } from '../common/ConfirmService';
 import { apiClient } from '../../api/client';
 import { useLang } from '../../i18n/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -101,7 +102,7 @@ export default function AdminUserManagement() {
             return;
         }
 
-        if (!window.confirm(t.profile.admin.users.toastDeleteConfirm.replace('{name}', user.username))) return;
+        if (!(await showConfirm({ message: t.profile.admin.users.toastDeleteConfirm.replace('{name}', user.username), danger: true }))) return;
 
         try {
             await apiClient.delete(`/admin/users/${user.id}/delete`);
@@ -132,7 +133,7 @@ export default function AdminUserManagement() {
             ? t.profile.admin.users.toastPromoteConfirm
             : t.profile.admin.users.toastDemoteConfirm
         ).replace('{name}', user.username);
-        if (!window.confirm(confirmMsg)) return;
+        if (!(await showConfirm(confirmMsg))) return;
 
         try {
             const resp = await apiClient.patch<UserRow>(`/admin/users/${user.id}/promote`);
@@ -183,7 +184,7 @@ export default function AdminUserManagement() {
     };
 
     const handleUnbanIP = async (row: BannedIP) => {
-        if (!window.confirm(t.profile.admin.users.unbanIpConfirm.replace('{ip}', row.ip_address))) return;
+        if (!(await showConfirm(t.profile.admin.users.unbanIpConfirm.replace('{ip}', row.ip_address)))) return;
         try {
             await apiClient.delete(`/admin/banned-ips/${row.id}`);
             toast.success(t.profile.admin.users.toastIpUnbanSuccess);

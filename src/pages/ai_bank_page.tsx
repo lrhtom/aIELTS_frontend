@@ -1,7 +1,8 @@
 import Layout from '../components/layout/Layout';
+import { showConfirm } from '../components/common/ConfirmService';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { listAIQuestions, deleteAIQuestion, type AIQuestionSkill, type AIQuestionSummary } from '../api/ai_question';
+import { listAIQuestions, deleteAIQuestion, toggleFavoriteAIQuestion, type AIQuestionSkill, type AIQuestionSummary } from '../api/ai_question';
 import { showToast } from '../components/common/Toast';
 import { useLang } from '../i18n/LanguageContext';
 import { translations } from '../i18n/translations';
@@ -103,10 +104,19 @@ export default function AIBankPage() {
     }, [activeSkill, t.loadFail]);
 
     const sortedItems = useMemo(() => {
+        const favTime = (it: AIQuestionSummary) => (it.favoritedAt ? Date.parse(it.favoritedAt) : 0);
+        const createTime = (it: AIQuestionSummary) => (it.createdAt ? Date.parse(it.createdAt) : 0);
+        // 收藏优先：已收藏排最前，后收藏的（favoritedAt 更大）更靠前；其余按生成时间倒序。
+        const arr = [...items].sort((a, b) => {
+            const fa = favTime(a), fb = favTime(b);
+            if (fa !== fb) return fb - fa;
+            return createTime(b) - createTime(a);
+        });
         const just = justId ? Number(justId) : NaN;
-        if (Number.isNaN(just)) return items;
-        const head = items.filter(it => it.id === just);
-        const tail = items.filter(it => it.id !== just);
+        if (Number.isNaN(just)) return arr;
+        // 刚生成的题目永远置顶，方便用户立刻看到（优先级高于收藏排序）。
+        const head = arr.filter(it => it.id === just);
+        const tail = arr.filter(it => it.id !== just);
         return [...head, ...tail];
     }, [items, justId]);
 
@@ -125,13 +135,34 @@ export default function AIBankPage() {
     const handleDelete = async (e: React.MouseEvent, item: AIQuestionSummary) => {
         e.stopPropagation();
         const title = item.title || t.untitled;
-        if (!confirm(t.deleteConfirm.replace('{title}', title))) return;
+        if (!(await showConfirm({ message: t.deleteConfirm.replace('{title}', title), danger: true }))) return;
         try {
             await deleteAIQuestion(item.id);
             setItems(prev => prev.filter(it => it.id !== item.id));
             showToast(t.deleteSuccess, 'success');
         } catch {
             showToast(t.deleteFail, 'error');
+        }
+    };
+
+    const handleToggleFavorite = async (e: React.MouseEvent, item: AIQuestionSummary) => {
+        e.stopPropagation();
+        // 乐观更新：立即翻转收藏态，让卡片马上重排（后收藏的置顶）。
+        const nextFav = item.isFavorite ? null : new Date().toISOString();
+        setItems(prev => prev.map(it => it.id === item.id
+            ? { ...it, isFavorite: !it.isFavorite, favoritedAt: nextFav }
+            : it));
+        try {
+            const updated = await toggleFavoriteAIQuestion(item.id);
+            setItems(prev => prev.map(it => it.id === item.id
+                ? { ...it, isFavorite: updated.isFavorite, favoritedAt: updated.favoritedAt }
+                : it));
+        } catch {
+            // 失败回滚到操作前状态
+            setItems(prev => prev.map(it => it.id === item.id
+                ? { ...it, isFavorite: item.isFavorite, favoritedAt: item.favoritedAt }
+                : it));
+            showToast(t.favoriteFail, 'error');
         }
     };
 
@@ -199,7 +230,7 @@ export default function AIBankPage() {
                             return (
                                 <div
                                     key={item.id}
-                                    className={`ai-bank-card ${isJust ? 'is-just' : ''} ${cardStateClass}`}
+                                    className={`ai-bank-card ${isJust ? 'is-just' : ''} ${cardStateClass} ${item.isFavorite ? 'is-favorite' : ''}`}
                                     onClick={() => handleClick(item)}
                                     aria-disabled={isGenerating || isFailed}
                                 >
@@ -220,14 +251,26 @@ export default function AIBankPage() {
                                         <span>{t.generatedAt.replace('{time}', formatDate(item.createdAt))}</span>
                                         {item.lastAttemptAt && <span>{t.lastAttemptAt.replace('{time}', formatDate(item.lastAttemptAt))}</span>}
                                     </div>
-                                    <button
-                                        type="button"
-                                        className="ai-bank-card-delete"
-                                        onClick={(e) => handleDelete(e, item)}
-                                        aria-label={t.deleteAriaLabel}
-                                    >
-                                        <span>{t.deleteBtn}</span>
-                                    </button>
+                                    <div className="ai-bank-card-actions">
+                                        <button
+                                            type="button"
+                                            className={`ai-bank-card-favorite ${item.isFavorite ? 'is-on' : ''}`}
+                                            onClick={(e) => handleToggleFavorite(e, item)}
+                                            aria-label={item.isFavorite ? t.unfavoriteAriaLabel : t.favoriteAriaLabel}
+                                            aria-pressed={item.isFavorite}
+                                            title={item.isFavorite ? t.unfavoriteAriaLabel : t.favoriteAriaLabel}
+                                        >
+                                            {item.isFavorite ? '★' : '☆'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="ai-bank-card-delete"
+                                            onClick={(e) => handleDelete(e, item)}
+                                            aria-label={t.deleteAriaLabel}
+                                        >
+                                            <span>{t.deleteBtn}</span>
+                                        </button>
+                                    </div>
                                 </div>
                             );
                         })}

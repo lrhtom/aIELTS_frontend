@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { showConfirm } from '../components/common/ConfirmService';
 import Layout from '../components/layout/Layout';
 import { showToast } from '../components/common/Toast';
 import { useLang } from '../i18n/LanguageContext';
@@ -22,10 +23,49 @@ const DRAFT_PREFIX = 'md-draft-';
 
 /* ── Helpers ─────────────────────────────────────────── */
 
+const CJK_RE = /[一-鿿㐀-䶿豈-﫿぀-ヿ가-힯]/g;
+
 function getWordCount(text: string) {
     const trimmed = text.trim();
     if (!trimmed) return { chars: 0, words: 0 };
-    return { chars: trimmed.length, words: trimmed.split(/\s+/).length };
+    // Whitespace splitting alone counts a whole CJK paragraph as one word,
+    // so CJK characters each count as a word and are excluded from the
+    // whitespace-based count of the remaining (latin) text.
+    const cjkCount = trimmed.match(CJK_RE)?.length ?? 0;
+    const latinWords = trimmed.replace(CJK_RE, ' ').split(/\s+/).filter(Boolean).length;
+    return { chars: trimmed.replace(/\s/g, '').length, words: cjkCount + latinWords };
+}
+
+/**
+ * Uppercase lowercase sentence-initial letters: at line starts (after any
+ * markdown prefixes like `#`/`-`/`>`/`1.`) and after `.` `!` `?`. Fenced code
+ * blocks, inline code spans, and table rows are left untouched. Case changes
+ * never alter length, so caller-held selection offsets stay valid.
+ */
+function capitalizeSentenceStarts(text: string): { result: string; count: number } {
+    let count = 0;
+    let inFence = false;
+    const upper = (prefix: string, ch: string) => {
+        count++;
+        return prefix + ch.toUpperCase();
+    };
+    const lines = text.split('\n').map(line => {
+        if (/^\s*(```|~~~)/.test(line)) {
+            inFence = !inFence;
+            return line;
+        }
+        if (inFence || line.trimStart().startsWith('|')) return line;
+        const parts = line.split('`');
+        for (let i = 0; i < parts.length; i += 2) {
+            parts[i] = parts[i].replace(/([.!?]["')\]]*\s+)([a-z])/g, (_, p, ch) => upper(p, ch));
+        }
+        parts[0] = parts[0].replace(
+            /^(\s*(?:(?:#{1,6}|>+|[-*+]|\d+[.)])\s+)*)([a-z])/,
+            (_, p, ch) => upper(p, ch),
+        );
+        return parts.join('`');
+    });
+    return { result: lines.join('\n'), count };
 }
 
 function getPreviewText(content: string, maxLen = 80) {
@@ -34,15 +74,20 @@ function getPreviewText(content: string, maxLen = 80) {
     return plain.length > maxLen ? plain.slice(0, maxLen) + '...' : plain;
 }
 
-function getDateGroup(dateStr: string): string {
+type DateGroupKey = 'today' | 'yesterday' | 'thisWeek' | 'older';
+
+function getDateGroup(dateStr: string): DateGroupKey {
+    // Normalize both sides to local midnight — comparing a full timestamp
+    // against today's midnight put this-morning's notes a day off.
     const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const diffDays = Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return 'This Week';
-    return 'Older';
+    const diffDays = Math.round((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return 'today';
+    if (diffDays === 1) return 'yesterday';
+    if (diffDays < 7) return 'thisWeek';
+    return 'older';
 }
 
 function loadDraft(id: number) {
@@ -172,12 +217,17 @@ export default function MarkdownNotesPage() {
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const editorRef = useRef<HTMLTextAreaElement | null>(null);
 
+    // Read the toast text through a ref so the fetch runs exactly once —
+    // depending on the translated string re-fetched the whole list on every
+    // language switch (and could clobber edits inside the draft debounce).
+    const loadFailMsgRef = useRef(t.markdownNotes.loadFail);
+    loadFailMsgRef.current = t.markdownNotes.loadFail;
     useEffect(() => {
         listMarkdownNotes()
             .then(res => setNotes(res.notes))
-            .catch(() => showToast(t.markdownNotes.loadFail, 'error'))
+            .catch(() => showToast(loadFailMsgRef.current, 'error'))
             .finally(() => setLoading(false));
-    }, [t.markdownNotes.loadFail]);
+    }, []);
 
     const selectedNote = notes.find(n => n.id === selectedId) ?? null;
 
@@ -198,6 +248,20 @@ export default function MarkdownNotesPage() {
     useEffect(() => {
         if (!selectedNote || loading) return;
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        // This effect also fires when syncSelection programmatically loads a
+        // note's stored values — without this guard, merely opening a note
+        // created a phantom draft and flagged it as having unsaved changes.
+        // When local state matches the stored note, drop any stale draft
+        // (also self-heals phantom drafts, and reverting edits = clean).
+        const clean = title === selectedNote.title
+            && content === selectedNote.content
+            && tags.length === selectedNote.tags.length
+            && tags.every((tag, i) => tag === selectedNote.tags[i]);
+        if (clean) {
+            removeDraft(selectedNote.id);
+            setDirty(false);
+            return;
+        }
         saveTimerRef.current = setTimeout(() => {
             saveDraft(selectedNote.id, { title, tags, content });
             setDirty(true);
@@ -236,7 +300,7 @@ export default function MarkdownNotesPage() {
 
     const handleSyncFromCloud = async () => {
         if (!selectedNote) return;
-        if (dirty && !window.confirm(t.markdownNotes.overwriteConfirm)) {
+        if (dirty && !(await showConfirm(t.markdownNotes.overwriteConfirm))) {
             return;
         }
         setSyncing(true);
@@ -278,7 +342,7 @@ export default function MarkdownNotesPage() {
     const handleDelete = async () => {
         if (!selectedNote) return;
         const msg = t.markdownNotes.deleteConfirm.replace('{title}', selectedNote.title || 'Untitled');
-        if (!window.confirm(msg)) return;
+        if (!(await showConfirm({ message: msg, danger: true }))) return;
         try {
             await deleteMarkdownNote(selectedNote.id);
             removeDraft(selectedNote.id);
@@ -305,28 +369,84 @@ export default function MarkdownNotesPage() {
         const selected = content.slice(start, end);
         const after = content.slice(end);
 
-        let newText: string;
-        let cursorOffset: number;
+        // Each case declares the inserted snippet plus the selection range
+        // (relative to `start`) so the caret reliably lands on the
+        // placeholder / kept selection — indexOf-based positioning broke
+        // whenever the document already contained the placeholder word.
+        let inserted: string;
+        let selFrom: number;
+        let selTo: number;
+        const body = (fallback: string) => selected || fallback;
 
         switch (syntax) {
-            case 'bold':   newText = `${before}**${selected || 'bold'}**${after}`;        cursorOffset = selected ? 0 : 2; break;
-            case 'italic': newText = `${before}_${selected || 'italic'}_${after}`;         cursorOffset = selected ? 0 : 1; break;
-            case 'code':   newText = `${before}\`${selected || 'code'}\`${after}`;         cursorOffset = selected ? 0 : 1; break;
-            case 'link':   newText = `${before}[${selected || 'text'}](url)${after}`;      cursorOffset = selected ? 0 : -4; break;
-            case 'h2':     newText = `${before}## ${selected || 'Heading'}${after}`;       cursorOffset = selected ? -3 : 0; break;
-            case 'h3':     newText = `${before}### ${selected || 'Heading'}${after}`;      cursorOffset = selected ? -4 : 0; break;
-            case 'list':   newText = `${before}- ${selected || 'item'}${after}`;           cursorOffset = selected ? -2 : 0; break;
-            case 'quote':  newText = `${before}> ${selected || 'quote'}${after}`;          cursorOffset = selected ? -2 : 0; break;
-            case 'table':  newText = `${before}| Col 1 | Col 2 |\n| --- | --- |\n|  |  |${after}`; cursorOffset = 0; break;
+            case 'bold': {
+                const b = body('bold');
+                inserted = `**${b}**`; selFrom = 2; selTo = 2 + b.length; break;
+            }
+            case 'italic': {
+                const b = body('italic');
+                inserted = `_${b}_`; selFrom = 1; selTo = 1 + b.length; break;
+            }
+            case 'code': {
+                const b = body('code');
+                inserted = `\`${b}\``; selFrom = 1; selTo = 1 + b.length; break;
+            }
+            case 'link': {
+                const b = body('text');
+                inserted = `[${b}](url)`; selFrom = b.length + 3; selTo = b.length + 6; break;
+            }
+            case 'h2': {
+                const b = body('Heading');
+                inserted = `## ${b}`; selFrom = 3; selTo = 3 + b.length; break;
+            }
+            case 'h3': {
+                const b = body('Heading');
+                inserted = `### ${b}`; selFrom = 4; selTo = 4 + b.length; break;
+            }
+            case 'list': {
+                const b = body('item');
+                inserted = `- ${b}`; selFrom = 2; selTo = 2 + b.length; break;
+            }
+            case 'quote': {
+                const b = body('quote');
+                inserted = `> ${b}`; selFrom = 2; selTo = 2 + b.length; break;
+            }
+            case 'table': {
+                inserted = '| Col 1 | Col 2 |\n| --- | --- |\n|  |  |';
+                selFrom = inserted.length - 5; selTo = selFrom; break;
+            }
             default: return;
         }
 
-        setContent(newText);
+        setContent(before + inserted + after);
         setTimeout(() => {
-            const pos = start + (selected ? 0 : newText.indexOf(selected || syntax) + 1);
             textarea.focus();
-            textarea.setSelectionRange(cursorOffset < 0 ? pos + cursorOffset : pos, pos + (selected ? selected.length : 0));
+            textarea.setSelectionRange(start + selFrom, start + selTo);
         }, 0);
+    };
+
+    const handleCapitalize = () => {
+        const textarea = editorRef.current;
+        const selStart = textarea?.selectionStart ?? 0;
+        const selEnd = textarea?.selectionEnd ?? 0;
+        const hasSelection = !!textarea && selEnd > selStart;
+
+        const target = hasSelection ? content.slice(selStart, selEnd) : content;
+        const { result, count } = capitalizeSentenceStarts(target);
+        if (count === 0) {
+            showToast(t.markdownNotes.capitalizeNone, 'info');
+            return;
+        }
+        setContent(hasSelection
+            ? content.slice(0, selStart) + result + content.slice(selEnd)
+            : result);
+        showToast(t.markdownNotes.capitalizeDone.replace('{n}', String(count)), 'success');
+        if (textarea) {
+            setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(selStart, selEnd);
+            }, 0);
+        }
     };
 
     const filteredNotes = searchQuery.trim()
@@ -397,8 +517,8 @@ export default function MarkdownNotesPage() {
                                 </div>
                             ) : (
                                 (() => {
-                                    const groupOrder = ['Today', 'Yesterday', 'This Week', 'Older'];
-                                    const map = new Map<string, MarkdownNote[]>();
+                                    const groupOrder: DateGroupKey[] = ['today', 'yesterday', 'thisWeek', 'older'];
+                                    const map = new Map<DateGroupKey, MarkdownNote[]>();
                                     for (const n of filteredNotes) {
                                         const key = getDateGroup(n.updated_at);
                                         if (!map.has(key)) map.set(key, []);
@@ -407,12 +527,9 @@ export default function MarkdownNotesPage() {
                                     const groups = groupOrder
                                         .filter(k => map.has(k))
                                         .map(k => ({ label: k, notes: map.get(k)! }));
-                                    for (const [key, ns] of map) {
-                                        if (!groupOrder.includes(key)) groups.push({ label: key, notes: ns });
-                                    }
                                     return groups.map(group => (
                                         <div key={group.label}>
-                                            <div className="md-note-group-label">{group.label}</div>
+                                            <div className="md-note-group-label">{t.markdownNotes.groups[group.label]}</div>
                                             {group.notes.map(note => {
                                                 const hasDraft = !!loadDraft(note.id);
                                                 return (
@@ -527,22 +644,28 @@ export default function MarkdownNotesPage() {
                                         <TagInput tags={tags} tagInput={tagInput} onChange={setTagInput} onTagsChange={setTags} />
                                         <div className="md-editor-meta-info">
                                             {dirty && <span className="md-saving-dot" title={t.markdownNotes.unsaved} />}
-                                            <span className="md-word-count">{wc.words} words · {wc.chars} chars</span>
+                                            <span className="md-word-count">
+                                                {t.markdownNotes.wordCount
+                                                    .replace('{words}', wc.words.toLocaleString())
+                                                    .replace('{chars}', wc.chars.toLocaleString())}
+                                            </span>
                                         </div>
                                     </div>
 
                                     {/* Row 3: Format buttons */}
                                     <div className="md-editor-markdown-btns">
-                                        <button onClick={() => handleInsertMarkdown('bold')} title="Bold"><strong>B</strong></button>
-                                        <button onClick={() => handleInsertMarkdown('italic')} title="Italic"><em>I</em></button>
-                                        <button onClick={() => handleInsertMarkdown('h2')} title="Heading 2">H2</button>
-                                        <button onClick={() => handleInsertMarkdown('h3')} title="Heading 3">H3</button>
+                                        <button onClick={() => handleInsertMarkdown('bold')} title={t.markdownNotes.format.bold}><strong>B</strong></button>
+                                        <button onClick={() => handleInsertMarkdown('italic')} title={t.markdownNotes.format.italic}><em>I</em></button>
+                                        <button onClick={() => handleInsertMarkdown('h2')} title={t.markdownNotes.format.h2}>H2</button>
+                                        <button onClick={() => handleInsertMarkdown('h3')} title={t.markdownNotes.format.h3}>H3</button>
                                         <span className="md-mb-sep" />
-                                        <button onClick={() => handleInsertMarkdown('list')} title="Bullet list" style={{ fontFamily: 'monospace' }}>—</button>
-                                        <button onClick={() => handleInsertMarkdown('quote')} title="Blockquote" style={{ fontFamily: 'monospace' }}>&gt;</button>
-                                        <button onClick={() => handleInsertMarkdown('code')} title="Inline code" style={{ fontFamily: 'monospace' }}>&lt;/&gt;</button>
-                                        <button onClick={() => handleInsertMarkdown('link')} title="Link">🔗</button>
-                                        <button onClick={() => handleInsertMarkdown('table')} title="Table">⊞</button>
+                                        <button onClick={() => handleInsertMarkdown('list')} title={t.markdownNotes.format.list} style={{ fontFamily: 'monospace' }}>—</button>
+                                        <button onClick={() => handleInsertMarkdown('quote')} title={t.markdownNotes.format.quote} style={{ fontFamily: 'monospace' }}>&gt;</button>
+                                        <button onClick={() => handleInsertMarkdown('code')} title={t.markdownNotes.format.code} style={{ fontFamily: 'monospace' }}>&lt;/&gt;</button>
+                                        <button onClick={() => handleInsertMarkdown('link')} title={t.markdownNotes.format.link}>🔗</button>
+                                        <button onClick={() => handleInsertMarkdown('table')} title={t.markdownNotes.format.table}>⊞</button>
+                                        <span className="md-mb-sep" />
+                                        <button onClick={handleCapitalize} title={t.markdownNotes.capitalizeTitle}>Aa</button>
                                     </div>
                                 </div>
 

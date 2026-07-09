@@ -118,7 +118,9 @@ export const assistant = {
     failMessage: '签到失败，请稍后重试',
     balance: '当前余额',
     totalCheckins: '累计签到',
+    streak: '连续签到',
     daysUnit: '天',
+    cardAwarded: '🎫 连续满 {n} 天，额外获得 1 张补签卡！',
   },
   voice: {
     noText: '没有可播放的文本',

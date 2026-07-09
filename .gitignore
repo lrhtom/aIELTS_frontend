@@ -26,3 +26,6 @@ dist-ssr
 # Environment files (secrets)
 .env
 .env.*
+
+# Screenshot output (regenerated每次拍照，勿入库)
+frontend_test/screenshots/

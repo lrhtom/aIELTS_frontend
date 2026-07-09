@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
+import { showConfirm } from '../../components/common/ConfirmService';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { createReadingState } from '../../store/reading_page_store';
 import type { VocabItem, QuizData, FullQuizData, FullPassage, FullPassageSection, Question } from '../../store/reading_page_store';
@@ -259,7 +260,7 @@ export default function Reading_page() {
         }
     };
 
-    const submitQuiz = () => {
+    const submitQuiz = async () => {
         // Total question count spans full-test passages OR single quiz.
         let totalQuestions = 0;
         if (st.fullData) {
@@ -275,7 +276,7 @@ export default function Reading_page() {
         }
         const answeredQuestions = Object.values(userAnswersRef.current).filter(v => String(v).trim().length > 0).length;
         if (answeredQuestions < totalQuestions) {
-            if (!window.confirm(t.readingDetails.submitConfirm)) return;
+            if (!(await showConfirm(t.readingDetails.submitConfirm))) return;
         }
         if (bankId) {
             submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
@@ -606,8 +607,8 @@ export default function Reading_page() {
                             >
                                 <span className="btn-icon">💡</span> {t.readingDetails.hideTargets}
                             </button>
-                            <button className="toolbar-btn toolbar-btn-danger" onClick={() => {
-                                if (window.confirm(t.readingDetails.exitConfirm)) {
+                            <button className="toolbar-btn toolbar-btn-danger" onClick={async () => {
+                                if (await showConfirm(t.readingDetails.exitConfirm)) {
                                     onReturnHome();
                                 }
                             }}>

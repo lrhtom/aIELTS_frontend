@@ -57,6 +57,9 @@ export const plans = {
   modeCustomTitle: '自定义记忆卡模式',
   modeCustomSub: '创建后停留本页，并同步到后端',
   deleteTitle: '删除',
+  favoriteTitle: '收藏',
+  unfavoriteTitle: '取消收藏',
+  favoriteFail: '收藏失败，请重试',
 };
 
 export const details = {

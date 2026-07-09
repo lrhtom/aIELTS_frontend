@@ -17,6 +17,7 @@ import {
 } from '../../api/learning_plan';
 import PlanWordRow from '../../components/vocabulary/PlanWordRow';
 import TodayStudiedSection from '../../components/vocabulary/TodayStudiedSection';
+import { devLog } from '../../utils/devLog';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_learning_plan.css';
 
@@ -87,7 +88,7 @@ function shouldStartReview(plan: LearningPlan): boolean {
  * 当用户修改学习计划时调用，防止缓存数据与数据库不同步导致的模式失败
  */
 function clearPlanCaches(planId: number): void {
-    console.log('[计划缓存] 开始清理缓存...', { planId });
+    devLog('[计划缓存] 开始清理缓存...', { planId });
 
     const planSessionPrefix = `vocab_flashcard_session_plan_${planId}`;
     const dynamicPlanSessionKeys: string[] = [];
@@ -113,7 +114,7 @@ function clearPlanCaches(planId: number): void {
     Array.from(new Set(sessionKeys)).forEach(key => {
         if (sessionStorage.getItem(key)) {
             sessionStorage.removeItem(key);
-            console.log('[计划缓存] 已清理 sessionStorage:', key);
+            devLog('[计划缓存] 已清理 sessionStorage:', key);
         }
     });
 
@@ -123,7 +124,7 @@ function clearPlanCaches(planId: number): void {
     // localStorage.removeItem(`lp_study_mode_${planId}`);
     // localStorage.removeItem(`lp_mastery_target_${planId}`);
 
-    console.log('[计划缓存] 缓存清理完成', { planId, timestamp: new Date().toISOString() });
+    devLog('[计划缓存] 缓存清理完成', { planId, timestamp: new Date().toISOString() });
 }
 
 export default function LearningPlanDetailPage() {
@@ -457,7 +458,7 @@ export default function LearningPlanDetailPage() {
                     onProgress: (attempt) => {
                         retryAttempt = attempt;
                         if (attempt > 1) {
-                            console.log(`[学习计划] 开始学习 - 重试 ${attempt}/${maxRetries}`);
+                            devLog(`[学习计划] 开始学习 - 重试 ${attempt}/${maxRetries}`);
                         }
                     },
                     onRetry: (attempt, delay) => {
@@ -477,7 +478,7 @@ export default function LearningPlanDetailPage() {
                 return;
             }
 
-            console.log(`[学习计划] 成功加载 ${cards.length} 个卡片，进入${isQuotaDone ? '复习' : '学习'}`);
+            devLog(`[学习计划] 成功加载 ${cards.length} 个卡片，进入${isQuotaDone ? '复习' : '学习'}`);
 
             if (studyMode === 'article_copy') {
                 navigate(`/vocabulary/plans/${planId}/article-copy`, {

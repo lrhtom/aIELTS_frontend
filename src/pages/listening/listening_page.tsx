@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { showConfirm } from '../../components/common/ConfirmService';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { createListeningState } from '../../store/listen_page_store';
 import type {
@@ -393,7 +394,7 @@ export default function ListeningPage() {
         }
     };
 
-    const submitQuiz = () => {
+    const submitQuiz = async () => {
         if (!st.listeningData) return;
         // Total question count spans full-test sections OR single quiz.
         let totalQuestions = 0;
@@ -404,7 +405,7 @@ export default function ListeningPage() {
         }
         const answeredQuestions = Object.values(userAnswersRef.current).filter(v => String(v).trim().length > 0).length;
         if (answeredQuestions < totalQuestions) {
-            if (!window.confirm(t.readingDetails.submitConfirm)) return;
+            if (!(await showConfirm(t.readingDetails.submitConfirm))) return;
         }
         // 停止 TTS
         if (audioRef.current) {
@@ -967,8 +968,8 @@ export default function ListeningPage() {
                             )}
                         </div>
                         <div className="toolbar-right-group">
-                            <button className="toolbar-btn toolbar-btn-danger" onClick={() => {
-                                if (window.confirm(t.listeningDetails.exitConfirm)) {
+                            <button className="toolbar-btn toolbar-btn-danger" onClick={async () => {
+                                if (await showConfirm(t.listeningDetails.exitConfirm)) {
                                     if (audioRef.current) audioRef.current.pause();
                                     onReturnHome();
                                 }

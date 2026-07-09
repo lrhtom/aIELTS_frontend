@@ -1,5 +1,6 @@
 ﻿import Layout from '../../components/layout/Layout';
 import { useState, useEffect, useMemo } from 'react';
+import { showConfirm } from '../../components/common/ConfirmService';
 import { useParams, useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import {
@@ -397,7 +398,7 @@ export default function NotebookDetailPage() {
 
     /* 删除单词 */
     const handleRemove = async (entry: NotebookEntry) => {
-        if (!confirm(t.vocab.notebooks.msgDeleteConfirm.replace('{title}', entry.word))) return;
+        if (!(await showConfirm({ message: t.vocab.notebooks.msgDeleteConfirm.replace('{title}', entry.word), danger: true }))) return;
         try {
             await removeWord(nbId, entry.id);
             setAllEntries(prev => prev.filter(e => e.id !== entry.id));

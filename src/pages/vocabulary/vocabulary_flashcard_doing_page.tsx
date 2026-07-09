@@ -27,6 +27,7 @@ import {
     countCopies,
 } from '../../utils/vocab_flashcard_utils';
 import { speakWord } from '../../utils/speak';
+import { devLog } from '../../utils/devLog';
 import { useLearningTimer, formatLearningDuration } from '../../hooks/useLearningTimer';
 import { useChoiceOptionsPool } from '../../hooks/useChoiceOptionsPool';
 import { useExitWarning } from '../../hooks/useExitWarning';
@@ -313,7 +314,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         // 安全优先：每次进入学习页都清理本地会话缓存。
         incomingSessionKeyCandidates.forEach((key) => sessionStorage.removeItem(key));
-        console.log('[词汇学习] 开始学习时已清理本地会话缓存，刷新/中断不保留单词进度', {
+        devLog('[词汇学习] 开始学习时已清理本地会话缓存，刷新/中断不保留单词进度', {
             planId: incomingPlanId,
         });
 
@@ -353,14 +354,14 @@ export default function VocabularyFlashcardDoingPage() {
         let resolvedMode: StudyMode = 'flashcard';
         if (state.mode) {
             resolvedMode = state.mode;
-            console.log('[词汇学习] Mode从location.state恢复', { mode: state.mode });
+            devLog('[词汇学习] Mode从location.state恢复', { mode: state.mode });
         } else if (state.planId) {
             const cachedMode = localStorage.getItem(`lp_study_mode_${state.planId}`) as StudyMode | null;
             if (cachedMode && ['flashcard', 'flashcard-simple', 'read-aloud', 'choice', 'write', 'copy'].includes(cachedMode)) {
                 resolvedMode = cachedMode;
-                console.log('[词汇学习] Mode从localStorage恢复', { mode: cachedMode, planId: state.planId });
+                devLog('[词汇学习] Mode从localStorage恢复', { mode: cachedMode, planId: state.planId });
             } else {
-                console.log('[词汇学习] Mode使用默认值flashcard');
+                devLog('[词汇学习] Mode使用默认值flashcard');
             }
         }
         setMode(resolvedMode);
@@ -621,7 +622,7 @@ export default function VocabularyFlashcardDoingPage() {
         if (!outcome) return;
 
         if (submittedFsrsIndices.current.has(currentCardIdx)) {
-            console.log('[词汇学习] 退出前检测到当前词已提交过 FSRS，跳过补交');
+            devLog('[词汇学习] 退出前检测到当前词已提交过 FSRS，跳过补交');
             return;
         }
 
@@ -632,7 +633,7 @@ export default function VocabularyFlashcardDoingPage() {
             currentCard.plan_id,
         );
 
-        console.log('[词汇学习] 退出前已补交当前作答到后端', {
+        devLog('[词汇学习] 退出前已补交当前作答到后端', {
             word: currentCard.word,
             fsrsRating: outcome.fsrsRating,
             syncedDue: nextCard?.due,
@@ -1017,12 +1018,12 @@ export default function VocabularyFlashcardDoingPage() {
     /* 评分已实时同步，可直接返回 */
     const handleBack = useCallback(() => {
         if (leaving || submitting) return;
-        console.log('[词汇学习] 用户点击返回，开始退出前同步');
+        devLog('[词汇学习] 用户点击返回，开始退出前同步');
         setLeaving(true);
         syncCurrentAnsweredBeforeExit()
             .then(() => syncLearningTimerOnExit(false))
             .then(() => {
-                console.log('[词汇学习] 退出前同步成功，导航返回');
+                devLog('[词汇学习] 退出前同步成功，导航返回');
                 navigate(backPath);
             })
             .catch((error) => {

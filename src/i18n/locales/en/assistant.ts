@@ -119,7 +119,9 @@ export const assistant: typeof zh.assistant = {
     failMessage: 'Check-in failed, please try again later',
     balance: 'Current balance',
     totalCheckins: 'Total check-ins',
+    streak: 'Streak',
     daysUnit: 'days',
+    cardAwarded: '🎫 {n}-day streak! You earned a make-up card!',
   },
   voice: {
     noText: 'No text to speak',

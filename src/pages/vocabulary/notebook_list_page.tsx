@@ -1,5 +1,6 @@
 ﻿import Layout from '../../components/layout/Layout';
 import { useState, useEffect } from 'react';
+import { showConfirm } from '../../components/common/ConfirmService';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import {
@@ -73,7 +74,7 @@ export default function NotebookListPage() {
     /* ── 删除笔记本 ── */
     const handleDelete = async (e: React.MouseEvent, nb: Notebook) => {
         e.stopPropagation();
-        if (!confirm(t.vocab.notebooks.msgDeleteConfirm.replace('{title}', nb.title))) return;
+        if (!(await showConfirm({ message: t.vocab.notebooks.msgDeleteConfirm.replace('{title}', nb.title), danger: true }))) return;
         try {
             await deleteNotebook(nb.id);
             setNotebooks(prev => prev.filter(n => n.id !== nb.id));
