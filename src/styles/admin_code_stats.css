@@ -1,0 +1,252 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   管理员：项目代码统计看板
+   ═══════════════════════════════════════════════════════════════════════════ */
+.acs-root {
+    padding: 4px 2px 24px;
+}
+
+.acs-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.acs-heading {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.acs-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    max-width: 640px;
+}
+
+.acs-refresh-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.acs-refresh-btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(13, 148, 136, 0.06);
+}
+
+.acs-refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.acs-spin {
+    animation: acs-spin 0.9s linear infinite;
+}
+
+@keyframes acs-spin {
+    to { transform: rotate(360deg); }
+}
+
+.acs-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 18px;
+}
+
+.acs-cached {
+    color: #d97706;
+    font-weight: 600;
+}
+
+.acs-error {
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+}
+
+.acs-empty {
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+/* ── KPI cards ── */
+.acs-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.acs-kpi {
+    position: relative;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.acs-kpi-icon {
+    margin-bottom: 6px;
+}
+
+.acs-kpi-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.acs-kpi-label {
+    margin-top: 3px;
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* ── Metric toggle ── */
+.acs-metric-toggle {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+    margin-bottom: 16px;
+}
+
+.acs-metric-toggle button {
+    padding: 6px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.acs-metric-toggle button.is-active {
+    background: var(--color-surface);
+    color: var(--color-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Charts grid ── */
+.acs-charts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.acs-chart-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.03);
+    min-width: 0;
+}
+
+.acs-chart-wide {
+    grid-column: 1 / -1;
+}
+
+.acs-chart-title {
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+/* ── Largest files list ── */
+.acs-file-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.acs-file-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px 56px;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.78rem;
+}
+
+.acs-file-path {
+    color: var(--color-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: rtl;
+    text-align: left;
+}
+
+.acs-file-bar-wrap {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.acs-file-bar {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0d9488, #34d399);
+}
+
+.acs-file-lines {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+@media (max-width: 720px) {
+    .acs-charts {
+        grid-template-columns: 1fr;
+    }
+    .acs-file-row {
+        grid-template-columns: minmax(0, 1fr) 56px;
+    }
+    .acs-file-bar-wrap {
+        display: none;
+    }
+}

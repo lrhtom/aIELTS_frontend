@@ -11,6 +11,7 @@ import UserFeedback from '../components/profile/UserFeedback';
 import AdminFeedback from '../components/profile/AdminFeedback';
 import AdminUserManagement from '../components/profile/AdminUserManagement';
 import AdminAIUsage from '../components/profile/AdminAIUsage';
+import AdminCodeStats from '../components/profile/AdminCodeStats';
 import UserBackground from '../components/profile/UserBackground';
 import UserManual from '../components/profile/UserManual';
 import UserAnalytics from '../components/profile/UserAnalytics';
@@ -36,10 +37,11 @@ import {
   GitBranch,
   BarChart3,
   Target,
+  Code2,
 } from 'lucide-react';
 import '../styles/profile_page.css';
 
-type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'admin_ai_usage' | 'manual';
+type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'admin_ai_usage' | 'admin_code_stats' | 'manual';
 
 /** Shown when a non-admin tries to access an admin tab via DevTools state manipulation */
 function AccessDenied() {
@@ -85,6 +87,7 @@ export default function ProfilePage() {
             case 'admin_users':   return isAdmin ? <AdminUserManagement /> : <AccessDenied />;
             case 'admin_routes':  return isAdmin ? <RouteVisualization /> : <AccessDenied />;
             case 'admin_ai_usage': return isAdmin ? <AdminAIUsage /> : <AccessDenied />;
+            case 'admin_code_stats': return isAdmin ? <AdminCodeStats /> : <AccessDenied />;
             default: return <UserHome />;
         }
     };
@@ -210,6 +213,13 @@ export default function ProfilePage() {
                                         >
                                             <BarChart3 size={16} className="menu-item-icon" />
                                             <span className="menu-item-text">{t.profile.admin.aiUsageStats}</span>
+                                        </button>
+                                        <button
+                                            className={`profile-menu-item profile-sub-item ${activeTab === 'admin_code_stats' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('admin_code_stats')}
+                                        >
+                                            <Code2 size={16} className="menu-item-icon" />
+                                            <span className="menu-item-text">{t.profile.admin.codeStats.title}</span>
                                         </button>
                                     </div>
                                 </div>
