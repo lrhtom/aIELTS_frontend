@@ -26,6 +26,20 @@ export interface LearningPlan {
     updated_at:     string;
 }
 
+/**
+ * 收藏优先排序：已收藏排最前，后收藏的更靠前；其余按创建时间升序。
+ * 与后端 PlanListView 的 order_by(favorited_at desc nulls last, created_at) 口径一致，
+ * 供所有展示学习计划的下拉框 / 列表复用，保证顺序统一。
+ */
+export function sortPlansByFavorite<T extends Pick<LearningPlan, 'favorited_at' | 'created_at'>>(plans: T[]): T[] {
+    return [...plans].sort((a, b) => {
+        const fa = a.favorited_at ? Date.parse(a.favorited_at) : 0;
+        const fb = b.favorited_at ? Date.parse(b.favorited_at) : 0;
+        if (fa !== fb) return fb - fa;
+        return Date.parse(a.created_at) - Date.parse(b.created_at);
+    });
+}
+
 export interface TodayWord {
     word:     string;
     zh:       string;

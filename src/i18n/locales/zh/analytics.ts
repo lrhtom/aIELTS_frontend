@@ -69,6 +69,18 @@ export const analytics = {
     review: '复习',
     relearning: '重学',
   },
+  masteryHelp: {
+    ariaLabel: '查看掌握程度说明',
+    levels: {
+      unlearned: { name: '未学习', desc: '尚未开始学习（无记忆记录）' },
+      beginner: { name: '初识', desc: '记忆稳定度 < 3 天' },
+      familiar: { name: '熟悉', desc: '记忆稳定度 3–14 天' },
+      solid: { name: '巩固', desc: '记忆稳定度 14–60 天' },
+      mastered: { name: '掌握', desc: '记忆稳定度 60–150 天' },
+      expert: { name: '精通', desc: '记忆稳定度 > 150 天' },
+    },
+    note: '稳定度 = FSRS 预计你还能记住该词的天数，数值越大记得越牢。',
+  },
 };
 
 export const routeVis = {

@@ -55,19 +55,19 @@ export const home: typeof zh.home = {
     heading: 'Latest Updates',
     items: [
       {
-        date: '2026-03-20',
+        date: '2026-07-09',
         tag: 'New',
-        content: 'AI Writing correction is live with real-time feedback.',
+        content: 'Favorites arrive for the AI question bank and study plans — pinned to the top for one-tap access to what you use most.',
       },
       {
-        date: '2026-03-15',
+        date: '2026-07-06',
         tag: 'Optimization',
-        content: 'Improved voice recognition for speaking practice.',
+        content: 'Redesigned the study-plan page with an independently scrolling word list for smoother management.',
       },
       {
-        date: '2026-03-10',
-        tag: 'Community',
-        content: 'Join our study group and work together with peers.',
+        date: '2026-07-03',
+        tag: 'New',
+        content: 'Task 1 now generates Map questions — AI draws a clear map for broader coverage.',
       },
     ],
   },
@@ -77,6 +77,7 @@ export const home: typeof zh.home = {
   checkin: {
     heading: 'Daily Check-in',
     todayLabel: 'Today',
+    streakLabel: 'Day Streak',
     totalLabel: 'Total',
     rewardLabel: "Today's AT Reward",
     btnCheckin: '📋 Check in for AT',

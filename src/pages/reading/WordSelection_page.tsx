@@ -6,7 +6,7 @@ import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import VocabInput from '../../components/VocabInput';
 import AiModelSelector from '../../components/common/AiModelSelector';
-import { listPlans, getPlanDetail, type LearningPlan } from '../../api/learning_plan';
+import { listPlans, getPlanDetail, sortPlansByFavorite, type LearningPlan } from '../../api/learning_plan';
 import type { ReadingQuestionTypeKey, ReadingJudgementMode } from '../../api/reading';
 import '../../styles/practice_page.css';
 
@@ -542,7 +542,7 @@ export default function WordSelection_page() {
                                             {plans.length > 0 && (
                                                 <div className="uc-vocab-toolbar">
                                                     <select className="console-select" value={importPlanId} onChange={e => setImportPlanId(Number(e.target.value))}>
-                                                        {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                        {sortPlansByFavorite(plans).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                     </select>
                                                     <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
                                                         {importingPlan ? tAll.common.planImport.importing : tAll.common.planImport.btn}

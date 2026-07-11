@@ -5,7 +5,7 @@ import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    listPlans, createPlan, deletePlan, startPlan, updatePlan,
+    listPlans, createPlan, deletePlan, startPlan, updatePlan, sortPlansByFavorite,
     type LearningPlan,
 } from '../../api/learning_plan';
 import {
@@ -273,13 +273,8 @@ export default function LearningPlanListPage() {
 
     const canCreate = user?.is_staff || plans.length < MAX_PLANS;
 
-    // 收藏优先：已收藏排最前，后收藏的更靠前；其余按创建顺序。
-    const sortedPlans = [...plans].sort((a, b) => {
-        const fa = a.favorited_at ? Date.parse(a.favorited_at) : 0;
-        const fb = b.favorited_at ? Date.parse(b.favorited_at) : 0;
-        if (fa !== fb) return fb - fa;
-        return Date.parse(a.created_at) - Date.parse(b.created_at);
-    });
+    // 收藏优先：已收藏排最前，后收藏的更靠前；其余按创建顺序（与下拉框、后端口径统一）。
+    const sortedPlans = sortPlansByFavorite(plans);
 
     return (
         <Layout

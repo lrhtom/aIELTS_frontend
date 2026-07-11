@@ -62,7 +62,7 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
     const hasEnrichment = entry.grammar || entry.definitions.length > 0 || entry.examples.length > 0;
 
     return (
-        <div className="lp-word-item">
+        <div className={`lp-word-item ${FSRS_STATE_CLASS[entry.fsrs_state] ?? 'state-new'}`}>
             <div className="lp-word-row1">
                 <div className="lp-word-text lp-word-text-inner">
                     <span>{entry.word}</span>

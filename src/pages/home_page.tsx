@@ -103,6 +103,12 @@ export default function HomePage() {
                                 </div>
                                 <div className="checkin-stat">
                                     <span className="checkin-stat-value">
+                                        {checkinStatus?.current_streak ?? '--'}
+                                    </span>
+                                    <span className="checkin-stat-label">{t.home.checkin.streakLabel}</span>
+                                </div>
+                                <div className="checkin-stat">
+                                    <span className="checkin-stat-value">
                                         {checkinStatus?.total_checkins ?? '--'}
                                     </span>
                                     <span className="checkin-stat-label">{t.home.checkin.totalLabel}</span>
@@ -132,7 +138,7 @@ export default function HomePage() {
                             )}
                             {checkinStatus && !checkinStatus.today_checked && (
                                 <p className="checkin-milestone-hint">
-                                    {getMilestoneHint(checkinStatus.total_checkins, t.home.checkin.milestoneHint)}
+                                    {getMilestoneHint(checkinStatus.current_streak, t.home.checkin.milestoneHint)}
                                 </p>
                             )}
                             <p className="checkin-rules">

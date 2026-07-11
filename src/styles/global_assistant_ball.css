@@ -391,6 +391,45 @@
   color: #0f172a;
 }
 
+/* 单词译文的近义词 */
+.assistant-translate-synonyms {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.assistant-translate-synonyms-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.assistant-translate-synonyms-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.assistant-translate-synonym-chip {
+  border: 1px solid #cbd5e1;
+  background: var(--color-surface);
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.assistant-translate-synonym-chip:hover {
+  border-color: var(--color-primary);
+  background: #f0fdfa;
+  color: var(--color-primary);
+}
+
 .assistant-agent-panel {
   margin-top: 12px;
   padding-top: 12px;

@@ -54,19 +54,19 @@ export const home = {
     heading: '最新动态',
     items: [
       {
-        date: '2026-03-20',
+        date: '2026-07-09',
         tag: '新功能',
-        content: 'AI 写作批改功能现已上线，支持实时反馈。',
+        content: 'AI 题库与单词计划支持「收藏」，收藏内容自动置顶，常用练习一键直达。',
       },
       {
-        date: '2026-03-15',
+        date: '2026-07-06',
         tag: '优化',
-        content: '提升了口语练习的语音识别准确度。',
+        content: '学习计划详情页焕新布局，单词列表独立滚动，管理更顺手。',
       },
       {
-        date: '2026-03-10',
-        tag: '活动',
-        content: '加入备考群，与志同道合的同学一起努力。',
+        date: '2026-07-03',
+        tag: '新功能',
+        content: 'Task 1 小作文新增「地图题」智能出题，AI 生成清晰地图，覆盖更全面。',
       },
     ],
   },
@@ -76,6 +76,7 @@ export const home = {
   checkin: {
     heading: '每日签到',
     todayLabel: '今日签到',
+    streakLabel: '连续签到',
     totalLabel: '累计签到',
     rewardLabel: '今日奖励 AT',
     btnCheckin: '📋 签到领 AT 币',

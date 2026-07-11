@@ -90,10 +90,15 @@ interface BrowserSpeechRecognitionResultAlternative {
 interface BrowserSpeechRecognitionResultEntry {
     [index: number]: BrowserSpeechRecognitionResultAlternative | undefined;
     0?: BrowserSpeechRecognitionResultAlternative;
+    isFinal?: boolean;
+    length?: number;
 }
 
 interface BrowserSpeechRecognitionEventLike {
     results?: ArrayLike<BrowserSpeechRecognitionResultEntry>;
+    // Index of the first result that changed in this event; in continuous mode
+    // `results` is cumulative, so only entries from here on are new.
+    resultIndex?: number;
 }
 
 interface BrowserSpeechRecognitionErrorEventLike {
@@ -306,6 +311,61 @@ function detectSpeechLangFromText(text: string, fallbackLang: string) {
     if (/[\u4e00-\u9fff]/.test(text)) return 'zh-CN';
     if (/[\u00C0-\u017F]/.test(text)) return 'es-ES';
     return mapLangToSpeechLang(fallbackLang);
+}
+
+/** 判断译文是否为「单个英文单词」（可含连字符/撇号），用于决定是否展示近义词。 */
+function isSingleEnglishWord(text: string) {
+    return /^[A-Za-z][A-Za-z'-]*$/.test(text.trim());
+}
+
+/**
+ * 拉取英文近义表达（Datamuse，免 key、支持 CORS）。
+ * - rel_syn：严格近义词（多为单词），优先展示；
+ * - ml（means-like）：意思相近的表达，会包含「多单词短语」。
+ * 两者合并去重，因此单词译文也能给出多词短语。任何失败都静默降级为空数组。
+ */
+async function fetchEnglishSynonyms(word: string): Promise<string[]> {
+    const query = encodeURIComponent(word.trim());
+    const endpoints = [
+        `https://api.datamuse.com/words?rel_syn=${query}&max=10`,
+        `https://api.datamuse.com/words?ml=${query}&max=12`,
+    ];
+
+    const fetchOne = async (url: string): Promise<Array<{ word?: string }>> => {
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) {
+                return [];
+            }
+            return (await resp.json()) as Array<{ word?: string }>;
+        } catch {
+            return [];
+        }
+    };
+
+    try {
+        // rel_syn 在前（更贴近），ml 在后（补充多词短语）。
+        const groups = await Promise.all(endpoints.map(fetchOne));
+        const lower = word.trim().toLowerCase();
+        const seen = new Set<string>();
+        const list: string[] = [];
+
+        for (const group of groups) {
+            for (const item of group) {
+                const candidate = String(item?.word || '').trim();
+                const key = candidate.toLowerCase();
+                if (!candidate || key === lower || seen.has(key)) {
+                    continue;
+                }
+                seen.add(key);
+                list.push(candidate);
+            }
+        }
+
+        return list.slice(0, 10);
+    } catch {
+        return [];
+    }
 }
 
 function getSpeechRecognitionConstructor(): BrowserSpeechRecognitionConstructor | null {
@@ -608,8 +668,11 @@ export default function GlobalAssistantBall() {
     const [targetLang, setTargetLang] = useState('en');
     const [inputText, setInputText] = useState('');
     const [translatedText, setTranslatedText] = useState('');
+    const [synonyms, setSynonyms] = useState<string[]>([]);
     const [isTranslating, setIsTranslating] = useState(false);
     const [isVoiceListening, setIsVoiceListening] = useState(false);
+    const sourceTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const synonymReqRef = useRef(0);
     const [agentProfile, setAgentProfile] = useState<PersonalAgentProfile>({
         name: t.assistant.agent.defaultProfile.name,
         role: t.assistant.agent.defaultProfile.role,
@@ -1086,8 +1149,21 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                 throw new Error('empty translation');
             }
 
-            setTranslatedText(decodeHtmlEntities(translated));
+            const decoded = decodeHtmlEntities(translated);
+            setTranslatedText(decoded);
+            setSynonyms([]);
             showToast(t.assistant.translate.toastSuccess, 'success');
+
+            // 译文为单个英文单词时，后台拉取近义词，帮助扩充同义表达。
+            // 不阻塞主流程；用请求序号防止旧结果覆盖新结果。
+            const reqId = ++synonymReqRef.current;
+            if (toLang === 'en' && isSingleEnglishWord(decoded)) {
+                void fetchEnglishSynonyms(decoded).then(syns => {
+                    if (synonymReqRef.current === reqId) {
+                        setSynonyms(syns);
+                    }
+                });
+            }
         } catch (error) {
             console.error('Translate failed', error);
             showToast(t.assistant.translate.toastFail, 'error');
@@ -1095,6 +1171,48 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             setIsTranslating(false);
         }
     }, [inputText, sourceLang, targetLang]);
+
+    /**
+     * 把语音识别到的文本插入到「原文」文本框的光标位置，而不是永远追加到末尾。
+     * 未聚焦时以文本框最后的光标位置为准；插入后把光标移到新内容之后。
+     */
+    const insertSourceTextAtCursor = useCallback((text: string) => {
+        const addition = text.trim();
+        if (!addition) {
+            return;
+        }
+
+        const el = sourceTextareaRef.current;
+        if (!el) {
+            setInputText(prev => (prev ? `${prev} ${addition}` : addition));
+            return;
+        }
+
+        const value = el.value;
+        const start = el.selectionStart ?? value.length;
+        const end = el.selectionEnd ?? value.length;
+        const before = value.slice(0, start);
+        const after = value.slice(end);
+        const needsLeadingSpace = before.length > 0 && !/\s$/.test(before);
+        const insertion = `${needsLeadingSpace ? ' ' : ''}${addition}`;
+        const caret = before.length + insertion.length;
+
+        setInputText(`${before}${insertion}${after}`);
+
+        // 等 React 写回受控值后，把光标恢复到插入内容之后。
+        requestAnimationFrame(() => {
+            const node = sourceTextareaRef.current;
+            if (!node) {
+                return;
+            }
+            node.focus();
+            try {
+                node.setSelectionRange(caret, caret);
+            } catch {
+                // ignore selection errors
+            }
+        });
+    }, []);
 
     const handleStartVoiceForTranslate = useCallback(() => {
         const SpeechRecognitionCtor = getSpeechRecognitionConstructor();
@@ -1125,17 +1243,28 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
         voiceManualStopRef.current = false;
 
         recognition.onresult = (event) => {
-            const transcript = Array.from(event.results ?? [])
-                .map((result) => String(result?.[0]?.transcript || '').trim())
-                .filter(Boolean)
-                .join(' ')
-                .trim();
-
-            if (!transcript) {
+            const results = event.results;
+            if (!results) {
                 return;
             }
 
-            setInputText(prev => prev ? `${prev} ${transcript}` : transcript);
+            // continuous 模式下 results 是累积的，只取本次事件新增的 final 结果，
+            // 否则会把之前已识别的内容重复插入。
+            const startIndex = typeof event.resultIndex === 'number' ? event.resultIndex : 0;
+            let addition = '';
+            for (let i = startIndex; i < results.length; i += 1) {
+                const result = results[i];
+                if (result && result.isFinal !== false) {
+                    addition += String(result[0]?.transcript || '');
+                }
+            }
+
+            addition = addition.trim();
+            if (!addition) {
+                return;
+            }
+
+            insertSourceTextAtCursor(addition);
         };
 
         recognition.onerror = (event) => {
@@ -1170,7 +1299,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             speechRecognitionRef.current = null;
             voiceManualStopRef.current = false;
         }
-    }, [activeAction, isVoiceListening, sourceLang]);
+    }, [activeAction, isVoiceListening, sourceLang, insertSourceTextAtCursor]);
 
     const handleStopVoiceForTranslate = useCallback(() => {
         const activeRecognition = speechRecognitionRef.current;
@@ -1886,6 +2015,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                             </div>
 
                             <textarea
+                                ref={sourceTextareaRef}
                                 className="assistant-translate-input"
                                 value={inputText}
                                 onChange={e => setInputText(e.target.value)}
@@ -1917,6 +2047,27 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                             <div className="assistant-translate-output" aria-live="polite">
                                 {translatedText || t.assistant.translate.outputPlaceholder}
                             </div>
+
+                            {synonyms.length > 0 && (
+                                <div className="assistant-translate-synonyms">
+                                    <span className="assistant-translate-synonyms-label">
+                                        {t.assistant.translate.synonymsLabel}
+                                    </span>
+                                    <div className="assistant-translate-synonyms-list">
+                                        {synonyms.map(syn => (
+                                            <button
+                                                key={syn}
+                                                type="button"
+                                                className="assistant-translate-synonym-chip"
+                                                onClick={() => speakText(syn, targetLang)}
+                                                title={t.assistant.translate.synonymSpeakTitle}
+                                            >
+                                                {syn}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 

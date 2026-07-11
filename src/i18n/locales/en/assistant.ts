@@ -50,6 +50,8 @@ export const assistant: typeof zh.assistant = {
     speakTranslatedTitle: 'Read translation',
     speakTranslatedAria: 'Read translation',
     outputPlaceholder: 'Translation result will appear here',
+    synonymsLabel: 'Synonyms',
+    synonymSpeakTitle: 'Click to hear it',
     toastEmpty: 'Please enter text to translate',
     toastSameLang: 'Source and target languages cannot be the same',
     toastSuccess: 'Translation complete',

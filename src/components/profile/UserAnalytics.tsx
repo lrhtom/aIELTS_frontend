@@ -224,10 +224,21 @@ function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planI
     );
 }
 
+// 掌握程度分级（与后端 analytics_views.py 的 stability 阈值、图表配色一一对应）
+const MASTERY_LEVELS = [
+    { key: 'unlearned', color: '#94a3b8' },
+    { key: 'beginner', color: '#f87171' },
+    { key: 'familiar', color: '#fb923c' },
+    { key: 'solid', color: '#60a5fa' },
+    { key: 'mastered', color: '#34d399' },
+    { key: 'expert', color: '#fbbf24' },
+] as const;
+
 export default function UserAnalytics() {
     const { translations: t } = useLang();
 
     const [activeSkill, setActiveSkill] = useState<'vocab' | 'writing' | 'reading' | 'listening' | 'speaking'>('vocab');
+    const [showMasteryHelp, setShowMasteryHelp] = useState(false);
 
     const [plans, setPlans] = useState<PlanBrief[]>([]);
     const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
@@ -436,7 +447,36 @@ export default function UserAnalytics() {
                         )}
                     </div>
                     <div className="analytics-chart-card">
-                        <h3 className="analytics-chart-title">{t.analytics.masteryDist}</h3>
+                        <div className="analytics-chart-header">
+                            <h3 className="analytics-chart-title">{t.analytics.masteryDist}</h3>
+                            <button
+                                type="button"
+                                className={`analytics-info-btn ${showMasteryHelp ? 'is-active' : ''}`}
+                                aria-label={t.analytics.masteryHelp.ariaLabel}
+                                aria-expanded={showMasteryHelp}
+                                title={t.analytics.masteryHelp.ariaLabel}
+                                onClick={() => setShowMasteryHelp(v => !v)}
+                            >
+                                !
+                            </button>
+                        </div>
+                        {showMasteryHelp && (
+                            <div className="analytics-mastery-help" role="note">
+                                <ul className="analytics-mastery-help-list">
+                                    {MASTERY_LEVELS.map(lvl => (
+                                        <li key={lvl.key} className="analytics-mastery-help-item">
+                                            <span className="analytics-mastery-swatch" style={{ background: lvl.color }} />
+                                            <span className="analytics-mastery-name">
+                                                {t.analytics.masteryHelp.levels[lvl.key].name}
+                                                <span className="analytics-mastery-en">{lvl.key}</span>
+                                            </span>
+                                            <span className="analytics-mastery-desc">{t.analytics.masteryHelp.levels[lvl.key].desc}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="analytics-mastery-note">{t.analytics.masteryHelp.note}</p>
+                            </div>
+                        )}
                         <MasteryBarChart data={stateDist} maxCount={maxStateCount} t={t.analytics.states} />
                     </div>
                 </div>

@@ -70,6 +70,18 @@ export const analytics: typeof zh.analytics = {
     review: 'Review',
     relearning: 'Relearning',
   },
+  masteryHelp: {
+    ariaLabel: 'What do the mastery levels mean?',
+    levels: {
+      unlearned: { name: 'Unlearned', desc: 'Not started yet (no memory record)' },
+      beginner: { name: 'Beginner', desc: 'Memory stability < 3 days' },
+      familiar: { name: 'Familiar', desc: 'Memory stability 3–14 days' },
+      solid: { name: 'Solid', desc: 'Memory stability 14–60 days' },
+      mastered: { name: 'Mastered', desc: 'Memory stability 60–150 days' },
+      expert: { name: 'Expert', desc: 'Memory stability > 150 days' },
+    },
+    note: 'Stability = the days FSRS predicts you can still recall the word; higher means stronger memory.',
+  },
 };
 
 export const routeVis: typeof zh.routeVis = {

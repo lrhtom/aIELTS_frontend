@@ -754,10 +754,47 @@ export default function LearningPlanDetailPage() {
         <Layout backUrl="/vocabulary/plans" backText={t.vocab.details.backToVocab} noPadding={true}>
             <div className="uc-console" style={{ margin: 0, height: 'calc(100vh - 60px)' }}>
                 {/* ── Left Pane: Study Modes ── */}
-                <div className="uc-sidebar" style={{ width: leftWidth, flex: 'none', borderRight: 'none', overflowY: 'hidden', minHeight: 0 }}>
-                    <div style={{ padding: "24px 24px 0 24px" }}>
-<div className="uc-sidebar-title" style={{ marginTop: 8 }}>{t.vocab.details.studyModeTitle}</div>
-                    <nav className="uc-sidebar-nav" style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                <div className="uc-sidebar lp-side" style={{ width: leftWidth, flex: 'none', borderRight: 'none', minHeight: 0 }}>
+                    {/* ── Plan header (hero) ── */}
+                    <div className="lp-card lp-hero">
+                        <input
+                            className="lp-hero-title"
+                            value={planName}
+                            maxLength={50}
+                            onChange={e => setPlanName(e.target.value)}
+                            onBlur={saveName}
+                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        />
+                        <div className="lp-hero-daily">
+                            <span>{t.vocab.details.dailyPrefix}</span>
+                            <input
+                                type="number"
+                                min={1} max={200}
+                                value={dailyCount}
+                                disabled={isTodayConfigLocked}
+                                title={isTodayConfigLocked ? t.vocab.details.dailyLockedTip : ''}
+                                onChange={e => setDailyCount(Number(e.target.value))}
+                                onBlur={saveDaily}
+                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                            />
+                            <span>{t.vocab.details.dailySuffix}</span>
+                            {isTodayConfigLocked && (
+                                <span className="lp-hero-locked">{t.vocab.details.todayLockedBadge}</span>
+                            )}
+                        </div>
+                        <button
+                            className="uc-console-start-btn lp-hero-start"
+                            onClick={handleStart}
+                            disabled={starting || entries.length === 0}
+                        >
+                            {starting ? t.vocab.plans.preparing : isQuotaDone ? t.vocab.plans.startReview : t.vocab.plans.startStudy}
+                        </button>
+                    </div>
+
+                    {/* ── Study modes + config ── */}
+                    <div className="lp-card lp-mode-card">
+                        <div className="lp-card-title">{t.vocab.details.studyModeTitle}</div>
+                        <nav className="uc-sidebar-nav lp-mode-nav" style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                         {STUDY_MODES.map(([m, labelKey]) => (
                             <button
                                 key={m}
@@ -884,48 +921,7 @@ export default function LearningPlanDetailPage() {
                         )}
                     </div>
 </div>
-<div style={{ padding: "0 24px 24px 24px" }}>
-<div className="uc-main-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
-                        <input
-                            className="uc-title-input"
-                            value={planName}
-                            maxLength={50}
-                            onChange={e => setPlanName(e.target.value)}
-                            onBlur={saveName}
-                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                            style={{ fontSize: '24px', fontWeight: 'bold', border: 'none', background: 'transparent', outline: 'none', width: '100%' }}
-                        />
-                        
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '14px', color: 'var(--color-text-secondary)', width: '100%' }}>
-                            <span>{t.vocab.details.dailyPrefix}</span>
-                            <input
-                                type="number"
-                                min={1} max={200}
-                                value={dailyCount}
-                                disabled={isTodayConfigLocked}
-                                title={isTodayConfigLocked ? t.vocab.details.dailyLockedTip : ''}
-                                onChange={e => setDailyCount(Number(e.target.value))}
-                                onBlur={saveDaily}
-                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                                style={{ width: 60, padding: '4px 8px', borderRadius: 4, border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', color: 'var(--color-text)' }}
-                            />
-                            <span>{t.vocab.details.dailySuffix}</span>
-                            {isTodayConfigLocked && (
-                                <span style={{ color: 'var(--color-warning)', fontSize: '12px', marginLeft: 8 }}>{t.vocab.details.todayLockedBadge}</span>
-                            )}
-                        </div>
-
-                        <button
-                            className="uc-console-start-btn"
-                            onClick={handleStart}
-                            disabled={starting || entries.length === 0}
-                            style={{ width: '100%', padding: '12px 16px', fontSize: '15px', marginTop: 8 }}
-                        >
-                            {starting ? t.vocab.plans.preparing : isQuotaDone ? t.vocab.plans.startReview : t.vocab.plans.startStudy}
-                        </button>
-                    </div>
-                    
-                    <div style={{ padding: '16px 24px' }}>
+                    {/* ── Progress + word management ── */}
 
                 {/* ── Today's studied words ── */}
                 {plan && (
@@ -1187,9 +1183,6 @@ export default function LearningPlanDetailPage() {
                         </div>
                     )}
                 </div>
-
-                    </div>
-                </div>
                 </div>
                 {/* ── Resizer ── */}
                 <div 
@@ -1207,7 +1200,7 @@ export default function LearningPlanDetailPage() {
                 />
 
                 {/* ── Right Pane: Main List ── */}
-                <div className="uc-main-content" style={{ flex: 1, minWidth: 400, borderLeft: 'none', overflowY: 'auto', minHeight: 0 }}>
+                <div className="uc-main-content lp-main" style={{ flex: 1, minWidth: 400, borderLeft: 'none', overflowY: 'hidden', minHeight: 0 }}>
                                     {/* ── Word list ── */}
                 <div className="lp-word-section">
                     <div className="lp-word-section-header">

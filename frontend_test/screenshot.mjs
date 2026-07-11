@@ -10,7 +10,10 @@
  *   node screenshot.mjs --lang en          # 英文界面，跳过语言询问
  *   node screenshot.mjs --lang both        # 中英各截一轮 (输出到 zh/ 和 en/ 子目录)
  *   node screenshot.mjs --only writing     # 只截 name 或 path 含 "writing" 的页面 (逗号分隔多个)
- *   node screenshot.mjs --full             # 截长图 (整页滚动)
+ *   node screenshot.mjs --full             # 强制所有页面截长图 (整页滚动)
+ *   node screenshot.mjs --no-full          # 关闭自动长图, 强制只截当前视口
+ *   node screenshot.mjs --no-scroll        # 关闭“截长图前逐屏预滚动”(默认开, 用于触发懒加载/滚动才显示的内容)
+ *   # (默认) 不加上面参数时自动探测: 页面内容比视口长则截长图 (且预滚动加载懒内容), 否则只截当前视口
  *   node screenshot.mjs --zoom 0.8         # 浏览器缩放比 (默认 0.9 = 90% 缩放，视野比 1440x900 更大)
  *   node screenshot.mjs --mobile           # 手机视口 390x844 @3x (默认不缩放)
  *   node screenshot.mjs --admin            # 非交互直接选管理员账号 (交互运行时会在启动时询问，无需此参数)
@@ -27,6 +30,7 @@ import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createInterface } from 'readline/promises';
+import { emitKeypressEvents } from 'readline';
 import { stdin as input, stdout as output } from 'process';
 
 // ============================================================
@@ -150,7 +154,12 @@ const CONFIG = {
     viewport: { width: 1440, height: 900 },     // 基准窗口尺寸 (--mobile 切换为 390x844)
     zoom: 0.9,                                  // 浏览器缩放比: 0.9 = 90% 缩放，视野更大 (视口放大为 1600x1000)
     deviceScaleFactor: 2,
-    fullPage: false,                            // 是否截长图 (--full 开启)
+    fullPage: false,                            // 强制所有页面截长图 (--full 开启)
+    autoFull: true,                             // 自动长图: 未开 --full 时, 页面内容比视口高出一截就自动截长图 (--no-full 关闭)
+    autoFullMargin: 32,                         // 自动长图阈值(px): 内容高度超过 视口高度 + 该值 才判定为“长页面”, 避开滚动条等零星溢出
+    autoScroll: true,                           // 截长图前逐屏滚到底再回顶, 触发“滚动才加载/显示”的懒内容 (懒加载图片 / IntersectionObserver 揭示 / 虚拟列表) (--no-scroll 关闭)
+    autoScrollDelay: 150,                       // 每屏滚动后的等待(ms): 给懒加载图片解码、揭示动画反应的时间
+    autoScrollMaxSteps: 60,                     // 逐屏滚动的最多步数: 防超长/内容无限增长的页面把脚本卡死
     waitTime: 2000,                             // 页面稳定后额外等待时长(ms)
     settleTimeout: 10000,                       // networkidle 最长等待(ms)，超时不算失败
     navTimeout: 30000,                          // 单页导航超时(ms)
@@ -177,7 +186,7 @@ const MOBILE_VIEWPORT = { viewport: { width: 390, height: 844 }, deviceScaleFact
 // CLI 参数
 // ============================================================
 function parseArgs(argv) {
-    const args = { lang: null, only: null, full: false, mobile: false, headed: false, out: null, list: false, zoom: null, admin: false };
+    const args = { lang: null, only: null, full: false, noFull: false, noScroll: false, mobile: false, headed: false, out: null, list: false, zoom: null, admin: false };
     for (let i = 0; i < argv.length; i++) {
         const a = argv[i];
         switch (a) {
@@ -186,13 +195,17 @@ function parseArgs(argv) {
             case '--out': args.out = argv[++i]; break;
             case '--zoom': args.zoom = Number(argv[++i]); break;
             case '--full': args.full = true; break;
+            case '--no-full': args.noFull = true; break;
+            case '--no-scroll': args.noScroll = true; break;
             case '--mobile': args.mobile = true; break;
             case '--headed': args.headed = true; break;
             case '--admin': args.admin = true; break;
             case '--list': args.list = true; break;
             case '--help':
             case '-h':
-                console.log('用法: node screenshot.mjs [--lang zh|en|both] [--only <过滤>] [--zoom <比例>] [--admin] [--full] [--mobile] [--headed] [--out <目录>] [--list]');
+                console.log('用法: node screenshot.mjs [--lang zh|en|both] [--only <过滤>] [--zoom <比例>] [--admin] [--full] [--no-full] [--no-scroll] [--mobile] [--headed] [--out <目录>] [--list]');
+                console.log('  长图默认自动检测: 页面比视口长自动截长图; --full 强制全部长图; --no-full 强制只截视口');
+                console.log('  截长图前会默认逐屏滚动触发懒加载/滚动才显示的内容; --no-scroll 关闭该预滚动');
                 process.exit(0);
                 break;
             default:
@@ -229,6 +242,56 @@ async function promptOptions(args) {
     }
     rl.close();
     return picked;
+}
+
+// 交互式让用户输入缩放比 (%)，输入时用 \r 就地重写，实时预览换算后的视口尺寸。
+// 返回缩放小数 (如 0.9)；空输入 / 非法 / 非交互环境 → 返回 null (由调用方保留默认)。
+async function promptZoom(base, dsf) {
+    if (!input.isTTY) return null;
+    return new Promise((resolve) => {
+        let buffer = '';
+        const calc = (pct) => {
+            const z = pct / 100;
+            return `${Math.round(base.width / z)}x${Math.round(base.height / z)}`;
+        };
+        const render = () => {
+            const pct = buffer === '' ? null : Number(buffer);
+            let preview;
+            if (pct === null) {
+                preview = '(直接回车 = 默认 90% → 视口 ' + calc(90) + `) @${dsf}x`;
+            } else if (Number.isFinite(pct) && pct >= 30 && pct <= 200) {
+                preview = `→ 视口 ${calc(pct)} @${dsf}x`;
+            } else {
+                preview = '(请输入 30 ~ 200 之间的数字)';
+            }
+            // \r 回行首 + \x1b[K 清到行尾 → 就地刷新，达到"实时"效果
+            output.write(`\r\x1b[K🔍 缩放比 %，回车确认: ${buffer}   ${preview}`);
+        };
+
+        emitKeypressEvents(input);
+        if (input.setRawMode) input.setRawMode(true);
+        input.resume();
+        render();
+
+        const finish = (val) => {
+            input.off('keypress', onKey);
+            if (input.setRawMode) input.setRawMode(false);
+            output.write('\n');
+            resolve(val);
+        };
+        const onKey = (str, key) => {
+            if (!key) return;
+            if (key.name === 'return' || key.name === 'enter') {
+                const pct = buffer === '' ? null : Number(buffer);
+                if (pct !== null && Number.isFinite(pct) && pct >= 30 && pct <= 200) return finish(pct / 100);
+                return finish(null); // 空 / 非法 → 用默认
+            }
+            if (key.name === 'backspace') { buffer = buffer.slice(0, -1); return render(); }
+            if (key.ctrl && key.name === 'c') { finish(null); process.exit(1); }
+            if (str && /[0-9.]/.test(str)) { buffer += str; render(); }
+        };
+        input.on('keypress', onKey);
+    });
 }
 
 function filterPages(pages, only) {
@@ -300,6 +363,31 @@ class SkipPage extends Error {
     constructor(message) { super(message); this.skip = true; }
 }
 
+// 逐屏滚到底再回顶：触发“滚动才加载/显示”的懒内容 —— 懒加载图片(loading=lazy)、
+// IntersectionObserver 揭示动画、以及滚动时才增量渲染的虚拟列表；否则这些区域在长图里是空白/占位。
+// 每滚一屏等一小会儿让内容反应，直到到底且高度不再增长；结束回到顶部让 sticky 头部复位。
+async function scrollFullPage(page) {
+    // 关掉平滑滚动，避免 scrollTop 赋值被动画拖慢导致测量不稳
+    await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; });
+    let prevHeight = 0;
+    for (let i = 0; i < CONFIG.autoScrollMaxSteps; i++) {
+        const { atBottom, height } = await page.evaluate(() => {
+            const el = document.scrollingElement || document.documentElement;
+            el.scrollTop = el.scrollTop + window.innerHeight;
+            const atBottom = el.scrollTop + window.innerHeight >= el.scrollHeight - 2;
+            return { atBottom, height: el.scrollHeight };
+        });
+        await page.waitForTimeout(CONFIG.autoScrollDelay);
+        // 到底了 且 触发懒加载后总高度不再变大 → 内容已全部加载出来
+        if (atBottom && height <= prevHeight + 2) break;
+        prevHeight = height;
+    }
+    // 懒加载图片/请求收尾
+    await page.waitForLoadState('networkidle', { timeout: CONFIG.settleTimeout }).catch(() => {});
+    await page.evaluate(() => { (document.scrollingElement || document.documentElement).scrollTop = 0; });
+    await page.waitForTimeout(150); // 回顶后等 sticky/懒渲染稳定
+}
+
 async function capturePage(page, path, opts, filepath, errors) {
     const url = `${BASE_URL}${path}`;
     // networkidle 在有轮询/长连接的页面会一直等不到，作为尽力等待而非硬条件
@@ -332,8 +420,26 @@ async function capturePage(page, path, opts, filepath, errors) {
     }
 
     if (CONFIG.waitTime > 0) await page.waitForTimeout(CONFIG.waitTime);
-    await page.screenshot({ path: filepath, fullPage: CONFIG.fullPage, type: CONFIG.format });
-    return errors.splice(0); // 返回并清空本页收集到的错误
+
+    // 若可能截长图 (强制 --full 或默认自动)，先逐屏滚到底：把“滚动才加载/显示”的懒内容拉出来，
+    // 否则长图里那些区域是空白/占位。滚动后再量高度，测得的才是完整内容高度。
+    let fullPage = CONFIG.fullPage;
+    if ((fullPage || CONFIG.autoFull) && CONFIG.autoScroll) {
+        await scrollFullPage(page);
+    }
+
+    // 决定本页截图模式：--full 强制长图；否则默认自动检测——页面真实内容比视口高出一截就截长图
+    if (!fullPage && CONFIG.autoFull) {
+        const contentHeight = await page.evaluate(() => Math.max(
+            document.documentElement?.scrollHeight ?? 0,
+            document.body?.scrollHeight ?? 0,
+        ));
+        const viewportHeight = page.viewportSize()?.height ?? CONFIG.viewport.height;
+        fullPage = contentHeight > viewportHeight + CONFIG.autoFullMargin;
+    }
+
+    await page.screenshot({ path: filepath, fullPage, type: CONFIG.format });
+    return { errors: errors.splice(0), fullPage }; // 返回本页收集到的错误(并清空) + 实际采用的截图模式
 }
 
 async function shootAll(page, pages, outDir, results, lang) {
@@ -356,11 +462,14 @@ async function shootAll(page, pages, outDir, results, lang) {
         let lastErr = null;
         let skipped = null;
         let pageErrors = [];
+        let fullPage = false;
         for (let attempt = 0; attempt <= CONFIG.retries; attempt++) {
             errors.length = 0;
             try {
                 if (attempt > 0) console.log(`    🔁 重试 ${attempt}/${CONFIG.retries}...`);
-                pageErrors = await capturePage(page, path, opts, filepath, errors);
+                const cap = await capturePage(page, path, opts, filepath, errors);
+                pageErrors = cap.errors;
+                fullPage = cap.fullPage;
                 if (opts?.ignoreErrors) pageErrors = pageErrors.filter(e => !opts.ignoreErrors.test(e));
                 lastErr = null;
                 break;
@@ -379,11 +488,11 @@ async function shootAll(page, pages, outDir, results, lang) {
             console.log(`    ❌ 失败: ${lastErr.message}`);
             results.push({ lang, name, path, file: null, status: 'fail', errors: [lastErr.message], ms });
         } else if (pageErrors.length > 0) {
-            console.log(`    ⚠️ -> ${filepath} (${pageErrors.length} 条页面报错)`);
-            results.push({ lang, name, path, file: filename, status: 'warn', errors: pageErrors, ms });
+            console.log(`    ⚠️ -> ${filepath}${fullPage ? ' 📏 长图' : ''} (${pageErrors.length} 条页面报错)`);
+            results.push({ lang, name, path, file: filename, status: 'warn', full: fullPage, errors: pageErrors, ms });
         } else {
-            console.log(`    ✅ -> ${filepath}`);
-            results.push({ lang, name, path, file: filename, status: 'ok', errors: [], ms });
+            console.log(`    ✅ -> ${filepath}${fullPage ? ' 📏 长图' : ''}`);
+            results.push({ lang, name, path, file: filename, status: 'ok', full: fullPage, errors: [], ms });
         }
     }
 }
@@ -492,13 +601,21 @@ async function run() {
     }
 
     if (args.full) CONFIG.fullPage = true;
+    if (args.noFull) CONFIG.autoFull = false;
+    if (args.noScroll) CONFIG.autoScroll = false;
     if (args.out) CONFIG.outputDir = args.out;
     if (args.mobile) {
         CONFIG.viewport = MOBILE_VIEWPORT.viewport;
         CONFIG.deviceScaleFactor = MOBILE_VIEWPORT.deviceScaleFactor;
         CONFIG.zoom = 1; // 手机视口保持真实设备尺寸，--zoom 可显式覆盖
     }
-    if (args.zoom != null) CONFIG.zoom = args.zoom;
+    if (args.zoom != null) {
+        CONFIG.zoom = args.zoom;
+    } else if (!args.mobile && input.isTTY) {
+        // 未用 --zoom 且交互环境：让用户自己指定，输入时实时预览换算后的视口
+        const z = await promptZoom(CONFIG.viewport, CONFIG.deviceScaleFactor);
+        if (z != null) CONFIG.zoom = z;
+    }
     if (CONFIG.zoom !== 1) {
         // 模拟浏览器缩放：90% 缩放 = 同一窗口能看到 1/0.9 倍的内容 → 等效于放大视口
         CONFIG.viewport = {
@@ -507,6 +624,7 @@ async function run() {
         };
     }
     console.log(`🖥️ 视口 ${CONFIG.viewport.width}x${CONFIG.viewport.height} @${CONFIG.deviceScaleFactor}x (缩放 ${Math.round(CONFIG.zoom * 100)}%)`);
+    console.log(`📐 长图: ${CONFIG.fullPage ? '强制全部截长图 (--full)' : CONFIG.autoFull ? `自动检测 (内容比视口高 >${CONFIG.autoFullMargin}px 的页面截长图)` : '关闭, 只截当前视口 (--no-full)'}${(CONFIG.fullPage || CONFIG.autoFull) ? (CONFIG.autoScroll ? ' + 预滚动加载懒内容' : ' (已关闭预滚动 --no-scroll)') : ''}`);
 
     // 每次拍照前清空旧截图目录，避免改名/删页后的旧图残留混进本轮结果
     try {
@@ -558,6 +676,8 @@ async function run() {
         viewport: CONFIG.viewport,
         zoom: CONFIG.zoom,
         fullPage: CONFIG.fullPage,
+        autoFull: CONFIG.fullPage ? false : CONFIG.autoFull,
+        autoScroll: (CONFIG.fullPage || CONFIG.autoFull) ? CONFIG.autoScroll : false,
         langs,
         summary: { ok: ok.length, warn: warn.length, skip: skip.length, fail: fail.length, elapsedSeconds: Number(elapsed) },
         results,

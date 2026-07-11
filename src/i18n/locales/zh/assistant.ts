@@ -49,6 +49,8 @@ export const assistant = {
     speakTranslatedTitle: '朗读译文',
     speakTranslatedAria: '朗读译文',
     outputPlaceholder: '翻译结果将显示在这里',
+    synonymsLabel: '近义词',
+    synonymSpeakTitle: '点击朗读',
     toastEmpty: '请输入要翻译的文本',
     toastSameLang: '源语言和目标语言不能相同',
     toastSuccess: '翻译完成',

@@ -5,7 +5,7 @@ import VocabInput from '../../components/VocabInput';
 import { getInitialVocabInput } from '../../store/word_selection_store';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
-import { listPlans, getPlanDetail, type LearningPlan } from '../../api/learning_plan';
+import { listPlans, getPlanDetail, sortPlansByFavorite, type LearningPlan } from '../../api/learning_plan';
 import { showToast } from '../../components/common/Toast';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import '../../styles/practice_page.css';
@@ -132,7 +132,7 @@ export default function WritingChatConfigPage() {
                                                     onChange={e => setImportPlanId(Number(e.target.value))}
                                                 >
                                                     <option value={0} disabled>{t.planImportPlaceholder}</option>
-                                                    {plans.map(p => (
+                                                    {sortPlansByFavorite(plans).map(p => (
                                                         <option key={p.id} value={p.id}>{p.name}</option>
                                                     ))}
                                                 </select>
