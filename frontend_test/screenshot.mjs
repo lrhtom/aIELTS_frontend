@@ -86,6 +86,9 @@ const PAGES = [
     ['/profile', 'profile_admin_feedback', { admin: true, actions: [{ click: ':nth-match(.profile-accordion-trigger, 2)' }, { click: ':nth-match(.profile-sub-item, 3)' }] }],
     ['/profile', 'profile_admin_routes',   { admin: true, actions: [{ click: ':nth-match(.profile-accordion-trigger, 2)' }, { click: ':nth-match(.profile-sub-item, 4)' }] }],
     ['/profile', 'profile_admin_ai_usage', { admin: true, actions: [{ click: ':nth-match(.profile-accordion-trigger, 2)' }, { click: ':nth-match(.profile-sub-item, 5)' }] }],
+    ['/profile', 'profile_admin_code_stats',     { admin: true, actions: [{ click: ':nth-match(.profile-accordion-trigger, 2)' }, { click: ':nth-match(.profile-sub-item, 6)' }] }],
+    // 服务健康页首屏为“开始测评”空态；不自动点按钮，避免每次截图都触发真实 AI 探测(有成本)
+    ['/profile', 'profile_admin_service_health', { admin: true, actions: [{ click: ':nth-match(.profile-accordion-trigger, 2)' }, { click: ':nth-match(.profile-sub-item, 7)' }] }],
 
     // 提示词广场 (同一 URL，两个 tab)
     ['/prompts', 'prompts'],

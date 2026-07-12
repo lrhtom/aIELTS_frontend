@@ -12,6 +12,7 @@ import AdminFeedback from '../components/profile/AdminFeedback';
 import AdminUserManagement from '../components/profile/AdminUserManagement';
 import AdminAIUsage from '../components/profile/AdminAIUsage';
 import AdminCodeStats from '../components/profile/AdminCodeStats';
+import AdminServiceHealth from '../components/profile/AdminServiceHealth';
 import UserBackground from '../components/profile/UserBackground';
 import UserManual from '../components/profile/UserManual';
 import UserAnalytics from '../components/profile/UserAnalytics';
@@ -38,10 +39,11 @@ import {
   BarChart3,
   Target,
   Code2,
+  Activity,
 } from 'lucide-react';
 import '../styles/profile_page.css';
 
-type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'admin_ai_usage' | 'admin_code_stats' | 'manual';
+type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'admin_ai_usage' | 'admin_code_stats' | 'admin_service_health' | 'manual';
 
 /** Shown when a non-admin tries to access an admin tab via DevTools state manipulation */
 function AccessDenied() {
@@ -88,6 +90,7 @@ export default function ProfilePage() {
             case 'admin_routes':  return isAdmin ? <RouteVisualization /> : <AccessDenied />;
             case 'admin_ai_usage': return isAdmin ? <AdminAIUsage /> : <AccessDenied />;
             case 'admin_code_stats': return isAdmin ? <AdminCodeStats /> : <AccessDenied />;
+            case 'admin_service_health': return isAdmin ? <AdminServiceHealth /> : <AccessDenied />;
             default: return <UserHome />;
         }
     };
@@ -220,6 +223,13 @@ export default function ProfilePage() {
                                         >
                                             <Code2 size={16} className="menu-item-icon" />
                                             <span className="menu-item-text">{t.profile.admin.codeStats.title}</span>
+                                        </button>
+                                        <button
+                                            className={`profile-menu-item profile-sub-item ${activeTab === 'admin_service_health' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('admin_service_health')}
+                                        >
+                                            <Activity size={16} className="menu-item-icon" />
+                                            <span className="menu-item-text">{t.profile.admin.serviceHealth.title}</span>
                                         </button>
                                     </div>
                                 </div>
