@@ -1,0 +1,416 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Custom (bring-your-own) AI models — add/edit modal + settings manager panel
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Modal ── */
+.cm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: rgba(15, 23, 42, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+}
+
+.cm-modal {
+    width: 100%;
+    max-width: 460px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 22px 22px 18px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.cm-modal-titlerow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.cm-modal-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.cm-help-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.cm-help-btn:hover,
+.cm-help-btn.cm-help-active {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(13, 148, 136, 0.06);
+}
+
+/* ── Help panel: common provider examples ── */
+.cm-help-panel {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-bg);
+}
+
+.cm-help-intro {
+    margin: 0 0 10px;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--color-text-secondary);
+}
+
+.cm-help-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.cm-help-item {
+    padding: 9px 11px;
+    border: 1px solid var(--color-border);
+    border-radius: 9px;
+    background: var(--color-surface);
+}
+
+.cm-help-item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.cm-help-provider {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.cm-help-fill {
+    padding: 3px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--color-primary);
+    background: rgba(13, 148, 136, 0.08);
+    color: var(--color-primary);
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.cm-help-fill:hover {
+    background: rgba(13, 148, 136, 0.16);
+}
+
+.cm-help-kv {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 0.74rem;
+    line-height: 1.7;
+}
+
+.cm-help-kv > span {
+    flex-shrink: 0;
+    min-width: 76px;
+    color: var(--color-text-secondary);
+}
+
+.cm-help-kv > code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--color-text);
+    word-break: break-all;
+}
+
+.cm-help-note {
+    margin: 10px 0 0;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.cm-field {
+    display: block;
+    margin-bottom: 14px;
+}
+
+.cm-field-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.cm-input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 9px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.cm-input:focus {
+    border-color: var(--color-primary);
+}
+
+.cm-hint {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+}
+
+.cm-error {
+    margin: 4px 0 12px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #dc2626;
+    font-size: 0.82rem;
+}
+
+/* ── Test result banner ── */
+.cm-test-result {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 12px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.cm-test-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+    background: #9ca3af;
+}
+
+.cm-test-ok .cm-test-dot { background: #10b981; }
+.cm-test-ok { border-color: rgba(16, 185, 129, 0.4); }
+.cm-test-auth .cm-test-dot,
+.cm-test-reqerror .cm-test-dot { background: #f59e0b; }
+.cm-test-ratelimited .cm-test-dot { background: #f59e0b; }
+.cm-test-error .cm-test-dot,
+.cm-test-unconfigured .cm-test-dot { background: #ef4444; }
+
+/* ── Buttons ── */
+.cm-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.cm-modal-actions-right {
+    display: flex;
+    gap: 8px;
+}
+
+.cm-btn {
+    padding: 8px 16px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+    transition: all 0.15s ease;
+}
+
+.cm-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.cm-btn-ghost {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.cm-btn-ghost:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.cm-btn-primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.cm-btn-primary:hover:not(:disabled) {
+    background: var(--color-primary-hover, #0f766e);
+    border-color: var(--color-primary-hover, #0f766e);
+}
+
+/* ── Settings manager panel ── */
+.cm-manager {
+    margin-top: 14px;
+}
+
+.cm-manager-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.cm-manager-title {
+    margin: 0 0 3px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.cm-manager-desc {
+    margin: 0;
+    font-size: 0.76rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    max-width: 520px;
+}
+
+.cm-add-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 13px;
+    border-radius: 9px;
+    border: 1px dashed var(--color-primary);
+    background: rgba(13, 148, 136, 0.06);
+    color: var(--color-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.cm-add-btn:hover {
+    background: rgba(13, 148, 136, 0.12);
+}
+
+.cm-empty {
+    padding: 18px;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    border: 1px dashed var(--color-border);
+    border-radius: 10px;
+}
+
+.cm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cm-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 11px;
+    background: var(--color-surface);
+}
+
+.cm-row-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.cm-row-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cm-row-key {
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cm-row-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+    margin-left: 8px;
+}
+
+.cm-row-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.cm-row-btn {
+    padding: 5px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.cm-row-btn:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.cm-row-btn.cm-row-danger:hover:not(:disabled) {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.cm-row-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}

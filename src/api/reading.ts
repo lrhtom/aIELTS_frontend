@@ -36,6 +36,8 @@ export interface ReadingGenerateRequest {
     topic?: string;
     wordCountMin?: number;
     wordCountMax?: number;
+    /** 用户自定义提示词指令 (高级，可选) */
+    customPrompt?: string;
 }
 
 export interface ReadingFullRequest {
@@ -46,6 +48,8 @@ export interface ReadingFullRequest {
     passageNum?: 1 | 2 | 3;
     /** 单篇模式下的题型组合 (2-3 种题型 key); 省略则用系统预设 */
     mixTypes?: ReadingQuestionTypeKey[];
+    /** 用户自定义提示词指令 (高级，可选) */
+    customPrompt?: string;
 }
 
 export function getReadingMeta(): Promise<ReadingMeta> {

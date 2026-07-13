@@ -36,6 +36,9 @@ export const speakingChat = {
   backBtn: '← 返回',
   vocabHeading: '📚 词汇 & 设置',
   showTimer: '在录音时显示计时',
+  ambienceLabel: '环境音',
+  ambienceMute: '静音环境音',
+  ambienceUnmute: '开启环境音',
   noWords: '暂无目标词汇',
   hideText: '🔽 隐藏文本',
   showText: '▶️ 显示文本',
@@ -187,6 +190,54 @@ export const speakingConfig = {
   voiceOnly: {
     title: '纯语音模式',
     desc: '隐藏键盘输入，全程只用语音交流（原通话模式）',
+  },
+  scenarioModifiers: {
+    sectionTitle: '场景干扰（真实难度）',
+    sectionDesc: '可选择性开启，每项还能再多选细化，模拟真实英语环境里的听说压力，越开越难',
+    accent: {
+      title: '口音',
+      desc: '角色改用非 BBC 腔的英式地方口音，夹带方言词（可多选具体口音）',
+      subs: {
+        brummie: '伯明翰 Brummie',
+        eastmidlands: '东米德兰兹 / 诺丁汉',
+        scouse: '利物浦 Scouse',
+        geordie: '纽卡斯尔 Geordie',
+        cockney: '伦敦 Cockney',
+      },
+    },
+    crosstalk: {
+      title: '语速 + 打断 + 重叠',
+      desc: '语速偏快，抢话、重叠附和，模拟真实对话的插话（可多选具体行为）',
+      subs: {
+        fast: '语速快',
+        interrupt: '打断抢话',
+        overlap: '重叠附和',
+      },
+    },
+    noise: {
+      title: '背景噪音',
+      desc: '开启后前端会循环播放选中的环境音（可多选，混音播放）',
+      subs: {
+        pub: '酒吧',
+        canteen: '食堂',
+        office: '开放办公室',
+        street: '街道',
+      },
+    },
+    audioquality: {
+      title: '音质干扰',
+      desc: '对 AI 语音施加音质劣化滤波，模拟不同信道（可多选）',
+      subs: {
+        phone: '电话音质',
+        muffled: '闷响 / 隔墙',
+        radio: '无线电 / 对讲机',
+      },
+    },
+    smalltalk: {
+      title: 'Small talk 寒暄',
+      desc: '穿插闲聊（天气 / 周末 / 近况），需要你得体回应与接话',
+      subs: {},
+    },
   },
   summary: {
     metricAccuracy: '🎯 准确度',

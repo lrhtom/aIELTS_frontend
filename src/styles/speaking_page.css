@@ -332,3 +332,33 @@
     }
 }
 
+
+/* ── 场景干扰 · 子选项细选 chips ─────────────────────────────────────────── */
+.scenario-suboptions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 8px 14px 48px;
+}
+.scenario-subchip {
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: none;
+}
+.scenario-subchip:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: none;
+}
+.scenario-subchip.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: #fff;
+}

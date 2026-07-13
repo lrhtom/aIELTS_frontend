@@ -2,6 +2,7 @@ import Layout from '../../components/layout/Layout';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AiModelSelector from '../../components/common/AiModelSelector';
+import CustomPromptField from '../../components/common/CustomPromptField';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
@@ -18,6 +19,7 @@ export default function Task1SelectionPage() {
     const [selectedChart, setSelectedChart] = useState<string>('line');
     const [customName, setCustomName] = useState('');
     const [customDescription, setCustomDescription] = useState('');
+    const [customPrompt, setCustomPrompt] = useState('');
 
     const taskTypes = [
         { id: 'chart', nameZh: t.task1Selection.types.chart.title, nameEn: t.task1Selection.types.chart.nameEn, icon: '📈', desc: t.task1Selection.types.chart.desc, isBeta: false },
@@ -45,6 +47,7 @@ export default function Task1SelectionPage() {
             state: {
                 customName: customName.trim(),
                 customDescription: customDescription.trim(),
+                customPrompt: customPrompt.trim(),
             },
         });
     };
@@ -174,6 +177,13 @@ export default function Task1SelectionPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* 自定义提示词指令（高级，可选）· 地图题走图像生成，不适用 */}
+                        {selectedType !== 'map' && (
+                            <div className="uc-card-group">
+                                <CustomPromptField value={customPrompt} onChange={setCustomPrompt} />
+                            </div>
+                        )}
 
                         {selectedType === 'map' && (
                             <div className="uc-card-group">

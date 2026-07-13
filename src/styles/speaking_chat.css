@@ -825,3 +825,28 @@
     border-color: #6366f1;
 }
 
+
+/* 背景噪音环境音 · 静音/外放浮动开关 */
+.sc-ambience-toggle {
+    position: fixed;
+    top: 14px;
+    right: 18px;
+    z-index: 50;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.sc-ambience-toggle:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}

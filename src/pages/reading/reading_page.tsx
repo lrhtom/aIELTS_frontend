@@ -34,6 +34,7 @@ export default function Reading_page() {
     const mixTypes: string[] | undefined = Array.isArray(state?.mixTypes) ? state.mixTypes : undefined;
     const customName: string = typeof state?.customName === 'string' ? state.customName.trim() : '';
     const customDescription: string = typeof state?.customDescription === 'string' ? state.customDescription.trim() : '';
+    const customPrompt: string = typeof state?.customPrompt === 'string' ? state.customPrompt.trim() : '';
 
     // 用单一 useState 替代 reactive store
     const [st, setSt] = useState(createReadingState);
@@ -207,6 +208,7 @@ export default function Reading_page() {
                 }
                 if (customName) body.customName = customName;
                 if (customDescription) body.customDescription = customDescription;
+                if (customPrompt) body.customPrompt = customPrompt;
                 parsedData = await api('/reading/full', { method: 'POST', body });
             } else {
                 const body: Record<string, unknown> = {
@@ -221,6 +223,7 @@ export default function Reading_page() {
                 };
                 if (customName) body.customName = customName;
                 if (customDescription) body.customDescription = customDescription;
+                if (customPrompt) body.customPrompt = customPrompt;
                 parsedData = await api('/reading/generate', {
                     method: 'POST',
                     body,

@@ -137,13 +137,32 @@ type AddWordPayload =
     | { mode: 'notebook';    notebook_id: number }
     | { mode: 'book_all';    book_id: number }
     | { mode: 'book_range';  book_id: number; start: number; end: number }
-    | { mode: 'book_select'; book_id: number; word_ids: number[] };
+    | { mode: 'book_select'; book_id: number; word_ids: number[] }
+    | { mode: 'ai_list';     words: Array<{ word: string; zh: string }> };
 
 export async function addWord(
     id: number,
     payload: AddWordPayload,
 ): Promise<{ entries_added: number; entry?: PlanEntry }> {
     const resp = await apiClient.post(`/plans/${id}/words/`, payload);
+    return resp.data;
+}
+
+// AI 解析：把一段文章/词表交给 AI 提取成 [{word, zh}]，仅预览、不写库。
+// exists=true 表示该词已在本计划中（前端可标灰/默认不选）。
+export interface AiParsedWord {
+    word:    string;
+    zh:      string;
+    exists?: boolean;
+}
+
+export async function aiParsePlanWords(
+    planId: number,
+    text: string,
+): Promise<{ words: AiParsedWord[]; atConsumed?: number }> {
+    const resp = await apiClient.post(`/plans/${planId}/ai-parse/`, { text }, {
+        timeout: 130_000, // 130s — 略高于后端 AI 120s 超时
+    });
     return resp.data;
 }
 

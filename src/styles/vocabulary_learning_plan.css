@@ -1149,3 +1149,134 @@
     min-height: 0;
     overflow: hidden;
 }
+
+/* ── AI 导入 tab ── */
+.lp-ai-import {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.lp-ai-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.lp-ai-model-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.lp-ai-textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    outline: none;
+    font-family: inherit;
+}
+
+.lp-ai-textarea:focus {
+    border-color: var(--color-primary);
+}
+
+.lp-ai-result {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-surface);
+}
+
+.lp-ai-result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.lp-ai-clear {
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 0.78rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.lp-ai-clear:hover {
+    color: var(--color-primary);
+}
+
+.lp-ai-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.lp-ai-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px 4px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg);
+    font-size: 0.8rem;
+}
+
+.lp-ai-chip-exists {
+    opacity: 0.6;
+}
+
+.lp-ai-chip-word {
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.lp-ai-chip-zh {
+    color: var(--color-text-secondary);
+    font-size: 0.74rem;
+}
+
+.lp-ai-chip-tag {
+    font-size: 0.66rem;
+    color: #d97706;
+    border: 1px solid rgba(217, 119, 6, 0.35);
+    border-radius: 6px;
+    padding: 0 4px;
+}
+
+.lp-ai-chip-x {
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+.lp-ai-chip-x:hover {
+    color: #ef4444;
+}
+
+.lp-ai-import-btn {
+    align-self: flex-start;
+}

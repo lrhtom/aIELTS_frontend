@@ -3,6 +3,7 @@ import { showConfirm } from '../common/ConfirmService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../i18n/LanguageContext';
 import AiModelSelector from '../common/AiModelSelector';
+import CustomModelManager from './CustomModelManager';
 import AvatarUpload from './AvatarUpload';
 import { authApi } from '../../api/auth';
 
@@ -157,6 +158,7 @@ export default function UserSettings() {
                 <div className="ai-model-selector-wrapper">
                     <AiModelSelector label="" description="" />
                 </div>
+                <CustomModelManager />
             </div>
 
             {/* AI生成重试次数设置 */}

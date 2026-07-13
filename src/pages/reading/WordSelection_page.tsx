@@ -6,6 +6,7 @@ import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import VocabInput from '../../components/VocabInput';
 import AiModelSelector from '../../components/common/AiModelSelector';
+import CustomPromptField from '../../components/common/CustomPromptField';
 import { listPlans, getPlanDetail, sortPlansByFavorite, type LearningPlan } from '../../api/learning_plan';
 import type { ReadingQuestionTypeKey, ReadingJudgementMode } from '../../api/reading';
 import '../../styles/practice_page.css';
@@ -95,6 +96,7 @@ export default function WordSelection_page() {
     const [singleMix, setSingleMix] = useState<ReadingQuestionTypeKey[]>([]);
     const [customName, setCustomName] = useState('');
     const [customDescription, setCustomDescription] = useState('');
+    const [customPrompt, setCustomPrompt] = useState('');
 
     const { lang } = useLang();
     const t = translations[lang].readingConfig;
@@ -179,6 +181,7 @@ export default function WordSelection_page() {
                 mixTypes: mode === 'full' && fullScope === 'single' && singleMix.length > 0 ? singleMix : undefined,
                 customName: customName.trim(),
                 customDescription: customDescription.trim(),
+                customPrompt: customPrompt.trim(),
             },
         });
     };
@@ -310,6 +313,10 @@ export default function WordSelection_page() {
                                     />
                                 </div>
                             </div>
+                        </div>
+                        {/* 自定义提示词指令（高级，可选）*/}
+                        <div className="uc-card-group">
+                            <CustomPromptField value={customPrompt} onChange={setCustomPrompt} />
                         </div>
                         {/* Full-test scope controls */}
                         {mode === 'full' && (

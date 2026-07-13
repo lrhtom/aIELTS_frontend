@@ -34,6 +34,24 @@ interface ModeInfo {
     color: string;
 }
 
+// 场景干扰选项（真实难度增强）——键须与后端 INTERFERENCE_KEYS / INTERFERENCE_SUBOPTIONS 一致
+export type ScenarioModifierKey = 'accent' | 'crosstalk' | 'noise' | 'audioquality' | 'smalltalk';
+const SCENARIO_MODIFIERS: { key: ScenarioModifierKey; icon: string; color: string; bg: string }[] = [
+    { key: 'accent', icon: '🗣️', color: '#ef4444', bg: '#fee2e2' },
+    { key: 'crosstalk', icon: '💬', color: '#f59e0b', bg: '#fef3c7' },
+    { key: 'noise', icon: '🔊', color: '#0ea5e9', bg: '#e0f2fe' },
+    { key: 'audioquality', icon: '📻', color: '#6366f1', bg: '#e0e7ff' },
+    { key: 'smalltalk', icon: '🫖', color: '#10b981', bg: '#d1fae5' },
+];
+// 每个干扰项可再多选的子选项（键须与后端 INTERFERENCE_SUBOPTIONS 一致）
+const SCENARIO_SUBOPTIONS: Record<ScenarioModifierKey, string[]> = {
+    accent: ['brummie', 'eastmidlands', 'scouse', 'geordie', 'cockney'],
+    crosstalk: ['fast', 'interrupt', 'overlap'],
+    noise: ['pub', 'canteen', 'office', 'street'],
+    audioquality: ['phone', 'muffled', 'radio'],  // 音质干扰：对 AI 语音加滤波
+    smalltalk: [],  // 仅开关，无子选项
+};
+
 export default function Speaking() {
     const { lang } = useLang();
     const sc = translations[lang].speakingConfig;
@@ -87,7 +105,22 @@ export default function Speaking() {
     const [customDescription, setCustomDescription] = useState('');
     // 纯语音模式（原通话模式）：隐藏键盘输入，仅 chat 模式生效
     const [voiceOnly, setVoiceOnly] = useState(false);
-    
+    // 场景干扰选项（真实难度增强）：{ 选项key: [已选子选项] }，可多选、每项可再细选，仅 scenario 模式生效
+    const [scenarioModifiers, setScenarioModifiers] = useState<Record<string, string[]>>({});
+    const optionOn = (key: ScenarioModifierKey) => key in scenarioModifiers;
+    const toggleOption = (key: ScenarioModifierKey) =>
+        setScenarioModifiers(prev => {
+            const next = { ...prev };
+            if (key in next) delete next[key]; else next[key] = [];
+            return next;
+        });
+    const toggleSub = (key: ScenarioModifierKey, sub: string) =>
+        setScenarioModifiers(prev => {
+            const cur = prev[key] ?? [];
+            const nextSubs = cur.includes(sub) ? cur.filter(s => s !== sub) : [...cur, sub];
+            return { ...prev, [key]: nextSubs };
+        });
+
     // Plan Import State
     const [plans, setPlans] = useState<LearningPlan[]>([]);
     const [importPlanId, setImportPlanId] = useState(0);
@@ -206,6 +239,7 @@ export default function Speaking() {
                     customTitle: customName.trim(),
                     customDesc: customDescription.trim(),
                     voiceOnly: selectedMode === 'chat' ? voiceOnly : false,
+                    scenarioModifiers: selectedMode === 'scenario' ? scenarioModifiers : {},
                 },
             });
         } else if (isExamPart1) {
@@ -464,6 +498,60 @@ export default function Speaking() {
                                             </label>
                                         </div>
                                     </div>
+                                )}
+
+                                {/* 场景干扰选项（真实难度增强）：只在场景对话下显示，可选择性开启 */}
+                                {selectedMode === 'scenario' && (
+                                    <>
+                                        <div className="uc-list-row uc-row-vertical" style={{ paddingBottom: 4 }}>
+                                            <div className="uc-row-label-flex">
+                                                <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <span className="uc-row-icon" style={{ color: '#ef4444', background: '#fee2e2' }}>🎚️</span>
+                                                    <span className="row-title">{sc.scenarioModifiers.sectionTitle}</span>
+                                                </div>
+                                            </div>
+                                            <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                                                {sc.scenarioModifiers.sectionDesc}
+                                            </span>
+                                        </div>
+                                        {SCENARIO_MODIFIERS.map(m => (
+                                            <div key={m.key}>
+                                                <div className="uc-list-row">
+                                                    <div className="uc-row-label">
+                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                            <span className="uc-row-icon" style={{ color: m.color, background: m.bg }}>{m.icon}</span>
+                                                            <span className="row-title">{sc.scenarioModifiers[m.key].title}</span>
+                                                        </div>
+                                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{sc.scenarioModifiers[m.key].desc}</span>
+                                                    </div>
+                                                    <div className="uc-row-control">
+                                                        <label className="toggle-switch-console">
+                                                            <input type="checkbox" checked={optionOn(m.key)} onChange={() => toggleOption(m.key)} />
+                                                            <span className="toggle-slider-console" />
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {/* 细选：开启后展开可多选的子选项（无子选项的如 Small talk 不展开）*/}
+                                                {optionOn(m.key) && SCENARIO_SUBOPTIONS[m.key].length > 0 && (
+                                                    <div className="scenario-suboptions">
+                                                        {SCENARIO_SUBOPTIONS[m.key].map(sub => {
+                                                            const on = (scenarioModifiers[m.key] ?? []).includes(sub);
+                                                            return (
+                                                                <button
+                                                                    type="button"
+                                                                    key={sub}
+                                                                    className={`scenario-subchip ${on ? 'active' : ''}`}
+                                                                    onClick={() => toggleSub(m.key, sub)}
+                                                                >
+                                                                    {(sc.scenarioModifiers[m.key].subs as Record<string, string>)[sub]}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </>
                                 )}
 
                                 {/* Vocab Accordion */}

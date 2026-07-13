@@ -39,6 +39,9 @@ export const speakingChat: typeof zh.speakingChat = {
   backBtn: '← Back',
   vocabHeading: '📚 Vocabulary & Settings',
   showTimer: 'Show timer while recording',
+  ambienceLabel: 'Ambience',
+  ambienceMute: 'Mute ambience',
+  ambienceUnmute: 'Unmute ambience',
   noWords: 'No target vocabulary',
   hideText: '🔽 Hide Text',
   showText: '▶️ Show Text',
@@ -190,6 +193,54 @@ export const speakingConfig: typeof zh.speakingConfig = {
   voiceOnly: {
     title: 'Voice-only Mode',
     desc: 'Hide keyboard input and practice by voice only (former Call mode)',
+  },
+  scenarioModifiers: {
+    sectionTitle: 'Scene Interference (real-world difficulty)',
+    sectionDesc: 'Turn on optionally; each can be further multi-selected. Simulates the listening/speaking pressure of a real English environment — the more you enable, the harder it gets',
+    accent: {
+      title: 'Accent',
+      desc: 'The character uses a non-BBC regional British accent and dialect words (pick specific accents)',
+      subs: {
+        brummie: "Birmingham 'Brummie'",
+        eastmidlands: 'East Midlands / Nottingham',
+        scouse: "Liverpool 'Scouse'",
+        geordie: "Newcastle 'Geordie'",
+        cockney: "London 'Cockney'",
+      },
+    },
+    crosstalk: {
+      title: 'Pace + interruptions + overlap',
+      desc: 'Faster pace, talks over you, overlaps like a real conversation (pick specific behaviours)',
+      subs: {
+        fast: 'Fast pace',
+        interrupt: 'Interrupts',
+        overlap: 'Overlapping',
+      },
+    },
+    noise: {
+      title: 'Background noise',
+      desc: 'When on, the frontend loop-plays the selected ambience (multi-select, mixed together)',
+      subs: {
+        pub: 'Pub',
+        canteen: 'Canteen',
+        office: 'Open office',
+        street: 'Street',
+      },
+    },
+    audioquality: {
+      title: 'Audio quality',
+      desc: "Applies a quality-degrading filter to the AI's voice, emulating different channels (multi-select)",
+      subs: {
+        phone: 'Phone line',
+        muffled: 'Muffled / through a wall',
+        radio: 'Two-way radio',
+      },
+    },
+    smalltalk: {
+      title: 'Small talk',
+      desc: 'Weaves in small talk (weather / weekend / how it is going) and expects you to reciprocate',
+      subs: {},
+    },
   },
   summary: {
     metricAccuracy: '🎯 Accuracy',

@@ -52,6 +52,12 @@ export const common = {
     descLabel: '简介',
     descPlaceholder: '例：本套题围绕教育话题，用于本周复习',
   },
+  customPrompt: {
+    title: '自定义提示词指令（可选 · 高级）',
+    warning: '⚠️ 谨慎使用：自定义指令拥有【最高优先级】，会压过题目内容 / 难度 / 风格等默认设定，可能导致题目跑偏、内容不符合雅思规范或额外消耗 AT。不确定就别开启。（仅输出格式与安全限制不可被覆盖。）',
+    ack: '我已了解上述风险，仍要使用',
+    placeholder: '例：题目围绕“环境保护”主题；难度对齐雅思 7 分；多用被动语态……',
+  },
 };
 
 export const components = {
@@ -72,6 +78,57 @@ export const components = {
   aiModel: {
     label: 'AI 模型',
     desc: '选择后台出题和批改所使用的引擎',
+  },
+  customModel: {
+    // 下拉选择器
+    addOption: '＋ 添加自定义模型',
+    customTag: '自定义',
+    // 弹窗
+    addTitle: '添加自定义模型',
+    editTitle: '编辑自定义模型',
+    nameLabel: '模型名称',
+    namePlaceholder: '例：gpt-4o-mini（将作为请求中的 model 值）',
+    urlLabel: '接口链接',
+    urlPlaceholder: 'https://api.openai.com/v1/chat/completions',
+    keyLabel: 'SK 密钥',
+    keyPlaceholder: 'sk-...',
+    keyKeepHint: '留空则保持原密钥不变',
+    test: '测试',
+    testing: '测试中…',
+    save: '保存',
+    cancel: '取消',
+    errName: '请填写模型名称',
+    errUrl: '接口链接必须以 http(s):// 开头',
+    errKey: '请填写 SK 密钥',
+    saveFail: '保存失败',
+    // 设置页管理面板
+    managerTitle: '自定义模型管理',
+    managerDesc: '添加你自己的 OpenAI 兼容模型（自带密钥，调用不消耗 AT）。',
+    addBtn: '添加自定义模型',
+    empty: '还没有自定义模型',
+    edit: '编辑',
+    delete: '删除',
+    deleteConfirm: '确定删除该自定义模型？',
+    deleteFail: '删除失败',
+    loadFail: '加载失败',
+    // 测试结果（与后端 ping status 对应）
+    testOk: '连接正常',
+    testAuth: '鉴权失败（密钥或权限有误）',
+    testRateLimited: '被限流，请稍后再试',
+    testReqError: '端点在线但请求被拒（模型名/参数/链接有误）',
+    testError: '连接失败（链接不可达或超时）',
+    testUnconfigured: '配置不完整',
+    // 帮助面板：常见导入示例
+    helpAria: '查看导入示例',
+    helpIntro: '本平台支持任意 OpenAI 兼容的 /chat/completions 接口。以下为常见服务的填写示例，点“填入”可一键填充：',
+    helpFill: '填入',
+    helpNote: '要点：模型名称就是请求里的 model 值；接口链接要填 chat/completions 的完整地址。',
+    helpOllamaNote: 'Ollama：先本地运行 ollama serve，SK 可随意填。本平台部署在本机时可直连 localhost；线上部署需让服务器能访问到该地址（公网地址或内网穿透）。',
+    pOllama: 'Ollama（本地模型）',
+    pOpenai: 'OpenAI',
+    pDeepseek: 'DeepSeek',
+    pQwen: '通义千问（DashScope 兼容模式）',
+    pOpenrouter: 'OpenRouter',
   },
   toast: {
     errorTitle: '异常',

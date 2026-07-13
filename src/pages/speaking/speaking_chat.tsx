@@ -24,6 +24,8 @@ import { ATInterceptor } from '../../api/atInterceptor';
 import { startSpeakingSession, getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { showToast } from '../../components/common/Toast';
 import { devLog } from '../../utils/devLog';
+import { NoiseAmbience } from '../../utils/noise_ambience';
+import { AudioQualityFx } from '../../utils/audio_effects';
 import type { SpeakingMode, IeltsPart } from './speaking';
 import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/speaking_chat.css';
@@ -165,6 +167,7 @@ function SpeakingChatPage() {
         customTitle?: string,
         customDesc?: string,
         voiceOnly?: boolean,
+        scenarioModifiers?: Record<string, string[]>,
     };
     // 从 AI 题库恢复会话：/speaking/chat?bankId=123
     const [searchParams] = useSearchParams();
@@ -178,6 +181,13 @@ function SpeakingChatPage() {
     const [scenarioPrompt, setScenarioPrompt] = useState<string>(state?.scenarioInput ?? '');
     // 纯语音模式（原 call 模式并入 chat 后的开关）：隐藏键盘输入
     const [voiceOnly, setVoiceOnly] = useState<boolean>(state?.voiceOnly ?? false);
+    // 场景干扰选项（真实难度增强）：{选项:[子选项]}，随会话配置持久化，恢复时从 content 还原
+    const [scenarioModifiers, setScenarioModifiers] = useState<Record<string, string[]>>(state?.scenarioModifiers ?? {});
+    // 背景噪音环境音：静音开关（默认外放）
+    const [ambienceMuted, setAmbienceMuted] = useState(false);
+    const ambienceRef = useRef<NoiseAmbience | null>(null);
+    // 音质干扰：对 TTS 语音施加滤波（电话/闷响/无线电）
+    const audioFxRef = useRef<AudioQualityFx | null>(null);
     const [activeMode, setActiveMode] = useState<SpeakingMode>(initialMode);
     const [activeExamQuestions, setActiveExamQuestions] = useState<ExamQuestion[]>(state?.questions ?? []);
     const isFullTestMode = rootMode === 'fullTest';
@@ -322,6 +332,11 @@ function SpeakingChatPage() {
                     setRootMode(mode);
                     const savedScenario = String(content.scenarioPrompt || '');
                     setScenarioPrompt(savedScenario);
+                    setScenarioModifiers(
+                        content.scenarioModifiers && typeof content.scenarioModifiers === 'object' && !Array.isArray(content.scenarioModifiers)
+                            ? content.scenarioModifiers as Record<string, string[]>
+                            : {}
+                    );
                     setActiveMode((ua.activeMode as SpeakingMode) || mode);
                     const savedQuestions = (ua.examQuestions ?? content.questions ?? []) as ExamQuestion[];
                     setActiveExamQuestions(savedQuestions);
@@ -391,6 +406,7 @@ function SpeakingChatPage() {
                     vocabInput: vocabRaw,
                     bankSource: state?.bankSource ?? '',
                     voiceOnly: state?.voiceOnly ?? false,
+                    scenarioModifiers: state?.scenarioModifiers ?? {},
                     // 题库卡片简介从 content.description 读取（与听/读/写一致）
                     description: (state?.customDesc ?? '').trim(),
                 },
@@ -405,7 +421,7 @@ function SpeakingChatPage() {
                 if (activeMode === 'scenario') {
                     try {
                         const filesForOpening = [...pendingScenarioFilesRef.current];
-                        const openingRes = await ATInterceptor.scenarioOpening(scenarioPrompt, filesForOpening);
+                        const openingRes = await ATInterceptor.scenarioOpening(scenarioPrompt, filesForOpening, scenarioModifiers);
                         if (openingRes.data.opening && !isUnmounted) {
                             finalWelcome = openingRes.data.opening;
                             setChatHistory([{ role: 'assistant', content: finalWelcome }]);
@@ -436,6 +452,7 @@ function SpeakingChatPage() {
                 const url = URL.createObjectURL(blob);
                 const a = new Audio(url);
                 audioRef.current = a;
+                audioFxRef.current?.attach(a); // 音质干扰：接入滤波链（无激活则直接播放）
 
                 a.onended = () => {
                     if (!isUnmounted) setStatusSync('idle');
@@ -524,6 +541,40 @@ function SpeakingChatPage() {
             pendingSyncRef.current = null;
             submitAIQuestion(sid, body).catch(() => {});
         }
+    }, []);
+
+    // ── 背景噪音环境音（场景模式 + 开启 noise 时循环播放选中的噪音层）────────────
+    useEffect(() => {
+        const noiseSubs = activeMode === 'scenario' ? scenarioModifiers['noise'] : undefined;
+        if (noiseSubs === undefined) {
+            // 未开启噪音：停掉并释放
+            ambienceRef.current?.stop();
+            ambienceRef.current = null;
+            return;
+        }
+        if (!ambienceRef.current) ambienceRef.current = new NoiseAmbience();
+        void ambienceRef.current.start(noiseSubs);
+    }, [activeMode, scenarioModifiers]);
+
+    useEffect(() => {
+        ambienceRef.current?.setMuted(ambienceMuted);
+    }, [ambienceMuted]);
+
+    // 音质干扰：把选中的滤波 profile 交给 fx；后续每条 TTS 播放时接入
+    useEffect(() => {
+        const subs = activeMode === 'scenario' ? scenarioModifiers['audioquality'] : undefined;
+        if (subs === undefined) {
+            audioFxRef.current?.setProfiles([]);
+            return;
+        }
+        if (!audioFxRef.current) audioFxRef.current = new AudioQualityFx();
+        audioFxRef.current.setProfiles(subs.length ? subs : ['phone']); // 开了但没细选 → 默认电话音质
+    }, [activeMode, scenarioModifiers]);
+
+    // 卸载时停掉环境音 + 释放音效上下文
+    useEffect(() => () => {
+        ambienceRef.current?.stop(); ambienceRef.current = null;
+        audioFxRef.current?.dispose(); audioFxRef.current = null;
     }, []);
 
     // ── Audio visualizer ──────────────────────────────────────────────────
@@ -804,6 +855,7 @@ function SpeakingChatPage() {
 
             const a = new Audio(url);
             audioRef.current = a;
+            audioFxRef.current?.attach(a); // 音质干扰：接入滤波链（无激活则直接播放）
 
             a.onended = () => {
                 setStatusSync(isFinished ? 'finished' : 'idle');
@@ -870,12 +922,14 @@ function SpeakingChatPage() {
                         scenarioPrompt,
                         messages as unknown as Array<Record<string, unknown>>,
                         filesToSend,
+                        scenarioModifiers,
                         { conversationLength: 1 }
                     );
                 } else {
                     chatPromise = ATInterceptor.scenarioChat(
                         scenarioPrompt,
                         messages as unknown as Array<Record<string, unknown>>,
+                        scenarioModifiers,
                         { conversationLength: 1 }
                     );
                 }
@@ -1199,6 +1253,18 @@ function SpeakingChatPage() {
 
     return (
         <div className="sc-root">
+            {/* 背景噪音环境音：静音/外放开关（仅场景模式开启 noise 时出现）*/}
+            {activeMode === 'scenario' && ('noise' in scenarioModifiers) && (
+                <button
+                    type="button"
+                    className="sc-ambience-toggle"
+                    onClick={() => setAmbienceMuted(m => !m)}
+                    title={ambienceMuted ? t.speakingChat.ambienceUnmute : t.speakingChat.ambienceMute}
+                >
+                    <span>{ambienceMuted ? '🔇' : '🔊'}</span>
+                    {t.speakingChat.ambienceLabel}
+                </button>
+            )}
             {/* ── Sidebar: Word Basket & Ai Settings ── */}
             <aside className="sc-sidebar">
                 <div className="sc-sidebar-header">

@@ -6,6 +6,7 @@ import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import VocabInput from '../../components/VocabInput';
 import AiModelSelector from '../../components/common/AiModelSelector';
+import CustomPromptField from '../../components/common/CustomPromptField';
 import { listPlans, getPlanDetail, sortPlansByFavorite, type LearningPlan } from '../../api/learning_plan';
 import type { ListeningQuestionTypeKey, ListeningSectionKey } from '../../api/listening';
 import '../../styles/practice_page.css';
@@ -79,6 +80,7 @@ export default function ListeningConfig() {
     const [sectionNum, setSectionNum] = useState<1 | 2 | 3 | 4>(1);
     const [customName, setCustomName] = useState('');
     const [customDescription, setCustomDescription] = useState('');
+    const [customPrompt, setCustomPrompt] = useState('');
 
     const { lang } = useLang();
     const t = translations[lang].listeningConfig;
@@ -177,6 +179,7 @@ export default function ListeningConfig() {
                 sectionNum: mode === 'full' && fullScope === 'single' ? sectionNum : undefined,
                 customName: customName.trim(),
                 customDescription: customDescription.trim(),
+                customPrompt: customPrompt.trim(),
             },
         });
     };
@@ -307,6 +310,10 @@ export default function ListeningConfig() {
                                     />
                                 </div>
                             </div>
+                        </div>
+                        {/* 自定义提示词指令（高级，可选）*/}
+                        <div className="uc-card-group">
+                            <CustomPromptField value={customPrompt} onChange={setCustomPrompt} />
                         </div>
                         {/* Full-test scope controls */}
                         {mode === 'full' && (

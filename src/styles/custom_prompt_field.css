@@ -1,0 +1,76 @@
+/* 用户自定义提示词指令 · 警告 + 勾选门控 */
+.cpf-root {
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 12px;
+    background: rgba(239, 68, 68, 0.05);
+    padding: 14px 16px;
+}
+
+.cpf-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 6px;
+}
+
+.cpf-warn-icon { color: #ef4444; flex-shrink: 0; }
+
+.cpf-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.cpf-warning {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #b91c1c;
+}
+
+.cpf-ack {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.cpf-ack input { margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+
+.cpf-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.cpf-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.cpf-textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--color-bg);
+}
+
+.cpf-count {
+    margin-top: 4px;
+    text-align: right;
+    font-size: 11.5px;
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+}

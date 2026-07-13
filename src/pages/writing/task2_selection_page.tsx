@@ -2,6 +2,7 @@ import Layout from '../../components/layout/Layout';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AiModelSelector from '../../components/common/AiModelSelector';
+import CustomPromptField from '../../components/common/CustomPromptField';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import { clearTask2Session } from '../../utils/writing_session';
@@ -30,6 +31,7 @@ export default function Task2SelectionPage() {
     const [selectedTopicCategory, setSelectedTopicCategory] = useState<Task2TopicCategory>('all');
     const [customName, setCustomName] = useState('');
     const [customDescription, setCustomDescription] = useState('');
+    const [customPrompt, setCustomPrompt] = useState('');
 
     const taskTypes = [
         { id: 'opinion', nameZh: t.task2Selection.types.opinion.title, nameEn: t.task2Selection.types.opinion.nameEn, icon: '⚖️', desc: t.task2Selection.types.opinion.desc },
@@ -59,6 +61,7 @@ export default function Task2SelectionPage() {
     const navigateState = {
         customName: customName.trim(),
         customDescription: customDescription.trim(),
+        customPrompt: customPrompt.trim(),
     };
 
     const handleStart = () => {
@@ -167,6 +170,11 @@ export default function Task2SelectionPage() {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        {/* 自定义提示词指令（高级，可选）*/}
+                        <div className="uc-card-group">
+                            <CustomPromptField value={customPrompt} onChange={setCustomPrompt} />
                         </div>
 
                         <div className="uc-card-group">

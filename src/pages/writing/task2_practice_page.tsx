@@ -41,6 +41,7 @@ export default function Task2PracticePage() {
     const bankId = bankIdParam ? Number(bankIdParam) : null;
     const customName: string = typeof (state as { customName?: string })?.customName === 'string' ? (state as { customName: string }).customName.trim() : '';
     const customDescription: string = typeof (state as { customDescription?: string })?.customDescription === 'string' ? (state as { customDescription: string }).customDescription.trim() : '';
+    const customPrompt: string = typeof (state as { customPrompt?: string })?.customPrompt === 'string' ? (state as { customPrompt: string }).customPrompt.trim() : '';
     const cacheKey = bankId ? `writing_task2_bank_${bankId}` : `writing_task2_session_${type}_${topicCategory}`;
 
     const [step, setStep] = useState<WritingStep>('loading');
@@ -131,6 +132,7 @@ export default function Task2PracticePage() {
                 };
                 if (customName) body.customName = customName;
                 if (customDescription) body.customDescription = customDescription;
+                if (customPrompt) body.customPrompt = customPrompt;
                 const res = await api<Task2Data & { aiQuestionId?: number | null }>('/writing/task2/generate', {
                     method: 'POST',
                     body,

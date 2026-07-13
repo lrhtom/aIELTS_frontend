@@ -116,18 +116,19 @@ export class ATInterceptor {
         );
     }
 
-    static async scenarioChat(scenario: string, messages: Array<Record<string, unknown>>, params?: Record<string, number>) {
+    static async scenarioChat(scenario: string, messages: Array<Record<string, unknown>>, modifiers?: Record<string, string[]>, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
-            apiClient.post<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number, is_continue: number, atConsumed?: number }>('/speaking/scenario-chat', { scenario, messages }),
+            apiClient.post<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number, is_continue: number, atConsumed?: number }>('/speaking/scenario-chat', { scenario, messages, modifiers }),
             params
         );
     }
 
-    static async scenarioChatWithFiles(scenario: string, messages: Array<Record<string, unknown>>, files: File[], params?: Record<string, number>) {
+    static async scenarioChatWithFiles(scenario: string, messages: Array<Record<string, unknown>>, files: File[], modifiers?: Record<string, string[]>, params?: Record<string, number>) {
         return this.intercept('speaking', () => {
             const formData = new FormData();
             formData.append('scenario', scenario);
             formData.append('messages', JSON.stringify(messages));
+            if (modifiers && Object.keys(modifiers).length) formData.append('modifiers', JSON.stringify(modifiers));
             files.forEach(f => formData.append('files', f));
             return apiClient.post<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number, is_continue: number, corrected_text: string, atConsumed?: number }>(
                 '/speaking/scenario-chat',
@@ -137,13 +138,14 @@ export class ATInterceptor {
         }, params);
     }
 
-    static async scenarioOpening(scenario: string, files: File[], params?: Record<string, number>) {
+    static async scenarioOpening(scenario: string, files: File[], modifiers?: Record<string, string[]>, params?: Record<string, number>) {
         return this.intercept('speaking', () => {
             if (files.length === 0) {
-                return apiClient.post<{ opening: string, atConsumed?: number }>('/speaking/scenario-opening', { scenario });
+                return apiClient.post<{ opening: string, atConsumed?: number }>('/speaking/scenario-opening', { scenario, modifiers });
             }
             const formData = new FormData();
             formData.append('scenario', scenario);
+            if (modifiers && Object.keys(modifiers).length) formData.append('modifiers', JSON.stringify(modifiers));
             files.forEach(f => formData.append('files', f));
             return apiClient.post<{ opening: string, atConsumed?: number }>(
                 '/speaking/scenario-opening',

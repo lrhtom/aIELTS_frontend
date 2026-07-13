@@ -107,7 +107,7 @@ export const manualData: ManualData = {
                 {
                     id: 'speaking',
                     title: 'AI 模拟口语',
-                    content: '支持三种练习模式：自由对话（语音或键盘输入，可开启纯语音模式模拟通话）、全真模拟（1v1 考官计时，Part 选择器可选 Part 1/2/3 单项或"全套"Part 1→2→3 连续）和场景对话（角色扮演）。覆盖雅思口语 Part 1-3 全部题型。练习结束后生成总结报告。所有口语会话自动保存到 AI 题库：每轮对话与 AI 评分实时落库，中途退出可从题库"口语"标签继续；已生成报告的会话点击直达报告页。完成报告后，个人主页 → 学习分析 → 口语 标签会展示分数趋势和七维能力雷达。',
+                    content: '支持三种练习模式：自由对话（语音或键盘输入，可开启纯语音模式模拟通话）、全真模拟（1v1 考官计时，Part 选择器可选 Part 1/2/3 单项或"全套"Part 1→2→3 连续）和场景对话（角色扮演，可选择性开启"场景干扰"——口音 / 语速打断重叠 / 背景噪音 / 音质干扰（电话·闷响·无线电，对语音加滤波）/ Small talk 寒暄——逼近真实英语环境的听说难度）。覆盖雅思口语 Part 1-3 全部题型。练习结束后生成总结报告。所有口语会话自动保存到 AI 题库：每轮对话与 AI 评分实时落库，中途退出可从题库"口语"标签继续；已生成报告的会话点击直达报告页。完成报告后，个人主页 → 学习分析 → 口语 标签会展示分数趋势和七维能力雷达。',
                     keywords: ['口语', '对话', '模拟', '语音', '考试', '题库', '会话', '分析']
                 },
                 {
@@ -128,6 +128,12 @@ export const manualData: ManualData = {
                     title: '学习计划（FSRS 间隔重复）',
                     content: '创建学习计划，设定每日学习词数（1-200），从手动输入、笔记本或官方词书添加单词。系统使用 FSRS-4.5 科学记忆算法安排复习，优先复习到期单词再学新词。每个计划最多 3 个。支持编辑计划名称、每日词数和单词列表。',
                     keywords: ['计划', 'FSRS', '间隔', '复习', '记忆', '每日']
+                },
+                {
+                    id: 'ai-import',
+                    title: 'AI 导入单词',
+                    content: '在计划详情页的"添加单词"区选择"AI 导入"标签，粘贴一段英文文章或一份杂乱的单词表，点击"AI 解析"，AI 会自动提取值得学习的词汇并配上中文释义。解析结果以单词卡片预览，可逐个删除不需要的，已在计划中的词会标注"已在计划"并自动跳过，确认后点击"导入"即可批量入库。使用内置模型会消耗 AT 币；若选用自带 key 的自定义模型则不消耗 AT。',
+                    keywords: ['AI', '导入', '解析', '文章', '词表', '批量', '粘贴']
                 },
                 {
                     id: 'flashcard',
@@ -171,6 +177,12 @@ export const manualData: ManualData = {
                     title: 'AI 设置与重试',
                     content: '在设置页面可选择 AI 引擎（DeepSeek/GPT 等）和设置 AI 生成重试次数（0-10 次）。更多重试次数可获得更稳定的生成结果，但会消耗更多 AT 币。建议免费用户设为 0-2 次，付费用户 3-5 次。',
                     keywords: ['AI', '模型', '引擎', '重试', '设置', 'DeepSeek', 'GPT']
+                },
+                {
+                    id: 'custom-model',
+                    title: '自定义模型（自带 API）',
+                    content: '除内置引擎外，你可以添加自己的 OpenAI 兼容模型：在任意"AI 模型"下拉框最上方点击"＋ 添加自定义模型"，或在设置页的"自定义模型管理"里添加，填写模型名称、接口链接和 SK 密钥，可先"测试"连通性再保存。添加弹窗右上角有帮助按钮（?），点开可查看 Ollama、OpenAI、DeepSeek、通义千问、OpenRouter 等常见服务的填写示例，点"填入"即可一键填充。保存后该模型会出现在全站的模型选择器中，写作/阅读/听力/口语/助手/背单词 AI 导入都能选用。由于使用你自己的 key，调用不消耗平台 AT 币。密钥在服务器加密存储，界面只显示掩码（sk-****xxxx），支持随时编辑或删除。（Ollama 本地模型：本平台部署在本机时可直连 localhost；线上部署需服务器能访问到该地址。）',
+                    keywords: ['自定义', '模型', 'API', 'key', '密钥', 'OpenAI', 'Ollama', '自带', '测试', '帮助', '示例']
                 }
             ]
         },
@@ -308,7 +320,7 @@ export const manualData: ManualData = {
                 {
                     id: 'speaking',
                     title: 'AI Speaking',
-                    content: 'Three practice modes: Free Talk (voice or keyboard, with a voice-only toggle for call-style practice), Mock Exam (timed 1-on-1; pick Part 1/2/3 or "Full Test" for Part 1→2→3 consecutively), and Scenario (role-play). Covers all IELTS Speaking parts. A summary report is generated after each session. Every speaking session is auto-saved to the AI Question Bank: each turn and its AI scores are persisted in real time, so you can resume an unfinished session from the Speaking tab; sessions with a report open straight to the report page. Once a report exists, Profile → Analytics → Speaking shows your score trend and a 7-dimension skills radar.',
+                    content: 'Three practice modes: Free Talk (voice or keyboard, with a voice-only toggle for call-style practice), Mock Exam (timed 1-on-1; pick Part 1/2/3 or "Full Test" for Part 1→2→3 consecutively), and Scenario (role-play, with optional "Scene Interference" toggles — accent / pace-interruptions-overlap / background noise / audio quality (phone/muffled/radio voice filter) / small talk — to approach the difficulty of a real English environment). Covers all IELTS Speaking parts. A summary report is generated after each session. Every speaking session is auto-saved to the AI Question Bank: each turn and its AI scores are persisted in real time, so you can resume an unfinished session from the Speaking tab; sessions with a report open straight to the report page. Once a report exists, Profile → Analytics → Speaking shows your score trend and a 7-dimension skills radar.',
                     keywords: ['speaking', 'mock', 'voice', 'exam', 'scenario', 'bank', 'session', 'analytics']
                 },
                 {

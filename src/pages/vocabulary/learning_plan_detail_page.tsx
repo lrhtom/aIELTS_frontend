@@ -11,17 +11,18 @@ import { sanitize } from '../../utils/safe_html';
 import { listNotebooks, type Notebook } from '../../api/notebook';
 import {
     listPlanWords, addWord, updatePlanWord, removePlanWord,
-    updatePlan, startPlan, getArticleCopy,
+    updatePlan, startPlan, getArticleCopy, aiParsePlanWords,
     listVocabBooks, listBookWords,
-    type LearningPlan, type PlanEntry, type VocabBook, type BookWord,
+    type LearningPlan, type PlanEntry, type VocabBook, type BookWord, type AiParsedWord,
 } from '../../api/learning_plan';
 import PlanWordRow from '../../components/vocabulary/PlanWordRow';
 import TodayStudiedSection from '../../components/vocabulary/TodayStudiedSection';
+import AiModelSelector from '../../components/common/AiModelSelector';
 import { devLog } from '../../utils/devLog';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_learning_plan.css';
 
-type AddTab = 'manual' | 'notebook' | 'book';
+type AddTab = 'manual' | 'notebook' | 'book' | 'ai';
 type BookSubMode = 'all' | 'range' | 'select';
 
 const STUDY_MODES: [StudyMode, keyof Translations['vocab']['modes']][] = [
@@ -187,6 +188,11 @@ export default function LearningPlanDetailPage() {
     const [addPhonetic, setAddPhonetic] = useState('');
     const [addGrammar, setAddGrammar] = useState('');
     const [addBusy, setAddBusy] = useState(false);
+
+    // AI import tab
+    const [aiText, setAiText] = useState('');
+    const [aiParsing, setAiParsing] = useState(false);
+    const [aiParsed, setAiParsed] = useState<AiParsedWord[] | null>(null);
 
     // Notebook tab
     const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -597,6 +603,49 @@ export default function LearningPlanDetailPage() {
         }
     };
 
+    // ── AI import: parse pasted text → preview chips → confirm import ────────
+    const handleAiParse = async () => {
+        const text = aiText.trim();
+        if (!text) { showToast(t.vocab.details.aiEmptyInput, 'error'); return; }
+        setAiParsing(true);
+        try {
+            const { words } = await aiParsePlanWords(planId, text);
+            setAiParsed(words ?? []);
+            if (!words || words.length === 0) {
+                showToast(t.vocab.details.aiNoWords, 'error');
+            }
+        } catch {
+            showToast(t.vocab.details.aiParseFail, 'error');
+        } finally {
+            setAiParsing(false);
+        }
+    };
+
+    const removeParsedWord = (word: string) => {
+        setAiParsed(prev => (prev ? prev.filter(w => w.word !== word) : prev));
+    };
+
+    const handleAiImport = async () => {
+        if (!aiParsed || aiParsed.length === 0) return;
+        setAddBusy(true);
+        try {
+            const { entries_added } = await addWord(planId, {
+                mode: 'ai_list',
+                words: aiParsed.map(w => ({ word: w.word, zh: w.zh })),
+            });
+            showToast(t.vocab.details.msgImportSuccess.replace('{n}', String(entries_added)), 'success');
+            clearPlanCaches(planId);
+            const r = await listPlanWords(planId);
+            setEntries(r.entries);
+            setAiText('');
+            setAiParsed(null);
+        } catch {
+            showToast(t.vocab.details.msgImportFail, 'error');
+        } finally {
+            setAddBusy(false);
+        }
+    };
+
     // ── Word list actions ──────────────────────────────────────────────────
     const handleZhBlur = async (entry: PlanEntry, newZh: string) => {
         if (newZh === entry.zh) return;
@@ -933,13 +982,16 @@ export default function LearningPlanDetailPage() {
                     <h4>{t.vocab.details.addWords}</h4>
 
                     <div className="lp-add-tabs">
-                        {(['manual', 'notebook', 'book'] as AddTab[]).map(tab => (
+                        {(['manual', 'notebook', 'book', 'ai'] as AddTab[]).map(tab => (
                             <button
                                 key={tab}
                                 className={`lp-add-tab${addTab === tab ? ' active' : ''}`}
                                 onClick={() => setAddTab(tab)}
                             >
-                                {tab === 'manual' ? t.vocab.details.tabManual : tab === 'notebook' ? t.vocab.details.tabNotebook : t.vocab.details.tabBook}
+                                {tab === 'manual' ? t.vocab.details.tabManual
+                                    : tab === 'notebook' ? t.vocab.details.tabNotebook
+                                    : tab === 'book' ? t.vocab.details.tabBook
+                                    : t.vocab.details.tabAi}
                             </button>
                         ))}
                     </div>
@@ -987,6 +1039,62 @@ export default function LearningPlanDetailPage() {
                                     onChange={e => setAddGrammar(e.target.value)}
                                 />
                             </div>
+                        </div>
+                    )}
+
+                    {/* AI import */}
+                    {addTab === 'ai' && (
+                        <div className="lp-add-form lp-ai-import">
+                            <textarea
+                                className="lp-ai-textarea"
+                                placeholder={t.vocab.details.aiPlaceholder}
+                                value={aiText}
+                                onChange={e => setAiText(e.target.value)}
+                                rows={6}
+                            />
+                            <div className="lp-add-row lp-ai-controls">
+                                <span className="lp-ai-model-label">{t.components.aiModel.label}</span>
+                                <AiModelSelector variant="minimal" />
+                                <button
+                                    className="lp-add-btn"
+                                    onClick={handleAiParse}
+                                    disabled={aiParsing || !aiText.trim()}
+                                >
+                                    {aiParsing ? t.vocab.details.aiParsing : t.vocab.details.aiParseBtn}
+                                </button>
+                            </div>
+
+                            {aiParsed && aiParsed.length > 0 && (
+                                <div className="lp-ai-result">
+                                    <div className="lp-ai-result-head">
+                                        <span>{t.vocab.details.aiParsedTitle.replace('{n}', String(aiParsed.length))}</span>
+                                        <button className="lp-ai-clear" onClick={() => setAiParsed(null)}>
+                                            {t.vocab.details.aiClear}
+                                        </button>
+                                    </div>
+                                    <div className="lp-ai-chips">
+                                        {aiParsed.map(w => (
+                                            <span key={w.word} className={`lp-ai-chip${w.exists ? ' lp-ai-chip-exists' : ''}`}>
+                                                <span className="lp-ai-chip-word">{w.word}</span>
+                                                {w.zh && <span className="lp-ai-chip-zh">{w.zh}</span>}
+                                                {w.exists && <span className="lp-ai-chip-tag">{t.vocab.details.aiExistsTag}</span>}
+                                                <button
+                                                    className="lp-ai-chip-x"
+                                                    onClick={() => removeParsedWord(w.word)}
+                                                    aria-label="remove"
+                                                >×</button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <button
+                                        className="lp-add-btn lp-ai-import-btn"
+                                        onClick={handleAiImport}
+                                        disabled={addBusy}
+                                    >
+                                        {t.vocab.details.aiImportBtn.replace('{n}', String(aiParsed.filter(w => !w.exists).length))}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 

@@ -82,6 +82,7 @@ export default function ListeningPage() {
     const sectionNum: number | undefined = state?.sectionNum;
     const customName: string = typeof state?.customName === 'string' ? state.customName.trim() : '';
     const customDescription: string = typeof state?.customDescription === 'string' ? state.customDescription.trim() : '';
+    const customPrompt: string = typeof state?.customPrompt === 'string' ? state.customPrompt.trim() : '';
     const navigate = useNavigate();
     const onReturnHome = () => navigate(bankId ? '/practice/ai/bank' : '/');
     const { translations: t } = useLang();
@@ -366,6 +367,7 @@ export default function ListeningPage() {
                 if (fullScope === 'single' && sectionNum) body.sectionNum = sectionNum;
                 if (customName) body.customName = customName;
                 if (customDescription) body.customDescription = customDescription;
+                if (customPrompt) body.customPrompt = customPrompt;
                 parsedData = await api('/listening/full', { method: 'POST', body });
             } else {
                 const body: Record<string, unknown> = {
@@ -373,6 +375,7 @@ export default function ListeningPage() {
                 };
                 if (customName) body.customName = customName;
                 if (customDescription) body.customDescription = customDescription;
+                if (customPrompt) body.customPrompt = customPrompt;
                 parsedData = await api('/listening/generate', {
                     method: 'POST',
                     body,
