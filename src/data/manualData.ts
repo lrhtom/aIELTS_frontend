@@ -58,7 +58,7 @@ export const manualData: ManualData = {
                 {
                     id: 'avatar',
                     title: '头像上传',
-                    content: '在设置页面点击头像即可上传新头像。支持 JPG/PNG/GIF/WEBP 格式，文件最大 5MB。上传后自动裁剪为 400×400 尺寸。也可删除头像恢复默认。',
+                    content: '在设置页面点击头像即可上传新头像。支持 JPG/PNG/GIF/WEBP 格式，文件最大 5MB。静态图片上传后自动裁剪为 400×400 尺寸；GIF 动图会原样保留动画效果。也可删除头像恢复默认。',
                     keywords: ['头像', '上传', '图片', 'avatar']
                 },
                 {
@@ -232,7 +232,7 @@ export const manualData: ManualData = {
                 {
                     id: 'background',
                     title: '背景自定义',
-                    content: '在"背景自定义"页面可以设置纯色或渐变色背景，或上传背景图片。支持调整背景模糊度（0 为清晰）。设置跟随账号，登录后自动应用，退出后自动清除。',
+                    content: '在"背景自定义"页面可以设置纯色或渐变色背景，或上传背景图片（JPG/PNG/GIF/WEBP，最大 10MB，GIF 动图保留动画）。支持调整背景模糊度（0 为清晰）。设置跟随账号，登录后自动应用，退出后自动清除。',
                     keywords: ['背景', '颜色', '图片', '模糊', '自定义']
                 },
                 {
@@ -284,7 +284,7 @@ export const manualData: ManualData = {
                 {
                     id: 'avatar',
                     title: 'Avatar Upload',
-                    content: 'Click your avatar in Settings to upload a new profile picture. Supports JPG/PNG/GIF/WEBP, up to 5MB. Images are automatically cropped to 400×400. You can also delete your avatar to restore the default.',
+                    content: 'Click your avatar in Settings to upload a new profile picture. Supports JPG/PNG/GIF/WEBP, up to 5MB. Static images are automatically cropped to 400×400; animated GIFs keep their animation. You can also delete your avatar to restore the default.',
                     keywords: ['avatar', 'upload', 'image', 'photo', 'profile']
                 },
                 {
@@ -446,7 +446,7 @@ export const manualData: ManualData = {
                 {
                     id: 'background',
                     title: 'Background Customization',
-                    content: 'In the Background page, set a solid or gradient color background, or upload a background image. Adjust blur intensity (0 for sharp). Settings follow your account — applied on login, cleared on logout.',
+                    content: 'In the Background page, set a solid or gradient color background, or upload a background image (JPG/PNG/GIF/WEBP, up to 10MB; animated GIFs keep their animation). Adjust blur intensity (0 for sharp). Settings follow your account — applied on login, cleared on logout.',
                     keywords: ['background', 'color', 'image', 'blur', 'customize']
                 },
                 {
