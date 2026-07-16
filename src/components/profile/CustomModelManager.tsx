@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
 import { Plus } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
 import {
-    listCustomModels, deleteCustomModel, testCustomModel,
-    type CustomModel, type ModelTestResult,
+    listCustomModels, deleteCustomModel, testCustomModel, testOfficialModel,
+    type CustomModel, type ModelTestResult, type OfficialModelTestResult,
 } from '../../api/custom_model';
 import CustomModelModal from '../common/CustomModelModal';
+import { BUILTIN_OPTIONS } from '../common/AiModelSelector';
 import '../../styles/custom_model.css';
 
 /** Settings-page panel: list the user's custom models with test / edit / delete + add. */
@@ -19,6 +21,9 @@ export default function CustomModelManager() {
     const [editing, setEditing] = useState<CustomModel | null>(null);
     const [testingId, setTestingId] = useState<number | null>(null);
     const [testResults, setTestResults] = useState<Record<number, ModelTestResult>>({});
+    const [officialTesting, setOfficialTesting] = useState<string | null>(null);
+    const [officialResults, setOfficialResults] = useState<Record<string, OfficialModelTestResult>>({});
+    const [officialErrors, setOfficialErrors] = useState<Record<string, string>>({});
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -53,6 +58,28 @@ export default function CustomModelManager() {
             setTestResults(prev => ({ ...prev, [m.id]: { status: 'error', http: null, body: null, error: null, tokens: null } }));
         } finally {
             setTestingId(null);
+        }
+    };
+
+    const handleOfficialTest = async (provider: string) => {
+        setOfficialTesting(provider);
+        setOfficialErrors(prev => ({ ...prev, [provider]: '' }));
+        try {
+            const r = await testOfficialModel(provider);
+            setOfficialResults(prev => ({ ...prev, [provider]: r }));
+        } catch (e) {
+            // 400（余额不足）/ 429（限流）时后端返回 {error: 文案}，直接展示
+            const msg = axios.isAxiosError(e)
+                ? (e.response?.data as { error?: string } | undefined)?.error
+                : undefined;
+            setOfficialErrors(prev => ({ ...prev, [provider]: msg || t.testError }));
+            setOfficialResults(prev => {
+                const next = { ...prev };
+                delete next[provider];
+                return next;
+            });
+        } finally {
+            setOfficialTesting(null);
         }
     };
 
@@ -118,6 +145,46 @@ export default function CustomModelManager() {
                     })}
                 </div>
             )}
+
+            <div className="cm-manager-head cm-official-head">
+                <div>
+                    <h4 className="cm-manager-title">{t.officialTitle}</h4>
+                    <p className="cm-manager-desc">{t.officialDesc}</p>
+                </div>
+            </div>
+            <div className="cm-list">
+                {BUILTIN_OPTIONS.map(o => {
+                    const r = officialResults[o.value];
+                    const err = officialErrors[o.value];
+                    return (
+                        <div key={o.value} className="cm-row">
+                            <div className="cm-row-info">
+                                <div className="cm-row-name">{o.label}</div>
+                                {r && (
+                                    <span className={`cm-row-status cm-test-${r.status}`}>
+                                        <span className="cm-test-dot" /> {statusText(r)}
+                                        {r.status === 'ok' && ` · ${t.officialCostNote.replace('{n}', String(r.at_cost))}`}
+                                    </span>
+                                )}
+                                {!r && err && (
+                                    <span className="cm-row-status cm-test-error">
+                                        <span className="cm-test-dot" /> {err}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="cm-row-actions">
+                                <button
+                                    className="cm-row-btn"
+                                    onClick={() => handleOfficialTest(o.value)}
+                                    disabled={officialTesting !== null}
+                                >
+                                    {officialTesting === o.value ? t.testing : t.test}
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
 
             <CustomModelModal open={modalOpen} editing={editing} onClose={() => setModalOpen(false)} onSaved={handleSaved} />
         </div>

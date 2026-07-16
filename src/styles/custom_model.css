@@ -414,3 +414,10 @@
     opacity: 0.55;
     cursor: not-allowed;
 }
+
+/* 官方模型测试区（面板底部，与自定义列表拉开间距） */
+.cm-official-head {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+}

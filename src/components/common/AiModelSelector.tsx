@@ -7,17 +7,21 @@ import CustomModelModal from './CustomModelModal';
 
 export type AIProvider =
     | 'deepseek' | 'deepseek_flash' | 'gemini' | 'gpt5_4' | 'gpt5_mini'
+    | 'gpt5_6_sol' | 'gpt5_6_terra' | 'gpt5_6_luna'
     | `custom:${number}`;
 
 /** Sentinel value for the top "+ add custom model" option — never persisted. */
 const ADD_SENTINEL = '__add_custom__';
 
-const BUILTIN_OPTIONS: { value: AIProvider; label: string }[] = [
+export const BUILTIN_OPTIONS: { value: AIProvider; label: string }[] = [
     { value: 'deepseek', label: 'DeepSeek v4 Pro' },
     { value: 'deepseek_flash', label: 'DeepSeek v4 Flash' },
     { value: 'gemini', label: 'Gemini 3.0 Flash' },
     { value: 'gpt5_4', label: 'GPT-5.4' },
     { value: 'gpt5_mini', label: 'GPT-5.4 Mini' },
+    { value: 'gpt5_6_sol', label: 'GPT-5.6 Sol' },
+    { value: 'gpt5_6_terra', label: 'GPT-5.6 Terra' },
+    { value: 'gpt5_6_luna', label: 'GPT-5.6 Luna' },
 ];
 
 interface AiModelSelectorProps {

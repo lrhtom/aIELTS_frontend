@@ -61,3 +61,14 @@ export async function testCustomModelConfig(
     const resp = await apiClient.post<ModelTestResult>('/custom-models/test/', payload);
     return resp.data;
 }
+
+/** Official-provider test result — same ping shape plus the AT billed (0 on failure). */
+export interface OfficialModelTestResult extends ModelTestResult {
+    at_cost: number;
+}
+
+/** Ping an official (platform-key) provider. A successful test is billed in AT. */
+export async function testOfficialModel(provider: string): Promise<OfficialModelTestResult> {
+    const resp = await apiClient.post<OfficialModelTestResult>('/ai-models/official/test/', { provider });
+    return resp.data;
+}

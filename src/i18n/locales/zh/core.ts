@@ -67,6 +67,7 @@ export const components = {
     removeHeading: '移除标题',
     dropHeading: '拖放标题到此处',
     correctIs: '❌（正确答案：{a}）',
+    unsupportedType: '暂不支持的题型：{t}，请重新生成或反馈给我们',
   },
   vocabInput: {
     label: '已添加词汇',
@@ -129,6 +130,10 @@ export const components = {
     pDeepseek: 'DeepSeek',
     pQwen: '通义千问（DashScope 兼容模式）',
     pOpenrouter: 'OpenRouter',
+    // 官方模型测试区（设置页面板底部）
+    officialTitle: '官方模型测试',
+    officialDesc: '测试平台官方模型的连通性。使用平台密钥，测试成功按实际 token 消耗扣 AT（失败不扣费）。',
+    officialCostNote: '本次消耗 {n} AT',
   },
   toast: {
     errorTitle: '异常',

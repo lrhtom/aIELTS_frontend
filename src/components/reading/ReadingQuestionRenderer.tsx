@@ -58,7 +58,7 @@ function safeHTML(text: string): string {
  * bank fields; rendering those directly crashes React. Extract .text when
  * present, otherwise fall back to String() serialization.
  */
-function bankVal(v: unknown): string {
+export function bankVal(v: unknown): string {
     if (v == null) return '';
     if (typeof v === 'string') return v;
     if (typeof v === 'object') {
@@ -102,6 +102,11 @@ function normalizeBank(raw: unknown): Record<string, string> {
     return {};
 }
 
+/** Bank 里是否存在至少一条非空文本。键存在但值全空（AI drift）渲染出来是 "A. B. C." 废列表。 */
+function bankHasContent(bank: Record<string, string>): boolean {
+    return Object.values(bank).some(v => v && v.trim().length > 0);
+}
+
 /**
  * Render structured content (summary_text / note_content) with (1)-(N) blanks
  * replaced by inline <input> elements. Used for note_completion.
@@ -116,15 +121,17 @@ function renderNoteBlanksInput(
     getAnswer: (qid: number) => string,
     onAnswer: (qid: number, v: string) => void,
     disabled: boolean,
-): ReactElement {
+): { element: ReactElement; renderedIds: Set<number> } {
     const parts = content.split(/(\(\d+\)\s*_+)/g);
-    return (
+    const renderedIds = new Set<number>();
+    const element = (
         <pre className="rd-inline-blank-block">
             {parts.map((part, i) => {
                 const m = /^\((\d+)\)\s*_+$/.exec(part);
                 if (m) {
                     const localNum = Number(m[1]);
                     const qid = startId + localNum - 1;
+                    renderedIds.add(qid);
                     return (
                         <span key={i} className="rd-blank-wrap">
                             <span className="rd-blank-num">({localNum})</span>
@@ -143,6 +150,7 @@ function renderNoteBlanksInput(
             })}
         </pre>
     );
+    return { element, renderedIds };
 }
 
 /**
@@ -156,16 +164,18 @@ function renderSummaryBlanksSelect(
     getAnswer: (qid: number) => string,
     onAnswer: (qid: number, v: string) => void,
     disabled: boolean,
-): ReactElement {
+): { element: ReactElement; renderedIds: Set<number> } {
     const parts = content.split(/(\(\d+\)\s*_+)/g);
     const bankKeys = Object.keys(bank);
-    return (
+    const renderedIds = new Set<number>();
+    const element = (
         <div className="rd-inline-blank-block summary">
             {parts.map((part, i) => {
                 const m = /^\((\d+)\)\s*_+$/.exec(part);
                 if (m) {
                     const localNum = Number(m[1]);
                     const qid = startId + localNum - 1;
+                    renderedIds.add(qid);
                     return (
                         <span key={i} className="rd-blank-wrap">
                             <span className="rd-blank-num">({localNum})</span>
@@ -186,6 +196,63 @@ function renderSummaryBlanksSelect(
                 // Regular text — preserve whitespace so surrounding sentences flow naturally
                 return <span key={i} dangerouslySetInnerHTML={{ __html: safeHTML(part) }} />;
             })}
+        </div>
+    );
+    return { element, renderedIds };
+}
+
+/**
+ * Fallback rows for questions whose `(N) ___` blank never made it into the
+ * structured content (AI drift: dropped markers, off-by-N numbering, wrong
+ * underscore count). Mirrors listening's FallbackInputs — without this those
+ * questions are silently unanswerable.
+ */
+function ReadingFallbackRows({ questions, renderedIds, bank, getAnswer, onAnswer, disabled }: {
+    questions: Question[];
+    renderedIds: Set<number>;
+    /** When present, render a letter <select> from the bank; otherwise a text input. */
+    bank?: Record<string, string>;
+    getAnswer: (qid: number) => string;
+    onAnswer: (qid: number, v: string) => void;
+    disabled: boolean;
+}): ReactElement | null {
+    const { translations: t } = useLang();
+    const missing = questions.filter(q => !renderedIds.has(q.id));
+    if (missing.length === 0) return null;
+    const bankKeys = bank ? Object.keys(bank) : [];
+    return (
+        <div className="rd-fallback-rows" style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <p className="section-instructions" style={{ fontStyle: 'italic', opacity: 0.85 }}>
+                {t.components.questionRenderer.answerRemaining}
+            </p>
+            {missing.map(q => (
+                <div key={q.id} className="rd-blank-wrap" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="rd-blank-num">{q.id}.</span>
+                    {bank && bankKeys.length > 0 ? (
+                        <select
+                            className="rd-blank-select"
+                            defaultValue={getAnswer(q.id)}
+                            onChange={e => onAnswer(q.id, e.target.value)}
+                            disabled={disabled}
+                        >
+                            <option value="">--</option>
+                            {bankKeys.map(k => (
+                                <option key={k} value={k}>{k}. {bank[k]}</option>
+                            ))}
+                        </select>
+                    ) : (
+                        <input
+                            type="text"
+                            className="rd-blank-input"
+                            defaultValue={getAnswer(q.id)}
+                            onChange={e => onAnswer(q.id, e.target.value)}
+                            disabled={disabled}
+                            placeholder={t.components.questionRenderer.typeAnswer}
+                            style={{ flex: 1, maxWidth: 320 }}
+                        />
+                    )}
+                </div>
+            ))}
         </div>
     );
 }
@@ -260,6 +327,15 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
     // ── Matching Headings — drag-and-drop headings onto paragraphs ──
     if (qt === 'matching_headings') {
         const bank = normalizeBank(section.headings_bank);
+        // Bank 缺失/为空（AI drift）时拖拽面板毫无可选项 — 降级为文本输入，至少可作答
+        if (!bankHasContent(bank)) {
+            return (
+                <>
+                    {instructions && <p className="section-instructions">{instructions}</p>}
+                    <ReadingFallbackRows questions={section.questions} renderedIds={new Set()} getAnswer={getAnswer} onAnswer={onAnswer} disabled={reviewMode} />
+                </>
+            );
+        }
         return (
             <>
                 {instructions && <p className="section-instructions">{instructions}</p>}
@@ -280,6 +356,15 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
             ? Object.fromEntries((section.paragraph_labels || ['A','B','C','D','E','F']).map(l => [String(l), `Paragraph ${l}`]))
             : normalizeBank(qt === 'matching_features' ? section.features_bank : section.endings_bank);
         const bankKeys = Object.keys(bank);
+        // Bank 缺失/空键/值全空时字母网格没有可用选项 — 降级为文本输入
+        if (!bankHasContent(bank)) {
+            return (
+                <>
+                    {instructions && <p className="section-instructions">{instructions}</p>}
+                    <ReadingFallbackRows questions={section.questions} renderedIds={new Set()} getAnswer={getAnswer} onAnswer={onAnswer} disabled={reviewMode} />
+                </>
+            );
+        }
         const rows = section.questions.map(q => ({
             id: q.id,
             label: <span dangerouslySetInnerHTML={{ __html: safeHTML(`${q.id}. ${q.question || ''}`) }} />,
@@ -329,18 +414,26 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
     if (qt === 'summary_completion') {
         const bank = normalizeBank(section.word_bank);
         const startId = section.questions[0]?.id ?? 1;
+        // Word bank 值全空时下拉框只剩 "--" 无法作答 — 降级为文本填空（同 note_completion）
+        const bankOk = bankHasContent(bank);
+        const { element: blanksEl, renderedIds } = bankOk
+            ? renderSummaryBlanksSelect(section.summary_text || '', startId, bank, getAnswer, onAnswer, reviewMode)
+            : renderNoteBlanksInput(section.summary_text || '', startId, getAnswer, onAnswer, reviewMode);
         return (
             <>
                 {section.summary_intro && <p className="section-instructions">{section.summary_intro}</p>}
-                <div className="summary-word-bank">
-                    <strong>Word bank:</strong>
-                    <ul>
-                        {Object.entries(bank).map(([letter, text]) => (
-                            <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
-                        ))}
-                    </ul>
-                </div>
-                {renderSummaryBlanksSelect(section.summary_text || '', startId, bank, getAnswer, onAnswer, reviewMode)}
+                {bankOk && (
+                    <div className="summary-word-bank">
+                        <strong>Word bank:</strong>
+                        <ul>
+                            {Object.entries(bank).map(([letter, text]) => (
+                                <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+                {blanksEl}
+                <ReadingFallbackRows questions={section.questions} renderedIds={renderedIds} bank={bankOk ? bank : undefined} getAnswer={getAnswer} onAnswer={onAnswer} disabled={reviewMode} />
                 {reviewMode && (
                     <div className="rd-review-list">
                         {section.questions.map(q => {
@@ -361,11 +454,13 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
     // ── Note Completion — structured note_content with (n) blanks, answered by text ──
     if (qt === 'note_completion') {
         const startId = section.questions[0]?.id ?? 1;
+        const { element: blanksEl, renderedIds } = renderNoteBlanksInput(section.note_content || '', startId, getAnswer, onAnswer, reviewMode);
         return (
             <>
                 {section.note_intro && <p className="section-instructions">{section.note_intro}</p>}
                 {section.wordLimit && <p className="word-limit-hint">📏 {section.wordLimit}</p>}
-                {renderNoteBlanksInput(section.note_content || '', startId, getAnswer, onAnswer, reviewMode)}
+                {blanksEl}
+                <ReadingFallbackRows questions={section.questions} renderedIds={renderedIds} getAnswer={getAnswer} onAnswer={onAnswer} disabled={reviewMode} />
                 {reviewMode && (
                     <div className="rd-review-list">
                         {section.questions.map(q => {
@@ -454,7 +549,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
         );
     }
 
-    return <div>Unsupported question type: {qt}</div>;
+    return <div className="section-instructions">{t.components.questionRenderer.unsupportedType.replace('{t}', String(qt))}</div>;
 }
 
 /** Score a set of questions given the user's answers. Case-insensitive; text types accept any variant in `answers`. */

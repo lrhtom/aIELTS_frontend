@@ -188,13 +188,13 @@ export const manualData: ManualData = {
                 {
                     id: 'ai-settings',
                     title: 'AI 设置与重试',
-                    content: '在设置页面可选择 AI 引擎（DeepSeek/GPT 等）和设置 AI 生成重试次数（0-10 次）。更多重试次数可获得更稳定的生成结果，但会消耗更多 AT 币。建议免费用户设为 0-2 次，付费用户 3-5 次。',
+                    content: '在设置页面可选择 AI 引擎（DeepSeek v4 Pro/Flash、Gemini 3.0 Flash、GPT-5.4/GPT-5.4 Mini、GPT-5.6 Sol/Terra/Luna）和设置 AI 生成重试次数（0-10 次）。更多重试次数可获得更稳定的生成结果，但会消耗更多 AT 币。建议免费用户设为 0-2 次，付费用户 3-5 次。',
                     keywords: ['AI', '模型', '引擎', '重试', '设置', 'DeepSeek', 'GPT']
                 },
                 {
                     id: 'custom-model',
                     title: '自定义模型（自带 API）',
-                    content: '除内置引擎外，你可以添加自己的 OpenAI 兼容模型：在任意"AI 模型"下拉框最上方点击"＋ 添加自定义模型"，或在设置页的"自定义模型管理"里添加，填写模型名称、接口链接和 SK 密钥，可先"测试"连通性再保存。添加弹窗右上角有帮助按钮（?），点开可查看 Ollama、OpenAI、DeepSeek、通义千问、OpenRouter 等常见服务的填写示例，点"填入"即可一键填充。保存后该模型会出现在全站的模型选择器中，写作/阅读/听力/口语/助手/背单词 AI 导入都能选用。由于使用你自己的 key，调用不消耗平台 AT 币。密钥在服务器加密存储，界面只显示掩码（sk-****xxxx），支持随时编辑或删除。（Ollama 本地模型：本平台部署在本机时可直连 localhost；线上部署需服务器能访问到该地址。）',
+                    content: '除内置引擎外，你可以添加自己的 OpenAI 兼容模型：在任意"AI 模型"下拉框最上方点击"＋ 添加自定义模型"，或在设置页的"自定义模型管理"里添加，填写模型名称、接口链接和 SK 密钥，可先"测试"连通性再保存。添加弹窗右上角有帮助按钮（?），点开可查看 Ollama、OpenAI、DeepSeek、通义千问、OpenRouter 等常见服务的填写示例，点"填入"即可一键填充。保存后该模型会出现在全站的模型选择器中，写作/阅读/听力/口语/助手/背单词 AI 导入都能选用。由于使用你自己的 key，调用不消耗平台 AT 币。密钥在服务器加密存储，界面只显示掩码（sk-****xxxx），支持随时编辑或删除。（Ollama 本地模型：本平台部署在本机时可直连 localhost；线上部署需服务器能访问到该地址。）管理面板底部另有"官方模型测试"区：可逐个测试平台内置模型的连通性，使用平台密钥，测试成功按实际 token 消耗扣 AT（失败不扣费），每分钟限 5 次。',
                     keywords: ['自定义', '模型', 'API', 'key', '密钥', 'OpenAI', 'Ollama', '自带', '测试', '帮助', '示例']
                 }
             ]
@@ -408,8 +408,14 @@ export const manualData: ManualData = {
                 {
                     id: 'ai-settings',
                     title: 'AI Settings & Retries',
-                    content: 'In Settings, choose your AI engine (DeepSeek/GPT, etc.) and set the retry count (0-10). More retries mean more reliable generation but higher AT coin consumption. Recommended: 0-2 for free users, 3-5 for paid users.',
+                    content: 'In Settings, choose your AI engine (DeepSeek v4 Pro/Flash, Gemini 3.0 Flash, GPT-5.4/GPT-5.4 Mini, GPT-5.6 Sol/Terra/Luna) and set the retry count (0-10). More retries mean more reliable generation but higher AT coin consumption. Recommended: 0-2 for free users, 3-5 for paid users.',
                     keywords: ['AI', 'model', 'engine', 'retry', 'settings', 'DeepSeek', 'GPT']
+                },
+                {
+                    id: 'custom-model',
+                    title: 'Custom Models (Bring Your Own API)',
+                    content: 'Besides the built-in engines, you can add your own OpenAI-compatible model: pick "+ Add custom model" at the top of any AI model dropdown, or use "Custom model management" in Settings. Fill in the model name, endpoint URL and SK key, and click "Test" to verify connectivity before saving. The help button (?) in the add dialog shows fill-in examples for Ollama, OpenAI, DeepSeek, Qwen and OpenRouter. Saved models appear in every model selector across the site. Calls use your own key, so they cost no platform AT. Keys are stored encrypted server-side and only shown masked (sk-****xxxx); edit or delete anytime. At the bottom of the management panel there is also an "Official model test" section: test each platform-provided model\'s connectivity using the platform key — a successful test is billed in AT by actual token usage (failures are free), limited to 5 tests per minute.',
+                    keywords: ['custom', 'model', 'API', 'key', 'OpenAI', 'Ollama', 'BYO', 'test', 'official']
                 }
             ]
         },

@@ -68,6 +68,7 @@ export const components: typeof zh.components = {
     removeHeading: 'Remove heading',
     dropHeading: 'Drop a heading here',
     correctIs: '❌ (correct: {a})',
+    unsupportedType: 'Unsupported question type: {t}. Please regenerate or send us feedback.',
   },
   vocabInput: {
     label: 'Vocab Added',
@@ -130,6 +131,10 @@ export const components: typeof zh.components = {
     pDeepseek: 'DeepSeek',
     pQwen: 'Qwen (DashScope compatible mode)',
     pOpenrouter: 'OpenRouter',
+    // Official model test section (bottom of the settings panel)
+    officialTitle: 'Official model test',
+    officialDesc: 'Test connectivity of the platform-provided models. Uses the platform key — a successful test is billed in AT by actual token usage (failed tests are free).',
+    officialCostNote: 'cost {n} AT',
   },
   toast: {
     errorTitle: 'Error',

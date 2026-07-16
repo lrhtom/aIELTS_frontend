@@ -20,7 +20,7 @@ import { useLang } from '../../i18n/LanguageContext';
  * defence as ReadingQuestionRenderer. AI sometimes emits [{key,text}] arrays
  * or {key: {text}} nested objects; rendering those directly crashes React.
  */
-function bankVal(v: unknown): string {
+export function bankVal(v: unknown): string {
     if (v == null) return '';
     if (typeof v === 'string') return v;
     if (typeof v === 'object') {
@@ -280,6 +280,15 @@ export function MatchingRenderer({ data, getAnswer, onAnswer, reviewMode = false
     const bank = normalizeBank(data.options_bank);
     const bankKeys = Object.keys(bank);
     const questions = Array.isArray(data.questions) ? data.questions : [];
+    // Bank 缺失/空键/值全空（AI drift）时字母网格没有可用选项 — 降级为文本输入，至少可作答
+    if (!bankKeys.some(k => bank[k] && bank[k].trim().length > 0)) {
+        return (
+            <div className="listening-matching-block">
+                {data.matching_intro && <p className="section-instructions">{data.matching_intro}</p>}
+                <FallbackInputs questions={questions} renderedIds={new Set()} getAnswer={getAnswer} onAnswer={onAnswer} disabled={reviewMode} hasStructuredContent={false} />
+            </div>
+        );
+    }
     const rows = questions.map(q => ({
         id: q.id,
         label: <span>{q.id}. {q.question || ''}</span>,

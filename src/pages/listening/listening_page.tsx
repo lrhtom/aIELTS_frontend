@@ -30,9 +30,11 @@ import {
     MatchingRenderer,
     NoteRenderer,
     scoreListeningQuestions,
+    bankVal,
 } from '../../components/listening/ListeningQuestionRenderer';
 import ListeningMapSVG from '../../components/listening/ListeningMapSVG';
 import MatchingLetterGrid from '../../components/common/MatchingLetterGrid';
+import ErrorBoundary from '../../components/common/ErrorBoundary';
 import '../../styles/listening_page.css';
 import '../../styles/reading_page.css';
 
@@ -62,7 +64,16 @@ function checkAnswer(userAns: string, acceptableAnswers: unknown): boolean {
     return acceptableAnswers.some(a => normalizeAnswer(String(a ?? '')) === norm);
 }
 
-export default function ListeningPage() {
+// 题目数据来自 AI 生成/题库旧记录，字段漂移不可完全预防——出错时降级为局部提示而不是整页白屏
+export default function ListeningPageWrapper() {
+    return (
+        <ErrorBoundary>
+            <ListeningPage />
+        </ErrorBoundary>
+    );
+}
+
+function ListeningPage() {
     const { state } = useLocation();
     const [searchParams] = useSearchParams();
     const bankIdParam = searchParams.get('bankId');
@@ -402,9 +413,13 @@ export default function ListeningPage() {
         // Total question count spans full-test sections OR single quiz.
         let totalQuestions = 0;
         if (st.listeningData.type === 'full') {
-            for (const sec of st.listeningData.sections) totalQuestions += sec.questions.length;
+            // 题库脏记录可能缺 sections / questions 数组，逐层兜底避免交卷即崩
+            for (const sec of (st.listeningData.sections || [])) {
+                totalQuestions += Array.isArray(sec.questions) ? sec.questions.length : 0;
+            }
         } else {
-            totalQuestions = st.listeningData.questions.length;
+            const qsArr = st.listeningData.questions;
+            totalQuestions = Array.isArray(qsArr) ? qsArr.length : 0;
         }
         const answeredQuestions = Object.values(userAnswersRef.current).filter(v => String(v).trim().length > 0).length;
         if (answeredQuestions < totalQuestions) {
@@ -635,8 +650,10 @@ export default function ListeningPage() {
             if (st.listeningData?.type !== 'sentence') return null;
             // 与阅读 sentence_completion 共用 .rd-inline-q-block / .rd-blank-* 样式
             const qs = Array.isArray(st.listeningData.questions) ? st.listeningData.questions : [];
-            return qs.slice(0, 10).map(q => {
-                const parts = q.question.split('_____');
+            return qs.map(q => {
+                // AI drift 防御：question 缺失/非字符串时 bankVal 兜底；空格标记用
+                // /_{2,}/（与阅读一致），而不是假设恰好 5 个下划线
+                const parts = bankVal(q.question).split(/_{2,}/);
                 return (
                     <div key={q.id} className="rd-inline-q-block">
                         <span className="rd-blank-num">{q.id}.</span>{' '}
@@ -646,6 +663,8 @@ export default function ListeningPage() {
                                 {i < parts.length - 1 && renderInlineInput(q.id, i)}
                             </span>
                         ))}
+                        {/* 题面里没有任何空格标记（AI 漏写）时补一个输入框，保证可作答 */}
+                        {parts.length === 1 && renderInlineInput(q.id, 0)}
                     </div>
                 );
             });
@@ -655,24 +674,53 @@ export default function ListeningPage() {
             if (st.listeningData?.type !== 'article') return null;
             const textToSplit = st.listeningData.blanked_passage || st.listeningData.passage || '';
             const paragraphs = textToSplit.split('\n\n');
-            let blankCounter = 1;
-
+            const qs = Array.isArray(st.listeningData.questions) ? st.listeningData.questions : [];
+            // 空格按出现顺序对应 questions 数组顺序（而不是假设 id 恰好是 1..N）；
+            // 空格标记用 /_{2,}/ 兼容 AI 下划线数量漂移
+            const qids = qs.map(q => q.id);
+            const renderedIds = new Set<number>();
+            let blankIdx = 0;
+            const body = paragraphs.map((p: string, pIdx: number) => {
+                const parts = p.split(/_{2,}/);
+                return (
+                    <p key={pIdx} style={{ lineHeight: 2.2 }}>
+                        {parts.map((partText: string, i: number) => {
+                            let input = null;
+                            if (i < parts.length - 1) {
+                                const qid = qids[blankIdx] ?? blankIdx + 1;
+                                renderedIds.add(qid);
+                                input = renderInlineInput(qid, i);
+                                blankIdx++;
+                            }
+                            return (
+                                <span key={i}>
+                                    <span>{removeMarkdown(partText)}</span>
+                                    {input}
+                                </span>
+                            );
+                        })}
+                    </p>
+                );
+            });
+            // 文中空格数少于题目数（AI 漏标）时，为缺失的题目补独立输入框
+            const missing = qs.filter(q => !renderedIds.has(q.id));
             return (
                 <div className="listening-article-inline">
                     <h2 style={{ marginTop: 0 }}>{removeMarkdown(st.listeningData.title)}</h2>
-                    {paragraphs.map((p: string, pIdx: number) => {
-                        const parts = p.split('_____');
-                        return (
-                            <p key={pIdx} style={{ lineHeight: 2.2 }}>
-                                {parts.map((partText: string, i: number) => (
-                                    <span key={i}>
-                                        <span>{removeMarkdown(partText)}</span>
-                                        {i < parts.length - 1 && renderInlineInput(blankCounter++, i)}
-                                    </span>
-                                ))}
+                    {body}
+                    {missing.length > 0 && (
+                        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <p className="section-instructions" style={{ fontStyle: 'italic', opacity: 0.85 }}>
+                                {t.components.questionRenderer.answerRemaining}
                             </p>
-                        );
-                    })}
+                            {missing.map(q => (
+                                <div key={q.id} className="rd-blank-wrap" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span className="rd-blank-num">{q.id}.</span>
+                                    {renderInlineInput(q.id, 0)}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -686,7 +734,7 @@ export default function ListeningPage() {
                     {qs.map((q: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
                         <div key={q.id} className="question-block">
                             <div className="question-text">
-                                {q.id}. {removeMarkdown(q.question)}
+                                {q.id}. {removeMarkdown(bankVal(q.question))}
                             </div>
                             {Object.entries(q.options || {}).map(([key, optText]) => (
                                 <label key={key} className="option-label">
@@ -700,7 +748,7 @@ export default function ListeningPage() {
                                         }}
                                     />
                                     <strong>{key}.</strong>{' '}
-                                    <span>{removeMarkdown(optText as string)}</span>
+                                    <span>{removeMarkdown(bankVal(optText))}</span>
                                 </label>
                             ))}
                         </div>
@@ -1031,7 +1079,7 @@ export default function ListeningPage() {
                                                     const mcq = q as { id: number; question: string; options: Record<string, string>; answer: string };
                                                     return (
                                                         <div key={mcq.id} className="question-block">
-                                                            <div className="question-text">{mcq.id}. {mcq.question}</div>
+                                                            <div className="question-text">{mcq.id}. {bankVal(mcq.question)}</div>
                                                             {mcq.options && Object.entries(mcq.options).map(([k, v]) => (
                                                                 <label key={k} className="option-label">
                                                                     <input
@@ -1041,7 +1089,7 @@ export default function ListeningPage() {
                                                                         defaultChecked={getAnswer(mcq.id) === k}
                                                                         onChange={() => setAnswerV2(mcq.id, k)}
                                                                     />
-                                                                    <strong>{k}.</strong> <span>{v}</span>
+                                                                    <strong>{k}.</strong> <span>{bankVal(v)}</span>
                                                                 </label>
                                                             ))}
                                                         </div>
@@ -1086,7 +1134,7 @@ export default function ListeningPage() {
                                                                 {sub.map && (
                                                                     <ListeningMapSVG
                                                                         map={sub.map}
-                                                                        questionIdOffset={sub.startId - 1}
+                                                                        questionIdOffset={(sub.startId ?? mapQs[0]?.id ?? 1) - 1}
                                                                         maxWidth={720}
                                                                     />
                                                                 )}
@@ -1141,7 +1189,11 @@ export default function ListeningPage() {
                             isFlowchartMode ? <FlowchartRenderer data={st.listeningData as FlowchartListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
                             isShortAnswerMode ? <ShortAnswerRenderer data={st.listeningData as ShortAnswerListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
                             isMatchingMode ? <MatchingRenderer data={st.listeningData as MatchingListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
-                            renderSentenceMode())}
+                            st.listeningData.type === 'sentence' ? renderSentenceMode() :
+                            // 未知题型（AI drift / 老题库记录）：给出明确提示而不是静默空白
+                            <div className="section-instructions">
+                                {t.components.questionRenderer.unsupportedType.replace('{t}', String(st.listeningData.type))}
+                            </div>)}
 
                         <div className="submit-quiz-container" style={{ marginTop: '40px', paddingBottom: '40px' }}>
                             <button onClick={submitQuiz}>{t.readingDetails.submitBtn}</button>

@@ -10,9 +10,19 @@ import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import ReadingQuestionRenderer, { scoreSection } from '../../components/reading/ReadingQuestionRenderer';
 import ReadingPassageBlock from '../../components/reading/ReadingPassageBlock';
+import ErrorBoundary from '../../components/common/ErrorBoundary';
 import '../../styles/reading_page.css';
 
-export default function Reading_page() {
+// 题目数据来自 AI 生成/题库旧记录，字段漂移不可完全预防——出错时降级为局部提示而不是整页白屏
+export default function ReadingPageWrapper() {
+    return (
+        <ErrorBoundary>
+            <Reading_page />
+        </ErrorBoundary>
+    );
+}
+
+function Reading_page() {
     const { state } = useLocation();
     const [searchParams] = useSearchParams();
     const bankIdParam = searchParams.get('bankId');
@@ -731,7 +741,7 @@ export default function Reading_page() {
                                 <div key={q.id} className="result-block">
                                     <div className="question-text">
                                         {q.id}. {questionText.replace(/\*\*/g, '')}
-                                        <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[{sec.questionType.replace(/_/g, ' ')}]</span>
+                                        <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[{(sec.questionType || '').replace(/_/g, ' ')}]</span>
                                     </div>
                                     <p>{t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.correctAnswer}: <strong>{correctDisplay}</strong></p>
                                     <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
