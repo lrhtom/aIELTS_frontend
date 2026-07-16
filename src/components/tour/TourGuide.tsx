@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLang } from '../../i18n/LanguageContext';
 import type { Translations } from '../../i18n/translations';
@@ -34,7 +34,7 @@ const FIND_INTERVAL_MS = 150;
 const FIND_MAX_TRIES = 33; // ~5s：页面懒加载/接口慢时的等待上限
 const SPOT_PAD = 8;
 const TT_W = 344;
-const TT_H = 230; // 估算高度，用于摆位与视口夹紧
+const TT_H_FALLBACK = 260; // 首帧估算，之后用实测高度摆位
 const GAP = 14;
 const MARGIN = 12;
 
@@ -55,7 +55,7 @@ function clamp(v: number, lo: number, hi: number) {
     return Math.max(lo, Math.min(hi, v));
 }
 
-function tooltipPos(rect: Rect | null): React.CSSProperties {
+function tooltipPos(rect: Rect | null, ttH: number): React.CSSProperties {
     if (!rect) {
         return { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' };
     }
@@ -64,18 +64,18 @@ function tooltipPos(rect: Rect | null): React.CSSProperties {
     const w = Math.min(TT_W, vw - MARGIN * 2);
     let left = clamp(rect.left + rect.width / 2 - w / 2, MARGIN, vw - w - MARGIN);
     let top: number;
-    if (rect.top + rect.height + GAP + TT_H <= vh - MARGIN) {
+    if (rect.top + rect.height + GAP + ttH <= vh - MARGIN) {
         top = rect.top + rect.height + GAP;              // 下方
-    } else if (rect.top - GAP - TT_H >= MARGIN) {
-        top = rect.top - GAP - TT_H;                     // 上方
+    } else if (rect.top - GAP - ttH >= MARGIN) {
+        top = rect.top - GAP - ttH;                      // 上方
     } else if (rect.left + rect.width + GAP + w <= vw - MARGIN) {
-        top = clamp(rect.top + rect.height / 2 - TT_H / 2, MARGIN, vh - TT_H - MARGIN);
+        top = clamp(rect.top + rect.height / 2 - ttH / 2, MARGIN, vh - ttH - MARGIN);
         left = rect.left + rect.width + GAP;             // 右侧
     } else if (rect.left - GAP - w >= MARGIN) {
-        top = clamp(rect.top + rect.height / 2 - TT_H / 2, MARGIN, vh - TT_H - MARGIN);
+        top = clamp(rect.top + rect.height / 2 - ttH / 2, MARGIN, vh - ttH - MARGIN);
         left = rect.left - GAP - w;                      // 左侧
     } else {
-        top = vh - TT_H - MARGIN;                        // 兜底：视口底部居中
+        top = vh - ttH - MARGIN;                         // 兜底：视口底部居中
     }
     return { left, top };
 }
@@ -94,6 +94,8 @@ export default function TourGuide() {
     const [searching, setSearching] = useState(false);
     const navPendingRef = useRef(false);
     const nextBtnRef = useRef<HTMLButtonElement | null>(null);
+    const ttRef = useRef<HTMLDivElement | null>(null);
+    const [ttH, setTtH] = useState(TT_H_FALLBACK);
 
     const active = stepIndex !== null;
     const step = active ? TOUR_STEPS[stepIndex] : null;
@@ -215,6 +217,12 @@ export default function TourGuide() {
         if (active) nextBtnRef.current?.focus({ preventScroll: true });
     }, [active, stepIndex]);
 
+    // 实测气泡高度供摆位用 —— 文案长短不一，估算值会导致底部裁切、按钮点不到
+    useLayoutEffect(() => {
+        const h = ttRef.current?.offsetHeight;
+        if (h && Math.abs(h - ttH) > 1) setTtH(h);
+    });
+
     if (!active || !step) return null;
 
     const stepText = t.tour.steps[step.id];
@@ -236,7 +244,7 @@ export default function TourGuide() {
             ) : (
                 <div className="tour-dim" />
             )}
-            <div className={`tour-tooltip${spot ? '' : ' centered'}`} style={tooltipPos(spot)}>
+            <div ref={ttRef} className={`tour-tooltip${spot ? '' : ' centered'}`} style={tooltipPos(spot, ttH)}>
                 <div className="tour-progress-track" aria-hidden="true">
                     <div className="tour-progress-fill" style={{ width: `${((stepIndex + 1) / total) * 100}%` }} />
                 </div>
