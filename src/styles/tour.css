@@ -1,0 +1,218 @@
+/* ─── 向导模式（TourGuide）───
+ * 层级：blocker/spotlight 30000 < tooltip 30001。
+ * 压过助手球(12000)、导航(1000)，仍低于 toast(99999)。 */
+
+.tour-root {
+    position: fixed;
+    inset: 0;
+    z-index: 30000;
+    pointer-events: none;
+}
+
+/* 点击拦截：挡住页面交互；自身不可滚动 → 滚轮事件链回文档，页面仍可滚 */
+.tour-blocker {
+    position: fixed;
+    inset: 0;
+    pointer-events: auto;
+}
+
+/* spotlight：透明洞，巨型阴影压暗其余区域 */
+.tour-spotlight {
+    position: fixed;
+    border-radius: 14px;
+    box-shadow: 0 0 0 200vmax rgba(15, 23, 42, 0.6);
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+    pointer-events: none;
+}
+
+/* 无目标元素时的整屏压暗（居中卡片模式） */
+.tour-dim {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.tour-tooltip {
+    position: fixed;
+    z-index: 30001;
+    width: min(344px, calc(100vw - 24px));
+    padding: 18px 20px 16px;
+    border-radius: 16px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.28);
+    pointer-events: auto;
+    transition: top 0.25s ease, left 0.25s ease;
+    animation: tour-pop 0.22s ease;
+}
+
+@keyframes tour-pop {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 居中模式下 transform 被内联样式占用，禁用入场位移动画避免覆盖 */
+.tour-tooltip.centered {
+    animation: none;
+}
+
+.tour-progress-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border);
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.tour-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--color-primary);
+    transition: width 0.3s ease;
+}
+
+.tour-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    letter-spacing: 0.02em;
+}
+
+.tour-title {
+    margin: 6px 0 8px;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.tour-desc {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--color-text-secondary);
+}
+
+.tour-waiting {
+    margin: 8px 0 0;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    opacity: 0.75;
+}
+
+.tour-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.tour-actions-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tour-btn-skip {
+    background: none;
+    border: none;
+    padding: 6px 4px;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.tour-btn-skip:hover {
+    color: var(--color-text);
+    text-decoration: underline;
+}
+
+.tour-btn-prev {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tour-btn-prev:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.tour-btn-next {
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: none;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.tour-btn-next:hover {
+    background: var(--color-primary-hover);
+}
+
+.tour-btn-next:focus-visible,
+.tour-btn-prev:focus-visible,
+.tour-btn-skip:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ─── 主页启动按钮 ─── */
+.tour-start-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 999px;
+    border: 1.5px solid var(--color-primary);
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease;
+}
+
+.tour-start-btn:hover {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+/* 未看过导览时的呼吸提示点 */
+.tour-start-btn .tour-pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-accent-coral, #f97066);
+    animation: tour-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tour-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tour-spotlight,
+    .tour-tooltip,
+    .tour-progress-fill {
+        transition: none;
+    }
+    .tour-tooltip {
+        animation: none;
+    }
+    .tour-start-btn .tour-pulse-dot {
+        animation: none;
+    }
+}

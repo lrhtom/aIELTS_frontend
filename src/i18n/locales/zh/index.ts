@@ -14,6 +14,7 @@ import * as store from './store';
 import * as analytics from './analytics';
 import * as assistant from './assistant';
 import * as vocab from './vocab';
+import * as tourNs from './tour';
 
 export const zh = {
   ...core,
@@ -31,4 +32,5 @@ export const zh = {
   ...analytics,
   ...assistant,
   ...vocab,
+  ...tourNs,
 };

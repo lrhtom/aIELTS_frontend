@@ -20,7 +20,10 @@ const AC: typeof AudioContext | undefined =
         : undefined;
 
 /** 轻度失真曲线（无线电/对讲机的"炸裂"感）。 */
-function makeDistortionCurve(amount: number): Float32Array {
+// Return type pinned to Float32Array<ArrayBuffer> (not the default
+// Float32Array<ArrayBufferLike>) so it satisfies WaveShaperNode.curve, whose
+// setter rejects a possibly-SharedArrayBuffer-backed view under TS 5.7+ libs.
+function makeDistortionCurve(amount: number): Float32Array<ArrayBuffer> {
     const n = 2048;
     const curve = new Float32Array(n);
     for (let i = 0; i < n; i++) {

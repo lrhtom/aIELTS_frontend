@@ -211,9 +211,12 @@
    SCROLLYTELLING STAGE (desktop ≥1024px)
    ═══════════════════════════════════════════════════════ */
 
+/* Runway for the pinned stage. Kept modest (not the 280vh of ChatGPT) so the
+   sticky void that appears in a full-page screenshot reads as spacing rather
+   than a broken gap; 60vh scroll range still gives 3 comfortable chapter flicks. */
 .hp-stage-outer {
     position: relative;
-    height: 280vh;
+    height: 160vh;
 }
 
 .hp-stage-sticky {

@@ -3,7 +3,8 @@ import Layout from '../components/layout/Layout';
 import { Link } from 'react-router-dom';
 import { useLang } from '../i18n/LanguageContext';
 import { translations } from '../i18n/translations';
-import { BookOpen, Headphones, Mic, PenTool, Gift, ArrowUpRight, ArrowRight } from 'lucide-react';
+import { BookOpen, Headphones, Mic, PenTool, Gift, ArrowUpRight, ArrowRight, Compass } from 'lucide-react';
+import { startTour, TOUR_SEEN_KEY } from '../components/tour/TourGuide';
 import { checkinApi, type CheckinStatusResponse } from '../api/checkin';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/home_page.css';
@@ -227,7 +228,11 @@ export default function HomePage() {
         return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf); };
     }, []);
 
-    // Reveal-on-scroll for regular sections (kept from V1)
+    // Reveal-on-scroll for regular sections (kept from V1). A fallback timer
+    // reveals anything still hidden after the page settles so below-the-fold
+    // sections never stay at opacity:0 in a full-page screenshot (or if the
+    // viewer never scrolls) — the entrance animation still plays for anyone
+    // who scrolls within the timeout.
     useEffect(() => {
         const observer = new IntersectionObserver(entries => {
             entries.forEach(entry => {
@@ -238,7 +243,10 @@ export default function HomePage() {
             });
         }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
         document.querySelectorAll('.scroll-animate').forEach(el => observer.observe(el));
-        return () => observer.disconnect();
+        const fallback = window.setTimeout(() => {
+            document.querySelectorAll('.scroll-animate:not(.in-view)').forEach(el => el.classList.add('in-view'));
+        }, 1500);
+        return () => { observer.disconnect(); window.clearTimeout(fallback); };
     }, [user]);
 
     const chapters = t.home.stage.chapters;
@@ -259,7 +267,7 @@ export default function HomePage() {
                 <code>{src}</code>
             </div>
         ) : (
-            <img className={extraClass} src={src} alt={alt} loading="lazy" onError={() => markBroken(src)} />
+            <img className={extraClass} src={src} alt={alt} onError={() => markBroken(src)} />
         )
     );
 
@@ -280,6 +288,18 @@ export default function HomePage() {
                 <p className="hp-hero-sub">{t.home.hero2.sub}</p>
                 <div className="hp-hero-actions">
                     <Link to="/practice" className="hp-pill">{t.home.hero2.ctaPrimary}</Link>
+                    {user && (
+                        <button
+                            type="button"
+                            className="tour-start-btn"
+                            title={t.tour.startHint}
+                            onClick={startTour}
+                        >
+                            <Compass size={17} />
+                            {t.tour.startBtn}
+                            {!localStorage.getItem(TOUR_SEEN_KEY) && <span className="tour-pulse-dot" />}
+                        </button>
+                    )}
                     <Link to="/practice" className="hp-textlink">
                         {t.home.hero2.ctaSecondary} <ArrowUpRight size={16} />
                     </Link>
@@ -449,7 +469,7 @@ export default function HomePage() {
                                     <code>{galleryImages[i]}</code>
                                 </div>
                             ) : (
-                                <img src={galleryImages[i]} alt={item.caption} loading="lazy" onError={() => markBroken(galleryImages[i])} />
+                                <img src={galleryImages[i]} alt={item.caption} onError={() => markBroken(galleryImages[i])} />
                             )}
                             <figcaption>{item.caption}</figcaption>
                         </figure>

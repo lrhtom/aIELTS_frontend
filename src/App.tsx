@@ -4,6 +4,7 @@ import ProtectedRoute from './components/guards/ProtectedRoute';
 import ToastContainer from './components/common/Toast';
 import ConfirmServiceContainer from './components/common/ConfirmService';
 import GlobalAssistantBall from './components/common/GlobalAssistantBall';
+import TourGuide from './components/tour/TourGuide';
 import ChromeOnlyGuard from './components/guards/ChromeOnlyGuard';
 import ATBalanceMonitor from './components/billing/ATBalanceMonitor';
 import { useAuth } from './contexts/AuthContext';
@@ -95,6 +96,7 @@ export default function App() {
       <ConfirmServiceContainer />
       <ATBalanceMonitor />
       {!isLoading && user && <GlobalAssistantBall />}
+      {!isLoading && user && <TourGuide />}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />

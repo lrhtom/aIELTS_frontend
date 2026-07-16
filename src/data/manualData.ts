@@ -20,6 +20,19 @@ export interface ManualData {
 export const manualData: ManualData = {
     zh: [
         {
+            id: 'getting-started',
+            title: '快速上手',
+            icon: '🧭',
+            subsections: [
+                {
+                    id: 'tour',
+                    title: '向导模式（新手导览）',
+                    content: '登录后在主页点击"向导模式"按钮，系统会手把手带你环游整个平台：从每日签到、AI 练习中心（听说读写）、词汇训练，到商店、个人中心和全局 AI 助手，每一站自动跳转到对应页面并高亮讲解。可随时点击"跳过导览"退出，或按 Esc 键退出；用 ←/→ 方向键也能翻页。导览可在主页反复开启。',
+                    keywords: ['向导', '导览', '新手', '引导', '教程', 'tour', 'guide']
+                }
+            ]
+        },
+        {
             id: 'account',
             title: '账户系统',
             icon: '🔐',
@@ -232,6 +245,19 @@ export const manualData: ManualData = {
         }
     ],
     en: [
+        {
+            id: 'getting-started',
+            title: 'Getting Started',
+            icon: '🧭',
+            subsections: [
+                {
+                    id: 'tour',
+                    title: 'Guided Tour',
+                    content: 'After logging in, click the "Guided Tour" button on the home page and the system will walk you around the whole platform: daily check-in, the AI practice hub (all four skills), vocabulary training, the store, your profile centre, and the global AI assistant. Each stop jumps to the corresponding page and highlights the feature. Exit anytime via "Skip tour" or the Esc key; the ←/→ arrow keys also navigate between stops. The tour can be restarted from the home page whenever you like.',
+                    keywords: ['tour', 'guide', 'onboarding', 'tutorial', 'walkthrough']
+                }
+            ]
+        },
         {
             id: 'account',
             title: 'Account System',
