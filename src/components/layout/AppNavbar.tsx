@@ -70,7 +70,7 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ti
     };
 
     return (
-        <nav className="navbar" aria-label="Top navigation">
+        <nav className={`navbar${isHome ? ' navbar--flat' : ''}`} aria-label="Top navigation">
             <div className="navbar-left">
                 {!isHome && (
                     <Link to="/" className="navbar-logo navbar-logo-left"><span>aIELTS</span></Link>

@@ -70,6 +70,49 @@ export const home = {
       },
     ],
   },
+  // ── V2 主页（仿 chatgpt.com/overview 滚动叙事布局，2026-07-16）──
+  hero2: {
+    pre: '现在你可以',
+    accent: '练题、批改、记词',
+    post: '在同一个地方。',
+    sub: 'AI 驱动的雅思全科备考平台',
+    ctaPrimary: '立即开始',
+    ctaSecondary: '浏览题库',
+  },
+  stage: {
+    srHint: '滚动浏览三大核心功能',
+    placeholder: '产品截图待提供',
+    chapters: [
+      {
+        tag: '听力',
+        title: 'AI 听力练习',
+        desc: 'AI 生成听力音频与配套题目，多口音、多场景模拟，即听即测即解析。',
+      },
+      {
+        tag: '写作',
+        title: 'AI 写作批改',
+        desc: 'Task 1 图表 + Task 2 议论文，提交后数秒获得逐句批改、评分与改写建议。',
+      },
+      {
+        tag: '口语',
+        title: 'AI 口语陪练',
+        desc: '按下即说，AI 实时对话、逐句转录，多维评分覆盖 Part 1-3 全部题型。',
+      },
+    ],
+  },
+  gallery: {
+    heading: '更多功能，一瞥即懂',
+    sub: '从真题阅读到 AI 地图题，每个细节都为提分设计。',
+    photoPlaceholder: '图片待提供',
+    items: [
+      { caption: 'AI 阅读练习：答案句智能高亮，逐题定位原文依据' },
+      { caption: 'Task 1 地图题：AI 生成清晰地图，还原真题体验' },
+    ],
+  },
+  ctaBanner: {
+    title: '今天就开始你的雅思之旅',
+    btn: '开始练习',
+  },
   footer: '© 2026 aIELTS. All rights reserved.',
   footerFeedback: '反馈建议',
   footerManual: '使用手册',

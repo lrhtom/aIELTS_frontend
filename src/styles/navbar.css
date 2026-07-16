@@ -11,6 +11,13 @@
     z-index: 1000;
 }
 
+/* Homepage: navbar melts into the page background (ChatGPT-overview style) —
+   opaque so scrolling content still disappears behind it, just no seam. */
+.navbar--flat {
+    background-color: var(--color-bg);
+    box-shadow: none;
+}
+
 /* 打开侧边栏按钮 */
 .sidebar-open-btn {
     width: 40px;

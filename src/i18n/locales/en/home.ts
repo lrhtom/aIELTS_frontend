@@ -71,6 +71,49 @@ export const home: typeof zh.home = {
       },
     ],
   },
+  // ── V2 home (scrollytelling layout modeled on chatgpt.com/overview, 2026-07-16) ──
+  hero2: {
+    pre: 'Now you can',
+    accent: 'practice, get scored & build vocab',
+    post: 'all in one place.',
+    sub: 'The AI-powered IELTS prep platform',
+    ctaPrimary: 'Get started',
+    ctaSecondary: 'Browse question bank',
+  },
+  stage: {
+    srHint: 'Scroll to explore three core features',
+    placeholder: 'Product screenshot pending',
+    chapters: [
+      {
+        tag: 'Listening',
+        title: 'AI Listening Practice',
+        desc: 'AI-generated audio with matching questions — multiple accents and scenarios, instant answers and explanations.',
+      },
+      {
+        tag: 'Writing',
+        title: 'AI Writing Feedback',
+        desc: 'Task 1 charts + Task 2 essays. Submit and get sentence-level corrections, band scores, and rewrites in seconds.',
+      },
+      {
+        tag: 'Speaking',
+        title: 'AI Speaking Partner',
+        desc: 'Press and talk — real-time AI conversation with live transcription and multi-dimensional scoring across Parts 1-3.',
+      },
+    ],
+  },
+  gallery: {
+    heading: 'More features at a glance',
+    sub: 'From authentic reading passages to AI-drawn map questions, every detail is built for score gains.',
+    photoPlaceholder: 'Image pending',
+    items: [
+      { caption: 'AI Reading: answer sentences highlighted and traced back to the passage' },
+      { caption: 'Task 1 Maps: AI-generated maps that mirror the real exam' },
+    ],
+  },
+  ctaBanner: {
+    title: 'Start your IELTS journey today',
+    btn: 'Start practicing',
+  },
   footer: '© 2026 aIELTS. All rights reserved.',
   footerFeedback: 'Feedback',
   footerManual: 'User Manual',
