@@ -86,7 +86,7 @@ function renderStructuredWithBlanks(
                     const qid = Number(m[1]) + (startingBlankId - 1);
                     renderedIds.add(qid);
                     return (
-                        <span key={i} className="rd-blank-wrap">
+                        <span key={i} className="rd-blank-wrap" data-question-id={qid}>
                             <span className="rd-blank-num">({m[1]})</span>
                             <input
                                 type="text"
@@ -132,7 +132,7 @@ function FallbackInputs({ questions, renderedIds, getAnswer, onAnswer, disabled,
                 </p>
             )}
             {missing.map(q => (
-                <div key={q.id} className="rd-blank-wrap" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div key={q.id} className="rd-blank-wrap" data-question-id={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="rd-blank-num">{q.id}.</span>
                     <input
                         type="text"
@@ -250,7 +250,7 @@ export function ShortAnswerRenderer({ data, getAnswer, onAnswer, reviewMode = fa
             {questions.map(q => {
                 const userAns = getAnswer(q.id);
                 return (
-                    <div key={q.id} className="question-block">
+                    <div key={q.id} className="question-block" data-question-id={q.id}>
                         <div className="question-text">{q.id}. {q.question || ''}</div>
                         <input
                             type="text"
@@ -298,28 +298,24 @@ export function MatchingRenderer({ data, getAnswer, onAnswer, reviewMode = false
     return (
         <div className="listening-matching-block">
             {data.matching_intro && <p className="section-instructions">{data.matching_intro}</p>}
-            {/* Layout rule: answer grid on LEFT, options bank on RIGHT */}
-            <div className="matching-two-col">
-                <div className="matching-grid-col">
-                    <MatchingLetterGrid
-                        rows={rows}
-                        letters={bankKeys}
-                        letterTitles={bank}
-                        getAnswer={id => getAnswer(Number(id))}
-                        onAnswer={(id, letter) => onAnswer(Number(id), letter)}
-                        reviewMode={reviewMode}
-                        correctById={correctById}
-                    />
-                </div>
-                <div className="matching-features-bank">
-                    <strong>Options:</strong>
-                    <ul>
-                        {Object.entries(bank).map(([letter, text]) => (
-                            <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
-                        ))}
-                    </ul>
-                </div>
+            {/* Layout rule: options bank ABOVE the answer grid (选项框在做题表格上面) */}
+            <div className="matching-features-bank">
+                <strong>Options:</strong>
+                <ul>
+                    {Object.entries(bank).map(([letter, text]) => (
+                        <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
+                    ))}
+                </ul>
             </div>
+            <MatchingLetterGrid
+                rows={rows}
+                letters={bankKeys}
+                letterTitles={bank}
+                getAnswer={id => getAnswer(Number(id))}
+                onAnswer={(id, letter) => onAnswer(Number(id), letter)}
+                reviewMode={reviewMode}
+                correctById={correctById}
+            />
         </div>
     );
 }

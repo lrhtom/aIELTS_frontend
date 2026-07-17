@@ -133,7 +133,7 @@ function renderNoteBlanksInput(
                     const qid = startId + localNum - 1;
                     renderedIds.add(qid);
                     return (
-                        <span key={i} className="rd-blank-wrap">
+                        <span key={i} className="rd-blank-wrap" data-question-id={qid}>
                             <span className="rd-blank-num">({localNum})</span>
                             <input
                                 type="text"
@@ -177,7 +177,7 @@ function renderSummaryBlanksSelect(
                     const qid = startId + localNum - 1;
                     renderedIds.add(qid);
                     return (
-                        <span key={i} className="rd-blank-wrap">
+                        <span key={i} className="rd-blank-wrap" data-question-id={qid}>
                             <span className="rd-blank-num">({localNum})</span>
                             <select
                                 className="rd-blank-select"
@@ -226,7 +226,7 @@ function ReadingFallbackRows({ questions, renderedIds, bank, getAnswer, onAnswer
                 {t.components.questionRenderer.answerRemaining}
             </p>
             {missing.map(q => (
-                <div key={q.id} className="rd-blank-wrap" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div key={q.id} className="rd-blank-wrap" data-question-id={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="rd-blank-num">{q.id}.</span>
                     {bank && bankKeys.length > 0 ? (
                         <select
@@ -296,7 +296,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                     const options = q.options || {};
                     const userAns = getAnswer(q.id);
                     return (
-                        <div key={q.id} className="question-block">
+                        <div key={q.id} className="question-block" data-question-id={q.id}>
                             <div className="question-text" dangerouslySetInnerHTML={{ __html: safeHTML(`${q.id}. ${q.question || ''}`) }} />
                             {Object.entries(options).map(([key, value]) => (
                                 <label key={key} className="option-label">
@@ -387,25 +387,19 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
         return (
             <>
                 {instructions && <p className="section-instructions">{instructions}</p>}
-                {qt === 'matching_info' ? (
-                    // matching_info: no external bank needed (letter = paragraph
-                    // label, self-evident) — full-width grid.
-                    grid
-                ) : (
-                    // matching_features / matching_sentence: layout rule —
-                    // answer grid on LEFT, options bank on RIGHT.
-                    <div className="matching-two-col">
-                        <div className="matching-grid-col">{grid}</div>
-                        <div className="matching-features-bank">
-                            <strong>{qt === 'matching_features' ? 'Categories:' : 'Endings:'}</strong>
-                            <ul>
-                                {Object.entries(bank).map(([letter, text]) => (
-                                    <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
-                                ))}
-                            </ul>
-                        </div>
+                {qt !== 'matching_info' && (
+                    // matching_features / matching_sentence: options bank goes
+                    // ABOVE the answer grid (真题排版：选项框在做题表格上面)。
+                    <div className="matching-features-bank">
+                        <strong>{qt === 'matching_features' ? 'Categories:' : 'Endings:'}</strong>
+                        <ul>
+                            {Object.entries(bank).map(([letter, text]) => (
+                                <li key={letter}><span className="hb-roman">{letter}.</span> {text}</li>
+                            ))}
+                        </ul>
                     </div>
                 )}
+                {grid}
             </>
         );
     }
@@ -489,7 +483,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                     const raw = q.question || '';
                     const parts = raw.split(/_{2,}/);
                     return (
-                        <div key={q.id} className="rd-inline-q-block">
+                        <div key={q.id} className="rd-inline-q-block" data-question-id={q.id}>
                             <span className="rd-blank-num">{q.id}.</span>{' '}
                             {parts.map((seg, i) => (
                                 <span key={i}>
@@ -527,7 +521,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                 {section.questions.map(q => {
                     const userAns = getAnswer(q.id);
                     return (
-                        <div key={q.id} className="question-block">
+                        <div key={q.id} className="question-block" data-question-id={q.id}>
                             <div className="question-text" dangerouslySetInnerHTML={{ __html: safeHTML(`${q.id}. ${q.question || ''}`) }} />
                             <input
                                 type="text"
@@ -695,7 +689,7 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
                     const isCorrect = reviewMode && placed && placed === q.answer;
                     const isWrong = reviewMode && (!placed || placed !== q.answer);
                     return (
-                        <div key={q.id} className="mh-slot-row">
+                        <div key={q.id} className="mh-slot-row" data-question-id={q.id}>
                             <div className="mh-slot-label">
                                 {q.id}. Paragraph <strong>{q.paragraph || '?'}</strong>
                             </div>

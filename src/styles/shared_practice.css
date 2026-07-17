@@ -119,6 +119,20 @@
     margin-left: 4px;
 }
 
+/* 全套卷的 9 分制换算徽章（听力/阅读 full 模式） */
+.score-band-card {
+    border: 1px solid var(--color-primary);
+    background: rgba(13, 148, 136, 0.12);
+}
+
+.score-band-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-right: 6px;
+    align-self: center;
+}
+
 .toggle-passage-btn {
     padding: 6px 14px;
     font-size: 13px;

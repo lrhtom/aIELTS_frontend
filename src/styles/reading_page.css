@@ -213,6 +213,13 @@
     white-space: normal;
 }
 
+/* Word 式两端对齐：文章正文 + 做题区题目文本 */
+.main-content,
+#questionsForm {
+    text-align: justify;
+    text-justify: inter-word;
+}
+
 .main-content {
     flex: 1;
     padding: 30px 50px;
@@ -523,6 +530,24 @@
     background: rgba(13, 148, 136, 0.1);
     padding: 2px 8px;
     border-radius: 6px;
+}
+
+/* 全套卷的 9 分制换算徽章（full 模式） */
+.score-band-card {
+    border-color: #0d9488;
+    background: rgba(13, 148, 136, 0.08);
+}
+
+.score-band-card .score-number {
+    color: #0d9488;
+}
+
+.score-band-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    margin-right: 6px;
+    align-self: center;
 }
 
 .toggle-passage-btn {
@@ -1308,4 +1333,206 @@
     .mh-slot-label {
         min-width: 0;
     }
+}
+/* ═══════════════════════════════════════════════════════
+   Practice Bottom Bar — 底部考试导航条（阅读/听力共用）
+   题号胶囊 + 收起 Part 标签 + 分段总进度 + 计时/提交/退出
+   ═══════════════════════════════════════════════════════ */
+
+.practice-bottom-bar {
+    flex-shrink: 0;
+    margin-top: 12px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 16px;
+    box-shadow: 0 -1px 3px rgba(0,0,0,0.02), 0 -4px 12px rgba(0,0,0,0.03);
+    overflow: hidden;
+    z-index: 100;
+}
+
+/* 一题一格总进度细条：答了哪题哪格亮绿 */
+.pbb-overview {
+    display: flex;
+    gap: 3px;
+    padding: 0 14px;
+    height: 4px;
+    margin-top: 6px;
+}
+.pbb-overview-seg {
+    flex: 1 1 0;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--color-border);
+    transition: background 0.25s ease;
+}
+.pbb-overview-seg.lit { background: var(--color-accent-green); }
+
+.pbb-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 14px;
+}
+
+/* 左侧题号导航区：窄屏允许横向滚动 */
+.pbb-nav-scroll {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
+}
+.pbb-nav-scroll::-webkit-scrollbar { display: none; }
+
+.pbb-part {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.pbb-part-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+    white-space: nowrap;
+}
+.pbb-part.collapsed {
+    border: none;
+    background: none;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.pbb-part.collapsed:hover { background: var(--color-bg-alt); }
+.pbb-part.collapsed:hover .pbb-part-label { color: var(--color-primary); }
+.pbb-part.collapsed .pbb-part-label {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    transition: color 0.2s ease;
+}
+.pbb-part-progress {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.pbb-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.pbb-pill {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface);
+    color: #475569;
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+}
+.pbb-pill:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: translateY(-1px);
+}
+.pbb-pill.answered {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+.pbb-pill.current {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.18);
+}
+.pbb-pill.answered.current {
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.28);
+}
+
+/* 右侧操作区 */
+.pbb-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.pbb-timer {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+    user-select: none;
+}
+.pbb-timer-digits {
+    font-family: 'Courier New', 'Consolas', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+}
+.pbb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+}
+.pbb-btn-submit {
+    background: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    color: #fff;
+}
+.pbb-btn-submit:hover {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    transform: translateY(-1px);
+}
+.pbb-btn-exit {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #ef4444;
+}
+.pbb-btn-exit:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+@media (max-width: 768px) {
+    .practice-bottom-bar { border-radius: 12px; margin-top: 8px; }
+    .pbb-main {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px 10px;
+    }
+    .pbb-nav-scroll { width: 100%; gap: 14px; }
+    .pbb-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    .pbb-pill { min-width: 28px; height: 28px; font-size: 13px; }
+    .pbb-part.collapsed { display: none; } /* 窄屏收起态信息由细进度条承担 */
 }

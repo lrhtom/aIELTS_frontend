@@ -90,7 +90,7 @@ export default function MatchingLetterGrid({
                         const isCorrect = reviewMode && correct && userAns === correct;
                         const isWrong = reviewMode && userAns && correct && userAns !== correct;
                         return (
-                            <tr key={row.id} className={`mg-row ${isWrong ? 'is-wrong' : ''} ${isCorrect ? 'is-correct' : ''}`}>
+                            <tr key={row.id} className={`mg-row ${isWrong ? 'is-wrong' : ''} ${isCorrect ? 'is-correct' : ''}`} data-question-id={row.id}>
                                 <th className="mg-row-label" scope="row">
                                     {row.label}
                                 </th>

@@ -108,14 +108,14 @@ export const manualData: ManualData = {
                 {
                     id: 'reading',
                     title: 'AI 智能阅读',
-                    content: 'AI 根据目标分数和词汇量生成雅思风格阅读文章，支持选择题（A/B/C/D）和判断题（T/F 或 T/F/NG）。开启荒唐模式后 AI 会生成幽默文章。支持划词翻译、词典查询和目标词汇高亮。提交答案后查看详细解析。',
-                    keywords: ['阅读', '选择题', '判断题', '荒唐', '翻译']
+                    content: 'AI 根据目标分数和词汇量生成雅思风格阅读文章，支持选择题（A/B/C/D）和判断题（T/F 或 T/F/NG）。开启荒唐模式后 AI 会生成幽默文章。支持划词翻译、词典查询和目标词汇高亮。提交答案后查看详细解析。综合套题模式按真题规格生成 3 篇文章共 40 题（13+13+14），交卷后除对错统计外还会给出 9 分制预估雅思分。',
+                    keywords: ['阅读', '选择题', '判断题', '荒唐', '翻译', '套题', '全套', '9分制']
                 },
                 {
                     id: 'listening',
                     title: 'AI 智能听力',
-                    content: '提供四种练习模式：文章填空、句子填空、多项选择和地图标注。AI 生成听力原文并配合语音播放。可设置每空字数限制（min/max），开启荒唐模式生成趣味内容。',
-                    keywords: ['听力', '填空', '选择', '地图', '音频']
+                    content: '提供四种练习模式：文章填空、句子填空、多项选择和地图标注。AI 生成听力原文并配合语音播放。可设置每空字数限制（min/max），开启荒唐模式生成趣味内容。综合套题模式按真题规格生成 4 个 Section 共 40 题，交卷后除对错统计外还会给出 9 分制预估雅思分。',
+                    keywords: ['听力', '填空', '选择', '地图', '音频', '套题', '全套', '9分制']
                 },
                 {
                     id: 'speaking',
@@ -334,14 +334,14 @@ export const manualData: ManualData = {
                 {
                     id: 'reading',
                     title: 'AI Reading',
-                    content: 'AI generates IELTS-style reading passages based on your target score and vocabulary. Supports Multiple Choice (A/B/C/D) and True/False/Not Given questions. Enable Absurd Mode for humorous passages. Features word translation, dictionary lookup, and target vocabulary highlighting. Review detailed explanations after submission.',
-                    keywords: ['reading', 'multiple choice', 'true false', 'absurd', 'translation']
+                    content: 'AI generates IELTS-style reading passages based on your target score and vocabulary. Supports Multiple Choice (A/B/C/D) and True/False/Not Given questions. Enable Absurd Mode for humorous passages. Features word translation, dictionary lookup, and target vocabulary highlighting. Review detailed explanations after submission. Full Test mode generates 3 passages with 40 questions (13+13+14) to the authentic exam spec, and the results page adds an estimated IELTS band on the 9-point scale.',
+                    keywords: ['reading', 'multiple choice', 'true false', 'absurd', 'translation', 'full test', 'band']
                 },
                 {
                     id: 'listening',
                     title: 'AI Listening',
-                    content: 'Four practice modes: Article Gap-fill, Sentence Completion, Multiple Choice, and Map Labelling. AI generates scripts with audio playback. Configure word limits per blank (min/max). Enable Absurd Mode for fun content.',
-                    keywords: ['listening', 'gap-fill', 'multiple choice', 'map', 'audio']
+                    content: 'Four practice modes: Article Gap-fill, Sentence Completion, Multiple Choice, and Map Labelling. AI generates scripts with audio playback. Configure word limits per blank (min/max). Enable Absurd Mode for fun content. Full Test mode generates 4 sections with 40 questions to the authentic exam spec, and the results page adds an estimated IELTS band on the 9-point scale.',
+                    keywords: ['listening', 'gap-fill', 'multiple choice', 'map', 'audio', 'full test', 'band']
                 },
                 {
                     id: 'speaking',

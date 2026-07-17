@@ -152,6 +152,7 @@ export const results = {
   statusCorrect: '正确',
   statusIncorrect: '错误',
   explanation: '解析',
+  estimatedBand: '预估雅思分',
 };
 
 export const billing = {

@@ -165,4 +165,9 @@ export const readingDetails = {
   toastSaveFail: '保存作答失败，但本次成绩已显示',
   exitConfirm: '确定要退出练习吗？未提交的进度可能会丢失',
   exitBtn: '退出练习',
+  questionNav: {
+    jumpTo: '跳转到第 {n} 题',
+    progress: '{answered} / {total}',
+    barLabel: '题号导航',
+  },
 };

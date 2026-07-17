@@ -153,6 +153,7 @@ export const results: typeof zh.results = {
   statusCorrect: 'Correct',
   statusIncorrect: 'Incorrect',
   explanation: 'Explanation',
+  estimatedBand: 'Est. IELTS Band',
 };
 
 export const billing: typeof zh.billing = {

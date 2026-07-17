@@ -225,6 +225,9 @@ export interface ListeningState {
     activeSection: 1 | 2 | 3 | 4;
     isRightOpen: boolean;
     isPassageOpen: boolean;
+    // 作答耗时（与 reading_page_store 对齐；音频播放进度 playbackTime 是另一回事）
+    startTime: number;
+    elapsedSeconds: number;
 }
 
 export function createListeningState(): ListeningState {
@@ -236,5 +239,7 @@ export function createListeningState(): ListeningState {
         activeSection: 1,
         isRightOpen: true,
         isPassageOpen: false,
+        startTime: 0,
+        elapsedSeconds: 0,
     };
 }

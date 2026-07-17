@@ -24,7 +24,7 @@ export interface ReadingMeta {
     topics: Array<{ key: string; name: string }>;
     difficulties: string[];
     judgementModes: ReadingJudgementMode[];
-    fullMode: { passageCount: number; questionsPerPassage: number };
+    fullMode: { passageCount: number; questionsByPassage: Record<string, number>; totalQuestions: number };
 }
 
 export interface ReadingGenerateRequest {

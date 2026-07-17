@@ -10,7 +10,9 @@ import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import ReadingQuestionRenderer, { scoreSection } from '../../components/reading/ReadingQuestionRenderer';
 import ReadingPassageBlock from '../../components/reading/ReadingPassageBlock';
+import { rawToBand, formatBand } from '../../utils/ielts_band';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
+import PracticeBottomBar from '../../components/common/PracticeBottomBar';
 import '../../styles/reading_page.css';
 
 // 题目数据来自 AI 生成/题库旧记录，字段漂移不可完全预防——出错时降级为局部提示而不是整页白屏
@@ -360,7 +362,8 @@ function Reading_page() {
                 if (newWidth > 150 && newWidth < window.innerWidth * 0.4) leftSidebarRef.current.style.width = newWidth + 'px';
             } else if (isResizingRight && rightSidebarRef.current) {
                 const newWidth = startWidth - (e.clientX - startX);
-                if (newWidth > 150 && newWidth < window.innerWidth * 0.4) rightSidebarRef.current.style.width = newWidth + 'px';
+                // 做题面板允许拉到屏幕 70%，方便宽表格题型（matching 等）完整展示
+                if (newWidth > 150 && newWidth < window.innerWidth * 0.7) rightSidebarRef.current.style.width = newWidth + 'px';
             }
         };
 
@@ -505,33 +508,42 @@ function Reading_page() {
         ? ((st.fullData.passages || []).find(p => p.passageNum === st.activePassage) || (st.fullData.passages || [])[0] || null)
         : null;
 
-    // Memoized Blocks
+    // ── 底部导航条数据 ──
+    // 胶囊显示真实 q.id（full-test 下 Passage 2 = 14..26，与题面印的编号一致）
+    const navQuestionIds = useMemo<number[]>(() => {
+        if (st.fullData && activePassageData) {
+            return (activePassageData.sections || []).flatMap(sec => (sec.questions || []).map(q => q.id));
+        }
+        return (st.quizData?.questions || []).map(q => q.id);
+    }, [st.quizData, st.fullData, activePassageData]);
+
+    // answerVersion 是 uncontrolled answersRef 的重渲染节拍，作答后已答集合随之重算
+    const navAnsweredIds = useMemo<Set<number>>(() => {
+        void answerVersion; // 答案存 ref，靠该 tick 触发重算
+        const s = new Set<number>();
+        for (const [k, v] of Object.entries(userAnswersRef.current)) {
+            if (String(v ?? '').trim()) s.add(Number(k));
+        }
+        return s;
+    }, [answerVersion]);
+
+    const navOverviewParts = useMemo(() => {
+        if (!st.fullData) return undefined;
+        return (st.fullData.passages || []).map(p => ({
+            label: `Passage ${p.passageNum}`,
+            questionIds: (p.sections || []).flatMap(sec => (sec.questions || []).map(q => q.id)),
+            active: p.passageNum === st.activePassage,
+        }));
+    }, [st.fullData, st.activePassage]);
+
+    // Memoized Blocks — Part 切换已移到底部导航条（点击收起的 Passage 标签），
+    // 文章列内不再渲染顶部 tabs。
     const articleMemoBlock = useMemo(() => {
-        const showTabs = Boolean(st.fullData && st.fullData.passages.length > 1);
-        const inner = st.fullData && activePassageData
+        return st.fullData && activePassageData
             ? <ReadingPassageBlock title={activePassageData.title} passage={activePassageData.passage} />
             : (st.quizData ? <ReadingPassageBlock title={st.quizData.title} passage={st.quizData.passage} /> : null);
-        if (!inner) return null;
-        if (!showTabs) return inner;
-        // In full-test mode with multiple passages: prepend tabs inside the article column.
-        return (
-            <div className="main-content-with-tabs">
-                <div className="passage-tabs">
-                    {(st.fullData!.passages || []).map(p => (
-                        <button
-                            key={p.passageNum}
-                            className={`passage-tab ${st.activePassage === p.passageNum ? 'active' : ''}`}
-                            onClick={() => set('activePassage', p.passageNum)}
-                        >
-                            Passage {p.passageNum}
-                        </button>
-                    ))}
-                </div>
-                {inner}
-            </div>
-        );
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [st.quizData, st.fullData, activePassageData, st.activePassage]);
+    }, [st.quizData, st.fullData, activePassageData]);
 
     const questionsMemoBlock = useMemo(() => {
         // Full-test: render each section for the active passage
@@ -598,20 +610,6 @@ function Reading_page() {
                                 <span className="btn-icon">📝</span> {t.readingDetails.questions}
                             </button>
                         </div>
-                        <div className="reading-timer">
-                            <span className="timer-icon">⏱️</span>
-                            {formatTime(st.elapsedSeconds).h !== '00' && (
-                                <span className="timer-digit">
-                                    {formatTime(st.elapsedSeconds).h}<span className="timer-unit">h</span>
-                                </span>
-                            )}
-                            <span className="timer-digit">
-                                {formatTime(st.elapsedSeconds).m}<span className="timer-unit">m</span>
-                            </span>
-                            <span className="timer-digit">
-                                {formatTime(st.elapsedSeconds).s}<span className="timer-unit">s</span>
-                            </span>
-                        </div>
                         <div className="toolbar-right-group">
                             <button
                                 id="highlight-toggle-btn"
@@ -620,12 +618,6 @@ function Reading_page() {
                             >
                                 <span className="btn-icon">💡</span> {t.readingDetails.hideTargets}
                             </button>
-                            <button className="toolbar-btn toolbar-btn-danger" onClick={async () => {
-                                if (await showConfirm(t.readingDetails.exitConfirm)) {
-                                    onReturnHome();
-                                }
-                            }}>
-                                <span className="btn-icon">🚪</span> {t.readingDetails.exitBtn}</button>
                         </div>
                     </div>
 
@@ -655,11 +647,25 @@ function Reading_page() {
                         <div id="rightSidebar" ref={rightSidebarRef} className={`reading-sidebar ${st.isRightOpen ? 'open' : ''}`}>
                             <h2 style={{ marginTop: 0 }}>{questionPanelTitle}</h2>
                             {questionsMemoBlock}
-                            <div className="submit-quiz-container">
-                                <button onClick={submitQuiz}>{t.readingDetails.submitBtn}</button>
-                            </div>
                         </div>
                     </div>
+
+                    <PracticeBottomBar
+                        questionIds={navQuestionIds}
+                        answeredIds={navAnsweredIds}
+                        scrollContainerId="questionsForm"
+                        elapsedSeconds={st.elapsedSeconds}
+                        onSubmit={submitQuiz}
+                        onExit={async () => {
+                            if (await showConfirm(t.readingDetails.exitConfirm)) {
+                                onReturnHome();
+                            }
+                        }}
+                        submitLabel={t.readingDetails.submitBtn}
+                        exitLabel={t.readingDetails.exitBtn}
+                        navLabels={t.readingDetails.questionNav}
+                        overviewParts={navOverviewParts}
+                    />
                 </div>
             </div>
         );
@@ -678,6 +684,8 @@ function Reading_page() {
             total += r.total;
         }
         const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+        // 全套（3 篇 40 题）额外给 9 分制换算；单篇 full 不适用
+        const band = st.fullData && !st.fullData.singlePassage ? rawToBand('reading', score, total) : null;
 
         // Which passages to show for the "show passage" sidebar
         const passageBlocks = st.fullData ? (st.fullData.passages || []) : [{ passageNum: 1, title: st.quizData!.title, passage: st.quizData!.passage, topic: st.quizData!.topic, sections: [] as FullPassageSection[] }];
@@ -703,6 +711,12 @@ function Reading_page() {
                             <div className="score-number">{score}<span className="score-total">/{total}</span></div>
                             <div className="score-pct">{pct}%</div>
                         </div>
+                        {band !== null && (
+                            <div className="score-card score-band-card" title={t.results.estimatedBand}>
+                                <div className="score-band-label">{t.results.estimatedBand}</div>
+                                <div className="score-number">{formatBand(band)}<span className="score-total">/9</span></div>
+                            </div>
+                        )}
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
                             <span className="btn-icon">{st.isPassageOpen ? '📕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
                         </button>

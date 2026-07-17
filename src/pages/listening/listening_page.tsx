@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { showConfirm } from '../../components/common/ConfirmService';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { createListeningState } from '../../store/listen_page_store';
@@ -22,6 +22,7 @@ import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
 import { sanitize } from '../../utils/safe_html';
 import { mapImageSrc } from '../../utils/media';
+import { rawToBand, formatBand } from '../../utils/ielts_band';
 import {
     FormRenderer,
     TableRenderer,
@@ -35,6 +36,7 @@ import {
 import ListeningMapSVG from '../../components/listening/ListeningMapSVG';
 import MatchingLetterGrid from '../../components/common/MatchingLetterGrid';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
+import PracticeBottomBar from '../../components/common/PracticeBottomBar';
 import '../../styles/listening_page.css';
 import '../../styles/reading_page.css';
 
@@ -138,6 +140,53 @@ function ListeningPage() {
         setRenderTick(t => t + 1);
     }, []);
 
+    // ── 底部导航条数据（胶囊显示真实 q.id；full-test 下 Section 2 = 11..20） ──
+    const navQuestionIds = useMemo<number[]>(() => {
+        const data = st.listeningData;
+        if (!data) return [];
+        if (data.type === 'full') {
+            const sec = (data.sections || []).find(s => s.sectionNum === st.activeSection) || (data.sections || [])[0];
+            return (sec?.questions || []).map(q => q.id);
+        }
+        const qs = (data as { questions?: { id: number }[] }).questions;
+        return Array.isArray(qs) ? qs.map(q => q.id) : [];
+    }, [st.listeningData, st.activeSection]);
+
+    // renderTick 是 answersRef 的重渲染节拍（内联填空是 uncontrolled，输入中不触发，
+    // 已答填色在下一次自然重渲染时跟上——与现有行为一致的已知取舍）
+    const navAnsweredIds = useMemo<Set<number>>(() => {
+        void renderTick; // 答案存 ref，靠该 tick 触发重算
+        const s = new Set<number>();
+        for (const [k, v] of Object.entries(userAnswersRef.current)) {
+            if (String(v ?? '').trim()) s.add(Number(k));
+        }
+        return s;
+    }, [renderTick]);
+
+    const navOverviewParts = useMemo(() => {
+        const data = st.listeningData;
+        if (!data || data.type !== 'full') return undefined;
+        return (data.sections || []).map(sec => {
+            const qids = (sec.questions || []).map(q => q.id);
+            return {
+                label: `Section ${sec.sectionNum}`,
+                total: qids.length,
+                answeredCount: qids.filter(id => navAnsweredIds.has(id)).length,
+                active: sec.sectionNum === st.activeSection,
+            };
+        });
+    }, [st.listeningData, st.activeSection, navAnsweredIds]);
+
+    // 作答耗时 tick（与阅读一致；音频播放进度是另一回事）
+    useEffect(() => {
+        if (st.step !== 2 || st.isLoading || !st.startTime) return;
+        const interval = setInterval(() => {
+            set('elapsedSeconds', Math.floor((Date.now() - st.startTime) / 1000));
+        }, 1000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [st.step, st.isLoading, st.startTime]);
+
     const formatAudioTime = (secs: number): string => {
         if (!isFinite(secs) || secs < 0) return '0:00';
         const m = Math.floor(secs / 60);
@@ -221,6 +270,8 @@ function ListeningPage() {
                     listeningData: cachedData,
                     vocabList: cachedVocab,
                     isLoading: false,
+                    startTime: Date.now(),
+                    elapsedSeconds: 0,
                 }));
                 // 音频不可持久化，刷新后无音频但题目保留
                 return;
@@ -287,6 +338,8 @@ function ListeningPage() {
                     isLoading: false,
                     isRightOpen: true,
                     step: 2,
+                    startTime: Date.now(),
+                    elapsedSeconds: 0,
                 }));
                 const saved = (detail.userAnswer || null) as Record<number, string> | null;
                 if (saved && typeof saved === 'object') {
@@ -314,6 +367,8 @@ function ListeningPage() {
                 isLoading: false,
                 isRightOpen: listeningData.type === 'article',
                 step: 2,
+                startTime: Date.now(),
+                elapsedSeconds: 0,
             }));
 
             const saved = (detail.userAnswer || null) as Record<number, string> | null;
@@ -441,7 +496,7 @@ function ListeningPage() {
 
     const restartFromBank = () => {
         userAnswersRef.current = {};
-        setSt(s => ({ ...s, step: 2 }));
+        setSt(s => ({ ...s, step: 2, startTime: Date.now(), elapsedSeconds: 0 }));
     };
 
     // 播放已经预提取的音频
@@ -633,12 +688,15 @@ function ListeningPage() {
 
         // 辅助渲染内联填空
         const renderInlineInput = (qId: number, idx: number) => {
-            // 与阅读 note/summary/sentence completion 共用 .rd-blank-input 样式
+            // 与阅读 note/summary/sentence completion 共用 .rd-blank-input 样式。
+            // data-question-id 挂在 input 本体：article/sentence/兜底三种路径都经过
+            // 这里，底部导航条的跳转/高亮锚点一处覆盖。
             return (
                 <input
                     key={`input-${qId}-${idx}`}
                     type="text"
                     className="rd-blank-input"
+                    data-question-id={qId}
                     placeholder={qId.toString()}
                     defaultValue={userAnswersRef.current[qId] || ''}
                     onChange={(e) => { userAnswersRef.current[qId] = e.target.value; }}
@@ -732,7 +790,7 @@ function ListeningPage() {
             return (
                 <div className="listening-mc-mode" key={`tick-${renderTick}`}>
                     {qs.map((q: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
-                        <div key={q.id} className="question-block">
+                        <div key={q.id} className="question-block" data-question-id={q.id}>
                             <div className="question-text">
                                 {q.id}. {removeMarkdown(bankVal(q.question))}
                             </div>
@@ -994,17 +1052,6 @@ function ListeningPage() {
                                     </select>
                                 </div>
                             )}
-                            {ttsStarted && (
-                                <button
-                                    className="toolbar-btn toolbar-btn-outline"
-                                    onClick={toggleControlsHidden}
-                                    style={{ marginLeft: '8px' }}
-                                    title={controlsHidden ? t.listeningDetails.player.showControls : t.listeningDetails.player.hideControls}
-                                >
-                                    <span className="btn-icon">{controlsHidden ? '👁' : '🙈'}</span>
-                                    {controlsHidden ? t.listeningDetails.player.showBtn : t.listeningDetails.player.hideBtn}
-                                </button>
-                            )}
                         </div>
                         <div className="toolbar-info-badges">
                             <span className="toolbar-badge mode-badge">
@@ -1019,14 +1066,16 @@ function ListeningPage() {
                             )}
                         </div>
                         <div className="toolbar-right-group">
-                            <button className="toolbar-btn toolbar-btn-danger" onClick={async () => {
-                                if (await showConfirm(t.listeningDetails.exitConfirm)) {
-                                    if (audioRef.current) audioRef.current.pause();
-                                    onReturnHome();
-                                }
-                            }}>
-                                <span className="btn-icon">🚪</span> {t.listeningDetails.exitBtn}
-                            </button>
+                            {ttsStarted && (
+                                <button
+                                    className="toolbar-btn toolbar-btn-outline"
+                                    onClick={toggleControlsHidden}
+                                    title={controlsHidden ? t.listeningDetails.player.showControls : t.listeningDetails.player.hideControls}
+                                >
+                                    <span className="btn-icon">{controlsHidden ? '👁' : '🙈'}</span>
+                                    {controlsHidden ? t.listeningDetails.player.showBtn : t.listeningDetails.player.hideBtn}
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -1078,7 +1127,7 @@ function ListeningPage() {
                                                 {sub.type === 'multiple_choice' && (sub.questions || []).map(q => {
                                                     const mcq = q as { id: number; question: string; options: Record<string, string>; answer: string };
                                                     return (
-                                                        <div key={mcq.id} className="question-block">
+                                                        <div key={mcq.id} className="question-block" data-question-id={mcq.id}>
                                                             <div className="question-text">{mcq.id}. {bankVal(mcq.question)}</div>
                                                             {mcq.options && Object.entries(mcq.options).map(([k, v]) => (
                                                                 <label key={k} className="option-label">
@@ -1159,7 +1208,7 @@ function ListeningPage() {
                                                         {(sub.questions || []).map(q => {
                                                             const fq = q as { id: number; question?: string };
                                                             return (
-                                                                <div key={fq.id} className="question-block">
+                                                                <div key={fq.id} className="question-block" data-question-id={fq.id}>
                                                                     <div className="question-text">{fq.id}. {fq.question || ''}</div>
                                                                     <input
                                                                         type="text"
@@ -1195,10 +1244,25 @@ function ListeningPage() {
                                 {t.components.questionRenderer.unsupportedType.replace('{t}', String(st.listeningData.type))}
                             </div>)}
 
-                        <div className="submit-quiz-container" style={{ marginTop: '40px', paddingBottom: '40px' }}>
-                            <button onClick={submitQuiz}>{t.readingDetails.submitBtn}</button>
-                        </div>
                     </div>
+
+                    <PracticeBottomBar
+                        questionIds={navQuestionIds}
+                        answeredIds={navAnsweredIds}
+                        scrollContainerId="listeningContent"
+                        elapsedSeconds={st.elapsedSeconds}
+                        onSubmit={submitQuiz}
+                        onExit={async () => {
+                            if (await showConfirm(t.listeningDetails.exitConfirm)) {
+                                if (audioRef.current) audioRef.current.pause();
+                                onReturnHome();
+                            }
+                        }}
+                        submitLabel={t.readingDetails.submitBtn}
+                        exitLabel={t.listeningDetails.exitBtn}
+                        navLabels={t.listeningDetails.questionNav}
+                        overviewParts={navOverviewParts}
+                    />
                 </div>
             </div>
         );
@@ -1230,6 +1294,8 @@ function ListeningPage() {
         const { correct: score } = scoreListeningQuestions(allResultQuestions, id => userAnswersRef.current[id] || '');
         const total = allResultQuestions.length;
         const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+        // 全套（4 section 40 题）额外给 9 分制换算；单 section 的 full 记录被 total 门槛挡住
+        const band = isFullResults ? rawToBand('listening', score, total) : null;
         // Concatenate passages for the "show passage" sidebar
         const passageText = isFullResults
             ? ((st.listeningData as FullListeningData).sections || []).map(s => `[Section ${s.sectionNum}] ${s.title || ''}\n\n${s.passage || ''}`).join('\n\n---\n\n')
@@ -1248,6 +1314,12 @@ function ListeningPage() {
                             <div className="score-number">{score}<span className="score-total">/{total}</span></div>
                             <div className="score-pct">{pct}%</div>
                         </div>
+                        {band !== null && (
+                            <div className="score-card score-band-card" title={t.results.estimatedBand}>
+                                <div className="score-band-label">{t.results.estimatedBand}</div>
+                                <div className="score-number">{formatBand(band)}<span className="score-total">/9</span></div>
+                            </div>
+                        )}
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
                             <span className="btn-icon">{st.isPassageOpen ? '✕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
                         </button>

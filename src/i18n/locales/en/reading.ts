@@ -166,4 +166,9 @@ export const readingDetails: typeof zh.readingDetails = {
   toastSaveFail: "Failed to save answers, but this session's results are shown",
   exitConfirm: 'Are you sure you want to exit practice? Unsaved progress may be lost',
   exitBtn: 'Exit Practice',
+  questionNav: {
+    jumpTo: 'Jump to question {n}',
+    progress: '{answered} of {total}',
+    barLabel: 'Question navigator',
+  },
 };
