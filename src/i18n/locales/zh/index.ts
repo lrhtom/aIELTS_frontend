@@ -15,6 +15,7 @@ import * as analytics from './analytics';
 import * as assistant from './assistant';
 import * as vocab from './vocab';
 import * as tourNs from './tour';
+import * as mockNs from './mock';
 
 export const zh = {
   ...core,
@@ -33,4 +34,5 @@ export const zh = {
   ...assistant,
   ...vocab,
   ...tourNs,
+  ...mockNs,
 };

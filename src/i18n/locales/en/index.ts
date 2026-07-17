@@ -16,6 +16,7 @@ import * as analytics from './analytics';
 import * as assistant from './assistant';
 import * as vocab from './vocab';
 import * as tourNs from './tour';
+import * as mockNs from './mock';
 
 export const en: typeof zh = {
   ...core,
@@ -34,4 +35,5 @@ export const en: typeof zh = {
   ...assistant,
   ...vocab,
   ...tourNs,
+  ...mockNs,
 };

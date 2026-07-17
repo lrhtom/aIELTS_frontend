@@ -22,6 +22,7 @@ import { speakingStore } from '../../store/speaking_page_store';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { ATInterceptor } from '../../api/atInterceptor';
 import { startSpeakingSession, getAIQuestion, submitAIQuestion } from '../../api/ai_question';
+import { useMockExamGuard } from '../../components/mock/useMockExamGuard';
 import { showToast } from '../../components/common/Toast';
 import { devLog } from '../../utils/devLog';
 import { NoiseAmbience } from '../../utils/noise_ambience';
@@ -168,11 +169,15 @@ function SpeakingChatPage() {
         customDesc?: string,
         voiceOnly?: boolean,
         scenarioModifiers?: Record<string, string[]>,
+        mockId?: number,
     };
     // 从 AI 题库恢复会话：/speaking/chat?bankId=123
     const [searchParams] = useSearchParams();
     const bankIdRaw = searchParams.get('bankId');
     const resumeId = bankIdRaw && !Number.isNaN(Number(bankIdRaw)) ? Number(bankIdRaw) : null;
+    // 全套模拟：考试规则（5 秒反应 + 防退出 + 结束回大厅）。新开局走 state，刷新/恢复走 query。
+    const mockIdRaw = searchParams.get('mockId');
+    const mockId: number | null = state?.mockId ?? (mockIdRaw && !Number.isNaN(Number(mockIdRaw)) ? Number(mockIdRaw) : null);
 
     const vocabRaw: string = state?.vocabInput ?? '';
     const initialMode: SpeakingMode = state?.mode ?? 'chat';
@@ -286,6 +291,41 @@ function SpeakingChatPage() {
     const setWordsSync = (fn: (p: Word[]) => Word[]) => {
         setWords(prev => { const n = fn(prev); wordsRef.current = n; return n; });
     };
+
+    // ── 全套模拟：防退出守卫 + 5 秒反应规则 ─────────────────────────────
+    // 守卫在会话结束（finished）后解除；退出确认 → forfeit 判 0 → 回大厅。
+    const { confirmExit: mockConfirmExit } = useMockExamGuard({
+        mockId: mockId ?? 0,
+        part: 'speaking',
+        active: mockId !== null && status !== 'finished',
+    });
+    // 考官说完（idle）起 5 秒内必须开口；Part 2 备考期（prepTimeLeft>0）豁免。
+    // 超时 → 本题按空回答走正常流水线（评分≈0 并推进下一题/换 Part）。
+    const [reactionLeft, setReactionLeft] = useState<number | null>(null);
+    const reactionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    useEffect(() => {
+        const eligible = mockId !== null && isFullTestMode && status === 'idle' && prepTimeLeft <= 0;
+        if (!eligible) {
+            setReactionLeft(null);
+            return;
+        }
+        let left = 5;
+        setReactionLeft(left);
+        reactionTimerRef.current = setInterval(() => {
+            left -= 1;
+            setReactionLeft(left);
+            if (left <= 0) {
+                if (reactionTimerRef.current) { clearInterval(reactionTimerRef.current); reactionTimerRef.current = null; }
+                setReactionLeft(null);
+                showToast(t.mock.examMode.speakingReactionTimeout, 'info');
+                handleSend('(No response)');
+            }
+        }, 1000);
+        return () => {
+            if (reactionTimerRef.current) { clearInterval(reactionTimerRef.current); reactionTimerRef.current = null; }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mockId, isFullTestMode, status, prepTimeLeft]);
 
     // ── Init: play welcome then unlock mic ─────────────────────────────────
     useEffect(() => {
@@ -410,7 +450,14 @@ function SpeakingChatPage() {
                     // 题库卡片简介从 content.description 读取（与听/读/写一致）
                     description: (state?.customDesc ?? '').trim(),
                 },
-            ).then(res => { sessionIdRef.current = res.id; }).catch(() => {});
+                mockId ?? undefined,
+            ).then(res => {
+                sessionIdRef.current = res.id;
+                // mock：把 bankId/mockId 写回 URL，刷新后可直接走恢复路径续考
+                if (mockId) {
+                    window.history.replaceState(window.history.state, '', `/speaking/chat?bankId=${res.id}&mockId=${mockId}`);
+                }
+            }).catch(() => {});
         }
 
         (async () => {
@@ -1172,6 +1219,7 @@ function SpeakingChatPage() {
                 words,
                 mode: isFullTestMode ? 'fullTest' : activeMode,
                 sessionId: sessionIdRef.current,
+                mockId: mockId ?? undefined,
             }
         });
     };
@@ -1253,6 +1301,12 @@ function SpeakingChatPage() {
 
     return (
         <div className="sc-root">
+            {/* 全套模拟：5 秒反应倒计时（Part 2 备考期不出现） */}
+            {reactionLeft !== null && (
+                <div className="mock-reaction-badge">
+                    ⏱ {t.mock.examMode.speakingReaction.replace('{s}', String(reactionLeft))}
+                </div>
+            )}
             {/* 背景噪音环境音：静音/外放开关（仅场景模式开启 noise 时出现）*/}
             {activeMode === 'scenario' && ('noise' in scenarioModifiers) && (
                 <button
@@ -1268,7 +1322,7 @@ function SpeakingChatPage() {
             {/* ── Sidebar: Word Basket & Ai Settings ── */}
             <aside className="sc-sidebar">
                 <div className="sc-sidebar-header">
-                    <button className="sc-back-btn" onClick={() => navigate('/practice/ai/bank?skill=speaking')}>{t.speakingChat.backBtn}</button>
+                    <button className="sc-back-btn" onClick={() => { if (mockId) { mockConfirmExit(); } else { navigate('/practice/ai/bank?skill=speaking'); } }}>{mockId ? t.mock.examMode.backToHub : t.speakingChat.backBtn}</button>
                     <h3>{t.speakingChat.vocabHeading}</h3>
                 </div>
 

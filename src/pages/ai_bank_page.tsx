@@ -10,6 +10,7 @@ import '../styles/ai_bank.css';
 
 function resolveAnswerRoute(item: AIQuestionSummary): string {
     const id = item.id;
+    if (item.skill === 'mock') return `/mock/${id}`;
     if (item.skill === 'reading') return `/reading?bankId=${id}`;
     if (item.skill === 'listening') return `/listening?bankId=${id}`;
     if (item.skill === 'speaking') {
@@ -54,19 +55,25 @@ export default function AIBankPage() {
     const [searchParams] = useSearchParams();
     const justId = searchParams.get('just');
 
+    const tMock = translations[lang].mock.bank;
+
     const SKILL_TABS: { key: AIQuestionSkill; label: string; emoji: string }[] = [
         { key: 'listening', label: t.tabs.listening, emoji: '🎧' },
         { key: 'reading',   label: t.tabs.reading,   emoji: '📖' },
         { key: 'writing',   label: t.tabs.writing,   emoji: '✍️' },
         { key: 'speaking',  label: t.tabs.speaking,  emoji: '🗣️' },
+        { key: 'mock',      label: tMock.tab,        emoji: '🎯' },
     ];
+
+    const isSkillKey = (v: string | null): v is AIQuestionSkill =>
+        v === 'reading' || v === 'listening' || v === 'writing' || v === 'speaking' || v === 'mock';
 
     const [activeSkill, setActiveSkill] = useState<AIQuestionSkill>(() => {
         // ?skill= 直达指定 tab（口语退出按钮用），优先级高于上次记住的 tab
         const fromQuery = searchParams.get('skill');
-        if (fromQuery === 'reading' || fromQuery === 'listening' || fromQuery === 'writing' || fromQuery === 'speaking') return fromQuery;
+        if (isSkillKey(fromQuery)) return fromQuery;
         const stored = sessionStorage.getItem('ai_bank_active_skill');
-        if (stored === 'reading' || stored === 'listening' || stored === 'writing' || stored === 'speaking') return stored;
+        if (isSkillKey(stored)) return stored;
         return 'listening';
     });
     const [items, setItems] = useState<AIQuestionSummary[]>([]);
@@ -121,6 +128,11 @@ export default function AIBankPage() {
     }, [items, justId]);
 
     const handleClick = (item: AIQuestionSummary) => {
+        // 全套模拟：任何状态都进大厅（大厅展示生成进度 / 失败重生成入口）
+        if (item.skill === 'mock') {
+            navigate(resolveAnswerRoute(item));
+            return;
+        }
         if (item.status === 'generating') {
             showToast(t.toastStillGenerating, 'info');
             return;
@@ -208,15 +220,22 @@ export default function AIBankPage() {
                             const isFailed = item.status === 'failed';
                             // speaking：对话开始即有 userAnswer，"完成"以有总结报告为准；
                             // 且每轮都会同步 lastAttemptAt，redone 概念不适用
+                            // mock：以综合成绩单为准（父行的 userAnswer 是考试状态机）
                             const isSpeaking = item.skill === 'speaking';
-                            const answeredFlag = isSpeaking ? item.hasFeedback : item.isAnswered;
+                            const isMock = item.skill === 'mock';
+                            const answeredFlag = isMock ? Boolean(item.mock?.hasReport) : (isSpeaking ? item.hasFeedback : item.isAnswered);
+                            const mockReadyCount = item.mock
+                                ? Object.values(item.mock.slots).filter(s => s === 'ready').length
+                                : 0;
                             const statusLabel = isGenerating
-                                ? t.statusGenerating
+                                ? (isMock ? `⏳ ${tMock.slotStatus.replace('{ready}', String(mockReadyCount)).replace('{total}', '4')}` : t.statusGenerating)
                                 : isFailed
                                     ? t.statusFailed
                                     : (answeredFlag
-                                        ? (!isSpeaking && isRedone(item) ? t.statusRedone : t.statusAnswered)
-                                        : (isSpeaking ? t.statusInProgress : t.statusPending));
+                                        ? (isMock && item.mock?.overall != null
+                                            ? tMock.reportDone.replace('{overall}', item.mock.overall.toFixed(1))
+                                            : (!isSpeaking && !isMock && isRedone(item) ? t.statusRedone : t.statusAnswered))
+                                        : ((isSpeaking || isMock) ? t.statusInProgress : t.statusPending));
                             const statusClass = isGenerating
                                 ? 'generating'
                                 : isFailed
@@ -232,7 +251,7 @@ export default function AIBankPage() {
                                     key={item.id}
                                     className={`ai-bank-card ${isJust ? 'is-just' : ''} ${cardStateClass} ${item.isFavorite ? 'is-favorite' : ''}`}
                                     onClick={() => handleClick(item)}
-                                    aria-disabled={isGenerating || isFailed}
+                                    aria-disabled={!isMock && (isGenerating || isFailed)}
                                 >
                                     <div className="ai-bank-card-head">
                                         <span className={`ai-bank-status ${statusClass}`}>

@@ -1,0 +1,261 @@
+/* 全套模拟 — 考试大厅 + 计时条 */
+
+.mock-hub {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+}
+
+.mock-hub-loading {
+    text-align: center;
+    color: var(--color-text-secondary);
+    padding: 60px 0;
+}
+
+.mock-gen-progress {
+    text-align: center;
+    font-size: 14px;
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+}
+
+/* ── 部分行（每行一个元素，自上而下）── */
+.mock-part-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mock-part-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-surface);
+    transition: border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.mock-part-row.is-locked,
+.mock-part-row.is-generating {
+    opacity: 0.65;
+}
+
+.mock-part-row.is-ready {
+    border-color: var(--color-primary);
+}
+
+.mock-part-row.is-in_progress {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 1px #f59e0b inset;
+}
+
+.mock-part-icon {
+    font-size: 28px;
+    width: 44px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.mock-part-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.mock-part-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.mock-part-meta {
+    font-size: 12.5px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+}
+
+.mock-part-action {
+    flex-shrink: 0;
+}
+
+.mock-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.mock-row-hint {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+/* ── 徽章 ── */
+.mock-badge {
+    display: inline-block;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.mock-badge-generating { color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
+.mock-badge-failed,
+.mock-badge-forfeited { color: #dc2626; background: color-mix(in srgb, #dc2626 12%, transparent); }
+.mock-badge-expired { color: #b45309; background: color-mix(in srgb, #b45309 12%, transparent); }
+.mock-badge-locked { color: var(--color-text-secondary); background: color-mix(in srgb, var(--color-text-secondary) 12%, transparent); }
+.mock-badge-done { color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
+.mock-badge-timer { color: #b45309; background: color-mix(in srgb, #f59e0b 15%, transparent); font-variant-numeric: tabular-nums; }
+
+/* ── 按钮 ── */
+.mock-btn {
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.mock-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.mock-btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.mock-btn-primary:hover:not(:disabled) { background: #0f766e; }
+
+.mock-btn-ghost {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+}
+
+.mock-btn-ghost:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+/* ── 成绩单 ── */
+.mock-report-row.is-ready { border-color: var(--color-primary); }
+
+.mock-report-card {
+    margin-top: 24px;
+    padding: 24px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-surface);
+}
+
+.mock-report-card h3 {
+    margin: 0 0 16px;
+    font-size: 17px;
+    color: var(--color-text);
+}
+
+.mock-report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
+}
+
+.mock-report-cell {
+    text-align: center;
+    padding: 14px 8px;
+    border-radius: 12px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+}
+
+.mock-report-cell-overall {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.mock-report-cell-label {
+    font-size: 12.5px;
+    color: var(--color-text-secondary);
+    margin-bottom: 6px;
+}
+
+.mock-report-cell-band {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--color-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.mock-report-note {
+    margin: 12px 0 0;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+/* ── 考试模式倒计时条（答题页顶部 sticky，批次 3 使用）── */
+.mock-timer-bar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--color-surface);
+    border-bottom: 2px solid var(--color-primary);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.mock-timer-bar.is-warning { border-bottom-color: #f59e0b; color: #b45309; }
+.mock-timer-bar.is-danger { border-bottom-color: #dc2626; color: #dc2626; animation: mockTimerPulse 1s infinite; }
+
+.mock-timer-bar .mock-timer-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+@keyframes mockTimerPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+}
+
+/* ── 口语 5 秒反应倒计时徽章（考官说完后浮现，开口即消失）── */
+.mock-reaction-badge {
+    position: fixed;
+    top: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    background: #dc2626;
+    color: #fff;
+    padding: 6px 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+    animation: mockTimerPulse 1s infinite;
+    pointer-events: none;
+}
+
+@media (max-width: 560px) {
+    .mock-part-row {
+        flex-wrap: wrap;
+    }
+    .mock-part-action {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+    }
+}

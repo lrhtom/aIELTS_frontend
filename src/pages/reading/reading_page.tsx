@@ -13,6 +13,8 @@ import ReadingPassageBlock from '../../components/reading/ReadingPassageBlock';
 import { rawToBand, formatBand } from '../../utils/ielts_band';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import PracticeBottomBar from '../../components/common/PracticeBottomBar';
+import { MockTimerBar } from '../../components/mock/MockExamShell';
+import { useMockExamGuard } from '../../components/mock/useMockExamGuard';
 import '../../styles/reading_page.css';
 
 // 题目数据来自 AI 生成/题库旧记录，字段漂移不可完全预防——出错时降级为局部提示而不是整页白屏
@@ -29,10 +31,13 @@ function Reading_page() {
     const [searchParams] = useSearchParams();
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
+    // 全套模拟：mockId 存在 → 考试模式（计时 + 防退出 + 交卷回大厅）
+    const mockIdParam = searchParams.get('mockId');
+    const mockId = mockIdParam ? Number(mockIdParam) : null;
     const vocabInput: string = state?.vocabInput ?? '';
     const difficulty: string = state?.difficulty ?? '7.0';
     const navigate = useNavigate();
-    const onReturnHome = () => navigate(bankId ? '/practice/ai/bank' : '/');
+    const onReturnHome = () => navigate(mockId ? `/mock/${mockId}` : (bankId ? '/practice/ai/bank' : '/'));
     const { translations: t } = useLang();
     const absurdMode: boolean = Boolean(state?.absurdMode);
     const mode: 'single' | 'full' = state?.mode === 'full' ? 'full' : 'single';
@@ -64,6 +69,26 @@ function Reading_page() {
 
     const CACHE_KEY = 'reading_session_cache';
 
+    // ── 全套模拟考试模式 ──
+    // 作答中（step 2）开启防退出守卫；交卷/查看结果（step 3）后解除。
+    const isMockActive = mockId !== null && st.step === 2 && !st.isLoading;
+    const { confirmExit: mockConfirmExit } = useMockExamGuard({
+        mockId: mockId ?? 0,
+        part: 'reading',
+        active: isMockActive,
+    });
+    const MOCK_DRAFT_KEY = mockId ? `mock:${mockId}:reading:answers` : '';
+    // 草稿自动保存：刷新后能恢复进度（deadline 在服务端，计时不受影响）
+    useEffect(() => {
+        if (!isMockActive || !MOCK_DRAFT_KEY) return;
+        const timer = setInterval(() => {
+            try {
+                localStorage.setItem(MOCK_DRAFT_KEY, JSON.stringify(userAnswersRef.current));
+            } catch { /* 存储满等异常不阻塞作答 */ }
+        }, 4000);
+        return () => clearInterval(timer);
+    }, [isMockActive, MOCK_DRAFT_KEY]);
+
     useEffect(() => {
         if (hasRequested.current) return;
         hasRequested.current = true;
@@ -92,6 +117,16 @@ function Reading_page() {
         generateReading();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // mock 模式刷新恢复：无服务端答案时从本地草稿续答
+    const restoreMockDraft = (): Record<number, string> => {
+        if (!MOCK_DRAFT_KEY) return {};
+        try {
+            const raw = localStorage.getItem(MOCK_DRAFT_KEY);
+            if (raw) return JSON.parse(raw) as Record<number, string>;
+        } catch { /* 草稿损坏按空处理 */ }
+        return {};
+    };
 
     const loadFromBank = async (id: number) => {
         set('isLoading', true);
@@ -131,7 +166,7 @@ function Reading_page() {
                     userAnswersRef.current = { ...saved };
                     setSt(s => ({ ...s, step: 3 }));
                 } else {
-                    userAnswersRef.current = {};
+                    userAnswersRef.current = mockId ? restoreMockDraft() : {};
                 }
                 return;
             }
@@ -178,7 +213,7 @@ function Reading_page() {
                 userAnswersRef.current = { ...saved };
                 setSt(s => ({ ...s, step: 3 }));
             } else {
-                userAnswersRef.current = {};
+                userAnswersRef.current = mockId ? restoreMockDraft() : {};
             }
         } catch (err: unknown) {
             console.error('Bank load error:', err);
@@ -275,7 +310,7 @@ function Reading_page() {
         }
     };
 
-    const submitQuiz = async () => {
+    const submitQuiz = async (forced = false) => {
         // Total question count spans full-test passages OR single quiz.
         let totalQuestions = 0;
         if (st.fullData) {
@@ -290,9 +325,35 @@ function Reading_page() {
             return;
         }
         const answeredQuestions = Object.values(userAnswersRef.current).filter(v => String(v).trim().length > 0).length;
-        if (answeredQuestions < totalQuestions) {
+        if (!forced && answeredQuestions < totalQuestions) {
             if (!(await showConfirm(t.readingDetails.submitConfirm))) return;
         }
+
+        // mock 模式：交卷时同步评分（raw + band）进 aiFeedback，供大厅/成绩单读取
+        if (bankId && mockId) {
+            const sectionsToScore: (FullPassageSection | QuizData)[] = st.fullData
+                ? (st.fullData.passages || []).flatMap(p => p.sections || [])
+                : (st.quizData ? [st.quizData] : []);
+            let correct = 0, total = 0;
+            for (const sec of sectionsToScore) {
+                const r = scoreSection(sec, getAnswer);
+                correct += r.correct;
+                total += r.total;
+            }
+            const band = rawToBand('reading', correct, total) ?? 0;
+            try {
+                await submitAIQuestion(bankId, { ...userAnswersRef.current }, { correct, total, band });
+            } catch (err) {
+                console.error('mock submit failed:', err);
+                showToast(t.readingDetails.toastSaveFail, 'error');
+                if (!forced) return; // 手动交卷失败时留在页面重试；超时强制交卷则继续离场
+            }
+            if (MOCK_DRAFT_KEY) localStorage.removeItem(MOCK_DRAFT_KEY);
+            showToast(t.mock.examMode.submittedToHub, 'success');
+            navigate(`/mock/${mockId}`, { replace: true });
+            return;
+        }
+
         if (bankId) {
             submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
                 console.error('submit to bank failed:', err);
@@ -542,7 +603,6 @@ function Reading_page() {
         return st.fullData && activePassageData
             ? <ReadingPassageBlock title={activePassageData.title} passage={activePassageData.passage} />
             : (st.quizData ? <ReadingPassageBlock title={st.quizData.title} passage={st.quizData.passage} /> : null);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [st.quizData, st.fullData, activePassageData]);
 
     const questionsMemoBlock = useMemo(() => {
@@ -588,14 +648,26 @@ function Reading_page() {
             v.word.toLowerCase().includes(st.searchQuery.toLowerCase()) ||
             v.meaning.toLowerCase().includes(st.searchQuery.toLowerCase())
         );
+        // full test 不再显示 "Full Test" 面板标题——Part 信息已由底部导航条承担
         const questionPanelTitle = st.fullData
-            ? (st.fullData.singlePassage ? `Full Test — Passage ${st.activePassage}` : 'Full Test')
+            ? null
             : (st.quizData!.questionType === 'true_false'
                 ? (st.quizData!.judgementMode === 'easy' ? t.readingDetails.questionsTrueFalseEasy : t.readingDetails.questionsTrueFalseNormal)
                 : t.readingDetails.questionsMcq);
 
         return (
             <div className="reading-container">
+                {mockId !== null && (
+                    <MockTimerBar
+                        mockId={mockId}
+                        part="reading"
+                        onExpire={() => submitQuiz(true)}
+                        onRejected={(msg) => {
+                            showToast(t.mock.examMode.startRejected.replace('{msg}', msg), 'error');
+                            navigate(`/mock/${mockId}`, { replace: true });
+                        }}
+                    />
+                )}
                 <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
                     <u>U</u> {t.readingDetails.underline}
                 </div>
@@ -609,6 +681,20 @@ function Reading_page() {
                             <button className={`toolbar-btn ${st.isRightOpen ? 'active' : ''}`} onClick={() => { if ((window as any).__didDragSidebar) return; if (rightSidebarRef.current) { rightSidebarRef.current.classList.remove('no-transition'); rightSidebarRef.current.style.width = ''; } set('isRightOpen', !st.isRightOpen); }}> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
                                 <span className="btn-icon">📝</span> {t.readingDetails.questions}
                             </button>
+                        </div>
+                        <div className="reading-timer">
+                            <span className="timer-icon">⏱️</span>
+                            {formatTime(st.elapsedSeconds).h !== '00' && (
+                                <span className="timer-digit">
+                                    {formatTime(st.elapsedSeconds).h}<span className="timer-unit">h</span>
+                                </span>
+                            )}
+                            <span className="timer-digit">
+                                {formatTime(st.elapsedSeconds).m}<span className="timer-unit">m</span>
+                            </span>
+                            <span className="timer-digit">
+                                {formatTime(st.elapsedSeconds).s}<span className="timer-unit">s</span>
+                            </span>
                         </div>
                         <div className="toolbar-right-group">
                             <button
@@ -645,7 +731,7 @@ function Reading_page() {
 
                         {/* Right Sidebar */}
                         <div id="rightSidebar" ref={rightSidebarRef} className={`reading-sidebar ${st.isRightOpen ? 'open' : ''}`}>
-                            <h2 style={{ marginTop: 0 }}>{questionPanelTitle}</h2>
+                            {questionPanelTitle && <h2 style={{ marginTop: 0, textAlign: 'center', fontWeight: 700 }}>{questionPanelTitle}</h2>}
                             {questionsMemoBlock}
                         </div>
                     </div>
@@ -654,9 +740,13 @@ function Reading_page() {
                         questionIds={navQuestionIds}
                         answeredIds={navAnsweredIds}
                         scrollContainerId="questionsForm"
-                        elapsedSeconds={st.elapsedSeconds}
-                        onSubmit={submitQuiz}
+                        onSubmit={() => submitQuiz()}
                         onExit={async () => {
+                            // mock 模式：退出 = 判 0，走守卫的确认 + forfeit 流程
+                            if (mockId) {
+                                await mockConfirmExit();
+                                return;
+                            }
                             if (await showConfirm(t.readingDetails.exitConfirm)) {
                                 onReturnHome();
                             }
@@ -665,6 +755,10 @@ function Reading_page() {
                         exitLabel={t.readingDetails.exitBtn}
                         navLabels={t.readingDetails.questionNav}
                         overviewParts={navOverviewParts}
+                        onPartSelect={i => {
+                            const p = st.fullData?.passages?.[i];
+                            if (p) set('activePassage', p.passageNum);
+                        }}
                     />
                 </div>
             </div>
@@ -720,10 +814,11 @@ function Reading_page() {
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
                             <span className="btn-icon">{st.isPassageOpen ? '📕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
                         </button>
-                        {bankId && (
+                        {bankId && !mockId && (
+                            // mock 子题一次定档，不允许重做
                             <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t.aiBank.redoBtn}</button>
                         )}
-                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{bankId ? '📚' : '🏠'}</span> {bankId ? t.aiBank.backToBank : t.common.home}</button>
+                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{mockId ? '🎯' : bankId ? '📚' : '🏠'}</span> {mockId ? t.mock.examMode.backToHub : bankId ? t.aiBank.backToBank : t.common.home}</button>
                     </div>
                 </div>
 

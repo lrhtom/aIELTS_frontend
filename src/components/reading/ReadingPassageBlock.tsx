@@ -27,7 +27,7 @@ export default function ReadingPassageBlock({ title, passage, idPrefix = 'articl
 
     return (
         <div className="main-content">
-            <h2 style={{ marginTop: 0 }} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(title)) }} />
+            <h2 style={{ marginTop: 0, textAlign: 'center', fontWeight: 700 }} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(title)) }} />
             <div
                 id={idPrefix}
                 style={{ outline: 'none', WebkitTouchCallout: 'none' }}

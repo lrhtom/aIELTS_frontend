@@ -37,3 +37,17 @@ export function rawToBand(skill: 'reading' | 'listening', correct: number, total
 export function formatBand(band: number): string {
     return band.toFixed(1);
 }
+
+/**
+ * 四科均分 → 雅思官方总分舍入规则：
+ * 小数部分 < .25 → 舍到整数；[.25, .75) → .5；>= .75 → 进到下一整数。
+ * 例：6.125 → 6.0；6.25 → 6.5；6.625 → 6.5；6.75 → 7.0。
+ */
+export function roundIeltsOverall(mean: number): number {
+    const clamped = Math.max(0, Math.min(9, mean));
+    const floor = Math.floor(clamped);
+    const frac = clamped - floor;
+    if (frac < 0.25) return floor;
+    if (frac < 0.75) return floor + 0.5;
+    return floor + 1;
+}

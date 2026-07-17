@@ -37,6 +37,8 @@ import ListeningMapSVG from '../../components/listening/ListeningMapSVG';
 import MatchingLetterGrid from '../../components/common/MatchingLetterGrid';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import PracticeBottomBar from '../../components/common/PracticeBottomBar';
+import { MockTimerBar } from '../../components/mock/MockExamShell';
+import { useMockExamGuard } from '../../components/mock/useMockExamGuard';
 import '../../styles/listening_page.css';
 import '../../styles/reading_page.css';
 
@@ -80,6 +82,9 @@ function ListeningPage() {
     const [searchParams] = useSearchParams();
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
+    // 全套模拟：mockId 存在 → 考试模式（计时 + 防退出 + 交卷回大厅）
+    const mockIdParam = searchParams.get('mockId');
+    const mockId = mockIdParam ? Number(mockIdParam) : null;
     const vocabInput: string = state?.vocabInput ?? '';
     const difficulty: string = state?.difficulty ?? '7.0';
     const wordCountMin: number = state?.wordCountMin ?? 1;
@@ -97,7 +102,7 @@ function ListeningPage() {
     const customDescription: string = typeof state?.customDescription === 'string' ? state.customDescription.trim() : '';
     const customPrompt: string = typeof state?.customPrompt === 'string' ? state.customPrompt.trim() : '';
     const navigate = useNavigate();
-    const onReturnHome = () => navigate(bankId ? '/practice/ai/bank' : '/');
+    const onReturnHome = () => navigate(mockId ? `/mock/${mockId}` : (bankId ? '/practice/ai/bank' : '/'));
     const { translations: t } = useLang();
     const [absurdMode] = useState<boolean>(Boolean(state?.absurdMode));
 
@@ -166,16 +171,12 @@ function ListeningPage() {
     const navOverviewParts = useMemo(() => {
         const data = st.listeningData;
         if (!data || data.type !== 'full') return undefined;
-        return (data.sections || []).map(sec => {
-            const qids = (sec.questions || []).map(q => q.id);
-            return {
-                label: `Section ${sec.sectionNum}`,
-                total: qids.length,
-                answeredCount: qids.filter(id => navAnsweredIds.has(id)).length,
-                active: sec.sectionNum === st.activeSection,
-            };
-        });
-    }, [st.listeningData, st.activeSection, navAnsweredIds]);
+        return (data.sections || []).map(sec => ({
+            label: `Section ${sec.sectionNum}`,
+            questionIds: (sec.questions || []).map(q => q.id),
+            active: sec.sectionNum === st.activeSection,
+        }));
+    }, [st.listeningData, st.activeSection]);
 
     // 作答耗时 tick（与阅读一致；音频播放进度是另一回事）
     useEffect(() => {
@@ -193,6 +194,18 @@ function ListeningPage() {
         const s = Math.floor(secs % 60);
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
+
+    // 作答耗时（顶部工具栏中间显示；与音频进度 formatAudioTime 是两回事）
+    const formatElapsed = useCallback((totalSeconds: number) => {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        return {
+            h: String(h).padStart(2, '0'),
+            m: String(m).padStart(2, '0'),
+            s: String(s).padStart(2, '0'),
+        };
+    }, []);
 
     const handleSeek = (value: number) => {
         if (!audioRef.current || !isFinite(value)) return;
@@ -247,6 +260,35 @@ function ListeningPage() {
     }, [audioUrl]);
 
     const CACHE_KEY = 'listening_session_cache';
+
+    // ── 全套模拟考试模式 ──
+    const isMockActive = mockId !== null && st.step === 2 && !st.isLoading;
+    const { confirmExit: mockConfirmExit } = useMockExamGuard({
+        mockId: mockId ?? 0,
+        part: 'listening',
+        active: isMockActive,
+    });
+    const MOCK_DRAFT_KEY = mockId ? `mock:${mockId}:listening:answers` : '';
+    // 草稿自动保存：刷新后能恢复进度（deadline 在服务端，计时不受影响）
+    useEffect(() => {
+        if (!isMockActive || !MOCK_DRAFT_KEY) return;
+        const timer = setInterval(() => {
+            try {
+                localStorage.setItem(MOCK_DRAFT_KEY, JSON.stringify(userAnswersRef.current));
+            } catch { /* 存储异常不阻塞作答 */ }
+        }, 4000);
+        return () => clearInterval(timer);
+    }, [isMockActive, MOCK_DRAFT_KEY]);
+
+    // mock 模式刷新恢复：无服务端答案时从本地草稿续答
+    const restoreMockDraft = (): Record<number, string> => {
+        if (!MOCK_DRAFT_KEY) return {};
+        try {
+            const raw = localStorage.getItem(MOCK_DRAFT_KEY);
+            if (raw) return JSON.parse(raw) as Record<number, string>;
+        } catch { /* 草稿损坏按空处理 */ }
+        return {};
+    };
 
     useEffect(() => {
         if (hasRequested.current) return;
@@ -346,7 +388,7 @@ function ListeningPage() {
                     userAnswersRef.current = { ...saved };
                     setSt(s => ({ ...s, step: 3 }));
                 } else {
-                    userAnswersRef.current = {};
+                    userAnswersRef.current = mockId ? restoreMockDraft() : {};
                 }
                 setAudioLoading(true);
                 await fetchAudioForPassage(fullContent.sections[0]?.passage || '');
@@ -376,7 +418,7 @@ function ListeningPage() {
                 userAnswersRef.current = { ...saved };
                 setSt(s => ({ ...s, step: 3 }));
             } else {
-                userAnswersRef.current = {};
+                userAnswersRef.current = mockId ? restoreMockDraft() : {};
             }
 
             setAudioLoading(true);
@@ -463,7 +505,7 @@ function ListeningPage() {
         }
     };
 
-    const submitQuiz = async () => {
+    const submitQuiz = async (forced = false) => {
         if (!st.listeningData) return;
         // Total question count spans full-test sections OR single quiz.
         let totalQuestions = 0;
@@ -477,7 +519,7 @@ function ListeningPage() {
             totalQuestions = Array.isArray(qsArr) ? qsArr.length : 0;
         }
         const answeredQuestions = Object.values(userAnswersRef.current).filter(v => String(v).trim().length > 0).length;
-        if (answeredQuestions < totalQuestions) {
+        if (!forced && answeredQuestions < totalQuestions) {
             if (!(await showConfirm(t.readingDetails.submitConfirm))) return;
         }
         // 停止 TTS
@@ -485,6 +527,35 @@ function ListeningPage() {
             audioRef.current.pause();
         }
         setTtsSpeaking(false);
+
+        // mock 模式：交卷时同步评分（raw + band）进 aiFeedback，供大厅/成绩单读取
+        if (bankId && mockId) {
+            const allQs: { id: number; answer?: string; answers?: string[] }[] = [];
+            if (st.listeningData.type === 'full') {
+                for (const sec of ((st.listeningData as FullListeningData).sections || [])) {
+                    for (const q of (sec.questions || [])) allQs.push(q as { id: number; answer?: string; answers?: string[] });
+                }
+            } else {
+                for (const q of ((st.listeningData as LegacyListeningData).questions || [])) {
+                    allQs.push(q as { id: number; answer?: string; answers?: string[] });
+                }
+            }
+            const { correct } = scoreListeningQuestions(allQs, qid => userAnswersRef.current[qid] || '');
+            const total = allQs.length;
+            const band = rawToBand('listening', correct, total) ?? 0;
+            try {
+                await submitAIQuestion(bankId, { ...userAnswersRef.current }, { correct, total, band });
+            } catch (err) {
+                console.error('mock submit failed:', err);
+                showToast(t.listeningDetails.toastSaveFail, 'error');
+                if (!forced) return; // 手动交卷失败留在页面重试；超时强制交卷继续离场
+            }
+            if (MOCK_DRAFT_KEY) localStorage.removeItem(MOCK_DRAFT_KEY);
+            showToast(t.mock.examMode.submittedToHub, 'success');
+            navigate(`/mock/${mockId}`, { replace: true });
+            return;
+        }
+
         if (bankId) {
             submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
                 console.error('submit to bank failed:', err);
@@ -982,6 +1053,17 @@ function ListeningPage() {
 
         return (
             <div className="reading-container">
+                {mockId !== null && (
+                    <MockTimerBar
+                        mockId={mockId}
+                        part="listening"
+                        onExpire={() => submitQuiz(true)}
+                        onRejected={(msg) => {
+                            showToast(t.mock.examMode.startRejected.replace('{msg}', msg), 'error');
+                            navigate(`/mock/${mockId}`, { replace: true });
+                        }}
+                    />
+                )}
                 <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
                     <u>U</u> {t.readingDetails.underline}
                 </div>
@@ -1054,6 +1136,14 @@ function ListeningPage() {
                             )}
                         </div>
                         <div className="toolbar-info-badges">
+                            <span className="reading-timer">
+                                <span className="timer-icon">⏱️</span>
+                                {formatElapsed(st.elapsedSeconds).h !== '00' && (
+                                    <span className="timer-digit">{formatElapsed(st.elapsedSeconds).h}<span className="timer-unit">h</span></span>
+                                )}
+                                <span className="timer-digit">{formatElapsed(st.elapsedSeconds).m}<span className="timer-unit">m</span></span>
+                                <span className="timer-digit">{formatElapsed(st.elapsedSeconds).s}<span className="timer-unit">s</span></span>
+                            </span>
                             <span className="toolbar-badge mode-badge">
                                 {isMapMode ? `🗺️ ${t.listeningDetails.typeMap}` : isArticleMode ? `📄 ${t.listeningDetails.typeArticle}` : isMultipleChoiceMode ? `🎯 ${t.listeningDetails.typeMC}` : `✏️ ${t.listeningDetails.typeSentence}`}
                             </span>
@@ -1088,21 +1178,9 @@ function ListeningPage() {
                             const activeSec = sections.find(s => s.sectionNum === st.activeSection) || sections[0];
                             if (!activeSec) return null;
                             const offset = ((activeSec.sectionNum || 1) - 1) * 10;
+                            {/* Section 切换已移到底部导航条（点击收起的 Section 标签） */}
                             return (
                                 <>
-                                    {sections.length > 1 && (
-                                        <div className="passage-tabs">
-                                            {sections.map(sec => (
-                                                <button
-                                                    key={sec.sectionNum}
-                                                    className={`passage-tab ${st.activeSection === sec.sectionNum ? 'active' : ''}`}
-                                                    onClick={() => switchFullSection(sec.sectionNum)}
-                                                >
-                                                    Section {sec.sectionNum}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
                                     <div className="full-section-block">
                                         <h4 className="full-section-heading">Section {activeSec.sectionNum} — {activeSec.title}</h4>
                                         {activeSec.sectionType === 'form' && (
@@ -1250,9 +1328,14 @@ function ListeningPage() {
                         questionIds={navQuestionIds}
                         answeredIds={navAnsweredIds}
                         scrollContainerId="listeningContent"
-                        elapsedSeconds={st.elapsedSeconds}
-                        onSubmit={submitQuiz}
+                        onSubmit={() => submitQuiz()}
                         onExit={async () => {
+                            // mock 模式：退出 = 判 0，走守卫的确认 + forfeit 流程
+                            if (mockId) {
+                                if (audioRef.current) audioRef.current.pause();
+                                await mockConfirmExit();
+                                return;
+                            }
                             if (await showConfirm(t.listeningDetails.exitConfirm)) {
                                 if (audioRef.current) audioRef.current.pause();
                                 onReturnHome();
@@ -1262,6 +1345,13 @@ function ListeningPage() {
                         exitLabel={t.listeningDetails.exitBtn}
                         navLabels={t.listeningDetails.questionNav}
                         overviewParts={navOverviewParts}
+                        onPartSelect={i => {
+                            const data = st.listeningData;
+                            if (data && data.type === 'full') {
+                                const sec = (data.sections || [])[i];
+                                if (sec) switchFullSection(sec.sectionNum);
+                            }
+                        }}
                     />
                 </div>
             </div>
@@ -1323,10 +1413,11 @@ function ListeningPage() {
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
                             <span className="btn-icon">{st.isPassageOpen ? '✕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
                         </button>
-                        {bankId && (
+                        {bankId && !mockId && (
+                            // mock 子题一次定档，不允许重做
                             <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t.aiBank.redoBtn}</button>
                         )}
-                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{bankId ? '📚' : '🏠'}</span> {bankId ? t.aiBank.backToBank : t.common.home}</button>
+                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{mockId ? '🎯' : bankId ? '📚' : '🏠'}</span> {mockId ? t.mock.examMode.backToHub : bankId ? t.aiBank.backToBank : t.common.home}</button>
                     </div>
                 </div>
 

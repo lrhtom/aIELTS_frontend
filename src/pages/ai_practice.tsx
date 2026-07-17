@@ -7,6 +7,7 @@ import '../styles/practice_hub.css';
 export default function AIPractice() {
     const { lang } = useLang();
     const t = translations[lang].aiPractice;
+    const tMock = translations[lang].mock.menuCard;
 
     return (
         <Layout
@@ -69,6 +70,16 @@ export default function AIPractice() {
                             </div>
                         </Link>
 
+
+                        {/* 全套模拟 — 听读写说一次生成，真考流程限时作答 */}
+                        <Link to="/practice/ai/mock" className="bento-card bento-mock">
+                            <div className="bento-glow"></div>
+                            <div className="bento-content">
+                                <div className="bento-title">{tMock.title}</div>
+                                <div className="bento-desc">{tMock.desc}</div>
+                            </div>
+                            <span className="bento-icon">🎯</span>
+                        </Link>
 
                         <Link to="/practice/ai/others" className="bento-card bento-others">
                             <div className="bento-glow"></div>

@@ -146,6 +146,17 @@
     transform: translateY(-1px);
 }
 
+/* 防焦虑：数字默认模糊，鼠标悬停才显示详细耗时（阅读/听力工具栏共用） */
+.reading-timer .timer-digit {
+    filter: blur(4.5px);
+    opacity: 0.55;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+.reading-timer:hover .timer-digit {
+    filter: none;
+    opacity: 1;
+}
+
 .timer-icon {
     font-size: 16px;
     margin-right: 4px;
@@ -1177,9 +1188,12 @@
     font-style: italic;
 }
 .mh-chip-row {
-    display: flex;
-    flex-wrap: wrap;
+    /* 候选 heading 竖排单列：一行一个、自上而下按序排列（用户指定），
+       长短语整行完整可读。 */
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 8px;
+    align-items: start;
 }
 
 /* Draggable chip */
@@ -1198,6 +1212,14 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s;
     max-width: 100%;
+}
+/* 仅 pool 里的 chip 撑满网格单元 + 圆角矩形（多行文字）；slot 里已放置的
+   chip 不受影响，保持内容宽度的胶囊样式。 */
+.mh-chip-row .mh-chip {
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: flex-start;
+    border-radius: 12px;
 }
 .mh-chip:hover {
     border-color: var(--color-primary);
@@ -1352,48 +1374,52 @@
     z-index: 100;
 }
 
-/* 一题一格总进度细条：答了哪题哪格亮绿 */
-.pbb-overview {
+/* 整条底部条纵向两层（参考考试系统）：
+   上层 = 题号导航区（各 Part 一列：细进度条 + 标签/胶囊，占满全宽）
+   下层 = 独立操作行（实时时钟 + 提交 + 退出，右对齐，分隔线 + 浅底）
+   列内进度条与文字同宽自然对齐；收起列整体可点击。 */
+.pbb-parts {
     display: flex;
-    gap: 3px;
-    padding: 0 14px;
-    height: 4px;
-    margin-top: 6px;
+    align-items: stretch;       /* 各列等高 → 细进度条齐一条线 */
+    gap: 28px;
+    padding: 10px 14px 9px;
+    overflow-x: auto;
+    scrollbar-width: none;
 }
-.pbb-overview-seg {
+.pbb-parts::-webkit-scrollbar { display: none; }
+
+.pbb-part-strip {
+    display: flex;
+    gap: 2px;
+    height: 5px;
+    width: 100%;
+}
+.pbb-ov-cell {
     flex: 1 1 0;
+    min-width: 2px;
     height: 100%;
     border-radius: 999px;
     background: var(--color-border);
     transition: background 0.25s ease;
 }
-.pbb-overview-seg.lit { background: var(--color-accent-green); }
+.pbb-ov-cell.lit { background: var(--color-accent-green); }
+.pbb-part.active .pbb-ov-cell:not(.lit) { background: #cbd5e1; }  /* 当前 Part 未答格略深 */
 
-.pbb-main {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 10px 14px;
-}
-
-/* 左侧题号导航区：窄屏允许横向滚动 */
-.pbb-nav-scroll {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    min-width: 0;
-}
-.pbb-nav-scroll::-webkit-scrollbar { display: none; }
-
-.pbb-part {
+.pbb-part-row {
+    flex: 1 1 auto;             /* 占满进度条以下整个下层带并垂直居中 */
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-shrink: 0;
+    min-width: 0;
 }
+
+.pbb-part {
+    display: flex;
+    flex-direction: column;     /* 进度条钉在顶层，下层行占满余高 */
+    gap: 7px;
+    min-width: 0;
+}
+.pbb-part.active { flex: 0 0 auto; }  /* 不许收缩：窄视口时整个 .pbb-parts 横向滚动，胶囊不溢出涂到邻列/按钮 */
 .pbb-part-label {
     font-size: 14px;
     font-weight: 700;
@@ -1401,11 +1427,14 @@
     white-space: nowrap;
 }
 .pbb-part.collapsed {
+    flex: 1 1 0;
+    min-width: 96px;
     border: none;
     background: none;
-    padding: 6px 8px;
-    border-radius: 8px;
+    padding: 0 6px;             /* 无竖向内边距：进度条与活动列顶线严格对齐 */
+    border-radius: 10px;
     cursor: pointer;
+    text-align: left;
     transition: background 0.2s ease;
 }
 .pbb-part.collapsed:hover { background: var(--color-bg-alt); }
@@ -1464,14 +1493,17 @@
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.28);
 }
 
-/* 右侧操作区 */
+/* 下层操作行：独立一行横贯全宽，右对齐（参考考试系统底部工具条） */
 .pbb-actions {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 10px;
-    flex-shrink: 0;
+    padding: 8px 14px;
+    border-top: 1px solid rgba(226, 232, 240, 0.8);
+    background: rgba(248, 250, 252, 0.72);
 }
-.pbb-timer {
+.pbb-clock-wrap {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1480,8 +1512,10 @@
     border-radius: 10px;
     background: var(--color-surface);
     user-select: none;
+    color: var(--color-text-secondary);
+    font-size: 13px;
 }
-.pbb-timer-digits {
+.pbb-clock {
     font-family: 'Courier New', 'Consolas', monospace;
     font-size: 14px;
     font-weight: 700;
@@ -1523,16 +1557,8 @@
 
 @media (max-width: 768px) {
     .practice-bottom-bar { border-radius: 12px; margin-top: 8px; }
-    .pbb-main {
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 8px 10px;
-    }
-    .pbb-nav-scroll { width: 100%; gap: 14px; }
-    .pbb-actions {
-        width: 100%;
-        justify-content: flex-end;
-    }
+    .pbb-parts { gap: 14px; padding: 8px 10px 6px; }
+    .pbb-actions { padding: 6px 10px; }
     .pbb-pill { min-width: 28px; height: 28px; font-size: 13px; }
     .pbb-part.collapsed { display: none; } /* 窄屏收起态信息由细进度条承担 */
 }

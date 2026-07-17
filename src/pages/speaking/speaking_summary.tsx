@@ -93,6 +93,8 @@ interface SummaryNavState {
     mode?: string;
     /** 从聊天页进来时的题库会话 id；有值则把总结写回题库 */
     sessionId?: number | null;
+    /** 全套模拟：返回按钮改回模拟考大厅 */
+    mockId?: number;
 }
 
 export default function SpeakingSummaryPage() {
@@ -194,7 +196,9 @@ export default function SpeakingSummaryPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const backTarget = bankId ? '/practice/ai/bank?skill=speaking' : '/speaking';
+    const mockIdRaw = searchParams.get('mockId');
+    const mockId = navState?.mockId ?? (mockIdRaw && !Number.isNaN(Number(mockIdRaw)) ? Number(mockIdRaw) : null);
+    const backTarget = mockId ? `/mock/${mockId}` : (bankId ? '/practice/ai/bank?skill=speaking' : '/speaking');
 
     if (!data) {
         if (bankId && !loadFailed) {

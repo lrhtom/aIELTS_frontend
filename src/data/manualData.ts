@@ -128,6 +128,12 @@ export const manualData: ManualData = {
                     title: '写作批改与训练',
                     content: '写作大厅提供三种入口：AI 写作批改（粘贴作文获取四项评分）、Task 1 特训（图表题/地图题/流程图）、Task 2 特训（观点题/报告文/混合文/AI 创新题）。Task 1 支持上传图表图片让 AI 识别。地图题提供两种生成模式：SVG 线稿（文字模型生成，仿真雅思考卷风格）和 FLUX.2-pro 光栅图（图像模型生成，更接近插画风）。批改从任务完成度、连贯与衔接、词汇资源和语法多样性四个维度评分。另有点子练习题板块，一轮生成多道观点题逐题作答并总结。',
                     keywords: ['写作', '批改', 'Task1', 'Task2', '图表', '作文', '评分']
+                },
+                {
+                    id: 'mock-exam',
+                    title: '全套模拟（听读写说全真模考）',
+                    content: '在 AI 练习中心选择"全套模拟"，一次配置并生成完整四科套题：听力 4 Section 40 题、阅读 3 篇 40 题、写作大小作文、口语真题库 Part 1-3。生成后在题库"全套模拟"标签进入考场大厅，按真考规则作答：顺序强制听力→阅读→写作→口语，前一科结束才解锁下一科；限时听力 32 分钟、阅读 60 分钟、写作 60 分钟（大小作文共用一个计时）；口语无总时限但除 Part 2 备考期外每次提问后须 5 秒内开口，超时该问记空。每科只有一次作答机会；作答中可刷新页面续答（计时不停），但中途退出该科判 0 分。四科全部结束后点击"生成成绩单"，系统自动批改两篇作文并汇总四科单项分与总分（雅思官方 0.5 舍入规则）。某科生成失败可在大厅单独重新生成，不影响其他科目。',
+                    keywords: ['全套', '模拟', '模考', '成绩单', '总分', '限时', '考试', 'mock']
                 }
             ]
         },
@@ -354,6 +360,12 @@ export const manualData: ManualData = {
                     title: 'Writing Correction & Training',
                     content: 'The Writing Hall offers three paths: AI Correction (paste essay, get four-criterion scores), Task 1 Training (charts/maps/flowcharts with image upload support), and Task 2 Training (opinion/report/mixed/innovative essays). Map questions support two generation modes: SVG line-art (driven by your text model, closest to real exam papers) and FLUX.2-pro raster (image model, more illustrated look). Correction covers Task Achievement, Coherence & Cohesion, Lexical Resource, and Grammatical Range. The Opinion Drill generates a set of questions for sequential practice.',
                     keywords: ['writing', 'correction', 'Task 1', 'Task 2', 'chart', 'essay', 'scoring']
+                },
+                {
+                    id: 'mock-exam',
+                    title: 'Full Mock Test (All Four Skills)',
+                    content: 'Pick "Full Mock Test" in the AI Practice hub to configure and generate a complete four-skill set in one go: Listening (4 sections, 40 questions), Reading (3 passages, 40 questions), Writing (Task 1 + Task 2), and Speaking (Part 1-3 drawn from the real-exam bank). Open the Exam Hall from the "Full Mock" tab in the bank and sit it under real rules: fixed order Listening → Reading → Writing → Speaking with later parts locked; time limits of 32 min / 60 min / 60 min (both writing tasks share one timer); Speaking has no overall limit but you must start answering within 5 seconds of each question (Part 2 prep exempt) or it is marked blank. Each part allows exactly one attempt; refreshing mid-part resumes with the clock still running, but leaving a part scores it 0. After all four parts finish, generate the Report Card — essays are auto-graded and the four bands are combined into an overall score using official IELTS rounding. A failed generation can be retried per part from the hall.',
+                    keywords: ['mock', 'full test', 'exam', 'report card', 'overall', 'timed', 'simulation']
                 }
             ]
         },

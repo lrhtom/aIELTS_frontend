@@ -3,8 +3,11 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
+import { showConfirm } from '../../components/common/ConfirmService';
 import { api } from '../../api/client';
-import { getAIQuestion } from '../../api/ai_question';
+import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
+import { MockTimerBar } from '../../components/mock/MockExamShell';
+import { useMockExamGuard } from '../../components/mock/useMockExamGuard';
 import { useLang } from '../../i18n/LanguageContext';
 import { translations } from '../../i18n/translations';
 import { type WritingStep } from '../../types/writing_page';
@@ -30,6 +33,9 @@ export default function ChartPracticePage() {
     const type = searchParams.get('type') || 'line';
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
+    // 全套模拟：写作部分 T1+T2 共用 60 分钟服务端计时；提交=直接落库（批改延迟到成绩单）
+    const mockIdParam = searchParams.get('mockId');
+    const mockId = mockIdParam ? Number(mockIdParam) : null;
     const customName: string = typeof (state as { customName?: string })?.customName === 'string' ? (state as { customName: string }).customName.trim() : '';
     const customDescription: string = typeof (state as { customDescription?: string })?.customDescription === 'string' ? (state as { customDescription: string }).customDescription.trim() : '';
     const customPrompt: string = typeof (state as { customPrompt?: string })?.customPrompt === 'string' ? (state as { customPrompt: string }).customPrompt.trim() : '';
@@ -204,6 +210,44 @@ export default function ChartPracticePage() {
         setPreviewMode('image');
     };
 
+    const mockSubmittingRef = useRef(false);
+
+    // ── 全套模拟考试模式（soft 守卫：写作部分内可经大厅切换 T1/T2，不判 0）──
+    const { confirmExit: mockConfirmExit } = useMockExamGuard({
+        mockId: mockId ?? 0,
+        part: 'writing',
+        active: mockId !== null && step === 'answering',
+        mode: 'soft',
+    });
+
+    // mock：提交作文（正常/超时强制共用）。落库后回大厅，批改延迟到成绩单生成。
+    const mockSubmitEssay = async (forced = false) => {
+        if (!mockId || !bankId || mockSubmittingRef.current) return;
+        const text = userAnswer.trim();
+        if (!text) {
+            if (forced) navigate(`/mock/${mockId}`, { replace: true });
+            else showToast(t.practiceSandbox.toastEmpty, 'error');
+            return;
+        }
+        if (!forced && !(await showConfirm({
+            title: t.mock.examMode.essaySubmitConfirmTitle,
+            message: t.mock.examMode.essaySubmitConfirmBody,
+            confirmText: t.mock.examMode.essaySubmitOk,
+            cancelText: t.mock.examMode.exitConfirmCancel,
+        }))) return;
+        mockSubmittingRef.current = true;
+        try {
+            await submitAIQuestion(bankId, userAnswer);
+            sessionStorage.removeItem(cacheKey);
+            showToast(t.mock.examMode.submittedToHub, 'success');
+            navigate(`/mock/${mockId}`, { replace: true });
+        } catch (err) {
+            showToast((err as Error).message ?? t.common.error, 'error');
+            mockSubmittingRef.current = false;
+            if (forced) navigate(`/mock/${mockId}`, { replace: true });
+        }
+    };
+
     const handleSubmitAnser = () => {
         if (!userAnswer.trim()) {
             showToast(t.practiceSandbox.toastEmpty, 'error');
@@ -211,6 +255,11 @@ export default function ChartPracticePage() {
         }
         if (wordCount < 50) {
             showToast(t.practiceSandbox.toastTooShortTask1, 'error');
+        }
+        // mock：跳过结算浮层，直接落库回大厅（批改延迟到成绩单生成）
+        if (mockId) {
+            mockSubmitEssay();
+            return;
         }
         setStep('settlement');
     };
@@ -448,10 +497,25 @@ export default function ChartPracticePage() {
 
     return (
         <Layout
-            onBack={(step === 'loading' || step === 'answering') ? () => navigate(-1) : undefined}
-            backText={(step === 'loading' || step === 'answering') ? t.practiceSandbox.abortBtn : undefined}
+            onBack={(step === 'loading' || step === 'answering')
+                ? (mockId ? () => { mockConfirmExit(); } : () => navigate(-1))
+                : undefined}
+            backText={(step === 'loading' || step === 'answering')
+                ? (mockId ? t.mock.examMode.backToHub : t.practiceSandbox.abortBtn)
+                : undefined}
             pageTitle={(step === 'loading' || step === 'answering') ? `📉 ${t.practiceSandbox.titleTask1}` : undefined}
         >
+            {mockId !== null && (
+                <MockTimerBar
+                    mockId={mockId}
+                    part="writing"
+                    onExpire={() => mockSubmitEssay(true)}
+                    onRejected={(msg) => {
+                        showToast(t.mock.examMode.startRejected.replace('{msg}', msg), 'error');
+                        navigate(`/mock/${mockId}`, { replace: true });
+                    }}
+                />
+            )}
             <div className="practice-container writing-practice-page">
 
                 {step === 'loading' && renderLoading()}

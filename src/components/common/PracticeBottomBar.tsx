@@ -1,11 +1,11 @@
 /**
  * PracticeBottomBar — 阅读/听力练习页共享的底部考试导航条。
  *
- * 结构（自上而下）:
- *   1. 一条极细的"一题一格"总进度条: 每道题一个小段，答了即亮绿（跨全部 Part）
- *   2. 主行: [当前 Part 标签 + 题号胶囊] [其余 Part 收起为 "Part N  x/y"，点击切换]
- *           [计时器 | 提交 | 退出]
- *      只有一个 Part 时不渲染任何收起标签。
+ * 结构（纵向两层，参考考试系统底部条）:
+ *   1. 上层·题号导航区: 每个 Part 一列（细"一题一格"进度条在上、标签/胶囊在下），
+ *      占满全宽; 当前 Part 展开胶囊，其余收起为 "Part N  x/y"，整列可点击切换。
+ *   2. 下层·操作行: 独立一行横贯全宽，右对齐 [实时时钟 | 提交 | 退出]。
+ *      只有一个 Part 时上层只渲染当前列。
  *
  * 题号胶囊三态:
  *   - 默认: 描边
@@ -40,7 +40,6 @@ interface Props {
     answeredIds: Set<number>;
     /** 题目容器的 DOM id（'questionsForm' | 'listeningContent'） */
     scrollContainerId: string;
-    elapsedSeconds: number;
     onSubmit: () => void;
     onExit: () => void;
     submitLabel: string;
@@ -56,13 +55,20 @@ function fmt(tpl: string, vars: Record<string, string | number>): string {
     return Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), tpl);
 }
 
-function formatElapsed(totalSeconds: number): string {
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    const mm = String(m).padStart(2, '0');
-    const ss = String(s).padStart(2, '0');
-    return h > 0 ? `${String(h).padStart(2, '0')}:${mm}:${ss}` : `${mm}:${ss}`;
+/** 系统实时时钟（wall clock, HH:MM）——参考考试系统底部显示的真实时间。 */
+function WallClock() {
+    const [now, setNow] = useState<{ h: string; m: string }>(() => {
+        const d = new Date();
+        return { h: String(d.getHours()).padStart(2, '0'), m: String(d.getMinutes()).padStart(2, '0') };
+    });
+    useEffect(() => {
+        const id = setInterval(() => {
+            const d = new Date();
+            setNow({ h: String(d.getHours()).padStart(2, '0'), m: String(d.getMinutes()).padStart(2, '0') });
+        }, 1000);
+        return () => clearInterval(id);
+    }, []);
+    return <span className="pbb-clock">{now.h}:{now.m}</span>;
 }
 
 export default function PracticeBottomBar({
@@ -70,7 +76,6 @@ export default function PracticeBottomBar({
     questionIds,
     answeredIds,
     scrollContainerId,
-    elapsedSeconds,
     onSubmit,
     onExit,
     submitLabel,
@@ -151,65 +156,62 @@ export default function PracticeBottomBar({
         </div>
     );
 
-    // 一题一格总进度：多 Part 时跨全部 Part（按 Part 顺序平铺），单 Part 用当前题目
-    const stripIds = overviewParts && overviewParts.length > 0
-        ? overviewParts.flatMap(p => p.questionIds)
-        : questionIds;
+    // 每个 Part 自成一列：细进度条在上、标签+胶囊（当前）/ 标签+x/y（收起）在下，
+    // 列内两行同宽天然对齐。收起的 Part 整列（含进度条区域）都是可点击的切换按钮。
+    const partsToRender = overviewParts && overviewParts.length > 0
+        ? overviewParts
+        : [{ label: partLabel || '', questionIds, active: true }];
+
+    const stripOf = (p: { questionIds: number[] }) => (
+        <div className="pbb-part-strip" aria-hidden="true">
+            {p.questionIds.map(qid => (
+                <span key={qid} className={`pbb-ov-cell${answeredIds.has(qid) ? ' lit' : ''}`} />
+            ))}
+        </div>
+    );
 
     return (
         <div className="practice-bottom-bar">
-            {stripIds.length > 0 && (
-                <div className="pbb-overview" aria-hidden="true">
-                    {stripIds.map(qid => (
-                        <div key={qid} className={`pbb-overview-seg${answeredIds.has(qid) ? ' lit' : ''}`} />
-                    ))}
-                </div>
-            )}
-            <div className="pbb-main">
-                <div className="pbb-nav-scroll">
-                    {overviewParts && overviewParts.length > 1 ? (
-                        overviewParts.map((p, i) =>
-                            p.active ? (
-                                <div key={i} className="pbb-part active">
-                                    <span className="pbb-part-label">{p.label}</span>
-                                    {pills}
-                                </div>
-                            ) : (
-                                <button
-                                    key={i}
-                                    type="button"
-                                    className="pbb-part collapsed"
-                                    onClick={() => onPartSelect?.(i)}
-                                    title={p.label}
-                                >
-                                    <span className="pbb-part-label">{p.label}</span>
-                                    <span className="pbb-part-progress">
-                                        {fmt(navLabels.progress, {
-                                            answered: p.questionIds.filter(id => answeredIds.has(id)).length,
-                                            total: p.questionIds.length,
-                                        })}
-                                    </span>
-                                </button>
-                            )
-                        )
-                    ) : (
-                        <div className="pbb-part active">
-                            {partLabel && <span className="pbb-part-label">{partLabel}</span>}
-                            {pills}
+            <div className="pbb-parts">
+                {partsToRender.map((p, i) =>
+                    p.active ? (
+                        <div key={i} className="pbb-part active">
+                            {stripOf(p)}
+                            <div className="pbb-part-row">
+                                {p.label && <span className="pbb-part-label">{p.label}</span>}
+                                {pills}
+                            </div>
                         </div>
-                    )}
-                </div>
-                <div className="pbb-actions">
-                    <span className="pbb-timer" title={formatElapsed(elapsedSeconds)}>
-                        ⏱️ <span className="pbb-timer-digits">{formatElapsed(elapsedSeconds)}</span>
-                    </span>
-                    <button type="button" className="pbb-btn pbb-btn-submit" onClick={onSubmit}>
-                        {submitLabel}
-                    </button>
-                    <button type="button" className="pbb-btn pbb-btn-exit" onClick={onExit}>
-                        {exitLabel}
-                    </button>
-                </div>
+                    ) : (
+                        <button
+                            key={i}
+                            type="button"
+                            className="pbb-part collapsed"
+                            onClick={() => onPartSelect?.(i)}
+                            title={p.label}
+                        >
+                            {stripOf(p)}
+                            <div className="pbb-part-row">
+                                <span className="pbb-part-label">{p.label}</span>
+                                <span className="pbb-part-progress">
+                                    {fmt(navLabels.progress, {
+                                        answered: p.questionIds.filter(id => answeredIds.has(id)).length,
+                                        total: p.questionIds.length,
+                                    })}
+                                </span>
+                            </div>
+                        </button>
+                    )
+                )}
+            </div>
+            <div className="pbb-actions">
+                <span className="pbb-clock-wrap" title="">🕐 <WallClock /></span>
+                <button type="button" className="pbb-btn pbb-btn-submit" onClick={onSubmit}>
+                    {submitLabel}
+                </button>
+                <button type="button" className="pbb-btn pbb-btn-exit" onClick={onExit}>
+                    {exitLabel}
+                </button>
             </div>
         </div>
     );

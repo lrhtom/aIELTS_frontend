@@ -1,0 +1,155 @@
+// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
+// 全套模拟 (Mock Exam)：配置页 + 考试大厅 + 题库卡片
+
+export const mock = {
+  // ── AI 练习菜单卡片 ──
+  menuCard: {
+    title: '全套模拟',
+    desc: '听读写说一次生成，按真考流程限时作答，产出综合成绩单。',
+  },
+
+  // ── 配置页 ──
+  config: {
+    pageTitle: '全套模拟',
+    pageSubtitle: '一次生成完整的听 / 读 / 写 / 说四科套题，按真实考试流程作答',
+    backToAI: '返回 AI 练习',
+    global: {
+      title: '全局设置',
+      difficulty: '难度 (目标分数段)',
+      customName: '模拟考名称（可选）',
+      customNamePlaceholder: '例如：7 分冲刺全真模拟 #1',
+      absurdMode: '恶搞模式',
+      absurdModeDesc: '生成夸张搞笑的内容帮助记忆（不影响题型与难度）',
+    },
+    listening: {
+      title: '🎧 听力 · 4 个 Section · 32 分钟',
+      desc: '生成完整 4 段听力（40 题），各段场景可单独指定',
+      scenarioLabel: 'Section {n} 场景',
+      random: '随机场景',
+    },
+    reading: {
+      title: '📖 阅读 · 3 篇 Passage · 60 分钟',
+      desc: '生成完整 3 篇文章（40 题），题型按剑桥真题惯例分层组合',
+      topicLabel: '文章题材',
+      random: '随机题材',
+    },
+    writing: {
+      title: '✍️ 写作 · Task 1 + Task 2 · 60 分钟',
+      desc: '小作文（图表描述）与大作文（议论文）共用一个 60 分钟计时',
+      task1Label: 'Task 1 图表类型',
+      task1Random: '🎲 随机（贴近真题分布）',
+      task2Label: 'Task 2 题型',
+      task2TopicLabel: 'Task 2 话题范围',
+    },
+    speaking: {
+      title: '🗣️ 口语 · Part 1-3 · 无总时限',
+      desc: '开考时从真题库抽题（Part 1 → Part 2 → Part 3 自动衔接）。考试规则：除 Part 2 备考时间外，每次考官提问后须在 5 秒内开口作答，超时该问记空。',
+      noConfig: '无需配置 — 题目在开始口语部分时从真题库实时抽取',
+    },
+    rules: {
+      title: '📋 考试规则（生成前请阅读）',
+      items: [
+        '做题顺序强制：听力 → 阅读 → 写作 → 口语，不能提前做后面的部分',
+        '限时：听力 32 分钟 / 阅读 60 分钟 / 写作 60 分钟（大小作文共用）',
+        '每个部分只有一次作答机会，完成后只能查看结果',
+        '作答期间可以刷新页面继续（计时不会重置），但中途退出该部分判 0 分',
+        '四个部分全部结束后生成综合成绩单',
+      ],
+    },
+    startBtn: '🎯 生成全套模拟',
+    generating: '正在创建…',
+    toastCreated: '全套模拟已开始生成，可在题库「全套模拟」标签查看进度',
+    toastFail: '创建失败：{msg}',
+  },
+
+  // ── 考试大厅 ──
+  hub: {
+    pageTitle: '模拟考大厅',
+    backToBank: '返回题库',
+    loading: '加载中…',
+    loadFail: '模拟考加载失败',
+    genProgress: '生成进度：{done}/{total} 部分就绪',
+    genFailedTitle: '部分内容生成失败',
+    regenBtn: '🔄 重新生成本部分',
+    regenStarted: '已重新开始生成',
+    regenFail: '重新生成失败：{msg}',
+    parts: {
+      listening: '听力',
+      reading: '阅读',
+      writing: '写作',
+      speaking: '口语',
+    },
+    partMeta: {
+      listening: '4 Sections · 40 题 · 32 分钟',
+      reading: '3 Passages · 40 题 · 60 分钟',
+      writing: 'Task 1 + Task 2 · 60 分钟',
+      speaking: 'Part 1-3 · 5 秒反应规则',
+    },
+    status: {
+      generating: '⏳ 生成中…',
+      gen_failed: '⚠️ 生成失败',
+      locked: '🔒 待解锁',
+      lockedHint: '完成上一部分后解锁',
+      ready: '开始作答',
+      in_progress: '继续作答',
+      in_progressHint: '剩余 {time}',
+      submitted: '✅ 已完成',
+      forfeited: '⛔ 已弃权 · 0 分',
+      expired: '⌛ 已超时',
+      viewResult: '查看结果',
+    },
+    startConfirmTitle: '开始{part}部分？',
+    startConfirmBody: '开始后立即计时（{duration}），中途退出将判 0 分；可以刷新页面继续作答，计时不会暂停。',
+    startConfirmBodyNoTimer: '开始后进入口语考试。除 Part 2 备考时间外，每次提问后须在 5 秒内开口，超时该问记空。中途退出将判 0 分。',
+    startConfirmOk: '开始作答',
+    startConfirmCancel: '再想想',
+    startFail: '无法开始：{msg}',
+    report: {
+      rowTitle: '📋 成绩单',
+      rowDescLocked: '完成全部四个部分后可查看综合成绩',
+      rowDescReady: '四科作答完毕，点击生成综合成绩单',
+      rowDescDone: '总分 {overall}',
+      viewBtn: '查看成绩单',
+      generateBtn: '生成成绩单',
+      grading: '正在批改作文…（约 1 分钟）',
+      title: '综合成绩单',
+      overall: '总分',
+      partBand: '{part}单科',
+      forfeitNote: '（弃权/超时部分按 0 分计入）',
+      finalizeFail: '成绩单生成失败：{msg}',
+    },
+    minutes: '{n} 分钟',
+    noTimeLimit: '无总时限',
+  },
+
+  // ── 考试模式（答题页内）──
+  examMode: {
+    examBadge: '🎯 模拟考试进行中',
+    exitConfirmTitle: '退出本部分？',
+    exitConfirmBody: '中途退出将判 0 分且不能重做。刷新页面不算退出（回来可以继续，计时不停）。确定要退出吗？',
+    exitConfirmOk: '退出并判 0',
+    exitConfirmCancel: '继续作答',
+    autoSubmitted: '⏱ 时间到，已自动交卷',
+    startRejected: '无法进入本部分：{msg}',
+    backToHub: '返回考场大厅',
+    switchTask1: '📊 Task 1',
+    switchTask2: '🖋️ Task 2',
+    submittedToHub: '本部分已交卷，返回大厅继续下一部分',
+    essaySubmitConfirmTitle: '提交本篇作文？',
+    essaySubmitConfirmBody: '提交后本篇不能再修改。写作部分剩余时间内可继续完成另一篇作文。',
+    essaySubmitOk: '提交',
+    essaySubmitted: '本篇已提交，可回大厅继续另一篇',
+    speakingReaction: '{s} 秒内开始作答',
+    speakingReactionTimeout: '超时未开口，本题记空，进入下一题',
+  },
+
+  // ── 题库卡片（第 5 个 tab）──
+  bank: {
+    tab: '全套模拟',
+    enterHub: '进入考场',
+    slotStatus: '{ready}/{total} 部分就绪',
+    reportDone: '已完成 · 总分 {overall}',
+    emptyTitle: '还没有全套模拟',
+    emptyHint: '去 AI 练习页生成一套吧。',
+  },
+};

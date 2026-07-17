@@ -57,6 +57,9 @@ export default function WritingCorrectionPage() {
     const [searchParams] = useSearchParams();
     const bankIdParam = searchParams.get('bankId');
     const bankIdFromUrl = bankIdParam ? Number(bankIdParam) : null;
+    // 全套模拟：从大厅「查看结果」进来 → 返回改回大厅、禁用重做
+    const mockIdParam = searchParams.get('mockId');
+    const mockId = mockIdParam ? Number(mockIdParam) : null;
     const navState = (location.state || null) as (BankAutoEvaluateState & { record_id?: number }) | null;
     const [recordId, setRecordId] = useState<number | undefined>(navState?.record_id);
     const [bankId, setBankId] = useState<number | null>(bankIdFromUrl ?? navState?.bankId ?? null);
@@ -429,12 +432,12 @@ export default function WritingCorrectionPage() {
     return (
         <Layout
             pageTitle={t.writingCorrection.title}
-            backUrl={bankId ? '/practice/ai/bank' : (recordId ? "/writing/ai-teachers/records" : "/writing")}
-            backText={bankId ? t.writingCorrection.backAiBank : (recordId ? t.writingCorrection.backRecords : t.writingCorrection.backToHall)}
-            onBack={bankId ? () => navigate('/practice/ai/bank') : handleBack}
+            backUrl={mockId ? `/mock/${mockId}` : (bankId ? '/practice/ai/bank' : (recordId ? "/writing/ai-teachers/records" : "/writing"))}
+            backText={mockId ? t.mock.examMode.backToHub : (bankId ? t.writingCorrection.backAiBank : (recordId ? t.writingCorrection.backRecords : t.writingCorrection.backToHall))}
+            onBack={mockId ? () => navigate(`/mock/${mockId}`) : (bankId ? () => navigate('/practice/ai/bank') : handleBack)}
             headerRight={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    {bankId && result && (
+                    {bankId && result && !mockId && (
                         <button
                             type="button"
                             className="wp-ghost-btn"

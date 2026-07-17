@@ -62,6 +62,10 @@ import Task1AiTeacherLessonPage from './pages/writing/task1_ai_teacher_lesson_pa
 import AiTeachersHubPage from './pages/writing/ai_teachers_hub_page';
 import WritingServiceRecordsPage from './pages/writing/writing_service_records_page';
 
+// 全套模拟
+import MockConfigPage from './pages/mock/mock_config_page';
+import MockHubPage from './pages/mock/mock_hub_page';
+
 // 词汇
 import VocabularyPracticePage from './pages/vocabulary/vocabulary_practice_page';
 import VocabularyTrainingPage from './pages/vocabulary/vocabulary_training_page';
@@ -125,6 +129,8 @@ export default function App() {
         <Route path="/practice/ai/others" element={<ProtectedRoute><OtherPracticePage /></ProtectedRoute>} />
         <Route path="/practice/ai/reading" element={<ProtectedRoute><WordSelection_page /></ProtectedRoute>} />
         <Route path="/practice/ai/listening" element={<ProtectedRoute><ListeningConfig /></ProtectedRoute>} />
+        <Route path="/practice/ai/mock" element={<ProtectedRoute><MockConfigPage /></ProtectedRoute>} />
+        <Route path="/mock/:id" element={<ProtectedRoute><MockHubPage /></ProtectedRoute>} />
         <Route path="/reading" element={<ProtectedRoute><Reading_page /></ProtectedRoute>} />
         <Route path="/listening" element={<ProtectedRoute><ListeningPage /></ProtectedRoute>} />
         <Route path="/speaking" element={<ProtectedRoute><Speaking /></ProtectedRoute>} />
