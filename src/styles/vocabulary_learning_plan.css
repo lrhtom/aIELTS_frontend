@@ -1280,3 +1280,326 @@
 .lp-ai-import-btn {
     align-self: flex-start;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   详情页 v2：全宽单列布局
+   顶栏(toolbar) → 模式配置条 → 列表子头 → 卡片网格(唯一滚动区) → 常驻分页
+   —— 不再分左右栏；今日/添加折叠进顶栏按钮打开的浮层
+   ═══════════════════════════════════════════════════════════════════════════ */
+.lpx-page {
+    height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--color-bg);
+    padding: 16px 20px 12px;
+    box-sizing: border-box;
+    gap: 12px;
+}
+
+/* ── 顶栏 ── */
+.lpx-toolbar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 12px 18px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+}
+
+.lpx-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--color-text);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    outline: none;
+    padding: 2px 4px;
+    min-width: 160px;
+    max-width: 320px;
+    transition: border-color 0.15s;
+}
+.lpx-name:hover, .lpx-name:focus { border-bottom-color: var(--color-primary); }
+
+.lpx-daily {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+.lpx-daily input {
+    width: 60px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.lpx-daily input:focus { border-color: var(--color-primary); }
+.lpx-daily input:disabled { opacity: 0.65; cursor: not-allowed; background: var(--color-surface); }
+.lpx-lock { color: #dc2626; font-size: 12px; margin-left: 2px; }
+
+.lpx-mode {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.lpx-mode-label { font-size: 13px; color: var(--color-text-secondary); white-space: nowrap; }
+.lpx-mode-select {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.lpx-mode-select:hover { border-color: var(--color-primary); }
+.lpx-mode-select:focus { border-color: var(--color-primary); }
+
+.lpx-start {
+    padding: 9px 22px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.lpx-tool-spacer { flex: 1 1 auto; }
+
+.lpx-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+.lpx-tool-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.lpx-tool-btn.active { border-color: var(--color-primary); background: rgba(13, 148, 136, 0.08); color: var(--color-primary); }
+.lpx-tool-add { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+.lpx-tool-add:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); color: #fff; }
+.lpx-tool-add.active { background: var(--color-primary-hover); color: #fff; }
+
+/* ── 模式配置条 ── */
+.lpx-modecfg {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 10px 16px;
+}
+.lpx-modecfg-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+.lpx-modecfg-item input {
+    width: 84px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    text-align: center;
+    outline: none;
+}
+.lpx-modecfg-item input:focus { border-color: var(--color-primary); }
+.lpx-modecfg-regen {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1.5px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.lpx-modecfg-regen:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.lpx-modecfg-regen:disabled { opacity: 0.6; cursor: not-allowed; }
+.lpx-modecfg-hint { font-size: 12px; color: var(--color-warning, #d97706); }
+
+/* ── 列表子头 ── */
+.lpx-listbar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.lpx-list-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+.lpx-listbar-spacer { flex: 1 1 auto; }
+.lpx-search { flex: 0 1 260px; min-width: 160px; }
+.lpx-cols {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+.lpx-cols select {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+}
+.lpx-cols select:focus { border-color: var(--color-primary); }
+.lpx-search-count { flex: none; }
+
+/* ── 卡片网格（唯一滚动区） ── */
+.lpx-gridwrap {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.lpx-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--lpx-cols, 4), minmax(0, 1fr));
+    gap: 10px;
+    align-content: start;
+}
+
+/* 网格内的单词卡片：去圆角（方正列卡）+ 自适应更窄列宽 + 略紧凑 */
+.lpx-grid .lp-word-item {
+    min-width: 0;
+    border-radius: 0;
+    padding: 12px 14px;
+    gap: 7px;
+}
+.lpx-grid .lp-word-item:hover {
+    transform: none;                 /* 网格密排下不再上浮，避免抖动 */
+    box-shadow: inset 3px 0 0 0 var(--lp-accent), 0 4px 14px rgba(13, 148, 136, 0.08);
+}
+.lpx-grid .lp-word-text { min-width: 0; }
+.lpx-grid .lp-word-row1 { flex-wrap: wrap; }
+
+/* ── 常驻分页条 ── */
+.lpx-pager {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 6px 0 2px;
+    flex-wrap: wrap;
+}
+
+/* ── 折叠浮层（今日 / 添加） ── */
+.lpx-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 84px 16px 24px;
+    overflow-y: auto;
+}
+.lpx-panel {
+    width: 100%;
+    max-width: 560px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+    padding: 18px 20px 20px;
+    animation: lpx-panel-in 0.16s ease;
+}
+.lpx-panel-add { max-width: 620px; }
+@keyframes lpx-panel-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.lpx-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+.lpx-panel-close {
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 6px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+}
+.lpx-panel-close:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+/* ── 今日面板：进度并入头部一行，词表直接常显 ── */
+.lpx-panel-today { max-width: 600px; }
+.lpx-today-head { margin-bottom: 8px; }
+.lpx-today-headline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+.lpx-today-frac {
+    font-size: 14px;
+    font-weight: 700;
+    color: #059669;
+    font-variant-numeric: tabular-nums;
+}
+.lpx-today-progress { margin-top: 0; }        /* 紧贴头部 → 融入 */
+.lpx-today-list { max-height: 56vh; margin-top: 14px; }
+
+@media (max-width: 900px) {
+    .lpx-grid { grid-template-columns: repeat(min(var(--lpx-cols, 4), 2), minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .lpx-page { padding: 12px 12px 8px; }
+    .lpx-grid { grid-template-columns: 1fr; }
+    .lpx-name { max-width: none; flex: 1 1 100%; }
+}

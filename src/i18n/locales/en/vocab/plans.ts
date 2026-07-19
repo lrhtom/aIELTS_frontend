@@ -166,4 +166,8 @@ export const details: typeof zh.details = {
   msgPlanConflict: 'Plan configuration conflict, please refresh and try again',
   msgNetworkErr: 'Network error, tried {n} times - {msg}',
   msgInsufficientAT: 'Insufficient AT balance, please recharge and try again',
+  // New detail-page layout
+  perRowLabel: 'Per row',
+  todayBtn: "Today's Plan",
+  panelClose: 'Close',
 };

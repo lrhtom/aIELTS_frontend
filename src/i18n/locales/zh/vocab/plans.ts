@@ -165,4 +165,8 @@ export const details = {
   msgPlanConflict: '计划配置冲突，请刷新后重试',
   msgNetworkErr: '网络错误，已尝试 {n} 次 - {msg}',
   msgInsufficientAT: 'AT币余额不足，请充值后重试',
+  // 新版详情页布局
+  perRowLabel: '每行',
+  todayBtn: '今日学习',
+  panelClose: '关闭',
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { showToast } from '../../components/common/Toast';
@@ -16,7 +16,6 @@ import {
     type LearningPlan, type PlanEntry, type VocabBook, type BookWord, type AiParsedWord,
 } from '../../api/learning_plan';
 import PlanWordRow from '../../components/vocabulary/PlanWordRow';
-import TodayStudiedSection from '../../components/vocabulary/TodayStudiedSection';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { devLog } from '../../utils/devLog';
 import '../../styles/practice_page.css';
@@ -211,36 +210,17 @@ export default function LearningPlanDetailPage() {
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [deletingEntry, setDeletingEntry] = useState<PlanEntry | null>(null);
 
-    // Resizer State
-    const [leftWidth, setLeftWidth] = useState(800);
-    const isDraggingRef = useRef(false);
-
-    const handleMouseDown = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        isDraggingRef.current = true;
-        document.body.style.cursor = 'col-resize';
-        document.body.style.userSelect = 'none';
-    }, []);
-
+    // 每行卡片数（用户可调网格密度），按计划持久化
+    const [colsPerRow, setColsPerRow] = useState<number>(() => {
+        const raw = Number(localStorage.getItem(`lp_cols_${planId}`) ?? '4');
+        return Number.isFinite(raw) ? Math.min(6, Math.max(1, Math.floor(raw))) : 4;
+    });
     useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isDraggingRef.current) return;
-            setLeftWidth(Math.max(400, Math.min(e.clientX, window.innerWidth - 300)));
-        };
-        const handleMouseUp = () => {
-            if (isDraggingRef.current) {
-                isDraggingRef.current = false;
-                document.body.style.cursor = 'default';
-                document.body.style.userSelect = '';
-            }
-        };
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, []);
+        localStorage.setItem(`lp_cols_${planId}`, String(colsPerRow));
+    }, [planId, colsPerRow]);
+
+    // 折叠进顶栏的两个面板（今日已学 / 添加单词）以浮层形式打开
+    const [activePanel, setActivePanel] = useState<null | 'today' | 'add'>(null);
 
     // ── Load plan + words ──────────────────────────────────────────────────
     useEffect(() => {
@@ -801,560 +781,168 @@ export default function LearningPlanDetailPage() {
     // ──────────────────────────────────────────────────────────────────────
     return (
         <Layout backUrl="/vocabulary/plans" backText={t('vocab.details.backToVocab')} noPadding={true}>
-            <div className="uc-console" style={{ margin: 0, height: 'calc(100vh - 60px)' }}>
-                {/* ── Left Pane: Study Modes ── */}
-                <div className="uc-sidebar lp-side" style={{ width: leftWidth, flex: 'none', borderRight: 'none', minHeight: 0 }}>
-                    {/* ── Plan header (hero) ── */}
-                    <div className="lp-card lp-hero">
+            <div className="lpx-page">
+                {/* ── 顶栏：计划名 / 每日词数 / 学习模式下拉 / 开始 / 今日 / 添加 ── */}
+                <div className="lpx-toolbar">
+                    <input
+                        className="lpx-name"
+                        value={planName}
+                        maxLength={50}
+                        onChange={e => setPlanName(e.target.value)}
+                        onBlur={saveName}
+                        onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    />
+                    <div className="lpx-daily">
+                        <span>{t('vocab.details.dailyPrefix')}</span>
                         <input
-                            className="lp-hero-title"
-                            value={planName}
-                            maxLength={50}
-                            onChange={e => setPlanName(e.target.value)}
-                            onBlur={saveName}
+                            type="number"
+                            min={1} max={200}
+                            value={dailyCount}
+                            disabled={isTodayConfigLocked}
+                            title={isTodayConfigLocked ? t('vocab.details.dailyLockedTip') : ''}
+                            onChange={e => setDailyCount(Number(e.target.value))}
+                            onBlur={saveDaily}
                             onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                         />
-                        <div className="lp-hero-daily">
-                            <span>{t('vocab.details.dailyPrefix')}</span>
-                            <input
-                                type="number"
-                                min={1} max={200}
-                                value={dailyCount}
-                                disabled={isTodayConfigLocked}
-                                title={isTodayConfigLocked ? t('vocab.details.dailyLockedTip') : ''}
-                                onChange={e => setDailyCount(Number(e.target.value))}
-                                onBlur={saveDaily}
-                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                            />
-                            <span>{t('vocab.details.dailySuffix')}</span>
-                            {isTodayConfigLocked && (
-                                <span className="lp-hero-locked">{t('vocab.details.todayLockedBadge')}</span>
-                            )}
-                        </div>
-                        <button
-                            className="uc-console-start-btn lp-hero-start"
-                            onClick={handleStart}
-                            disabled={starting || entries.length === 0}
+                        <span>{t('vocab.details.dailySuffix')}</span>
+                        {isTodayConfigLocked && (
+                            <span className="lpx-lock">{t('vocab.details.todayLockedBadge')}</span>
+                        )}
+                    </div>
+
+                    <div className="lpx-mode">
+                        <span className="lpx-mode-label">{t('vocab.details.modeLabel')}</span>
+                        <select
+                            className="lpx-mode-select"
+                            value={studyMode}
+                            onChange={e => {
+                                const m = e.target.value as StudyMode;
+                                setStudyMode(m);
+                                localStorage.setItem(`lp_study_mode_${planId}`, m);
+                                updatePlan(planId, { default_mode: m }).catch(() => { });
+                            }}
                         >
-                            {starting ? t('vocab.plans.preparing') : isQuotaDone ? t('vocab.plans.startReview') : t('vocab.plans.startStudy')}
+                            {STUDY_MODES.map(([m, labelKey]) => (
+                                <option key={m} value={m}>
+                                    {(m === 'flashcard' ? '🃏 ' : m === 'read-aloud' ? '🎙️ ' : m === 'choice' ? '🎯 ' : m === 'write' ? '✍️ ' : m === 'copy' ? '📝 ' : m === 'article_copy' ? '📄 ' : '🍿 ')}
+                                    {t(`vocab.modes.${labelKey}`)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <button
+                        className="uc-console-start-btn lpx-start"
+                        onClick={handleStart}
+                        disabled={starting || entries.length === 0}
+                    >
+                        {starting ? t('vocab.plans.preparing') : isQuotaDone ? t('vocab.plans.startReview') : t('vocab.plans.startStudy')}
+                    </button>
+
+                    <div className="lpx-tool-spacer" />
+
+                    {plan && (
+                        <button
+                            type="button"
+                            className={`lpx-tool-btn${activePanel === 'today' ? ' active' : ''}`}
+                            onClick={() => setActivePanel(p => (p === 'today' ? null : 'today'))}
+                        >
+                            📅 {t('vocab.details.todayBtn')} · {plan.studied_today}/{getPlanTodayTarget(plan)}
                         </button>
+                    )}
+                    <button
+                        type="button"
+                        className={`lpx-tool-btn lpx-tool-add${activePanel === 'add' ? ' active' : ''}`}
+                        onClick={() => setActivePanel(p => (p === 'add' ? null : 'add'))}
+                    >
+                        ＋ {t('vocab.details.addWords')}
+                    </button>
+                </div>
+
+                {/* ── 模式配置条（仅抄写 / 文章抄写模式出现）── */}
+                {studyMode === 'copy' && (
+                    <div className="lpx-modecfg">
+                        <label className="lpx-modecfg-item">
+                            <span>{t('vocab.details.copyTimesTitle')}</span>
+                            <input type="number" min={1} max={20} value={copyRepetitions}
+                                onChange={e => setCopyRepetitions(Number(e.target.value))}
+                                onBlur={saveCopyConfig}
+                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+                        </label>
+                        <label className="lpx-modecfg-item">
+                            <span>{t('vocab.details.reviewDaysTitle')}</span>
+                            <input type="number" min={0} max={365} value={copyReviewDays}
+                                disabled={isTodayConfigLocked}
+                                onChange={e => setCopyReviewDays(Number(e.target.value))}
+                                onBlur={saveCopyConfig}
+                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+                        </label>
+                        {isTodayConfigLocked && <span className="lpx-modecfg-hint">{t('vocab.details.lockedHint')}</span>}
                     </div>
-
-                    {/* ── Study modes + config ── */}
-                    <div className="lp-card lp-mode-card">
-                        <div className="lp-card-title">{t('vocab.details.studyModeTitle')}</div>
-                        <nav className="uc-sidebar-nav lp-mode-nav" style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                        {STUDY_MODES.map(([m, labelKey]) => (
-                            <button
-                                key={m}
-                                type="button"
-                                className={`uc-nav-item ${studyMode === m ? 'active' : ''}`}
-                                onClick={() => {
-                                    setStudyMode(m);
-                                    localStorage.setItem(`lp_study_mode_${planId}`, m);
-                                    updatePlan(planId, { default_mode: m }).catch(() => { });
-                                }}
-                            >
-                                <span className="nav-icon">
-                                    {m === 'flashcard' ? '🃏' : m === 'read-aloud' ? '🎙️' : m === 'choice' ? '🎯' : m === 'write' ? '✍️' : m === 'copy' ? '📝' : m === 'article_copy' ? '📄' : '🍿'}
-                                </span>
-                                <span className="nav-text">{t(`vocab.modes.${labelKey}`)}</span>
-                            </button>
-                        ))}
-                    </nav>
-
-                    <div style={{ padding: '16px' }}>
-                        {studyMode === 'copy' && (
-                            <div className="uc-settings-list" style={{ padding: 0 }}>
-                                <div className="uc-card-group">
-                                    <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                                        <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📝</span>
-                                                <span className="row-title">{t('vocab.details.copyTimesTitle')}</span>
-                                            </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t('vocab.details.copyTimesDesc')}</span>
-                                        </div>
-                                        <div className="uc-row-control" style={{ width: '100%' }}>
-                                            <input
-                                                type="number"
-                                                min={1} max={20}
-                                                value={copyRepetitions}
-                                                onChange={(e) => setCopyRepetitions(Number(e.target.value))}
-                                                onBlur={saveCopyConfig}
-                                                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                                                className="console-select"
-                                                style={{ width: '100%', paddingLeft: 12 }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                                        <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>📅</span>
-                                                <span className="row-title">{t('vocab.details.reviewDaysTitle')}</span>
-                                            </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>
-                                                {t('vocab.details.copyReviewDesc').replace('{n}', String(copyReviewDays))}
-                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>{t('vocab.details.lockedHint')}</span>}
-                                            </span>
-                                        </div>
-                                        <div className="uc-row-control" style={{ width: '100%' }}>
-                                            <input
-                                                type="number"
-                                                min={0} max={365}
-                                                value={copyReviewDays}
-                                                disabled={isTodayConfigLocked}
-                                                onChange={(e) => setCopyReviewDays(Number(e.target.value))}
-                                                onBlur={saveCopyConfig}
-                                                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                                                className="console-select"
-                                                style={{ width: '100%', paddingLeft: 12 }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {studyMode === 'article_copy' && (
-                            <div className="uc-settings-list" style={{ padding: 0 }}>
-                                <div className="uc-card-group">
-                                    <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                                        <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>📅</span>
-                                                <span className="row-title">{t('vocab.details.reviewDaysTitle')}</span>
-                                            </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>
-                                                {t('vocab.details.articleReviewDesc')}
-                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>{t('vocab.details.lockedHint')}</span>}
-                                            </span>
-                                        </div>
-                                        <div className="uc-row-control" style={{ width: '100%' }}>
-                                            <input
-                                                type="number"
-                                                min={0} max={365}
-                                                value={articleReviewDays}
-                                                disabled={isTodayConfigLocked}
-                                                onChange={(e) => setArticleReviewDays(Number(e.target.value))}
-                                                onBlur={saveArticleConfig}
-                                                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                                                className="console-select"
-                                                style={{ width: '100%', paddingLeft: 12 }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="uc-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                                        <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>✨</span>
-                                                <span className="row-title">{t('vocab.details.regenTitle')}</span>
-                                            </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t('vocab.details.regenDesc')}</span>
-                                        </div>
-                                        <div className="uc-row-control" style={{ width: '100%' }}>
-                                            <button
-                                                type="button"
-                                                className="uc-console-start-btn"
-                                                style={{ width: '100%', background: 'var(--color-bg-elevated)', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '8px 12px', fontSize: 13 }}
-                                                disabled={articleRegenerating}
-                                                onClick={handleRegenerateArticle}
-                                            >
-                                                {articleRegenerating ? t('vocab.details.regenning') : t('vocab.details.regenTitle')}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                )}
+                {studyMode === 'article_copy' && (
+                    <div className="lpx-modecfg">
+                        <label className="lpx-modecfg-item">
+                            <span>{t('vocab.details.reviewDaysTitle')}</span>
+                            <input type="number" min={0} max={365} value={articleReviewDays}
+                                disabled={isTodayConfigLocked}
+                                onChange={e => setArticleReviewDays(Number(e.target.value))}
+                                onBlur={saveArticleConfig}
+                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+                        </label>
+                        <button type="button" className="lpx-modecfg-regen" disabled={articleRegenerating} onClick={handleRegenerateArticle}>
+                            {articleRegenerating ? t('vocab.details.regenning') : t('vocab.details.regenTitle')}
+                        </button>
+                        {isTodayConfigLocked && <span className="lpx-modecfg-hint">{t('vocab.details.lockedHint')}</span>}
                     </div>
-</div>
-                    {/* ── Progress + word management ── */}
-
-                {/* ── Today's studied words ── */}
-                {plan && (
-                    <TodayStudiedSection plan={plan} />
                 )}
 
-                {/* ── Add section ── */}
-                <div className="lp-add-section">
-                    <h4>{t('vocab.details.addWords')}</h4>
-
-                    <div className="lp-add-tabs">
-                        {(['manual', 'notebook', 'book', 'ai'] as AddTab[]).map(tab => (
-                            <button
-                                key={tab}
-                                className={`lp-add-tab${addTab === tab ? ' active' : ''}`}
-                                onClick={() => setAddTab(tab)}
-                            >
-                                {tab === 'manual' ? t('vocab.details.tabManual')
-                                    : tab === 'notebook' ? t('vocab.details.tabNotebook')
-                                    : tab === 'book' ? t('vocab.details.tabBook')
-                                    : t('vocab.details.tabAi')}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Manual */}
-                    {addTab === 'manual' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <div className="lp-add-row">
-                                <div style={{ position: 'relative', flex: 1 }}>
-                                    <input
-                                        type="text"
-                                        placeholder={t('vocab.details.manualWord')}
-                                        value={addWord_}
-                                        onChange={e => setAddWord_(e.target.value)}
-                                        onKeyDown={e => { if (e.key === 'Enter') handleAddManual(); }}
-                                        className={isDuplicateWord ? 'lp-input-duplicate' : ''}
-                                        style={{ width: '100%' }}
-                                    />
-                                    {isDuplicateWord && (
-                                        <span className="lp-duplicate-hint">{t('vocab.details.manualDuplicate')}</span>
-                                    )}
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder={t('vocab.details.manualZh')}
-                                    value={addZh}
-                                    onChange={e => setAddZh(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleAddManual(); }}
-                                />
-                                <button className="lp-add-btn" onClick={handleAddManual} disabled={addBusy || isDuplicateWord}>
-                                    {t('vocab.details.manualAddBtn')}
-                                </button>
-                            </div>
-                            <div className="lp-add-row">
-                                <input
-                                    type="text"
-                                    placeholder={t('vocab.details.manualPhonetic')}
-                                    value={addPhonetic}
-                                    onChange={e => setAddPhonetic(e.target.value)}
-                                />
-                                <input
-                                    type="text"
-                                    placeholder={t('vocab.details.manualGrammar')}
-                                    value={addGrammar}
-                                    onChange={e => setAddGrammar(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* AI import */}
-                    {addTab === 'ai' && (
-                        <div className="lp-add-form lp-ai-import">
-                            <textarea
-                                className="lp-ai-textarea"
-                                placeholder={t('vocab.details.aiPlaceholder')}
-                                value={aiText}
-                                onChange={e => setAiText(e.target.value)}
-                                rows={6}
-                            />
-                            <div className="lp-add-row lp-ai-controls">
-                                <span className="lp-ai-model-label">{t('components.aiModel.label')}</span>
-                                <AiModelSelector variant="minimal" />
-                                <button
-                                    className="lp-add-btn"
-                                    onClick={handleAiParse}
-                                    disabled={aiParsing || !aiText.trim()}
-                                >
-                                    {aiParsing ? t('vocab.details.aiParsing') : t('vocab.details.aiParseBtn')}
-                                </button>
-                            </div>
-
-                            {aiParsed && aiParsed.length > 0 && (
-                                <div className="lp-ai-result">
-                                    <div className="lp-ai-result-head">
-                                        <span>{t('vocab.details.aiParsedTitle').replace('{n}', String(aiParsed.length))}</span>
-                                        <button className="lp-ai-clear" onClick={() => setAiParsed(null)}>
-                                            {t('vocab.details.aiClear')}
-                                        </button>
-                                    </div>
-                                    <div className="lp-ai-chips">
-                                        {aiParsed.map(w => (
-                                            <span key={w.word} className={`lp-ai-chip${w.exists ? ' lp-ai-chip-exists' : ''}`}>
-                                                <span className="lp-ai-chip-word">{w.word}</span>
-                                                {w.zh && <span className="lp-ai-chip-zh">{w.zh}</span>}
-                                                {w.exists && <span className="lp-ai-chip-tag">{t('vocab.details.aiExistsTag')}</span>}
-                                                <button
-                                                    className="lp-ai-chip-x"
-                                                    onClick={() => removeParsedWord(w.word)}
-                                                    aria-label="remove"
-                                                >×</button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <button
-                                        className="lp-add-btn lp-ai-import-btn"
-                                        onClick={handleAiImport}
-                                        disabled={addBusy}
-                                    >
-                                        {t('vocab.details.aiImportBtn').replace('{n}', String(aiParsed.filter(w => !w.exists).length))}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Notebook */}
-                    {addTab === 'notebook' && (
-                        <div className="lp-add-form">
-                            <div className="lp-add-row">
-                                <select value={nbId} onChange={e => setNbId(Number(e.target.value))}>
-                                    <option value="">{t('vocab.details.nbSelect')}</option>
-                                    {notebooks.map(nb => (
-                                        <option key={nb.id} value={nb.id}>{nb.title} ({t('vocab.notebooks.cardWordCount').replace('{n}', String(nb.word_count))})</option>
-                                    ))}
-                                </select>
-                                <button
-                                    className="lp-add-btn"
-                                    disabled={!nbId || addBusy}
-                                    onClick={() => handleBulkImport(
-                                        { mode: 'notebook', notebook_id: nbId as number },
-                                        notebooks.find(nb => nb.id === nbId)?.word_count,
-                                    )}
-                                >
-                                    {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.nbImportAll')}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Book */}
-                    {addTab === 'book' && (
-                        <div className="lp-add-form">
-                            <div className="lp-add-row">
-                                <select
-                                    value={bookId}
-                                    onChange={e => {
-                                        setBookId(Number(e.target.value));
-                                        setBookSubMode('all');
-                                        setSelectedIds(new Set());
-                                        setBookPage(1);
-                                    }}
-                                >
-                                    <option value="">{t('vocab.details.bookSelect')}</option>
-                                    {books.map(b => (
-                                        <option key={b.id} value={b.id}>{b.name} ({t('vocab.notebooks.cardWordCount').replace('{n}', String(b.word_count))})</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {bookId !== '' && (
-                                <>
-                                    <div className="lp-add-tabs" style={{ marginTop: 4 }}>
-                                        {(['all', 'range', 'select'] as BookSubMode[]).map(m => (
-                                            <button
-                                                key={m}
-                                                className={`lp-add-tab${bookSubMode === m ? ' active' : ''}`}
-                                                style={{ fontSize: 12 }}
-                                                onClick={() => { setBookSubMode(m); setSelectedIds(new Set()); setBookPage(1); }}
-                                            >
-                                                {m === 'all' ? t('vocab.details.bookModeAll') : m === 'range' ? t('vocab.details.bookModeRange') : t('vocab.details.bookModeSelect')}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {bookSubMode === 'all' && (
-                                        <div className="lp-add-row">
-                                            <button
-                                                className="lp-add-btn"
-                                                disabled={addBusy}
-                                                onClick={() => handleBulkImport(
-                                                    { mode: 'book_all', book_id: bookId as number },
-                                                    books.find(b => b.id === bookId)?.word_count,
-                                                )}
-                                            >
-                                                {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.bookModeAll')}
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {bookSubMode === 'range' && (
-                                        <div className="lp-add-row">
-                                            <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
-                                                {t('vocab.details.bookRangeIdx')}
-                                            </span>
-                                            <input
-                                                type="number" min={1} value={rangeStart}
-                                                onChange={e => setRangeStart(Number(e.target.value))}
-                                                style={{ maxWidth: 80 }}
-                                            />
-                                            <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>~</span>
-                                            <input
-                                                type="number" min={1} value={rangeEnd}
-                                                onChange={e => setRangeEnd(Number(e.target.value))}
-                                                style={{ maxWidth: 80 }}
-                                            />
-                                            <button
-                                                className="lp-add-btn"
-                                                disabled={addBusy}
-                                                onClick={() => handleBulkImport({
-                                                    mode: 'book_range',
-                                                    book_id: bookId as number,
-                                                    start: rangeStart,
-                                                    end: rangeEnd,
-                                                }, Math.max(0, rangeEnd - rangeStart + 1))}
-                                            >
-                                                {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.bookModeRange')}
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {bookSubMode === 'select' && (
-                                        <>
-                                            <div className="lp-add-row">
-                                                <input
-                                                    type="text"
-                                                    placeholder={t('vocab.notebookDetail.searchPlaceholder')}
-                                                    value={bookQ}
-                                                    onChange={e => { setBookQ(e.target.value); setBookPage(1); }}
-                                                />
-                                                <button
-                                                    className="lp-add-btn"
-                                                    disabled={addBusy || selectedIds.size === 0}
-                                                    onClick={() => {
-                                                        handleBulkImport({
-                                                            mode: 'book_select',
-                                                            book_id: bookId as number,
-                                                            word_ids: Array.from(selectedIds),
-                                                        }, selectedIds.size);
-                                                        setSelectedIds(new Set());
-                                                    }}
-                                                >
-                                                    {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.bookImportSelected').replace('{n}', String(selectedIds.size))}
-                                                </button>
-                                            </div>
-                                            <div className="lp-book-browser">
-                                                {bookWords_.map(w => (
-                                                    <div
-                                                        key={w.id}
-                                                        className="lp-book-word-row"
-                                                        onClick={() => toggleSelectWord(w.id)}
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedIds.has(w.id)}
-                                                            onChange={() => toggleSelectWord(w.id)}
-                                                            onClick={e => e.stopPropagation()}
-                                                        />
-                                                        <span className="bw-word">{w.word}</span>
-                                                        {w.phonetic && (
-                                                            <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>
-                                                                {w.phonetic}
-                                                            </span>
-                                                        )}
-                                                        <span className="bw-zh">{w.zh_brief}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="lp-book-pager">
-                                                <button disabled={bookPage <= 1} onClick={() => setBookPage(p => p - 1)}>{t('vocab.details.bookPrevPage')}</button>
-                                                <span>{bookPage} / {bookTotalPages}</span>
-                                                <button
-                                                    disabled={bookPage >= bookTotalPages}
-                                                    onClick={() => setBookPage(p => p + 1)}
-                                                >
-                                                    {t('vocab.details.bookNextPage')}
-                                                </button>
-                                                <div className="lp-page-jump">
-                                                    <span>{t('vocab.details.jumpTo')}</span>
-                                                    <input
-                                                        type="text"
-                                                        inputMode="numeric"
-                                                        value={bookPageJumpInput}
-                                                        onChange={e => {
-                                                            const next = e.target.value;
-                                                            if (next === '' || /^\d+$/.test(next)) {
-                                                                setBookPageJumpInput(next);
-                                                            }
-                                                        }}
-                                                        onKeyDown={e => { if (e.key === 'Enter') handleBookPageJump(); }}
-                                                        placeholder={t('vocab.details.pagePlaceholder')}
-                                                        aria-label={t('vocab.details.jumpAria')}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleBookPageJump}
-                                                        disabled={!bookPageJumpInput.trim()}
-                                                    >
-                                                        GO
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    )}
-                </div>
-                </div>
-                {/* ── Resizer ── */}
-                <div 
-                    onMouseDown={handleMouseDown}
-                    style={{ 
-                        width: 4, 
-                        cursor: 'col-resize', 
-                        backgroundColor: 'transparent', 
-                        zIndex: 10,
-                        borderLeft: '1px solid var(--color-border)',
-                        transition: 'background-color 0.2s',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-primary)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                />
-
-                {/* ── Right Pane: Main List ── */}
-                <div className="uc-main-content lp-main" style={{ flex: 1, minWidth: 400, borderLeft: 'none', overflowY: 'hidden', minHeight: 0 }}>
-                                    {/* ── Word list ── */}
-                <div className="lp-word-section">
-                    <div className="lp-word-section-header">
-                        
-                    <h4 dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.details.listTitle')
+                {/* ── 列表子头：标题 / 排序 / 搜索 / 每行列数 ── */}
+                <div className="lpx-listbar">
+                    <h4 className="lpx-list-title" dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.details.listTitle')
                         .replace('{learned}', String(entries.filter(e => e.fsrs_state !== 0).length))
                         .replace('{total}', String(entries.length)))
                     }} />
-
-                        <div className="lp-sort-controls">
-                            <select
-                                className="lp-sort-select"
-                                value={sortBy}
-                                onChange={e => {
-                                    setSortBy(e.target.value as 'default' | 'alphabetical' | 'proficiency');
-                                    setPage(1);
-                                }}
-                            >
-                                <option value="default">{t('vocab.details.sortDefault')}</option>
-                                <option value="alphabetical">{t('vocab.details.sortAlpha')}</option>
-                                <option value="proficiency">{t('vocab.details.sortProf')}</option>
-                            </select>
-                            {sortBy !== 'default' && (
-                                <button
-                                    className="lp-sort-direction"
-                                    onClick={() => setSortAsc(!sortAsc)}
-                                    title={sortAsc ? t('vocab.details.sortDesc') : t('vocab.details.sortAsc')}
-                                >
-                                    {sortAsc ? '↑' : '↓'}
-                                </button>
-                            )}
-                        </div>
-                        <input
-                            className="lp-search"
-                            type="text"
-                            placeholder={`${t('vocab.details.listSearch')}${t('vocab.details.searchEg')}`}
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
-                        {hasSearchText && (
-                            <div className="lp-search-result-count">
-                                {t('vocab.details.searchResult').replace('{n}', String(filtered.length))}
-                            </div>
+                    <div className="lpx-listbar-spacer" />
+                    <div className="lp-sort-controls">
+                        <select
+                            className="lp-sort-select"
+                            value={sortBy}
+                            onChange={e => { setSortBy(e.target.value as 'default' | 'alphabetical' | 'proficiency'); setPage(1); }}
+                        >
+                            <option value="default">{t('vocab.details.sortDefault')}</option>
+                            <option value="alphabetical">{t('vocab.details.sortAlpha')}</option>
+                            <option value="proficiency">{t('vocab.details.sortProf')}</option>
+                        </select>
+                        {sortBy !== 'default' && (
+                            <button className="lp-sort-direction" onClick={() => setSortAsc(!sortAsc)}
+                                title={sortAsc ? t('vocab.details.sortDesc') : t('vocab.details.sortAsc')}>
+                                {sortAsc ? '↑' : '↓'}
+                            </button>
                         )}
                     </div>
+                    <input
+                        className="lp-search lpx-search"
+                        type="text"
+                        placeholder={`${t('vocab.details.listSearch')}${t('vocab.details.searchEg')}`}
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                    <div className="lpx-cols">
+                        <span>{t('vocab.details.perRowLabel')}</span>
+                        <select value={colsPerRow} onChange={e => setColsPerRow(Number(e.target.value))}>
+                            {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                    </div>
+                </div>
+                {hasSearchText && (
+                    <div className="lp-search-result-count lpx-search-count">
+                        {t('vocab.details.searchResult').replace('{n}', String(filtered.length))}
+                    </div>
+                )}
 
+                {/* ── 单词卡片网格（占满宽度，仅此区域滚动）── */}
+                <div className="lpx-gridwrap">
                     {loading ? (
                         <div className="lp-empty">{t('common.loading')}</div>
                     ) : filtered.length === 0 ? (
@@ -1362,69 +950,423 @@ export default function LearningPlanDetailPage() {
                             {search ? t('vocab.details.listNoMatch') : t('vocab.details.listEmpty')}
                         </div>
                     ) : (
-                        <>
-                            <div className="lp-word-list">
-                                {paged.map(entry => (
-                                    <PlanWordRow
-                                        key={entry.id}
-                                        entry={entry}
-                                        onZhChange={handleZhBlur}
-                                        onDueDays={handleDueDays}
-                                        onRemove={handleRemove}
-                                    />
-                                ))}
-                            </div>
-                            {totalPages > 1 && (
-                                <div className="lp-pager">
-                                    <button
-                                        className="lp-page-btn"
-                                        disabled={safePage <= 1}
-                                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    >
-                                        {t('vocab.details.prevPage')}
-                                    </button>
-                                    <span className="lp-page-info">
-                                        {t('vocab.details.pageInfo').replace('{page}', String(safePage)).replace('{total}', String(totalPages)).replace('{n}', String(filtered.length))}
-                                    </span>
-                                    <button
-                                        className="lp-page-btn"
-                                        disabled={safePage >= totalPages}
-                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    >
-                                        {t('vocab.details.nextPage')}
-                                    </button>
-                                    <div className="lp-page-jump">
-                                        <span>{t('vocab.details.jumpTo')}</span>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            value={pageJumpInput}
-                                            onChange={e => {
-                                                const next = e.target.value;
-                                                if (next === '' || /^\d+$/.test(next)) {
-                                                    setPageJumpInput(next);
-                                                }
-                                            }}
-                                            onKeyDown={e => { if (e.key === 'Enter') handlePageJump(); }}
-                                            placeholder={t('vocab.details.pagePlaceholder')}
-                                            aria-label={t('vocab.details.jumpAria')}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handlePageJump}
-                                            disabled={!pageJumpInput.trim()}
-                                        >
-                                            GO
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </>
+                        <div className="lpx-grid" style={{ ['--lpx-cols']: colsPerRow } as CSSProperties}>
+                            {paged.map(entry => (
+                                <PlanWordRow
+                                    key={entry.id}
+                                    entry={entry}
+                                    onZhChange={handleZhBlur}
+                                    onDueDays={handleDueDays}
+                                    onRemove={handleRemove}
+                                />
+                            ))}
+                        </div>
                     )}
                 </div>
-                </div>
 
+                {/* ── 分页条（始终显示在底部）── */}
+                <div className="lpx-pager">
+                    <button
+                        className="lp-page-btn"
+                        disabled={safePage <= 1}
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                    >
+                        {t('vocab.details.prevPage')}
+                    </button>
+                    <span className="lp-page-info">
+                        {t('vocab.details.pageInfo').replace('{page}', String(safePage)).replace('{total}', String(totalPages)).replace('{n}', String(filtered.length))}
+                    </span>
+                    <button
+                        className="lp-page-btn"
+                        disabled={safePage >= totalPages}
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    >
+                        {t('vocab.details.nextPage')}
+                    </button>
+                    <div className="lp-page-jump">
+                        <span>{t('vocab.details.jumpTo')}</span>
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            value={pageJumpInput}
+                            onChange={e => {
+                                const next = e.target.value;
+                                if (next === '' || /^\d+$/.test(next)) setPageJumpInput(next);
+                            }}
+                            onKeyDown={e => { if (e.key === 'Enter') handlePageJump(); }}
+                            placeholder={t('vocab.details.pagePlaceholder')}
+                            aria-label={t('vocab.details.jumpAria')}
+                        />
+                        <button type="button" onClick={handlePageJump} disabled={!pageJumpInput.trim()}>GO</button>
+                    </div>
+                </div>
             </div>
+
+            {/* ── 今日已学 面板（顶栏「今日学习」按钮折叠出；进度并入头部、词表直接常显）── */}
+            {activePanel === 'today' && plan && (() => {
+                const todayTotal = getPlanTodayTarget(plan);
+                const pct = todayTotal > 0 ? Math.min(100, Math.round((plan.studied_today / todayTotal) * 100)) : 0;
+                return (
+                    <div className="lpx-overlay" onClick={() => setActivePanel(null)}>
+                        <div className="lpx-panel lpx-panel-today" onClick={e => e.stopPropagation()}>
+                            <div className="lpx-panel-head lpx-today-head">
+                                <div className="lpx-today-headline">
+                                    <span>📅 {t('vocab.details.todayBtn')}</span>
+                                    <span className="lpx-today-frac">{plan.studied_today}/{todayTotal}</span>
+                                    <span className="lp-today-pct">{pct}%</span>
+                                </div>
+                                <button type="button" className="lpx-panel-close" onClick={() => setActivePanel(null)} aria-label={t('vocab.details.panelClose')}>×</button>
+                            </div>
+                            <div
+                                className="lp-today-progress lpx-today-progress"
+                                role="progressbar"
+                                aria-valuenow={pct}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-label={t('vocab.common.todayStudiedProgressAria')}
+                            >
+                                <div className="lp-today-progress-fill" style={{ width: `${pct}%` }} />
+                            </div>
+                            <div className="lp-today-list lpx-today-list">
+                                {plan.today_words.map((tw, i) => {
+                                    const stateClass = ['state-new', 'state-learning', 'state-review', 'state-relearning'][tw.state] ?? 'state-new';
+                                    const stateLabel = ['New', 'Learning', 'Review', 'Relearning'][tw.state] ?? 'New';
+                                    return (
+                                        <div key={i} className="lp-today-word-row">
+                                            <span className="lp-today-word">{tw.word}</span>
+                                            {tw.phonetic && <span className="lp-today-phonetic">{tw.phonetic}</span>}
+                                            <span className="lp-today-zh">{tw.zh}</span>
+                                            <span className={`lp-fsrs-badge ${stateClass}`}>{stateLabel}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* ── 添加单词 面板（顶栏「＋ 添加单词」按钮折叠出）── */}
+            {activePanel === 'add' && (
+                <div className="lpx-overlay" onClick={() => setActivePanel(null)}>
+                    <div className="lpx-panel lpx-panel-add" onClick={e => e.stopPropagation()}>
+                        <div className="lpx-panel-head">
+                            <span>＋ {t('vocab.details.addWords')}</span>
+                            <button type="button" className="lpx-panel-close" onClick={() => setActivePanel(null)} aria-label={t('vocab.details.panelClose')}>×</button>
+                        </div>
+
+                        <div className="lp-add-tabs">
+                            {(['manual', 'notebook', 'book', 'ai'] as AddTab[]).map(tab => (
+                                <button
+                                    key={tab}
+                                    className={`lp-add-tab${addTab === tab ? ' active' : ''}`}
+                                    onClick={() => setAddTab(tab)}
+                                >
+                                    {tab === 'manual' ? t('vocab.details.tabManual')
+                                        : tab === 'notebook' ? t('vocab.details.tabNotebook')
+                                        : tab === 'book' ? t('vocab.details.tabBook')
+                                        : t('vocab.details.tabAi')}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Manual */}
+                        {addTab === 'manual' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div className="lp-add-row">
+                                    <div style={{ position: 'relative', flex: 1 }}>
+                                        <input
+                                            type="text"
+                                            placeholder={t('vocab.details.manualWord')}
+                                            value={addWord_}
+                                            onChange={e => setAddWord_(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') handleAddManual(); }}
+                                            className={isDuplicateWord ? 'lp-input-duplicate' : ''}
+                                            style={{ width: '100%' }}
+                                        />
+                                        {isDuplicateWord && (
+                                            <span className="lp-duplicate-hint">{t('vocab.details.manualDuplicate')}</span>
+                                        )}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder={t('vocab.details.manualZh')}
+                                        value={addZh}
+                                        onChange={e => setAddZh(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleAddManual(); }}
+                                    />
+                                    <button className="lp-add-btn" onClick={handleAddManual} disabled={addBusy || isDuplicateWord}>
+                                        {t('vocab.details.manualAddBtn')}
+                                    </button>
+                                </div>
+                                <div className="lp-add-row">
+                                    <input
+                                        type="text"
+                                        placeholder={t('vocab.details.manualPhonetic')}
+                                        value={addPhonetic}
+                                        onChange={e => setAddPhonetic(e.target.value)}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder={t('vocab.details.manualGrammar')}
+                                        value={addGrammar}
+                                        onChange={e => setAddGrammar(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* AI import */}
+                        {addTab === 'ai' && (
+                            <div className="lp-add-form lp-ai-import">
+                                <textarea
+                                    className="lp-ai-textarea"
+                                    placeholder={t('vocab.details.aiPlaceholder')}
+                                    value={aiText}
+                                    onChange={e => setAiText(e.target.value)}
+                                    rows={6}
+                                />
+                                <div className="lp-add-row lp-ai-controls">
+                                    <span className="lp-ai-model-label">{t('components.aiModel.label')}</span>
+                                    <AiModelSelector variant="minimal" />
+                                    <button
+                                        className="lp-add-btn"
+                                        onClick={handleAiParse}
+                                        disabled={aiParsing || !aiText.trim()}
+                                    >
+                                        {aiParsing ? t('vocab.details.aiParsing') : t('vocab.details.aiParseBtn')}
+                                    </button>
+                                </div>
+
+                                {aiParsed && aiParsed.length > 0 && (
+                                    <div className="lp-ai-result">
+                                        <div className="lp-ai-result-head">
+                                            <span>{t('vocab.details.aiParsedTitle').replace('{n}', String(aiParsed.length))}</span>
+                                            <button className="lp-ai-clear" onClick={() => setAiParsed(null)}>
+                                                {t('vocab.details.aiClear')}
+                                            </button>
+                                        </div>
+                                        <div className="lp-ai-chips">
+                                            {aiParsed.map(w => (
+                                                <span key={w.word} className={`lp-ai-chip${w.exists ? ' lp-ai-chip-exists' : ''}`}>
+                                                    <span className="lp-ai-chip-word">{w.word}</span>
+                                                    {w.zh && <span className="lp-ai-chip-zh">{w.zh}</span>}
+                                                    {w.exists && <span className="lp-ai-chip-tag">{t('vocab.details.aiExistsTag')}</span>}
+                                                    <button
+                                                        className="lp-ai-chip-x"
+                                                        onClick={() => removeParsedWord(w.word)}
+                                                        aria-label="remove"
+                                                    >×</button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <button
+                                            className="lp-add-btn lp-ai-import-btn"
+                                            onClick={handleAiImport}
+                                            disabled={addBusy}
+                                        >
+                                            {t('vocab.details.aiImportBtn').replace('{n}', String(aiParsed.filter(w => !w.exists).length))}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Notebook */}
+                        {addTab === 'notebook' && (
+                            <div className="lp-add-form">
+                                <div className="lp-add-row">
+                                    <select value={nbId} onChange={e => setNbId(Number(e.target.value))}>
+                                        <option value="">{t('vocab.details.nbSelect')}</option>
+                                        {notebooks.map(nb => (
+                                            <option key={nb.id} value={nb.id}>{nb.title} ({t('vocab.notebooks.cardWordCount').replace('{n}', String(nb.word_count))})</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        className="lp-add-btn"
+                                        disabled={!nbId || addBusy}
+                                        onClick={() => handleBulkImport(
+                                            { mode: 'notebook', notebook_id: nbId as number },
+                                            notebooks.find(nb => nb.id === nbId)?.word_count,
+                                        )}
+                                    >
+                                        {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.nbImportAll')}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Book */}
+                        {addTab === 'book' && (
+                            <div className="lp-add-form">
+                                <div className="lp-add-row">
+                                    <select
+                                        value={bookId}
+                                        onChange={e => {
+                                            setBookId(Number(e.target.value));
+                                            setBookSubMode('all');
+                                            setSelectedIds(new Set());
+                                            setBookPage(1);
+                                        }}
+                                    >
+                                        <option value="">{t('vocab.details.bookSelect')}</option>
+                                        {books.map(b => (
+                                            <option key={b.id} value={b.id}>{b.name} ({t('vocab.notebooks.cardWordCount').replace('{n}', String(b.word_count))})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {bookId !== '' && (
+                                    <>
+                                        <div className="lp-add-tabs" style={{ marginTop: 4 }}>
+                                            {(['all', 'range', 'select'] as BookSubMode[]).map(m => (
+                                                <button
+                                                    key={m}
+                                                    className={`lp-add-tab${bookSubMode === m ? ' active' : ''}`}
+                                                    style={{ fontSize: 12 }}
+                                                    onClick={() => { setBookSubMode(m); setSelectedIds(new Set()); setBookPage(1); }}
+                                                >
+                                                    {m === 'all' ? t('vocab.details.bookModeAll') : m === 'range' ? t('vocab.details.bookModeRange') : t('vocab.details.bookModeSelect')}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {bookSubMode === 'all' && (
+                                            <div className="lp-add-row">
+                                                <button
+                                                    className="lp-add-btn"
+                                                    disabled={addBusy}
+                                                    onClick={() => handleBulkImport(
+                                                        { mode: 'book_all', book_id: bookId as number },
+                                                        books.find(b => b.id === bookId)?.word_count,
+                                                    )}
+                                                >
+                                                    {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.bookModeAll')}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {bookSubMode === 'range' && (
+                                            <div className="lp-add-row">
+                                                <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
+                                                    {t('vocab.details.bookRangeIdx')}
+                                                </span>
+                                                <input
+                                                    type="number" min={1} value={rangeStart}
+                                                    onChange={e => setRangeStart(Number(e.target.value))}
+                                                    style={{ maxWidth: 80 }}
+                                                />
+                                                <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>~</span>
+                                                <input
+                                                    type="number" min={1} value={rangeEnd}
+                                                    onChange={e => setRangeEnd(Number(e.target.value))}
+                                                    style={{ maxWidth: 80 }}
+                                                />
+                                                <button
+                                                    className="lp-add-btn"
+                                                    disabled={addBusy}
+                                                    onClick={() => handleBulkImport({
+                                                        mode: 'book_range',
+                                                        book_id: bookId as number,
+                                                        start: rangeStart,
+                                                        end: rangeEnd,
+                                                    }, Math.max(0, rangeEnd - rangeStart + 1))}
+                                                >
+                                                    {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.bookModeRange')}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {bookSubMode === 'select' && (
+                                            <>
+                                                <div className="lp-add-row">
+                                                    <input
+                                                        type="text"
+                                                        placeholder={t('vocab.notebookDetail.searchPlaceholder')}
+                                                        value={bookQ}
+                                                        onChange={e => { setBookQ(e.target.value); setBookPage(1); }}
+                                                    />
+                                                    <button
+                                                        className="lp-add-btn"
+                                                        disabled={addBusy || selectedIds.size === 0}
+                                                        onClick={() => {
+                                                            handleBulkImport({
+                                                                mode: 'book_select',
+                                                                book_id: bookId as number,
+                                                                word_ids: Array.from(selectedIds),
+                                                            }, selectedIds.size);
+                                                            setSelectedIds(new Set());
+                                                        }}
+                                                    >
+                                                        {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.bookImportSelected').replace('{n}', String(selectedIds.size))}
+                                                    </button>
+                                                </div>
+                                                <div className="lp-book-browser">
+                                                    {bookWords_.map(w => (
+                                                        <div
+                                                            key={w.id}
+                                                            className="lp-book-word-row"
+                                                            onClick={() => toggleSelectWord(w.id)}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedIds.has(w.id)}
+                                                                onChange={() => toggleSelectWord(w.id)}
+                                                                onClick={e => e.stopPropagation()}
+                                                            />
+                                                            <span className="bw-word">{w.word}</span>
+                                                            {w.phonetic && (
+                                                                <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>
+                                                                    {w.phonetic}
+                                                                </span>
+                                                            )}
+                                                            <span className="bw-zh">{w.zh_brief}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="lp-book-pager">
+                                                    <button disabled={bookPage <= 1} onClick={() => setBookPage(p => p - 1)}>{t('vocab.details.bookPrevPage')}</button>
+                                                    <span>{bookPage} / {bookTotalPages}</span>
+                                                    <button
+                                                        disabled={bookPage >= bookTotalPages}
+                                                        onClick={() => setBookPage(p => p + 1)}
+                                                    >
+                                                        {t('vocab.details.bookNextPage')}
+                                                    </button>
+                                                    <div className="lp-page-jump">
+                                                        <span>{t('vocab.details.jumpTo')}</span>
+                                                        <input
+                                                            type="text"
+                                                            inputMode="numeric"
+                                                            value={bookPageJumpInput}
+                                                            onChange={e => {
+                                                                const next = e.target.value;
+                                                                if (next === '' || /^\d+$/.test(next)) {
+                                                                    setBookPageJumpInput(next);
+                                                                }
+                                                            }}
+                                                            onKeyDown={e => { if (e.key === 'Enter') handleBookPageJump(); }}
+                                                            placeholder={t('vocab.details.pagePlaceholder')}
+                                                            aria-label={t('vocab.details.jumpAria')}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleBookPageJump}
+                                                            disabled={!bookPageJumpInput.trim()}
+                                                        >
+                                                            GO
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <ConfirmDialog
                 open={deletingEntry !== null}
