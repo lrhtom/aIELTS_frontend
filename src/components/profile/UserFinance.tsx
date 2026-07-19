@@ -26,7 +26,7 @@ interface Transaction {
 }
 
 export default function UserFinance() {
-  const { translations: t } = useLang();
+  const { t } = useLang();
   const [stats, setStats] = useState<FinanceStats | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   
@@ -86,8 +86,8 @@ export default function UserFinance() {
   return (
     <div className="profile-tab-pane">
       <div className="profile-tab-header" style={{ marginBottom: '32px', paddingBottom: '16px', borderBottom: '1px solid var(--color-border)' }}>
-        <h2 className="profile-tab-title" style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: 'var(--color-text)' }}>{t.profile.finance.title}</h2>
-        <p className="profile-tab-subtitle" style={{ color: 'var(--color-text-secondary)', fontSize: '15px' }}>{t.profile.finance.subtitle}</p>
+        <h2 className="profile-tab-title" style={{ fontSize: '24px', fontWeight: '700', marginBottom: '8px', color: 'var(--color-text)' }}>{t('profile.finance.title')}</h2>
+        <p className="profile-tab-subtitle" style={{ color: 'var(--color-text-secondary)', fontSize: '15px' }}>{t('profile.finance.subtitle')}</p>
       </div>
 
       {loadingStats ? (
@@ -107,7 +107,7 @@ export default function UserFinance() {
                 <Coins size={36} strokeWidth={2} />
               </div>
               <div>
-                <div style={{ fontSize: '15px', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>{t.profile.finance.totalAtUsed}</div>
+                <div style={{ fontSize: '15px', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>{t('profile.finance.totalAtUsed')}</div>
                 <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text)', letterSpacing: '-0.5px' }}>
                   {stats.total_at_used.toLocaleString()}
                 </div>
@@ -123,7 +123,7 @@ export default function UserFinance() {
                 <Banknote size={36} strokeWidth={2} />
               </div>
               <div>
-                <div style={{ fontSize: '15px', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>{t.profile.finance.totalCnyUsed}</div>
+                <div style={{ fontSize: '15px', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: '500' }}>{t('profile.finance.totalCnyUsed')}</div>
                 <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text)', letterSpacing: '-0.5px' }}>
                   ¥{stats.total_cny_used.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </div>
@@ -137,7 +137,7 @@ export default function UserFinance() {
             border: '1px solid var(--color-border)', boxShadow: '0 4px 20px -4px rgba(0,0,0,0.02)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: 'var(--color-text)' }}>{t.profile.finance.dailyTrend}</h3>
+              <h3 style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: 'var(--color-text)' }}>{t('profile.finance.dailyTrend')}</h3>
               
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ display: 'flex', background: 'var(--color-bg)', borderRadius: '8px', padding: '4px', border: '1px solid var(--color-border)' }}>
@@ -150,7 +150,7 @@ export default function UserFinance() {
                       border: 'none', cursor: 'pointer', transition: 'all 0.2s'
                     }}
                   >
-                    {t.profile.finance.atCoin}
+                    {t('profile.finance.atCoin')}
                   </button>
                   <button 
                     onClick={() => setCurrencyType('CNY')}
@@ -161,7 +161,7 @@ export default function UserFinance() {
                       border: 'none', cursor: 'pointer', transition: 'all 0.2s'
                     }}
                   >
-                    {t.profile.finance.cny}
+                    {t('profile.finance.cny')}
                   </button>
                 </div>
                 
@@ -175,7 +175,7 @@ export default function UserFinance() {
                       border: 'none', cursor: 'pointer', transition: 'all 0.2s'
                     }}
                   >
-                    {t.profile.finance.barChart}
+                    {t('profile.finance.barChart')}
                   </button>
                   <button 
                     onClick={() => setChartType('line')}
@@ -186,7 +186,7 @@ export default function UserFinance() {
                       border: 'none', cursor: 'pointer', transition: 'all 0.2s'
                     }}
                   >
-                    {t.profile.finance.lineChart}
+                    {t('profile.finance.lineChart')}
                   </button>
                 </div>
               </div>
@@ -203,7 +203,7 @@ export default function UserFinance() {
                       cursor={{ fill: 'transparent' }}
                       contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                       itemStyle={{ color: 'var(--color-text)' }}
-                      formatter={(value) => [Number(value ?? 0).toLocaleString(), currencyType === 'AT_COIN' ? t.profile.finance.consumeAt : t.profile.finance.consumeCny]}
+                      formatter={(value) => [Number(value ?? 0).toLocaleString(), currencyType === 'AT_COIN' ? t('profile.finance.consumeAt') : t('profile.finance.consumeCny')]}
                       labelStyle={{ color: 'var(--color-text-secondary)', marginBottom: '8px' }}
                     />
                     <Bar dataKey={currencyType === 'AT_COIN' ? 'at_used' : 'cny_used'} fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
@@ -217,7 +217,7 @@ export default function UserFinance() {
                       cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '3 3' }}
                       contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                       itemStyle={{ color: 'var(--color-text)' }}
-                      formatter={(value) => [Number(value ?? 0).toLocaleString(), currencyType === 'AT_COIN' ? t.profile.finance.consumeAt : t.profile.finance.consumeCny]}
+                      formatter={(value) => [Number(value ?? 0).toLocaleString(), currencyType === 'AT_COIN' ? t('profile.finance.consumeAt') : t('profile.finance.consumeCny')]}
                       labelStyle={{ color: 'var(--color-text-secondary)', marginBottom: '8px' }}
                     />
                     <Line type="monotone" dataKey={currencyType === 'AT_COIN' ? 'at_used' : 'cny_used'} stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-primary)' }} activeDot={{ r: 6 }} />
@@ -228,7 +228,7 @@ export default function UserFinance() {
           </div>
         </div>
       ) : (
-        <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '40px' }}>{t.profile.finance.noData}</div>
+        <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '40px' }}>{t('profile.finance.noData')}</div>
       )}
 
       {/* Transactions Table */}
@@ -239,7 +239,7 @@ export default function UserFinance() {
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0, color: 'var(--color-text)' }}>
             <ArrowRightLeft size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-            {t.profile.finance.transactionDetails}
+            {t('profile.finance.transactionDetails')}
           </h3>
         </div>
         
@@ -247,10 +247,10 @@ export default function UserFinance() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--color-bg)', color: 'var(--color-text-secondary)', fontSize: '13px', textTransform: 'uppercase' }}>
-                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t.profile.finance.time}</th>
-                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t.profile.finance.description}</th>
-                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t.profile.finance.amount}</th>
-                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t.profile.finance.balanceAfter}</th>
+                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t('profile.finance.time')}</th>
+                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t('profile.finance.description')}</th>
+                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t('profile.finance.amount')}</th>
+                <th style={{ padding: '16px 24px', fontWeight: '600' }}>{t('profile.finance.balanceAfter')}</th>
               </tr>
             </thead>
             <tbody>
@@ -276,7 +276,7 @@ export default function UserFinance() {
                           background: txn.currency === 'AT_COIN' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(34, 197, 94, 0.1)',
                           color: txn.currency === 'AT_COIN' ? '#eab308' : '#22c55e'
                         }}>
-                          {txn.currency === 'AT_COIN' ? t.profile.finance.atCoin : t.profile.finance.cny}
+                          {txn.currency === 'AT_COIN' ? t('profile.finance.atCoin') : t('profile.finance.cny')}
                         </span>
                       </td>
                       <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '600', whiteSpace: 'nowrap' }}>
@@ -294,7 +294,7 @@ export default function UserFinance() {
               ) : (
                 <tr>
                   <td colSpan={4} style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
-                    {t.profile.finance.noTransactions}
+                    {t('profile.finance.noTransactions')}
                   </td>
                 </tr>
               )}
@@ -316,11 +316,11 @@ export default function UserFinance() {
                 cursor: page === 1 ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
               }}
             >
-              <ChevronLeft size={16} /> {t.profile.finance.prevPage}
+              <ChevronLeft size={16} /> {t('profile.finance.prevPage')}
             </button>
             
             <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-              {t.profile.finance.pageOf.replace('{page}', String(page)).replace('{total}', String(totalPages))}
+              {t('profile.finance.pageOf').replace('{page}', String(page)).replace('{total}', String(totalPages))}
             </span>
             
             <button 
@@ -334,7 +334,7 @@ export default function UserFinance() {
                 cursor: page === totalPages ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
               }}
             >
-              {t.profile.finance.nextPage} <ChevronRight size={16} />
+              {t('profile.finance.nextPage')} <ChevronRight size={16} />
             </button>
           </div>
         )}

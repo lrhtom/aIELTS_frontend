@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import { Link } from 'react-router-dom';
 import { useLang } from '../i18n/LanguageContext';
-import { translations } from '../i18n/translations';
 import { BookOpen, Headphones, Mic, PenTool, Gift, ArrowUpRight, ArrowRight, Compass } from 'lucide-react';
 import { startTour, TOUR_SEEN_KEY } from '../components/tour/TourGuide';
 import { checkinApi, type CheckinStatusResponse } from '../api/checkin';
@@ -147,8 +146,7 @@ function renderDoodles(layers: DoodleLayer[]) {
 }
 
 export default function HomePage() {
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { t } = useLang();
     const { user } = useAuth();
     const [checkinStatus, setCheckinStatus] = useState<CheckinStatusResponse | null>(null);
     const [checkingIn, setCheckingIn] = useState(false);
@@ -176,13 +174,13 @@ export default function HomePage() {
             const res = await checkinApi.doCheckin();
             // Backend `message` is Chinese-only; compose from structured fields.
             if (res.ok) {
-                setRewardMsg(t.assistant.checkin.successMessage.replace('{bonus}', (res.bonus ?? 0).toLocaleString()));
+                setRewardMsg(t('assistant.checkin.successMessage').replace('{bonus}', (res.bonus ?? 0).toLocaleString()));
                 await loadCheckinStatus();
             } else {
-                setRewardMsg(t.assistant.checkin.alreadyMessage);
+                setRewardMsg(t('assistant.checkin.alreadyMessage'));
             }
         } catch {
-            setRewardMsg(t.home.checkin.errorToast);
+            setRewardMsg(t('home.checkin.errorToast'));
         } finally {
             setCheckingIn(false);
         }
@@ -249,7 +247,7 @@ export default function HomePage() {
         return () => { observer.disconnect(); window.clearTimeout(fallback); };
     }, [user]);
 
-    const chapters = t.home.stage.chapters;
+    const chapters = t('home.stage.chapters', { returnObjects: true }) as { tag: string; title: string; desc: string }[];
 
     const jumpToChapter = (i: number) => {
         const el = stageRef.current;
@@ -263,7 +261,7 @@ export default function HomePage() {
         brokenImgs[src] ? (
             <div className={`hp-screen-placeholder ${extraClass}`}>
                 <span className="hp-screen-placeholder-icon">🖼️</span>
-                <span>{t.home.stage.placeholder}</span>
+                <span>{t('home.stage.placeholder')}</span>
                 <code>{src}</code>
             </div>
         ) : (
@@ -279,29 +277,29 @@ export default function HomePage() {
                     {renderDoodles(heroDoodles)}
                 </div>
                 <h1 className="hp-headline">
-                    {t.home.hero2.pre}
+                    {t('home.hero2.pre')}
                     <br />
-                    <span className="hp-accent">{t.home.hero2.accent}</span>
+                    <span className="hp-accent">{t('home.hero2.accent')}</span>
                     <br />
-                    {t.home.hero2.post}
+                    {t('home.hero2.post')}
                 </h1>
-                <p className="hp-hero-sub">{t.home.hero2.sub}</p>
+                <p className="hp-hero-sub">{t('home.hero2.sub')}</p>
                 <div className="hp-hero-actions">
-                    <Link to="/practice" className="hp-pill">{t.home.hero2.ctaPrimary}</Link>
+                    <Link to="/practice" className="hp-pill">{t('home.hero2.ctaPrimary')}</Link>
                     {user && (
                         <button
                             type="button"
                             className="tour-start-btn"
-                            title={t.tour.startHint}
+                            title={t('tour.startHint')}
                             onClick={startTour}
                         >
                             <Compass size={17} />
-                            {t.tour.startBtn}
+                            {t('tour.startBtn')}
                             {!localStorage.getItem(TOUR_SEEN_KEY) && <span className="tour-pulse-dot" />}
                         </button>
                     )}
                     <Link to="/practice" className="hp-textlink">
-                        {t.home.hero2.ctaSecondary} <ArrowUpRight size={16} />
+                        {t('home.hero2.ctaSecondary')} <ArrowUpRight size={16} />
                     </Link>
                 </div>
             </section>
@@ -311,24 +309,24 @@ export default function HomePage() {
                 <section className="hp-banner-wrap hp-checkin-wrap scroll-animate">
                     <div className="hp-banner">
                         <div className="hp-banner-main">
-                            <h2 className="hp-banner-title"><Gift size={22} /> {t.home.checkin.heading}</h2>
+                            <h2 className="hp-banner-title"><Gift size={22} /> {t('home.checkin.heading')}</h2>
                             <div className="hp-checkin-stats">
                                 <span className="hp-checkin-stat">
                                     <b>{checkinStatus?.today_checked ? '✅' : checkingIn ? '⏳' : '🗓️'}</b>
-                                    {t.home.checkin.todayLabel}
+                                    {t('home.checkin.todayLabel')}
                                 </span>
                                 <span className="hp-checkin-stat">
                                     <b>{checkinStatus?.current_streak ?? '--'}</b>
-                                    {t.home.checkin.streakLabel}
+                                    {t('home.checkin.streakLabel')}
                                 </span>
                                 <span className="hp-checkin-stat">
                                     <b>{checkinStatus?.total_checkins ?? '--'}</b>
-                                    {t.home.checkin.totalLabel}
+                                    {t('home.checkin.totalLabel')}
                                 </span>
                                 {checkinStatus?.today_bonus ? (
                                     <span className="hp-checkin-stat bonus">
                                         <b>+{checkinStatus.today_bonus.toLocaleString()}</b>
-                                        {t.home.checkin.rewardLabel}
+                                        {t('home.checkin.rewardLabel')}
                                     </span>
                                 ) : null}
                             </div>
@@ -339,8 +337,8 @@ export default function HomePage() {
                             disabled={checkinStatus?.today_checked || checkingIn}
                         >
                             {checkinStatus?.today_checked
-                                ? t.home.checkin.btnDone
-                                : checkingIn ? t.home.checkin.btnChecking : t.home.checkin.btnCheckin}
+                                ? t('home.checkin.btnDone')
+                                : checkingIn ? t('home.checkin.btnChecking') : t('home.checkin.btnCheckin')}
                         </button>
                     </div>
                     {(rewardMsg || (checkinStatus && !checkinStatus.today_checked)) && (
@@ -350,17 +348,17 @@ export default function HomePage() {
                             )}
                             {checkinStatus && !checkinStatus.today_checked && (
                                 <p className="hp-checkin-hint">
-                                    {getMilestoneHint(checkinStatus.current_streak, t.home.checkin.milestoneHint)}
+                                    {getMilestoneHint(checkinStatus.current_streak, t('home.checkin.milestoneHint'))}
                                 </p>
                             )}
-                            <p className="hp-checkin-rules">{t.home.checkin.rules}</p>
+                            <p className="hp-checkin-rules">{t('home.checkin.rules')}</p>
                         </div>
                     )}
                 </section>
             )}
 
             {/* ═══ Scrollytelling stage (desktop): sticky mockup + sentinel-driven chapters ═══ */}
-            <section className="hp-stage-outer" ref={stageRef} aria-label={t.home.stage.srHint}>
+            <section className="hp-stage-outer" ref={stageRef} aria-label={t('home.stage.srHint')}>
                 <div className="hp-stage-sticky">
                     <div className="hp-deco" aria-hidden="true">{renderDoodles(stageDoodles)}</div>
                     <div className="hp-stage-inner">
@@ -422,9 +420,9 @@ export default function HomePage() {
             {/* ═══ Skills — horizontal scroll-snap carousel ═══ */}
             <section className="hp-features scroll-animate">
                 <div className="hp-deco" aria-hidden="true">{renderDoodles(featureDoodles)}</div>
-                <h2 className="hp-h2">{t.home.skills.heading}</h2>
+                <h2 className="hp-h2">{t('home.skills.heading')}</h2>
                 <div className="hp-snap-row">
-                    {t.home.skills.items.map((item, i) => {
+                    {(t('home.skills.items', { returnObjects: true }) as { title: string; desc: string; link: string }[]).map((item, i) => {
                         const Icon = skillIcons[i];
                         return (
                             <Link to={item.link} key={item.title} className="hp-feature-card">
@@ -432,7 +430,7 @@ export default function HomePage() {
                                 <h3>{item.title}</h3>
                                 <p>{item.desc}</p>
                                 <span className="hp-feature-link">
-                                    {t.home.hero.startPractice} <ArrowRight size={15} />
+                                    {t('home.hero.startPractice')} <ArrowRight size={15} />
                                 </span>
                             </Link>
                         );
@@ -442,9 +440,9 @@ export default function HomePage() {
 
             {/* ═══ How it works — compact 3-step row ═══ */}
             <section className="hp-steps scroll-animate">
-                <h2 className="hp-h2">{t.home.howItWorks.heading}</h2>
+                <h2 className="hp-h2">{t('home.howItWorks.heading')}</h2>
                 <div className="hp-steps-row">
-                    {t.home.howItWorks.steps.map((step, i) => (
+                    {(t('home.howItWorks.steps', { returnObjects: true }) as { title: string; desc: string }[]).map((step, i) => (
                         <div key={step.title} className="hp-step">
                             <span className="hp-step-num">{i + 1}</span>
                             <h3>{step.title}</h3>
@@ -457,15 +455,15 @@ export default function HomePage() {
             {/* ═══ Gallery — user-supplied photos ═══ */}
             <section className="hp-gallery scroll-animate">
                 <div className="hp-deco" aria-hidden="true">{renderDoodles(galleryDoodles)}</div>
-                <h2 className="hp-h2">{t.home.gallery.heading}</h2>
-                <p className="hp-h2-sub">{t.home.gallery.sub}</p>
+                <h2 className="hp-h2">{t('home.gallery.heading')}</h2>
+                <p className="hp-h2-sub">{t('home.gallery.sub')}</p>
                 <div className="hp-gallery-grid">
-                    {t.home.gallery.items.map((item, i) => (
+                    {(t('home.gallery.items', { returnObjects: true }) as { caption: string }[]).map((item, i) => (
                         <figure key={i} className="hp-gallery-item">
                             {brokenImgs[galleryImages[i]] ? (
                                 <div className="hp-gallery-placeholder">
                                     <span>📷</span>
-                                    <span>{t.home.gallery.photoPlaceholder}</span>
+                                    <span>{t('home.gallery.photoPlaceholder')}</span>
                                     <code>{galleryImages[i]}</code>
                                 </div>
                             ) : (
@@ -480,9 +478,9 @@ export default function HomePage() {
             {/* ═══ Announcements ═══ */}
             <section className="hp-news scroll-animate">
                 <div className="hp-deco" aria-hidden="true">{renderDoodles(newsDoodles)}</div>
-                <h2 className="hp-h2">{t.home.announcements.heading}</h2>
+                <h2 className="hp-h2">{t('home.announcements.heading')}</h2>
                 <div className="hp-news-list">
-                    {t.home.announcements.items.map((item, i) => (
+                    {(t('home.announcements.items', { returnObjects: true }) as { date: string; tag: string; content: string }[]).map((item, i) => (
                         <div key={i} className="hp-news-item">
                             <span className="hp-news-date">{item.date}</span>
                             <span className={`hp-news-tag ${item.tag === '新功能' || item.tag === 'New' ? 'new' : item.tag === '优化' || item.tag === 'Optimization' ? 'update' : 'community'}`}>
@@ -498,20 +496,20 @@ export default function HomePage() {
             <section className="hp-banner-wrap scroll-animate">
                 <div className="hp-deco" aria-hidden="true">{renderDoodles(ctaDoodles)}</div>
                 <div className="hp-banner hp-banner-cta">
-                    <h2 className="hp-banner-title">{t.home.ctaBanner.title}</h2>
+                    <h2 className="hp-banner-title">{t('home.ctaBanner.title')}</h2>
                     <Link to="/practice" className="hp-pill">
-                        {t.home.ctaBanner.btn} <ArrowRight size={15} />
+                        {t('home.ctaBanner.btn')} <ArrowRight size={15} />
                     </Link>
                 </div>
             </section>
 
             {/* ═══ Footer ═══ */}
             <footer className="footer">
-                <span>{t.home.footer}</span>
+                <span>{t('home.footer')}</span>
                 <div className="footer-links">
-                    <Link to="/feedback">{t.home.footerFeedback}</Link>
+                    <Link to="/feedback">{t('home.footerFeedback')}</Link>
                     <span className="footer-sep">·</span>
-                    <Link to="/profile">{t.home.footerManual}</Link>
+                    <Link to="/profile">{t('home.footerManual')}</Link>
                 </div>
             </footer>
         </Layout>

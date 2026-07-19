@@ -46,12 +46,12 @@ interface CreateModal {
 }
 
 export default function LearningPlanListPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
     const buildDefaultPlanName = () => {
         const now = new Date();
         const pad2 = (n: number) => String(n).padStart(2, '0');
-        return `${t.vocab.plans.defaultPlanNamePrefix} ${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+        return `${t('vocab.plans.defaultPlanNamePrefix')} ${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
     };
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -72,7 +72,7 @@ export default function LearningPlanListPage() {
             if (planRes.status === 'fulfilled') {
                 setPlans(planRes.value.plans);
             } else {
-                showToast(t.vocab.plans.msgLoadFail, 'error');
+                showToast(t('vocab.plans.msgLoadFail'), 'error');
             }
 
             if (customRes.status === 'fulfilled') {
@@ -91,21 +91,21 @@ export default function LearningPlanListPage() {
         if (!modal) return;
 
         if (modal.daily_count < 1 || modal.daily_count > 200) {
-            showToast(t.vocab.plans.msgDailyRange, 'error'); return;
+            showToast(t('vocab.plans.msgDailyRange'), 'error'); return;
         }
 
         if (modal.entry_mode === 'custom') {
             const customName = modal.name.trim();
-            if (!customName) { showToast(t.vocab.plans.msgNameRequired, 'error'); return; }
+            if (!customName) { showToast(t('vocab.plans.msgNameRequired'), 'error'); return; }
 
             setSaving(true);
             try {
                 const { deck } = await createCustomDeck(customName, '', modal.daily_count);
                 setCustomDecks(prev => [deck, ...prev]);
                 setModal(null);
-                showToast(t.vocab.plans.syncedToBackend, 'success');
+                showToast(t('vocab.plans.syncedToBackend'), 'success');
             } catch (e: unknown) {
-                const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t.vocab.plans.syncFail;
+                const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t('vocab.plans.syncFail');
                 showToast(msg, 'error');
             } finally {
                 setSaving(false);
@@ -115,7 +115,7 @@ export default function LearningPlanListPage() {
         }
 
         if (!user?.is_staff && plans.length >= MAX_PLANS) {
-            showToast(t.vocab.plans.maxPlansHint.replace('{n}', String(MAX_PLANS)), 'error');
+            showToast(t('vocab.plans.maxPlansHint').replace('{n}', String(MAX_PLANS)), 'error');
             return;
         }
 
@@ -126,9 +126,9 @@ export default function LearningPlanListPage() {
             const { plan } = await createPlan(planName, modal.daily_count);
             setPlans(prev => [...prev, plan]);
             setModal(null);
-            showToast(t.vocab.plans.msgCreateSuccess, 'success');
+            showToast(t('vocab.plans.msgCreateSuccess'), 'success');
         } catch (e: unknown) {
-            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t.vocab.plans.msgCreateFail;
+            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t('vocab.plans.msgCreateFail');
             showToast(msg, 'error');
         } finally {
             setSaving(false);
@@ -138,7 +138,7 @@ export default function LearningPlanListPage() {
     const handleStartCustom = async (deck: CustomMemoryDeck, forceReview = false) => {
         if (startingCustom) return;
         if (deck.card_count === 0) {
-            showToast(t.vocab.plans.msgAddCardsFirst, 'error');
+            showToast(t('vocab.plans.msgAddCardsFirst'), 'error');
             return;
         }
 
@@ -148,10 +148,10 @@ export default function LearningPlanListPage() {
             const { deck: serverDeck, cards, stats } = await startCustomDeck(deck.id, isReview, true);
             if (!cards.length) {
                 const msg = isReview
-                    ? t.vocab.plans.msgNoDueReview
+                    ? t('vocab.plans.msgNoDueReview')
                     : stats.remaining_today === 0
-                        ? t.vocab.plans.msgTodayDone.replace('{n}', String(serverDeck.daily_count))
-                        : t.vocab.plans.msgNoAvailableCards;
+                        ? t('vocab.plans.msgTodayDone').replace('{n}', String(serverDeck.daily_count))
+                        : t('vocab.plans.msgNoAvailableCards');
                 showToast(msg, 'success');
                 return;
             }
@@ -165,7 +165,7 @@ export default function LearningPlanListPage() {
                 },
             });
         } catch (e: unknown) {
-            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t.vocab.plans.msgStartFailFallback;
+            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t('vocab.plans.msgStartFailFallback');
             showToast(msg, 'error');
         } finally {
             setStartingCustom(null);
@@ -175,13 +175,13 @@ export default function LearningPlanListPage() {
     /* ── delete ── */
     const handleDelete = async (e: React.MouseEvent, plan: LearningPlan) => {
         e.stopPropagation();
-        if (!(await showConfirm({ message: t.vocab.plans.msgDeleteConfirm.replace('{name}', plan.name), danger: true }))) return;
+        if (!(await showConfirm({ message: t('vocab.plans.msgDeleteConfirm').replace('{name}', plan.name), danger: true }))) return;
         try {
             await deletePlan(plan.id);
             setPlans(prev => prev.filter(p => p.id !== plan.id));
-            showToast(t.vocab.plans.msgDeleteSuccess, 'success');
+            showToast(t('vocab.plans.msgDeleteSuccess'), 'success');
         } catch {
-            showToast(t.vocab.plans.msgDeleteFail, 'error');
+            showToast(t('vocab.plans.msgDeleteFail'), 'error');
         }
     };
 
@@ -202,7 +202,7 @@ export default function LearningPlanListPage() {
             setPlans(prev => prev.map(p => p.id === plan.id
                 ? { ...p, is_favorite: plan.is_favorite, favorited_at: plan.favorited_at }
                 : p));
-            showToast(t.vocab.plans.favoriteFail, 'error');
+            showToast(t('vocab.plans.favoriteFail'), 'error');
         }
     };
 
@@ -210,7 +210,7 @@ export default function LearningPlanListPage() {
     const handleStart = async (e: React.MouseEvent, plan: LearningPlan, forceReview = false) => {
         e.stopPropagation();
         if (starting) return;
-        if (plan.word_count === 0) { showToast(t.vocab.plans.msgEmptyWord, 'error'); return; }
+        if (plan.word_count === 0) { showToast(t('vocab.plans.msgEmptyWord'), 'error'); return; }
 
         const isReview = forceReview || shouldStartReview(plan);
         setStarting(plan.id);
@@ -219,10 +219,10 @@ export default function LearningPlanListPage() {
             const { cards, stats } = result;
             if (cards.length === 0) {
                 const msg = isReview
-                    ? t.vocab.plans.msgNoReviewRecord
+                    ? t('vocab.plans.msgNoReviewRecord')
                     : stats.remaining_today === 0
-                        ? t.vocab.plans.msgDailyGoalReached.replace('{n}', String(stats.studied_today))
-                        : t.vocab.plans.msgNoDueReview;
+                        ? t('vocab.plans.msgDailyGoalReached').replace('{n}', String(stats.studied_today))
+                        : t('vocab.plans.msgNoDueReview');
                 showToast(msg, 'success');
                 return;
             }
@@ -264,7 +264,7 @@ export default function LearningPlanListPage() {
                 },
             });
         } catch (e: unknown) {
-            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t.vocab.plans.msgStartFail;
+            const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || t('vocab.plans.msgStartFail');
             showToast(msg, 'error');
         } finally {
             setStarting(null);
@@ -278,9 +278,9 @@ export default function LearningPlanListPage() {
 
     return (
         <Layout
-            pageTitle={t.vocab.plans.title}
+            pageTitle={t('vocab.plans.title')}
             backUrl='/vocabulary'
-            backText={`${t.common.back} ${t.vocab.hub.title}`}
+            backText={`${t('common.back')} ${t('vocab.hub.title')}`}
             titleAction={
                 <>
                     {activeTab === 'plans' && (
@@ -289,9 +289,9 @@ export default function LearningPlanListPage() {
                             style={{ padding: '6px 12px', fontSize: '13px', width: 'auto', marginLeft: 16 }}
                             onClick={() => canCreate && setModal({ name: '', daily_count: 20, entry_mode: 'word' })}
                             disabled={!canCreate}
-                            title={!canCreate ? t.vocab.plans.maxPlansHint.replace('{n}', String(MAX_PLANS)) : t.vocab.plans.newPlan}
+                            title={!canCreate ? t('vocab.plans.maxPlansHint').replace('{n}', String(MAX_PLANS)) : t('vocab.plans.newPlan')}
                         >
-                            + {t.vocab.plans.newPlan}
+                            + {t('vocab.plans.newPlan')}
                         </button>
                     )}
                     {activeTab === 'custom' && (
@@ -300,7 +300,7 @@ export default function LearningPlanListPage() {
                             style={{ padding: '6px 12px', fontSize: '13px', width: 'auto', marginLeft: 16 }}
                             onClick={() => setModal({ name: '', daily_count: 20, entry_mode: 'custom' })}
                         >
-                            + {t.vocab.plans.newCustomDeck}
+                            + {t('vocab.plans.newCustomDeck')}
                         </button>
                     )}
                 </>
@@ -308,7 +308,7 @@ export default function LearningPlanListPage() {
         >
             <div className="uc-console">
                 <div className="uc-sidebar">
-                    <div className="uc-sidebar-title">{t.vocab.plans.vocabLibraryTitle}</div>
+                    <div className="uc-sidebar-title">{t('vocab.plans.vocabLibraryTitle')}</div>
                     <nav className="uc-sidebar-nav">
                         <button
                             type="button"
@@ -316,7 +316,7 @@ export default function LearningPlanListPage() {
                             onClick={() => setActiveTab('plans')}
                         >
                             <span className="nav-icon">📚</span>
-                            <span className="nav-text">{t.vocab.plans.regularVocab}</span>
+                            <span className="nav-text">{t('vocab.plans.regularVocab')}</span>
                         </button>
                         <button
                             type="button"
@@ -324,7 +324,7 @@ export default function LearningPlanListPage() {
                             onClick={() => setActiveTab('custom')}
                         >
                             <span className="nav-icon">🃏</span>
-                            <span className="nav-text">{t.vocab.plans.customCards}</span>
+                            <span className="nav-text">{t('vocab.plans.customCards')}</span>
                         </button>
                     </nav>
                 </div>
@@ -335,12 +335,12 @@ export default function LearningPlanListPage() {
                         {activeTab === 'plans' && (
                             <>
                                 {loading ? (
-                                    <div className="lp-empty">{t.common.loading}</div>
+                                    <div className="lp-empty">{t('common.loading')}</div>
                                 ) : plans.length === 0 ? (
                                     <div className="lp-empty-state">
                                         <div className="lp-empty-icon">📚</div>
-                                        <p className="lp-empty-title">{t.vocab.plans.emptyTitle}</p>
-                                        <p className="lp-empty-sub">{t.vocab.plans.emptySub}</p>
+                                        <p className="lp-empty-title">{t('vocab.plans.emptyTitle')}</p>
+                                        <p className="lp-empty-sub">{t('vocab.plans.emptySub')}</p>
                                     </div>
                                 ) : (
                                     <div className="lp-plan-list">
@@ -354,8 +354,8 @@ export default function LearningPlanListPage() {
                                                             <button
                                                                 className={`lp-plan-fav ${plan.is_favorite ? 'is-on' : ''}`}
                                                                 onClick={(e) => handleToggleFavorite(e, plan)}
-                                                                title={plan.is_favorite ? t.vocab.plans.unfavoriteTitle : t.vocab.plans.favoriteTitle}
-                                                                aria-label={plan.is_favorite ? t.vocab.plans.unfavoriteTitle : t.vocab.plans.favoriteTitle}
+                                                                title={plan.is_favorite ? t('vocab.plans.unfavoriteTitle') : t('vocab.plans.favoriteTitle')}
+                                                                aria-label={plan.is_favorite ? t('vocab.plans.unfavoriteTitle') : t('vocab.plans.favoriteTitle')}
                                                                 aria-pressed={plan.is_favorite}
                                                             >
                                                                 {plan.is_favorite ? '★' : '☆'}
@@ -363,7 +363,7 @@ export default function LearningPlanListPage() {
                                                             <button
                                                                 className="lp-plan-del"
                                                                 onClick={(e) => handleDelete(e, plan)}
-                                                                title={t.vocab.plans.deleteTitle}
+                                                                title={t('vocab.plans.deleteTitle')}
                                                             >
                                                                 ✕
                                                             </button>
@@ -372,19 +372,19 @@ export default function LearningPlanListPage() {
                                                     <div className="lp-plan-meta">
                                                         <span className="lp-meta-item">
                                                             <span className="lp-meta-dot" />
-                                                            <span dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardDaily.replace('{n}', String(plan.daily_count))) }} />
+                                                            <span dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.plans.cardDaily').replace('{n}', String(plan.daily_count))) }} />
                                                         </span>
                                                         <span className="lp-meta-sep">·</span>
-                                                        <span className="lp-meta-item" dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardTotal.replace('{n}', String(plan.word_count))) }} />
+                                                        <span className="lp-meta-item" dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.plans.cardTotal').replace('{n}', String(plan.word_count))) }} />
                                                         <span className="lp-meta-sep">·</span>
-                                                        <span className={`lp-meta-item ${plan.studied_today > 0 ? 'lp-today-badge' : ''}`} dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.cardStudied.replace('{n}', String(plan.studied_today))) }} />
+                                                        <span className={`lp-meta-item ${plan.studied_today > 0 ? 'lp-today-badge' : ''}`} dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.plans.cardStudied').replace('{n}', String(plan.studied_today))) }} />
                                                     </div>
                                                     <div className="lp-plan-actions">
                                                         <button
                                                             className="lp-plan-btn secondary"
                                                             onClick={() => navigate(`/vocabulary/plans/${plan.id}`)}
                                                         >
-                                                            {t.vocab.plans.editPlan}
+                                                            {t('vocab.plans.editPlan')}
                                                         </button>
                                                         <button
                                                             className="lp-plan-btn primary"
@@ -392,10 +392,10 @@ export default function LearningPlanListPage() {
                                                             disabled={starting === plan.id}
                                                         >
                                                             {starting === plan.id
-                                                                ? t.vocab.plans.preparing
+                                                                ? t('vocab.plans.preparing')
                                                                 : shouldStartReview(plan)
-                                                                    ? t.vocab.plans.startReview
-                                                                    : t.vocab.plans.startStudy}
+                                                                    ? t('vocab.plans.startReview')
+                                                                    : t('vocab.plans.startStudy')}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -411,8 +411,8 @@ export default function LearningPlanListPage() {
                                 {customDecks.length === 0 ? (
                                     <div className="lp-empty-state">
                                         <div className="lp-empty-icon">🃏</div>
-                                        <p className="lp-empty-title">{t.vocab.plans.emptyCustomTitle}</p>
-                                        <p className="lp-empty-sub">{t.vocab.plans.emptyCustomSub}</p>
+                                        <p className="lp-empty-title">{t('vocab.plans.emptyCustomTitle')}</p>
+                                        <p className="lp-empty-sub">{t('vocab.plans.emptyCustomSub')}</p>
                                     </div>
                                 ) : (
                                     <div className="lp-plan-list">
@@ -426,12 +426,12 @@ export default function LearningPlanListPage() {
                                                     <div className="lp-plan-meta">
                                                         <span className="lp-meta-item">
                                                             <span className="lp-meta-dot" />
-                                                            <span dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.dailyStudy.replace('{n}', String(deck.daily_count))) }} />
+                                                            <span dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.plans.dailyStudy').replace('{n}', String(deck.daily_count))) }} />
                                                         </span>
                                                         <span className="lp-meta-sep">·</span>
-                                                        <span className="lp-meta-item" dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.totalCards.replace('{n}', String(deck.card_count))) }} />
+                                                        <span className="lp-meta-item" dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.plans.totalCards').replace('{n}', String(deck.card_count))) }} />
                                                         <span className="lp-meta-sep">·</span>
-                                                        <span className={`lp-meta-item ${deck.studied_today > 0 ? 'lp-today-badge' : ''}`} dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.plans.todayPlan.replace('{studied}', String(deck.studied_today)).replace('{total}', String(getCustomTodayTarget(deck)))) }} />
+                                                        <span className={`lp-meta-item ${deck.studied_today > 0 ? 'lp-today-badge' : ''}`} dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.plans.todayPlan').replace('{studied}', String(deck.studied_today)).replace('{total}', String(getCustomTodayTarget(deck)))) }} />
                                                     </div>
                                                     <div className="lp-plan-actions">
                                                         <button
@@ -444,7 +444,7 @@ export default function LearningPlanListPage() {
                                                                 },
                                                             })}
                                                         >
-                                                            {t.vocab.plans.addCards}
+                                                            {t('vocab.plans.addCards')}
                                                         </button>
                                                         <button
                                                             className="lp-plan-btn primary"
@@ -452,10 +452,10 @@ export default function LearningPlanListPage() {
                                                             disabled={startingCustom === deck.id}
                                                         >
                                                             {startingCustom === deck.id
-                                                                ? t.vocab.plans.preparing
+                                                                ? t('vocab.plans.preparing')
                                                                 : shouldStartCustomReview(deck)
-                                                                    ? t.vocab.plans.startReview
-                                                                    : t.vocab.plans.startStudy}
+                                                                    ? t('vocab.plans.startReview')
+                                                                    : t('vocab.plans.startStudy')}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -473,10 +473,10 @@ export default function LearningPlanListPage() {
             {modal && (
                 <div className="modal-overlay" onClick={() => setModal(null)}>
                     <div className="modal-box" onClick={e => e.stopPropagation()}>
-                        <h3>{t.vocab.plans.modalTitle}</h3>
+                        <h3>{t('vocab.plans.modalTitle')}</h3>
 
                         <div>
-                            <label>{t.vocab.plans.entryModeLabel}</label>
+                            <label>{t('vocab.plans.entryModeLabel')}</label>
                             <div className="lp-entry-mode-group">
                                 <label className="lp-entry-mode-option">
                                     <input
@@ -486,8 +486,8 @@ export default function LearningPlanListPage() {
                                         onChange={() => setModal({ ...modal, entry_mode: 'word' })}
                                     />
                                     <div className="lp-entry-mode-content">
-                                        <div className="lp-entry-mode-title">{t.vocab.plans.modeWordTitle}</div>
-                                        <div className="lp-entry-mode-sub">{t.vocab.plans.modeWordSub}</div>
+                                        <div className="lp-entry-mode-title">{t('vocab.plans.modeWordTitle')}</div>
+                                        <div className="lp-entry-mode-sub">{t('vocab.plans.modeWordSub')}</div>
                                     </div>
                                 </label>
 
@@ -499,18 +499,18 @@ export default function LearningPlanListPage() {
                                         onChange={() => setModal({ ...modal, entry_mode: 'custom' })}
                                     />
                                     <div className="lp-entry-mode-content">
-                                        <div className="lp-entry-mode-title">{t.vocab.plans.modeCustomTitle}</div>
-                                        <div className="lp-entry-mode-sub">{t.vocab.plans.modeCustomSub}</div>
+                                        <div className="lp-entry-mode-title">{t('vocab.plans.modeCustomTitle')}</div>
+                                        <div className="lp-entry-mode-sub">{t('vocab.plans.modeCustomSub')}</div>
                                     </div>
                                 </label>
                             </div>
                         </div>
 
                         <div>
-                            <label>{t.vocab.plans.planNameLabel}</label>
+                            <label>{t('vocab.plans.planNameLabel')}</label>
                             <input
                                 type="text"
-                                placeholder={t.vocab.plans.planNamePlaceholder}
+                                placeholder={t('vocab.plans.planNamePlaceholder')}
                                 maxLength={50}
                                 value={modal.name}
                                 onChange={e => setModal({ ...modal, name: e.target.value })}
@@ -520,7 +520,7 @@ export default function LearningPlanListPage() {
                         </div>
 
                         <div>
-                            <label>{t.vocab.plans.dailyCountLabel}</label>
+                            <label>{t('vocab.plans.dailyCountLabel')}</label>
                             <input
                                 type="number"
                                 min={1}
@@ -531,13 +531,13 @@ export default function LearningPlanListPage() {
                         </div>
 
                         <div className="modal-actions">
-                            <button onClick={() => setModal(null)}>{t.common.cancel}</button>
+                            <button onClick={() => setModal(null)}>{t('common.cancel')}</button>
                             <button className="btn-primary" onClick={handleCreate} disabled={saving}>
                                 {modal.entry_mode === 'custom'
-                                    ? (saving ? t.vocab.plans.creatingBtn : t.vocab.plans.createBtn)
+                                    ? (saving ? t('vocab.plans.creatingBtn') : t('vocab.plans.createBtn'))
                                     : saving
-                                        ? t.vocab.plans.creatingBtn
-                                        : t.vocab.plans.createBtn}
+                                        ? t('vocab.plans.creatingBtn')
+                                        : t('vocab.plans.createBtn')}
                             </button>
                         </div>
                     </div>

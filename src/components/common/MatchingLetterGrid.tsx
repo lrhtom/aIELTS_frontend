@@ -106,18 +106,20 @@ export default function MatchingLetterGrid({
                                     ].filter(Boolean).join(' ');
                                     return (
                                         <td key={letter} className={cls}>
-                                            <label className="mg-cell-label">
-                                                <input
-                                                    type="radio"
-                                                    name={`mg-row-${row.id}`}
-                                                    value={letter}
-                                                    checked={checked}
-                                                    onChange={() => onAnswer(row.id, letter)}
-                                                    disabled={reviewMode}
-                                                    aria-label={`${typeof row.label === 'string' ? row.label : `Row ${row.id}`}: ${letter}`}
-                                                />
+                                            {/* 显式 onClick 按钮，不用 label→隐藏 radio 的转发链
+                                                （曾出现点击无反应的环境兼容问题） */}
+                                            <button
+                                                type="button"
+                                                className="mg-cell-label"
+                                                disabled={reviewMode}
+                                                aria-pressed={checked}
+                                                aria-label={`${typeof row.label === 'string' ? row.label : `Row ${row.id}`}: ${letter}`}
+                                                onClick={() => onAnswer(row.id, letter)}
+                                            >
                                                 <span className="mg-dot" aria-hidden="true" />
-                                            </label>
+                                                {/* 窄容器芯片模式的字母标签（宽表格模式下 CSS 隐藏，字母在表头） */}
+                                                <span className="mg-cell-letter" aria-hidden="true">{letter}</span>
+                                            </button>
                                         </td>
                                     );
                                 })}

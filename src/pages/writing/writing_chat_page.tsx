@@ -4,7 +4,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ATInterceptor } from '../../api/atInterceptor';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import '../../styles/writing_chat.css';
 
@@ -107,8 +106,7 @@ export default function WritingChatPageWrapper() {
 function WritingChatPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { lang } = useLang();
-    const t = translations[lang].writingChat;
+    const { t } = useLang();
 
     const state = location.state as { vocabInput?: string };
     const vocabRaw: string = state?.vocabInput ?? '';
@@ -316,7 +314,7 @@ function WritingChatPage() {
         <div className="sc-container">
             <div className="sc-header">
                 <button className="sc-back-btn" onClick={() => navigate('/writing/chat-config')}>
-                    {t.backToConfig}
+                    {t('writingChat.backToConfig')}
                 </button>
                 <div className="sc-action-bar">
                     <button
@@ -324,14 +322,14 @@ function WritingChatPage() {
                         onClick={handleClearChat}
                         disabled={isGenerating || isSummarizing}
                     >
-                        {t.clearChat}
+                        {t('writingChat.clearChat')}
                     </button>
                     <button
                         className="sc-summary-btn"
                         onClick={handleEndAndSummary}
                         disabled={isGenerating || isSummarizing || chatHistory.length === 0}
                     >
-                        {isSummarizing ? t.summarizing : t.endSummary}
+                        {isSummarizing ? t('writingChat.summarizing') : t('writingChat.endSummary')}
                     </button>
                 </div>
             </div>
@@ -375,7 +373,7 @@ function WritingChatPage() {
                                                 <MarkdownBubble content={msg.content} />
                                                 {hasCorrected && (
                                                     <div className="sc-corrected-block">
-                                                        <span className="sc-corrected-label">{t.correctedVersion}</span>
+                                                        <span className="sc-corrected-label">{t('writingChat.correctedVersion')}</span>
                                                         <MarkdownBubble content={msg.correctedText!} className="sc-corrected-text" />
                                                     </div>
                                                 )}
@@ -384,7 +382,7 @@ function WritingChatPage() {
                                         {hasScores && (
                                             <div className="sc-msg-actions">
                                                 <button onClick={() => toggleMsg(i)} className="sc-score-toggle">
-                                                    {isExpanded ? t.hideScores : t.viewScores}
+                                                    {isExpanded ? t('writingChat.hideScores') : t('writingChat.viewScores')}
                                                 </button>
                                             </div>
                                         )}
@@ -393,15 +391,15 @@ function WritingChatPage() {
                                     {isExpanded && hasScores && (
                                         <div className="sc-scores-panel">
                                             <div className="sc-score-item">
-                                                <span className="sc-score-label">{t.grammarScore}</span>
+                                                <span className="sc-score-label">{t('writingChat.grammarScore')}</span>
                                                 <span className="sc-score-val">{msg.scores!.grammar}</span>
                                             </div>
                                             <div className="sc-score-item">
-                                                <span className="sc-score-label">{t.vocabScore}</span>
+                                                <span className="sc-score-label">{t('writingChat.vocabScore')}</span>
                                                 <span className="sc-score-val">{msg.scores!.vocab}</span>
                                             </div>
                                             <div className="sc-score-item">
-                                                <span className="sc-score-label">{t.relevanceScore}</span>
+                                                <span className="sc-score-label">{t('writingChat.relevanceScore')}</span>
                                                 <span className="sc-score-val">{msg.scores!.relevance}</span>
                                             </div>
                                         </div>
@@ -415,7 +413,7 @@ function WritingChatPage() {
                                     <span className="sc-dot"></span>
                                     <span className="sc-dot"></span>
                                     <span className="sc-dot"></span>
-                                    <span className="sc-loading-text">{t.generating}</span>
+                                    <span className="sc-loading-text">{t('writingChat.generating')}</span>
                                 </div>
                             </div>
                         )}
@@ -426,7 +424,7 @@ function WritingChatPage() {
                     {summaryText && (
                         <div className="sc-summary-overlay">
                             <div className="sc-summary-content">
-                                <h3>{t.summaryTitle}</h3>
+                                <h3>{t('writingChat.summaryTitle')}</h3>
                                 <MarkdownBubble content={summaryText} className="sc-summary-text" />
                             </div>
                         </div>
@@ -456,7 +454,7 @@ function WritingChatPage() {
                                 className="sc-attach-btn"
                                 onClick={handleAttach}
                                 disabled={isGenerating || isSummarizing}
-                                title={t.attachFiles}
+                                title={t('writingChat.attachFiles')}
                             >
                                 📎
                             </button>
@@ -465,7 +463,7 @@ function WritingChatPage() {
                                 value={textInput}
                                 onChange={(e) => setTextInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder={t.typePlaceholder}
+                                placeholder={t('writingChat.typePlaceholder')}
                                 rows={3}
                                 disabled={isGenerating || isSummarizing}
                             />
@@ -474,7 +472,7 @@ function WritingChatPage() {
                                 onClick={handleSend}
                                 disabled={isGenerating || isSummarizing || (!textInput.trim() && attachedFiles.length === 0)}
                             >
-                                {t.sendBtn}
+                                {t('writingChat.sendBtn')}
                             </button>
                         </div>
                     </div>
@@ -491,14 +489,14 @@ function WritingChatPage() {
 
                 {words.length > 0 && (
                     <div className="sc-sidebar">
-                        <h3 className="sc-sidebar-title">{t.targetVocab}</h3>
+                        <h3 className="sc-sidebar-title">{t('writingChat.targetVocab')}</h3>
                         <div className="sc-sidebar-search">
                             <input
                                 className="sc-word-search"
                                 type="text"
                                 value={wordSearch}
                                 onChange={(e) => setWordSearch(e.target.value)}
-                                placeholder={t.searchVocab}
+                                placeholder={t('writingChat.searchVocab')}
                             />
                         </div>
                         <div className="sc-word-list">

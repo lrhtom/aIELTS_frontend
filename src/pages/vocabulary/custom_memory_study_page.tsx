@@ -24,26 +24,26 @@ interface CustomStudyResult {
 }
 
 export default function CustomMemoryStudyPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const location = useLocation();
     const navigate = useNavigate();
     const state = location.state as StudyLocationState | null;
 
     const RATING_OPTIONS: Array<{ id: number; label: string; cls: string }> = [
-        { id: 1, label: t.vocab.customMemory.ratings.again, cls: 'btn-again' },
-        { id: 2, label: t.vocab.customMemory.ratings.hard, cls: 'btn-hard' },
-        { id: 3, label: t.vocab.customMemory.ratings.good, cls: 'btn-good' },
-        { id: 4, label: t.vocab.customMemory.ratings.easy, cls: 'btn-easy' },
+        { id: 1, label: t('vocab.customMemory.ratings.again'), cls: 'btn-again' },
+        { id: 2, label: t('vocab.customMemory.ratings.hard'), cls: 'btn-hard' },
+        { id: 3, label: t('vocab.customMemory.ratings.good'), cls: 'btn-good' },
+        { id: 4, label: t('vocab.customMemory.ratings.easy'), cls: 'btn-easy' },
     ];
 
     const formatDue = (iso: string): string => {
         const diff = new Date(iso).getTime() - Date.now();
         const mins = Math.round(diff / 60000);
-        if (mins <= 0) return t.vocab.intervals.today;
-        if (mins < 60) return t.vocab.intervals.minsAfter.replace('{n}', String(mins));
+        if (mins <= 0) return t('vocab.intervals.today');
+        if (mins < 60) return t('vocab.intervals.minsAfter').replace('{n}', String(mins));
         const days = Math.round(diff / 86400000);
-        if (days <= 1) return t.vocab.intervals.tomorrow;
-        return t.vocab.intervals.daysAfter.replace('{n}', String(days));
+        if (days <= 1) return t('vocab.intervals.tomorrow');
+        return t('vocab.intervals.daysAfter').replace('{n}', String(days));
     };
 
     const [deckId, setDeckId] = useState<number | null>(null);
@@ -62,7 +62,7 @@ export default function CustomMemoryStudyPage() {
             return;
         }
         setDeckId(state.deckId);
-        setDeckTitle(state.deckTitle || t.vocab.customMemory.defaultTitle);
+        setDeckTitle(state.deckTitle || t('vocab.customMemory.defaultTitle'));
         setDailyCount(state.dailyCount && state.dailyCount > 0 ? state.dailyCount : 20);
         setCards(state.cards);
         setCurrentIndex(0);
@@ -113,7 +113,7 @@ export default function CustomMemoryStudyPage() {
             setCurrentIndex((prev) => prev + 1);
             setIsFlipped(false);
         } catch (e: unknown) {
-            const msg = (e as any)?.response?.data?.error || t.vocab.customMemory.reviewFail; // eslint-disable-line @typescript-eslint/no-explicit-any
+            const msg = (e as any)?.response?.data?.error || t('vocab.customMemory.reviewFail'); // eslint-disable-line @typescript-eslint/no-explicit-any
             showToast(msg, 'error');
         } finally {
             setSubmitting(false);
@@ -124,7 +124,7 @@ export default function CustomMemoryStudyPage() {
         return (
             <Layout>
                 <div className="config-page-wrap cm-study-wrap">
-                    <div className="lp-empty">{t.vocab.common.loading}</div>
+                    <div className="lp-empty">{t('vocab.common.loading')}</div>
                 </div>
             </Layout>
         );
@@ -135,7 +135,7 @@ export default function CustomMemoryStudyPage() {
             <div className="config-page-wrap cm-study-wrap">
                 <div className="cm-study-header">
                     <h1>{deckTitle}</h1>
-                    <p>{t.vocab.customMemory.studyProgress.replace('{i}', String(currentIndex + 1)).replace('{n}', String(cards.length)).replace('{d}', String(dailyCount))}</p>
+                    <p>{t('vocab.customMemory.studyProgress').replace('{i}', String(currentIndex + 1)).replace('{n}', String(cards.length)).replace('{d}', String(dailyCount))}</p>
                 </div>
 
                 <div className="cm-progress-track">
@@ -147,13 +147,13 @@ export default function CustomMemoryStudyPage() {
 
                 <div className={`cm-card ${isFlipped ? 'flipped' : ''}`}>
                     <div className="cm-card-face cm-card-front">
-                        <div className="cm-face-label">{t.vocab.customMemory.faceFront}</div>
+                        <div className="cm-face-label">{t('vocab.customMemory.faceFront')}</div>
                         <div className="cm-face-text">{currentCard.front_text}</div>
                     </div>
                     <div className="cm-card-face cm-card-back">
-                        <div className="cm-face-label">{t.vocab.customMemory.faceBack}</div>
+                        <div className="cm-face-label">{t('vocab.customMemory.faceBack')}</div>
                         <div className="cm-face-text">
-                            {currentCard.back_text || t.vocab.customMemory.noBackContent}
+                            {currentCard.back_text || t('vocab.customMemory.noBackContent')}
                         </div>
                     </div>
                 </div>
@@ -165,7 +165,7 @@ export default function CustomMemoryStudyPage() {
                         onClick={() => setIsFlipped((v) => !v)}
                         disabled={submitting}
                     >
-                        {isFlipped ? t.vocab.customMemory.viewFront : t.vocab.customMemory.flipToBack}
+                        {isFlipped ? t('vocab.customMemory.viewFront') : t('vocab.customMemory.flipToBack')}
                     </button>
                 </div>
 
@@ -184,7 +184,7 @@ export default function CustomMemoryStudyPage() {
                 </div>
 
                 <p className="cm-next-hint">
-                    {t.vocab.customMemory.nextReviewLabel}{formatDue(currentCard.due)}
+                    {t('vocab.customMemory.nextReviewLabel')}{formatDue(currentCard.due)}
                 </p>
             </div>
         </Layout>

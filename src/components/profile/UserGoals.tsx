@@ -6,7 +6,7 @@ import '../../styles/profile_page.css';
 
 export default function UserGoals() {
     const { user, updateUser } = useAuth();
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
     // 个人目标设置状态
     const [targetListening, setTargetListening] = useState(user?.target_listening ?? '');
@@ -60,11 +60,11 @@ export default function UserGoals() {
                 exam_date: examDate || null
             });
             updateUser(updatedUser);
-            setUpdateGoalsMessage(t.profile.goals.saveSuccess);
+            setUpdateGoalsMessage(t('profile.goals.saveSuccess'));
             setTimeout(() => setUpdateGoalsMessage(''), 3000);
         } catch (error) {
             console.error('Failed to update goals:', error);
-            setUpdateGoalsError(t.profile.goals.saveFail);
+            setUpdateGoalsError(t('profile.goals.saveFail'));
         } finally {
             setIsUpdatingGoals(false);
         }
@@ -73,24 +73,24 @@ export default function UserGoals() {
     return (
         <div className="user-settings">
             <div className="user-settings-header">
-                <h2>{t.profile.goals.management}</h2>
-                <p>{t.profile.goals.desc}</p>
+                <h2>{t('profile.goals.management')}</h2>
+                <p>{t('profile.goals.desc')}</p>
             </div>
 
             {/* 个人目标设置 */}
             <div className="user-settings-section">
                 <div className="user-settings-section-header">
                     <div className="user-settings-section-icon">🎯</div>
-                    <div className="user-settings-section-title">{t.profile.goals.sectionTitle}</div>
+                    <div className="user-settings-section-title">{t('profile.goals.sectionTitle')}</div>
                 </div>
                 <div className="user-settings-section-description">
-                    {t.profile.goals.sectionDesc}
+                    {t('profile.goals.sectionDesc')}
                 </div>
                 
                 <div className="goals-settings" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}>
                     <div className="scores-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t.profile.goals.listening}</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t('profile.goals.listening')}</label>
                             <input 
                                 type="number" 
                                 min="0" max="9" step="0.5" 
@@ -100,7 +100,7 @@ export default function UserGoals() {
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t.profile.goals.reading}</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t('profile.goals.reading')}</label>
                             <input 
                                 type="number" 
                                 min="0" max="9" step="0.5" 
@@ -110,7 +110,7 @@ export default function UserGoals() {
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t.profile.goals.writing}</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t('profile.goals.writing')}</label>
                             <input 
                                 type="number" 
                                 min="0" max="9" step="0.5" 
@@ -120,7 +120,7 @@ export default function UserGoals() {
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t.profile.goals.speaking}</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t('profile.goals.speaking')}</label>
                             <input 
                                 type="number" 
                                 min="0" max="9" step="0.5" 
@@ -132,11 +132,11 @@ export default function UserGoals() {
                     </div>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-bg-alt)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>{t.profile.goals.calculatedOverall} <span style={{ color: 'var(--color-primary)' }}>{calculateOverall()}</span></div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>{t('profile.goals.calculatedOverall')} <span style={{ color: 'var(--color-primary)' }}>{calculateOverall()}</span></div>
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t.profile.goals.examDate}</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>{t('profile.goals.examDate')}</label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                             <input 
                                 type="date" 
@@ -147,10 +147,10 @@ export default function UserGoals() {
                             {examDate && getDaysLeft() !== null && (
                                 <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
                                     {getDaysLeft() === 0
-                                        ? t.profile.goals.examToday
+                                        ? t('profile.goals.examToday')
                                         : getDaysLeft()! < 0
-                                        ? t.profile.goals.examPassed
-                                        : t.profile.goals.daysLeft.replace('{days}', getDaysLeft()!.toString())}
+                                        ? t('profile.goals.examPassed')
+                                        : t('profile.goals.daysLeft').replace('{days}', getDaysLeft()!.toString())}
                                 </span>
                             )}
                         </div>
@@ -162,7 +162,7 @@ export default function UserGoals() {
                             onClick={handleUpdateGoals}
                             disabled={isUpdatingGoals}
                         >
-                            {isUpdatingGoals ? t.profile.goals.saving : t.profile.goals.saveBtn}
+                            {isUpdatingGoals ? t('profile.goals.saving') : t('profile.goals.saveBtn')}
                         </button>
                         {updateGoalsMessage && (
                             <span style={{ color: 'var(--color-success)', marginLeft: '1rem', fontSize: '0.9rem' }}>{updateGoalsMessage}</span>

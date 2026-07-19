@@ -47,22 +47,22 @@ type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' 
 
 /** Shown when a non-admin tries to access an admin tab via DevTools state manipulation */
 function AccessDenied() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     return (
         <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 16, padding: '80px 24px', color: 'var(--color-text-secondary)',
         }}>
             <ShieldOff size={48} strokeWidth={1.5} style={{ color: 'var(--color-danger, #ef4444)' }} />
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)' }}>{t.profile.accessDeniedTitle}</div>
-            <div style={{ fontSize: 14 }}>{t.profile.accessDeniedDesc}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)' }}>{t('profile.accessDeniedTitle')}</div>
+            <div style={{ fontSize: 14 }}>{t('profile.accessDeniedDesc')}</div>
         </div>
     );
 }
 
 export default function ProfilePage() {
     const { user } = useAuth();
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [activeTab, setActiveTab] = useState<Tab>('home');
     const [styleOpen, setStyleOpen] = useState(false);
     const [adminOpen, setAdminOpen] = useState(false);
@@ -99,13 +99,13 @@ export default function ProfilePage() {
         `menu-item-icon ${activeTab === tab ? 'active' : ''}`;
 
     const menuItems: { tab: Tab; Icon: typeof LayoutDashboard; label: string }[] = [
-        { tab: 'home', Icon: LayoutDashboard, label: t.profile.menu.home },
-        { tab: 'analytics', Icon: BarChart3, label: t.profile.menu.analytics },
-        { tab: 'goals', Icon: Target, label: t.profile.goals.title },
-        { tab: 'finance', Icon: Coins, label: t.profile.menu.finance },
-        { tab: 'backpack', Icon: Backpack, label: t.profile.menu.backpack },
-        { tab: 'settings', Icon: Settings, label: t.profile.menu.settings },
-        { tab: 'feedback', Icon: MessageSquareText, label: t.profile.feedback.title },
+        { tab: 'home', Icon: LayoutDashboard, label: t('profile.menu.home') },
+        { tab: 'analytics', Icon: BarChart3, label: t('profile.menu.analytics') },
+        { tab: 'goals', Icon: Target, label: t('profile.goals.title') },
+        { tab: 'finance', Icon: Coins, label: t('profile.menu.finance') },
+        { tab: 'backpack', Icon: Backpack, label: t('profile.menu.backpack') },
+        { tab: 'settings', Icon: Settings, label: t('profile.menu.settings') },
+        { tab: 'feedback', Icon: MessageSquareText, label: t('profile.feedback.title') },
     ];
 
     return (
@@ -153,7 +153,7 @@ export default function ProfilePage() {
                                 onClick={() => setActiveTab('manual')}
                             >
                                 <BookOpen className={iconCls('manual')} size={18} />
-                                <span className="menu-item-text">{t.profile.menu.manual}</span>
+                                <span className="menu-item-text">{t('profile.menu.manual')}</span>
                             </button>
 
                             {/* Style accordion */}
@@ -163,7 +163,7 @@ export default function ProfilePage() {
                                     onClick={() => setStyleOpen(o => !o)}
                                 >
                                     <Palette size={18} className="menu-item-icon" />
-                                    <span className="menu-item-text">{t.profile.menu.style}</span>
+                                    <span className="menu-item-text">{t('profile.menu.style')}</span>
                                     <ChevronDown className={`accordion-chevron ${styleOpen ? 'open' : ''}`} size={16} />
                                 </button>
                                 <div className={`profile-accordion-body ${styleOpen ? 'open' : ''}`}>
@@ -172,7 +172,7 @@ export default function ProfilePage() {
                                         onClick={() => setActiveTab('background')}
                                     >
                                         <Image size={16} className="menu-item-icon" />
-                                        <span className="menu-item-text">{t.profile.menu.background}</span>
+                                        <span className="menu-item-text">{t('profile.menu.background')}</span>
                                     </button>
                                 </div>
                             </div>
@@ -185,7 +185,7 @@ export default function ProfilePage() {
                                         onClick={() => setAdminOpen(o => !o)}
                                     >
                                         <ShieldCheck size={18} className="menu-item-icon" />
-                                        <span className="menu-item-text">{t.profile.menu.admin}</span>
+                                        <span className="menu-item-text">{t('profile.menu.admin')}</span>
                                         <ChevronDown className={`accordion-chevron ${adminOpen ? 'open' : ''}`} size={16} />
                                     </button>
                                     <div className={`profile-accordion-body ${adminOpen ? 'open' : ''}`}>
@@ -194,42 +194,42 @@ export default function ProfilePage() {
                                             onClick={() => setActiveTab('admin_users')}
                                         >
                                             <Users size={16} className="menu-item-icon" />
-                                            <span className="menu-item-text">{t.profile.admin.users.title}</span>
+                                            <span className="menu-item-text">{t('profile.admin.users.title')}</span>
                                         </button>
                                         <button
                                             className={`profile-menu-item profile-sub-item ${activeTab === 'admin_feedback' ? 'active' : ''}`}
                                             onClick={() => setActiveTab('admin_feedback')}
                                         >
                                             <ClipboardList size={16} className="menu-item-icon" />
-                                            <span className="menu-item-text">{t.profile.admin.feedback.title}</span>
+                                            <span className="menu-item-text">{t('profile.admin.feedback.title')}</span>
                                         </button>
                                         <button
                                             className={`profile-menu-item profile-sub-item ${activeTab === 'admin_routes' ? 'active' : ''}`}
                                             onClick={() => setActiveTab('admin_routes')}
                                         >
                                             <GitBranch size={16} className="menu-item-icon" />
-                                            <span className="menu-item-text">{t.profile.admin.routes.title}</span>
+                                            <span className="menu-item-text">{t('profile.admin.routes.title')}</span>
                                         </button>
                                         <button
                                             className={`profile-menu-item profile-sub-item ${activeTab === 'admin_ai_usage' ? 'active' : ''}`}
                                             onClick={() => setActiveTab('admin_ai_usage')}
                                         >
                                             <BarChart3 size={16} className="menu-item-icon" />
-                                            <span className="menu-item-text">{t.profile.admin.aiUsageStats}</span>
+                                            <span className="menu-item-text">{t('profile.admin.aiUsageStats')}</span>
                                         </button>
                                         <button
                                             className={`profile-menu-item profile-sub-item ${activeTab === 'admin_code_stats' ? 'active' : ''}`}
                                             onClick={() => setActiveTab('admin_code_stats')}
                                         >
                                             <Code2 size={16} className="menu-item-icon" />
-                                            <span className="menu-item-text">{t.profile.admin.codeStats.title}</span>
+                                            <span className="menu-item-text">{t('profile.admin.codeStats.title')}</span>
                                         </button>
                                         <button
                                             className={`profile-menu-item profile-sub-item ${activeTab === 'admin_service_health' ? 'active' : ''}`}
                                             onClick={() => setActiveTab('admin_service_health')}
                                         >
                                             <Activity size={16} className="menu-item-icon" />
-                                            <span className="menu-item-text">{t.profile.admin.serviceHealth.title}</span>
+                                            <span className="menu-item-text">{t('profile.admin.serviceHealth.title')}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -239,7 +239,7 @@ export default function ProfilePage() {
                         {/* Back to home link */}
                         <Link to="/" className="profile-back-link">
                             <ArrowLeft size={16} />
-                            <span>{t.profile.backToHome}</span>
+                            <span>{t('profile.backToHome')}</span>
                         </Link>
                     </aside>
 

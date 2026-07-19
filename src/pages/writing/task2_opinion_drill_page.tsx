@@ -7,7 +7,6 @@ import {
     type OpinionDrillCategory,
 } from '../../api/task2_opinion_drill';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
 
 const CATEGORY_ORDER: OpinionDrillCategory[] = [
@@ -24,8 +23,7 @@ const CATEGORY_ORDER: OpinionDrillCategory[] = [
 
 export default function Task2OpinionDrillPage() {
     const navigate = useNavigate();
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { t } = useLang();
 
     const [questionCount, setQuestionCount] = useState(3);
     const [selectedCategories, setSelectedCategories] = useState<Set<OpinionDrillCategory>>(new Set());
@@ -44,7 +42,7 @@ export default function Task2OpinionDrillPage() {
 
     const handleStart = () => {
         if (!Number.isFinite(questionCount) || questionCount < 1 || questionCount > 10) {
-            showToast(t.task2OpinionDrill.countRangeError, 'error');
+            showToast(t('task2OpinionDrill.countRangeError'), 'error');
             return;
         }
 
@@ -59,15 +57,15 @@ export default function Task2OpinionDrillPage() {
     return (
         <Layout
             backUrl="/writing"
-            backText={t.task2OpinionDrill.backToTask2Selection}
-            pageTitle={t.task2OpinionDrill.heading}
-            pageSubtitle={t.task2OpinionDrill.subheading}
+            backText={t('task2OpinionDrill.backToTask2Selection')}
+            pageTitle={t('task2OpinionDrill.heading')}
+            pageSubtitle={t('task2OpinionDrill.subheading')}
         >
             <div className="uc-console">
                 <div className="uc-main-content" style={{ borderLeft: 'none' }}>
                     <div className="uc-main-header">
-                        <h2>{t.task2OpinionDrill.heading}</h2>
-                        <p>{t.task2OpinionDrill.subheading}</p>
+                        <h2>{t('task2OpinionDrill.heading')}</h2>
+                        <p>{t('task2OpinionDrill.subheading')}</p>
                     </div>
 
                     <div className="uc-settings-list">
@@ -77,7 +75,7 @@ export default function Task2OpinionDrillPage() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                        <span className="row-title">{t.components.aiModel.label}</span>
+                                        <span className="row-title">{t('components.aiModel.label')}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control console-model-selector">
@@ -90,9 +88,9 @@ export default function Task2OpinionDrillPage() {
                                 <div className="uc-row-label">
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#6366f1', background: '#eef2ff' }}>🔢</span>
-                                        <span className="row-title">{t.task2OpinionDrill.countLabel}</span>
+                                        <span className="row-title">{t('task2OpinionDrill.countLabel')}</span>
                                     </div>
-                                    <span className="row-desc" style={{ marginLeft: '40px' }}>{t.task2OpinionDrill.countHint}</span>
+                                    <span className="row-desc" style={{ marginLeft: '40px' }}>{t('task2OpinionDrill.countHint')}</span>
                                 </div>
                                 <div className="uc-row-control">
                                     <input
@@ -115,14 +113,14 @@ export default function Task2OpinionDrillPage() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>🏷️</span>
-                                        <span className="row-title">{t.task2OpinionDrill.categoriesLabel}</span>
+                                        <span className="row-title">{t('task2OpinionDrill.categoriesLabel')}</span>
                                     </div>
-                                    <span className="row-desc">{t.task2OpinionDrill.randomHint}</span>
+                                    <span className="row-desc">{t('task2OpinionDrill.randomHint')}</span>
                                 </div>
                                 <div
                                     className="task2-topic-single-grid"
                                     role="group"
-                                    aria-label={t.task2OpinionDrill.categoriesLabel}
+                                    aria-label={t('task2OpinionDrill.categoriesLabel')}
                                     style={{ marginTop: 4 }}
                                 >
                                     {CATEGORY_ORDER.map((category) => {
@@ -135,7 +133,7 @@ export default function Task2OpinionDrillPage() {
                                                 className={`task2-topic-chip ${active ? 'active' : ''}`}
                                                 onClick={() => toggleCategory(category)}
                                             >
-                                                {t.task2OpinionDrill.categories[category]}
+                                                {t(`task2OpinionDrill.categories.${category}`)}
                                             </button>
                                         );
                                     })}
@@ -146,7 +144,7 @@ export default function Task2OpinionDrillPage() {
 
                     <div className="uc-console-footer">
                         <button className="uc-console-start-btn" onClick={handleStart}>
-                            🧠 {t.task2OpinionDrill.startBtn}
+                            🧠 {t('task2OpinionDrill.startBtn')}
                         </button>
                     </div>
                 </div>

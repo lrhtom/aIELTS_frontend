@@ -19,7 +19,7 @@ const LoginPage: React.FC = () => {
 
     const { login, user, isLoading } = useAuth();
     const navigate = useNavigate();
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
     // Already-logged-in users have no business on /login. Wait for auth init
     // (httpOnly cookies → profile fetch) before redirecting so we don't bounce
@@ -43,11 +43,11 @@ const LoginPage: React.FC = () => {
             const e = err as { response?: { status?: number }; message?: string };
             console.error('Login error:', err);
             if (e.response?.status === 403 || e.message?.includes('ACCOUNT_BANNED')) {
-                setError(t.auth.errorBanned);
+                setError(t('auth.errorBanned'));
             } else if (e.response?.status === 401) {
-                setError(t.auth.errorUnauthorized);
+                setError(t('auth.errorUnauthorized'));
             } else {
-                setError(t.auth.errorGeneral);
+                setError(t('auth.errorGeneral'));
             }
         } finally {
             setLoading(false);
@@ -60,22 +60,22 @@ const LoginPage: React.FC = () => {
         setResetMsg('');
 
         if (!resetNewPassword || resetNewPassword.length < 6) {
-            setError(t.auth.resetTooShort);
+            setError(t('auth.resetTooShort'));
             return;
         }
 
         setLoading(true);
         try {
             const res = await authApi.resetPassword(resetIdentifier, resetNewPassword);
-            setResetMsg(res.message || t.auth.resetSuccess);
+            setResetMsg(res.message || t('auth.resetSuccess'));
             setResetIdentifier('');
             setResetNewPassword('');
         } catch (err: unknown) {
             const e = err as { response?: { status?: number; data?: { error?: string } } };
             if (e.response?.status === 404) {
-                setError(t.auth.resetNotFound);
+                setError(t('auth.resetNotFound'));
             } else {
-                setError(e.response?.data?.error || t.auth.errorGeneral);
+                setError(e.response?.data?.error || t('auth.errorGeneral'));
             }
         } finally {
             setLoading(false);
@@ -92,8 +92,8 @@ const LoginPage: React.FC = () => {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
-                    <h1>{mode === 'login' ? t.auth.loginTitle : t.auth.resetPasswordTitle}</h1>
-                    <p>{mode === 'login' ? t.auth.loginSubtitle : t.auth.resetPasswordDesc}</p>
+                    <h1>{mode === 'login' ? t('auth.loginTitle') : t('auth.resetPasswordTitle')}</h1>
+                    <p>{mode === 'login' ? t('auth.loginSubtitle') : t('auth.resetPasswordDesc')}</p>
                 </div>
 
                 {mode === 'login' ? (
@@ -101,26 +101,26 @@ const LoginPage: React.FC = () => {
                         {error && <div className="auth-error">{error}</div>}
 
                         <div className="form-group">
-                            <label htmlFor="username">{t.auth.username}</label>
+                            <label htmlFor="username">{t('auth.username')}</label>
                             <input
                                 type="text"
                                 id="username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 required
-                                placeholder={t.auth.username}
+                                placeholder={t('auth.username')}
                             />
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="password">{t.auth.password}</label>
+                            <label htmlFor="password">{t('auth.password')}</label>
                             <input
                                 type="password"
                                 id="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                placeholder={t.auth.password}
+                                placeholder={t('auth.password')}
                             />
                         </div>
 
@@ -129,18 +129,18 @@ const LoginPage: React.FC = () => {
                             className={`auth-submit ${loading ? 'loading' : ''}`}
                             disabled={loading}
                         >
-                            {loading ? t.auth.loggingIn : t.auth.loginBtn}
+                            {loading ? t('auth.loggingIn') : t('auth.loginBtn')}
                         </button>
 
                         <div className="auth-footer">
                             <p>
-                                {t.auth.noAccount}{' '}
-                                <Link to="/register">{t.auth.toRegister}</Link>
+                                {t('auth.noAccount')}{' '}
+                                <Link to="/register">{t('auth.toRegister')}</Link>
                             </p>
                             <button type="button" className="auth-link-btn" onClick={switchMode}>
-                                {t.auth.forgotPassword}
+                                {t('auth.forgotPassword')}
                             </button>
-                            <Link to="/" className="back-home">{t.auth.backToHome}</Link>
+                            <Link to="/" className="back-home">{t('auth.backToHome')}</Link>
                         </div>
                     </form>
                 ) : (
@@ -149,26 +149,26 @@ const LoginPage: React.FC = () => {
                         {resetMsg && <div className="auth-info">{resetMsg}</div>}
 
                         <div className="form-group">
-                            <label htmlFor="resetIdentifier">{t.auth.resetIdentifier}</label>
+                            <label htmlFor="resetIdentifier">{t('auth.resetIdentifier')}</label>
                             <input
                                 type="text"
                                 id="resetIdentifier"
                                 value={resetIdentifier}
                                 onChange={(e) => setResetIdentifier(e.target.value)}
                                 required
-                                placeholder={t.auth.resetIdentifierPlaceholder}
+                                placeholder={t('auth.resetIdentifierPlaceholder')}
                             />
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="resetNewPassword">{t.auth.resetNewPassword}</label>
+                            <label htmlFor="resetNewPassword">{t('auth.resetNewPassword')}</label>
                             <input
                                 type="password"
                                 id="resetNewPassword"
                                 value={resetNewPassword}
                                 onChange={(e) => setResetNewPassword(e.target.value)}
                                 required
-                                placeholder={t.auth.resetNewPasswordPlaceholder}
+                                placeholder={t('auth.resetNewPasswordPlaceholder')}
                             />
                         </div>
 
@@ -177,14 +177,14 @@ const LoginPage: React.FC = () => {
                             className={`auth-submit ${loading ? 'loading' : ''}`}
                             disabled={loading}
                         >
-                            {loading ? t.auth.resetSubmitting : t.auth.resetSubmitBtn}
+                            {loading ? t('auth.resetSubmitting') : t('auth.resetSubmitBtn')}
                         </button>
 
                         <div className="auth-footer">
                             <button type="button" className="auth-link-btn" onClick={switchMode}>
-                                {t.auth.backToLogin}
+                                {t('auth.backToLogin')}
                             </button>
-                            <Link to="/" className="back-home">{t.auth.backToHome}</Link>
+                            <Link to="/" className="back-home">{t('auth.backToHome')}</Link>
                         </div>
                     </form>
                 )}

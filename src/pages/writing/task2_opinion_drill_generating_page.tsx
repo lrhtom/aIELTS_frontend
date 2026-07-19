@@ -9,7 +9,6 @@ import {
     type OpinionDrillQuestion,
 } from '../../api/task2_opinion_drill';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
 import '../../styles/task2_opinion_drill.css';
@@ -40,8 +39,7 @@ const CATEGORY_ORDER: OpinionDrillCategory[] = [
 export default function Task2OpinionDrillGeneratingPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { t } = useLang();
 
     const routeState = location.state as DrillGeneratingState | null;
 
@@ -78,7 +76,7 @@ export default function Task2OpinionDrillGeneratingPage() {
         const categoriesRaw = pending?.categories;
 
         if (!Number.isFinite(count) || !Array.isArray(categoriesRaw) || count! < 1 || count! > 10) {
-            showToast(t.task2OpinionDrill.missingConfig, 'error');
+            showToast(t('task2OpinionDrill.missingConfig'), 'error');
             clearPendingConfig();
             navigate('/writing/task2/opinion-drill', { replace: true });
             return;
@@ -106,7 +104,7 @@ export default function Task2OpinionDrillGeneratingPage() {
                 if (cancelled) return;
 
                 if (!questions || questions.length === 0) {
-                    throw new Error(t.task2OpinionDrill.startFail);
+                    throw new Error(t('task2OpinionDrill.startFail'));
                 }
 
                 const doingState: DrillDoingRouteState = { questions };
@@ -117,7 +115,7 @@ export default function Task2OpinionDrillGeneratingPage() {
                 });
             } catch (err: unknown) {
                 if (cancelled) return;
-                showToast(parseErrorMessage(err, t.task2OpinionDrill.startFail), 'error');
+                showToast(parseErrorMessage(err, t('task2OpinionDrill.startFail')), 'error');
                 navigate('/writing/task2/opinion-drill', { replace: true });
             }
         };
@@ -127,7 +125,7 @@ export default function Task2OpinionDrillGeneratingPage() {
         return () => {
             cancelled = true;
         };
-    }, [navigate, routeState, t.task2OpinionDrill.missingConfig, t.task2OpinionDrill.startFail]);
+    }, [navigate, routeState, t]);
 
     const handleBack = () => {
         clearPendingConfig();
@@ -137,17 +135,17 @@ export default function Task2OpinionDrillGeneratingPage() {
     return (
         <Layout
             onBack={handleBack}
-            backText={t.task2OpinionDrill.backToSetup}
-            pageTitle={t.task2OpinionDrill.heading}
-            pageSubtitle={t.task2OpinionDrill.subheading}
+            backText={t('task2OpinionDrill.backToSetup')}
+            pageTitle={t('task2OpinionDrill.heading')}
+            pageSubtitle={t('task2OpinionDrill.subheading')}
             headerRight={<AiModelSelector variant="minimal" />}
         >
             <div className="practice-container writing-selection-page">
 
                 <div className="wp-state-wrap">
                     <div className="spinner wp-loading-spinner"></div>
-                    <h2>{t.task2OpinionDrill.generatingTitle}</h2>
-                    <p>{t.task2OpinionDrill.generatingDesc}</p>
+                    <h2>{t('task2OpinionDrill.generatingTitle')}</h2>
+                    <p>{t('task2OpinionDrill.generatingDesc')}</p>
                 </div>
             </div>
         </Layout>

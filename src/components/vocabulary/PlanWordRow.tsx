@@ -41,7 +41,7 @@ interface Props {
 }
 
 export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: Props) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [zh, setZh] = useState(entry.zh);
     const remainingDays = computeRemainingDays(entry.fsrs_due);
     const [days, setDays] = useState(remainingDays);
@@ -70,7 +70,7 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                         type="button"
                         className="lp-speak-btn"
                         onClick={() => { speakWord(entry.word); }}
-                        aria-label={t.vocab.common.speakPronunciation}
+                        aria-label={t('vocab.common.speakPronunciation')}
                     >
                         <Volume2 size={16} />
                     </button>
@@ -84,7 +84,7 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                     onChange={e => setZh(e.target.value)}
                     onBlur={() => onZhChange(entry, zh)}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    placeholder={t.vocab.details.manualZh}
+                    placeholder={t('vocab.details.manualZh')}
                 />
             </div>
 
@@ -103,10 +103,10 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                             onChange={e => setDays(Number(e.target.value))}
                             onBlur={() => onDueDays(entry, days)}
                             onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                            title={t.vocab.common.reviewAfterHint}
+                            title={t('vocab.common.reviewAfterHint')}
                         />
-                        {t.vocab.intervals.daysUnit}
-                        <span className="lp-due-date" title={t.vocab.common.nextStudyDate}>
+                        {t('vocab.intervals.daysUnit')}
+                        <span className="lp-due-date" title={t('vocab.common.nextStudyDate')}>
                             {displayDueDate}
                         </span>
                     </div>
@@ -115,7 +115,7 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                         type="button"
                         className="lp-del-btn"
                         onClick={() => onRemove(entry)}
-                        aria-label={t.vocab.common.deleteWordAria}
+                        aria-label={t('vocab.common.deleteWordAria')}
                     >
                         <X size={14} />
                     </button>
@@ -143,7 +143,7 @@ export default function PlanWordRow({ entry, onZhChange, onDueDays, onRemove }: 
                             className="lp-example-toggle"
                             onClick={() => setShowExamples(v => !v)}
                         >
-                            {showExamples ? t.vocab.details.btnCollapseEx : t.vocab.details.btnExpandEx.replace('{n}', String(entry.examples.length))}
+                            {showExamples ? t('vocab.details.btnCollapseEx') : t('vocab.details.btnExpandEx').replace('{n}', String(entry.examples.length))}
                         </button>
                     )}
                 </div>

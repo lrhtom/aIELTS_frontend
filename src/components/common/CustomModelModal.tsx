@@ -26,8 +26,7 @@ const HELP_EXAMPLES = [
 /** Screen-centered popup to add/edit a bring-your-own model. Shared by the model
  *  selector's "+" option and the settings manager panel. */
 export default function CustomModelModal({ open, editing, onClose, onSaved }: Props) {
-    const { translations } = useLang();
-    const t = translations.components.customModel;
+    const { t } = useLang();
 
     const [name, setName] = useState('');
     const [baseUrl, setBaseUrl] = useState('');
@@ -62,18 +61,18 @@ export default function CustomModelModal({ open, editing, onClose, onSaved }: Pr
 
     const statusText = (r: ModelTestResult): string => {
         switch (r.status) {
-            case 'ok': return t.testOk;
-            case 'auth': return t.testAuth;
-            case 'ratelimited': return t.testRateLimited;
-            case 'reqerror': return t.testReqError;
-            case 'unconfigured': return t.testUnconfigured;
-            default: return t.testError;
+            case 'ok': return t('components.customModel.testOk');
+            case 'auth': return t('components.customModel.testAuth');
+            case 'ratelimited': return t('components.customModel.testRateLimited');
+            case 'reqerror': return t('components.customModel.testReqError');
+            case 'unconfigured': return t('components.customModel.testUnconfigured');
+            default: return t('components.customModel.testError');
         }
     };
 
     const checkNameUrl = (): string => {
-        if (!name.trim()) return t.errName;
-        if (!/^https?:\/\//i.test(baseUrl.trim())) return t.errUrl;
+        if (!name.trim()) return t('components.customModel.errName');
+        if (!/^https?:\/\//i.test(baseUrl.trim())) return t('components.customModel.errUrl');
         return '';
     };
 
@@ -83,7 +82,7 @@ export default function CustomModelModal({ open, editing, onClose, onSaved }: Pr
         const nu = checkNameUrl();
         if (nu) { setError(nu); return; }
         const hasTypedKey = apiKey.trim() !== '';
-        if (!hasTypedKey && !editing) { setError(t.errKey); return; }
+        if (!hasTypedKey && !editing) { setError(t('components.customModel.errKey')); return; }
         setTesting(true);
         try {
             const r = hasTypedKey
@@ -100,7 +99,7 @@ export default function CustomModelModal({ open, editing, onClose, onSaved }: Pr
     const handleSave = async () => {
         const nu = checkNameUrl();
         if (nu) { setError(nu); return; }
-        if (!editing && !apiKey.trim()) { setError(t.errKey); return; }
+        if (!editing && !apiKey.trim()) { setError(t('components.customModel.errKey')); return; }
         setSaving(true);
         setError('');
         try {
@@ -115,7 +114,7 @@ export default function CustomModelModal({ open, editing, onClose, onSaved }: Pr
             onClose();
         } catch (e: unknown) {
             const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            setError(msg || t.saveFail);
+            setError(msg || t('components.customModel.saveFail'));
         } finally {
             setSaving(false);
         }
@@ -125,12 +124,12 @@ export default function CustomModelModal({ open, editing, onClose, onSaved }: Pr
         <div className="cm-modal-overlay" onClick={onClose}>
             <div className="cm-modal" onClick={e => e.stopPropagation()}>
                 <div className="cm-modal-titlerow">
-                    <h3 className="cm-modal-title">{editing ? t.editTitle : t.addTitle}</h3>
+                    <h3 className="cm-modal-title">{editing ? t('components.customModel.editTitle') : t('components.customModel.addTitle')}</h3>
                     <button
                         type="button"
                         className={`cm-help-btn${showHelp ? ' cm-help-active' : ''}`}
-                        aria-label={t.helpAria}
-                        title={t.helpAria}
+                        aria-label={t('components.customModel.helpAria')}
+                        title={t('components.customModel.helpAria')}
                         onClick={() => setShowHelp(v => !v)}
                     >
                         <HelpCircle size={18} />
@@ -139,48 +138,48 @@ export default function CustomModelModal({ open, editing, onClose, onSaved }: Pr
 
                 {showHelp && (
                     <div className="cm-help-panel">
-                        <p className="cm-help-intro">{t.helpIntro}</p>
+                        <p className="cm-help-intro">{t('components.customModel.helpIntro')}</p>
                         <div className="cm-help-list">
                             {HELP_EXAMPLES.map(ex => (
                                 <div key={ex.key} className="cm-help-item">
                                     <div className="cm-help-item-head">
-                                        <span className="cm-help-provider">{t[ex.labelKey]}</span>
+                                        <span className="cm-help-provider">{t(`components.customModel.${ex.labelKey}`)}</span>
                                         <button type="button" className="cm-help-fill" onClick={() => fillExample(ex)}>
-                                            {t.helpFill}
+                                            {t('components.customModel.helpFill')}
                                         </button>
                                     </div>
-                                    <div className="cm-help-kv"><span>{t.nameLabel}</span><code>{ex.name}</code></div>
-                                    <div className="cm-help-kv"><span>{t.urlLabel}</span><code>{ex.url}</code></div>
-                                    <div className="cm-help-kv"><span>{t.keyLabel}</span><code>{ex.sk}</code></div>
+                                    <div className="cm-help-kv"><span>{t('components.customModel.nameLabel')}</span><code>{ex.name}</code></div>
+                                    <div className="cm-help-kv"><span>{t('components.customModel.urlLabel')}</span><code>{ex.url}</code></div>
+                                    <div className="cm-help-kv"><span>{t('components.customModel.keyLabel')}</span><code>{ex.sk}</code></div>
                                 </div>
                             ))}
                         </div>
-                        <p className="cm-help-note">{t.helpNote}</p>
-                        <p className="cm-help-note">{t.helpOllamaNote}</p>
+                        <p className="cm-help-note">{t('components.customModel.helpNote')}</p>
+                        <p className="cm-help-note">{t('components.customModel.helpOllamaNote')}</p>
                     </div>
                 )}
 
                 <label className="cm-field">
-                    <span className="cm-field-label">{t.nameLabel}</span>
-                    <input className="cm-input" value={name} onChange={e => setName(e.target.value)} placeholder={t.namePlaceholder} />
+                    <span className="cm-field-label">{t('components.customModel.nameLabel')}</span>
+                    <input className="cm-input" value={name} onChange={e => setName(e.target.value)} placeholder={t('components.customModel.namePlaceholder')} />
                 </label>
 
                 <label className="cm-field">
-                    <span className="cm-field-label">{t.urlLabel}</span>
-                    <input className="cm-input" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} placeholder={t.urlPlaceholder} />
+                    <span className="cm-field-label">{t('components.customModel.urlLabel')}</span>
+                    <input className="cm-input" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} placeholder={t('components.customModel.urlPlaceholder')} />
                 </label>
 
                 <label className="cm-field">
-                    <span className="cm-field-label">{t.keyLabel}</span>
+                    <span className="cm-field-label">{t('components.customModel.keyLabel')}</span>
                     <input
                         className="cm-input"
                         type="password"
                         autoComplete="off"
                         value={apiKey}
                         onChange={e => setApiKey(e.target.value)}
-                        placeholder={editing ? editing.key_masked : t.keyPlaceholder}
+                        placeholder={editing ? editing.key_masked : t('components.customModel.keyPlaceholder')}
                     />
-                    {editing && <span className="cm-hint">{t.keyKeepHint}</span>}
+                    {editing && <span className="cm-hint">{t('components.customModel.keyKeepHint')}</span>}
                 </label>
 
                 {error && <div className="cm-error">{error}</div>}
@@ -193,11 +192,11 @@ export default function CustomModelModal({ open, editing, onClose, onSaved }: Pr
 
                 <div className="cm-modal-actions">
                     <button className="cm-btn cm-btn-ghost" onClick={handleTest} disabled={testing || saving}>
-                        {testing ? t.testing : t.test}
+                        {testing ? t('components.customModel.testing') : t('components.customModel.test')}
                     </button>
                     <div className="cm-modal-actions-right">
-                        <button className="cm-btn cm-btn-ghost" onClick={onClose} disabled={saving}>{t.cancel}</button>
-                        <button className="cm-btn cm-btn-primary" onClick={handleSave} disabled={saving || testing}>{t.save}</button>
+                        <button className="cm-btn cm-btn-ghost" onClick={onClose} disabled={saving}>{t('components.customModel.cancel')}</button>
+                        <button className="cm-btn cm-btn-primary" onClick={handleSave} disabled={saving || testing}>{t('components.customModel.save')}</button>
                     </div>
                 </div>
             </div>

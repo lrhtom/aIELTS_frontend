@@ -121,7 +121,7 @@ function SingleLangGoodBox({ en, zh, label }: { en: string; zh: string; label: s
 }
 
 export default function Task1AiTeacherLessonPage() {
-    const { lang, translations: t } = useLang();
+    const { lang, t } = useLang();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -159,7 +159,7 @@ export default function Task1AiTeacherLessonPage() {
         navigate('/writing/ai-teachers', { replace: true });
     };
 
-    const sectionNames = t.writingAiTeacher.task1.sectionNames;
+    const sectionNames = t('writingAiTeacher.task1.sectionNames', { returnObjects: true }) as string[];
     const totalSections = sectionNames.length;
 
     const fetchLesson = useCallback(async () => {
@@ -180,7 +180,7 @@ export default function Task1AiTeacherLessonPage() {
                     throw new Error('Load failed');
                 }
             } catch (e: any) {
-                setErrorMsg(t.writingAiTeacher.lesson.loadRecordFail);
+                setErrorMsg(t('writingAiTeacher.lesson.loadRecordFail'));
                 setState('error');
             } finally {
                 fetchingRef.current = false;
@@ -213,7 +213,7 @@ export default function Task1AiTeacherLessonPage() {
                 let errorData: any = null;
                 try { errorData = await res.json(); } catch { /* ignore */ }
                 if (errorData?.error === 'INVALID_TOPIC') {
-                    showToast(t.writingAiTeacher.lesson.invalidTopic + '\n' + (errorData.reason || ''), 'error');
+                    showToast(t('writingAiTeacher.lesson.invalidTopic') + '\n' + (errorData.reason || ''), 'error');
                     navigate('/writing/ai-teachers', { replace: true });
                     return;
                 }
@@ -240,7 +240,7 @@ export default function Task1AiTeacherLessonPage() {
 
                         if (parsed.error) {
                             if (parsed.error === 'INVALID_TOPIC') {
-                                showToast(t.writingAiTeacher.lesson.invalidTopic + '\n' + (parsed.reason || ''), 'error');
+                                showToast(t('writingAiTeacher.lesson.invalidTopic') + '\n' + (parsed.reason || ''), 'error');
                                 navigate('/writing/ai-teachers', { replace: true });
                                 return;
                             }
@@ -260,7 +260,7 @@ export default function Task1AiTeacherLessonPage() {
                             // Auto-save logic
                             apiClient.post<{status: string, id: number}>('/writing/records', {
                                 service_type: 'task1_teacher',
-                                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : t.writingAiTeacher.lesson.fallbackTitleTask1,
+                                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : t('writingAiTeacher.lesson.fallbackTitleTask1'),
                                 content: { ...lessonData, original_topic: topic },
                             }).catch(err => console.error("Auto-save failed", err));
                         }
@@ -278,7 +278,7 @@ export default function Task1AiTeacherLessonPage() {
         } finally {
             fetchingRef.current = false;
         }
-    }, [topic, imageBase64, lang, navigate]);
+    }, [topic, imageBase64, t, navigate]);
 
     useEffect(() => {
         if (!data) {
@@ -345,11 +345,11 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
             <div className="at-split-layout">
                 <div className="at-split-main" style={{ maxHeight: '75vh', overflowY: 'auto', paddingRight: '0.75rem' }}>
                     <div className="at-section-card" style={{ borderLeft: '4px solid var(--color-primary)' }}>
-                        <h3>{t.writingAiTeacher.lesson.chartCoreElementsHeading}</h3>
+                        <h3>{t('writingAiTeacher.lesson.chartCoreElementsHeading')}</h3>
 
                         <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                            {renderCategoryBadges(t.writingAiTeacher.lesson.dynamism, DYNAMISM_CATEGORIES, qa.dynamic_or_static_zh)}
-                            {renderCategoryBadges(t.writingAiTeacher.lesson.chartType, CHART_CATEGORIES, qa.chart_type_zh)}
+                            {renderCategoryBadges(t('writingAiTeacher.lesson.dynamism'), DYNAMISM_CATEGORIES, qa.dynamic_or_static_zh)}
+                            {renderCategoryBadges(t('writingAiTeacher.lesson.chartType'), CHART_CATEGORIES, qa.chart_type_zh)}
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
@@ -378,7 +378,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         {qa.key_focus_points_en && qa.key_focus_points_en.length > 0 && (
                             <div style={{ padding: '1rem', background: 'var(--color-warning-bg, #fffbeb)', borderRadius: '8px', borderLeft: '4px solid var(--color-warning, #f59e0b)' }}>
                                 <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--color-warning-dark, #b45309)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>🎯</span> {t.writingAiTeacher.lesson.keyFocusPoints}
+                                    <span>🎯</span> {t('writingAiTeacher.lesson.keyFocusPoints')}
                                 </div>
                                 <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--color-warning-text, #92400e)', fontSize: '0.95rem', lineHeight: '1.6' }}>
                                     {qa.key_focus_points_en.map((_, i) => (
@@ -393,7 +393,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         {qa.data_grouping && qa.data_grouping.length > 0 && (
                             <div style={{ marginTop: '1rem' }}>
                                 <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--color-primary-dark)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>📊</span> {t.writingAiTeacher.lesson.dataGroupingReco}
+                                    <span>📊</span> {t('writingAiTeacher.lesson.dataGroupingReco')}
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: qa.data_grouping.length > 1 ? '1fr 1fr' : '1fr', gap: '1rem' }}>
                                     {qa.data_grouping.map((g, i) => (
@@ -413,13 +413,13 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         {qa.map_changes && (qa.map_changes.retained_en?.length > 0 || qa.map_changes.removed_en?.length > 0 || qa.map_changes.added_en?.length > 0 || qa.map_changes.relocated_en?.length > 0) && (
                             <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px', borderLeft: '4px solid #8b5cf6' }}>
                                 <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#6d28d9', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>🗺️</span> {t.writingAiTeacher.lesson.mapChanges}
+                                    <span>🗺️</span> {t('writingAiTeacher.lesson.mapChanges')}
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                                     {qa.map_changes.retained_en && qa.map_changes.retained_en.length > 0 && (
                                         <div style={{ padding: '0.8rem', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <span style={{color: '#64748b'}}>⚓</span> {t.writingAiTeacher.lesson.mapRemain}
+                                                <span style={{color: '#64748b'}}>⚓</span> {t('writingAiTeacher.lesson.mapRemain')}
                                             </div>
                                             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
                                                 {qa.map_changes.retained_en.map((_, i) => (
@@ -431,7 +431,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                                     {qa.map_changes.removed_en && qa.map_changes.removed_en.length > 0 && (
                                         <div style={{ padding: '0.8rem', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-danger)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <span style={{color: '#ef4444'}}>🗑️</span> {t.writingAiTeacher.lesson.mapRemove}
+                                                <span style={{color: '#ef4444'}}>🗑️</span> {t('writingAiTeacher.lesson.mapRemove')}
                                             </div>
                                             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
                                                 {qa.map_changes.removed_en.map((_, i) => (
@@ -443,7 +443,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                                     {qa.map_changes.added_en && qa.map_changes.added_en.length > 0 && (
                                         <div style={{ padding: '0.8rem', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-success)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <span style={{color: '#10b981'}}>🏗️</span> {t.writingAiTeacher.lesson.mapBuild}
+                                                <span style={{color: '#10b981'}}>🏗️</span> {t('writingAiTeacher.lesson.mapBuild')}
                                             </div>
                                             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
                                                 {qa.map_changes.added_en.map((_, i) => (
@@ -455,7 +455,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                                     {qa.map_changes.relocated_en && qa.map_changes.relocated_en.length > 0 && (
                                         <div style={{ padding: '0.8rem', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#f59e0b', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <span style={{color: '#f59e0b'}}>🚚</span> {t.writingAiTeacher.lesson.mapChange}
+                                                <span style={{color: '#f59e0b'}}>🚚</span> {t('writingAiTeacher.lesson.mapChange')}
                                             </div>
                                             <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.9rem', color: 'var(--color-text)' }}>
                                                 {qa.map_changes.relocated_en.map((_, i) => (
@@ -471,14 +471,14 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 </div>
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: 'var(--color-success, #10b981)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>💡</span> {t.writingAiTeacher.lesson.correctApproach}
+                        <span>💡</span> {t('writingAiTeacher.lesson.correctApproach')}
                     </h5>
-                    <SingleLangGoodBox en={qa.correct_approach_en} zh={qa.correct_approach_zh} label={t.writingAiTeacher.lesson.recommendedLabel} />
+                    <SingleLangGoodBox en={qa.correct_approach_en} zh={qa.correct_approach_zh} label={t('writingAiTeacher.lesson.recommendedLabel')} />
 
                     <h5 className="at-split-side-title" style={{ color: 'var(--color-danger, #ef4444)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '1.5rem 0 1rem 0' }}>
-                        <span>⚠️</span> {t.writingAiTeacher.lesson.offTopicAlert}
+                        <span>⚠️</span> {t('writingAiTeacher.lesson.offTopicAlert')}
                     </h5>
-                    <SingleLangBadBox en={qa.off_topic_en} zh={qa.off_topic_zh} label={t.writingAiTeacher.lesson.badExampleLabel} />
+                    <SingleLangBadBox en={qa.off_topic_en} zh={qa.off_topic_zh} label={t('writingAiTeacher.lesson.badExampleLabel')} />
                 </div>
             </div>
         );
@@ -509,9 +509,9 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 </div>
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: 'var(--color-danger, #ef4444)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>⚠️</span> {t.writingAiTeacher.lesson.commonStructureMistakes}
+                        <span>⚠️</span> {t('writingAiTeacher.lesson.commonStructureMistakes')}
                     </h5>
-                    <SingleLangBadBox en={struct.wrong_structure_en} zh={struct.wrong_structure_zh} label={t.writingAiTeacher.lesson.badExampleLabel} />
+                    <SingleLangBadBox en={struct.wrong_structure_en} zh={struct.wrong_structure_zh} label={t('writingAiTeacher.lesson.badExampleLabel')} />
                 </div>
             </div>
         );
@@ -524,17 +524,17 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
             <div className="at-split-layout">
                 <div className="at-split-main">
                     <div className="at-section-card">
-                        <h3>{t.writingAiTeacher.task1.introHeading}</h3>
+                        <h3>{t('writingAiTeacher.task1.introHeading')}</h3>
                         <BilingualBlock en={io.intro.text_en} zh={io.intro.text_zh} label="Paraphrase" />
                     </div>
                     <div className="at-section-card">
-                        <h3>{t.writingAiTeacher.task1.overviewHeading}</h3>
+                        <h3>{t('writingAiTeacher.task1.overviewHeading')}</h3>
                         <BilingualBlock en={io.overview.text_en} zh={io.overview.text_zh} label="Main Features" />
                     </div>
                 </div>
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: 'var(--color-danger, #ef4444)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>⚠️</span> {t.writingAiTeacher.lesson.commonMistakes}
+                        <span>⚠️</span> {t('writingAiTeacher.lesson.commonMistakes')}
                     </h5>
                     <div className="wpt-bad-box" style={{ marginBottom: '1rem' }}>
                         <div className="wpt-box-header">
@@ -577,7 +577,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                     </div>
                     <div className="at-split-side">
                         <h5 className="at-split-side-title" style={{ color: 'var(--color-danger, #ef4444)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                            <span>⚠️</span> {t.writingAiTeacher.lesson.commonDataMistakes}
+                            <span>⚠️</span> {t('writingAiTeacher.lesson.commonDataMistakes')}
                         </h5>
                         <div className="wpt-bad-examples-list">
                             {body.bad_examples && body.bad_examples.map((bad: any, idx: number) => (
@@ -617,7 +617,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 <div className="at-split-layout">
                     <div className="at-section-card">
                         <h3>{sectionNames[4]}</h3>
-                        <p>{t.writingAiTeacher.lesson.templateEmpty}</p>
+                        <p>{t('writingAiTeacher.lesson.templateEmpty')}</p>
                     </div>
                 </div>
             );
@@ -677,7 +677,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                             <div className="at-template-viewer-content">
                                 <div className="at-template-viewer-title">
                                     <span style={{ marginRight: '6px' }}>📝</span>
-                                    {t.writingAiTeacher.lesson.aiSegmentTitle}
+                                    {t('writingAiTeacher.lesson.aiSegmentTitle')}
                                 </div>
                                 <div className="at-template-viewer-text">
                                     {activeTemplateContent.actual_content_en || activeTemplateContent.actual_content}
@@ -691,7 +691,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         ) : (
                             <div className="at-template-viewer-empty">
                                 <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>👈</div>
-                                <div>{t.writingAiTeacher.lesson.templateClickHint}</div>
+                                <div>{t('writingAiTeacher.lesson.templateClickHint')}</div>
                             </div>
                         )}
                     </div>
@@ -707,7 +707,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
             <div className="at-split-layout" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
                 <div className="at-split-main">
                     <div className="at-section-card">
-                        <h3>{t.writingAiTeacher.lesson.vocabHeading}</h3>
+                        <h3>{t('writingAiTeacher.lesson.vocabHeading')}</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {p3.vocabulary.map((v, i) => (
                                 <div key={i} style={{ padding: '1rem', background: 'var(--color-bg)', borderRadius: '8px', borderLeft: '3px solid var(--color-primary)' }}>
@@ -733,7 +733,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 </div>
                 <div style={{ width: '100%' }}>
                     <div className="at-section-card" style={{ background: 'var(--color-bg)', height: '100%' }}>
-                        <h3>{t.writingAiTeacher.lesson.fullEssayHeading}</h3>
+                        <h3>{t('writingAiTeacher.lesson.fullEssayHeading')}</h3>
                         <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: '1.05rem', color: 'var(--color-text)' }}>
                             {p3.full_essay.essay_en}
                         </div>
@@ -760,19 +760,19 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
     };
 
     if (state === 'loading') {
-        const steps = t.writingAiTeacher.task1.loadingSteps;
+        const steps = t('writingAiTeacher.task1.loadingSteps', { returnObjects: true }) as string[];
 
         return (
             <Layout
-                pageTitle={t.writingAiTeacher.task1.pageTitle}
+                pageTitle={t('writingAiTeacher.task1.pageTitle')}
                 backUrl="/writing/ai-teachers"
-                backText={t.writingAiTeacher.lesson.backText}
+                backText={t('writingAiTeacher.lesson.backText')}
                 onBack={handleBack}
             >
                 <div className="at-loading-wrap" style={{ padding: '3rem', maxWidth: '600px', margin: '0 auto', background: 'var(--color-bg)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', marginTop: '2rem' }}>
                     <h2 style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--color-primary-dark)', fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                         <span>✨</span>
-                        {recordId ? t.writingAiTeacher.lesson.loadingRecord : t.writingAiTeacher.lesson.loadingTitle}
+                        {recordId ? t('writingAiTeacher.lesson.loadingRecord') : t('writingAiTeacher.lesson.loadingTitle')}
                     </h2>
                     
                     {!recordId && (
@@ -828,9 +828,9 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
     if (state === 'error') {
         return (
             <Layout
-                pageTitle={t.writingAiTeacher.task1.pageTitle}
+                pageTitle={t('writingAiTeacher.task1.pageTitle')}
                 backUrl="/writing/ai-teachers"
-                backText={t.writingAiTeacher.lesson.backText}
+                backText={t('writingAiTeacher.lesson.backText')}
                 onBack={handleBack}
             >
                 <div className="at-error-wrap">
@@ -843,9 +843,9 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
 
     return (
         <Layout
-            pageTitle={t.writingAiTeacher.task1.pageTitle}
+            pageTitle={t('writingAiTeacher.task1.pageTitle')}
             backUrl={recordId ? "/writing/ai-teachers/records" : "/writing/ai-teachers"}
-            backText={t.writingAiTeacher.lesson.backText}
+            backText={t('writingAiTeacher.lesson.backText')}
             onBack={handleBack}
             headerRight={
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -866,7 +866,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                     {data && (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <button onClick={() => setShowTopic(true)} style={{ padding: '0.25rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '20px', background: 'rgba(59, 130, 246, 0.08)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-                                📄 {t.writingAiTeacher.lesson.topicToggleBtn}
+                                📄 {t('writingAiTeacher.lesson.topicToggleBtn')}
                             </button>
                         </div>
                     )}
@@ -890,7 +890,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                         
                     >
                         <div style={{ textAlign: 'center', marginBottom: '1rem', borderBottom: '2px solid var(--color-border, #e2e8f0)', paddingBottom: '2rem' }}>
-                            <h1 style={{ fontSize: '2.5rem', color: 'var(--color-text)', margin: '0 0 1rem 0' }}>{t.writingAiTeacher.task1.pageTitle}</h1>
+                            <h1 style={{ fontSize: '2.5rem', color: 'var(--color-text)', margin: '0 0 1rem 0' }}>{t('writingAiTeacher.task1.pageTitle')}</h1>
                             <div style={{ color: 'var(--color-text-secondary)', fontSize: '1.2rem', padding: '1rem', background: 'var(--color-bg)', borderRadius: '12px', display: 'inline-block', maxWidth: '800px', lineHeight: '1.6' }}>
                                 <strong style={{color: 'var(--color-primary)'}}>Topic:</strong> {topic}
                             </div>
@@ -921,7 +921,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 <div className="at-topic-modal-overlay" onClick={() => setShowTopic(false)}>
                     <div className="at-topic-modal-content" onClick={e => e.stopPropagation()}>
                         <div className="at-topic-modal-header">
-                            <h3>{t.writingAiTeacher.lesson.chartTopicHeading}</h3>
+                            <h3>{t('writingAiTeacher.lesson.chartTopicHeading')}</h3>
                             <button className="at-topic-modal-close" onClick={() => setShowTopic(false)}>&times;</button>
                         </div>
                         <div className="at-topic-modal-body">

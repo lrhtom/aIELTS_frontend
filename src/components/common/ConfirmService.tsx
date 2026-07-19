@@ -7,9 +7,9 @@ export interface ConfirmOptions {
     message: string;
     /** 可选标题；不传则不渲染标题栏 */
     title?: string;
-    /** 确认按钮文案，默认 t.common.confirm */
+    /** 确认按钮文案，默认 t('common.confirm') */
     confirmText?: string;
-    /** 取消按钮文案，默认 t.common.cancel */
+    /** 取消按钮文案，默认 t('common.cancel') */
     cancelText?: string;
     /** 危险操作（删除/注销等）：确认按钮变红色 */
     danger?: boolean;
@@ -22,8 +22,8 @@ let openFn: ((opts: ConfirmOptions) => Promise<boolean>) | null = null;
 /**
  * 全局命令式确认弹窗，替代 window.confirm()。返回 Promise<boolean>。
  *
- *   if (!(await showConfirm(t.xxx.deleteConfirm))) return;
- *   if (await showConfirm({ message: t.xxx.deleteConfirm, danger: true })) { ... }
+ *   if (!(await showConfirm(t('xxx.deleteConfirm')))) return;
+ *   if (await showConfirm({ message: t('xxx.deleteConfirm'), danger: true })) { ... }
  *
  * 使用独立作用域类名（at-confirm-*）+ 独立 confirm.css，全局自包含，不依赖页面级样式。
  * 容器未挂载时回退到原生 confirm，保证行为不丢失。
@@ -41,7 +41,7 @@ interface ActiveConfirm extends ConfirmOptions {
 
 /** 确认弹窗容器 —— 放在 App 根组件中（和 ToastContainer 并列） */
 export default function ConfirmServiceContainer() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [active, setActive] = useState<ActiveConfirm | null>(null);
     const overlayRef = useRef<HTMLDivElement>(null);
     const confirmBtnRef = useRef<HTMLButtonElement>(null);
@@ -124,7 +124,7 @@ export default function ConfirmServiceContainer() {
                         className="at-confirm-btn at-confirm-btn--cancel"
                         onClick={() => finish(false)}
                     >
-                        {active.cancelText ?? t.common.cancel}
+                        {active.cancelText ?? t('common.cancel')}
                     </button>
                     <button
                         ref={confirmBtnRef}
@@ -132,7 +132,7 @@ export default function ConfirmServiceContainer() {
                         className={`at-confirm-btn ${active.danger ? 'at-confirm-btn--danger' : 'at-confirm-btn--primary'}`}
                         onClick={() => finish(true)}
                     >
-                        {active.confirmText ?? t.common.confirm}
+                        {active.confirmText ?? t('common.confirm')}
                     </button>
                 </div>
             </div>

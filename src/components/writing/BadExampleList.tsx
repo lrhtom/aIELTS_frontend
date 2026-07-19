@@ -15,7 +15,7 @@ interface BadExampleListProps {
 }
 
 export default function BadExampleList({ badExamples }: BadExampleListProps) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [expandedBad, setExpandedBad] = useState<Record<number, boolean>>({});
 
     const toggleBad = (idx: number) => {
@@ -23,7 +23,7 @@ export default function BadExampleList({ badExamples }: BadExampleListProps) {
     };
 
     const getErrorLabel = (type: string) => {
-        return (t.badExampleTypes as Record<string, string>)[type] || type;
+        return (t('badExampleTypes', { returnObjects: true }) as Record<string, string>)[type] || type;
     };
 
     if (!badExamples || badExamples.length === 0) return null;
@@ -33,7 +33,7 @@ export default function BadExampleList({ badExamples }: BadExampleListProps) {
             {badExamples.map((bad, idx) => (
                 <div className="wpt-bad-box" key={bad.type || idx}>
                     <div className="wpt-box-header">
-                        <span className="wpt-badge wpt-badge-bad">{t.writingPerspective.badBadge}</span>
+                        <span className="wpt-badge wpt-badge-bad">{t('writingPerspective.badBadge')}</span>
                         <span className="wpt-error-type-label">{getErrorLabel(bad.type)}</span>
                     </div>
                     <div className="wpt-opinion-bilingual">
@@ -44,13 +44,13 @@ export default function BadExampleList({ badExamples }: BadExampleListProps) {
                         className="wpt-expand-btn"
                         onClick={() => toggleBad(idx)}
                     >
-                        {expandedBad[idx] ? t.writingPerspective.collapseBtn : t.writingPerspective.expandBtn}
+                        {expandedBad[idx] ? t('writingPerspective.collapseBtn') : t('writingPerspective.expandBtn')}
                         <span className={`wpt-expand-arrow${expandedBad[idx] ? ' open' : ''}`}>▸</span>
                     </button>
                     {expandedBad[idx] && (
                         <div className="wpt-expanded-content">
                             <div className="wpt-reason-box">
-                                <span className="wpt-reason-label">{t.writingPerspective.reasonLabel}</span>
+                                <span className="wpt-reason-label">{t('writingPerspective.reasonLabel')}</span>
                                 <p>{bad.reason}</p>
                             </div>
                             <p className="wpt-expanded-en">{bad.expanded_en}</p>

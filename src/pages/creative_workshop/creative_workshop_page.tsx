@@ -16,7 +16,7 @@ import { formatTime } from '../../utils/format';
 import '../../styles/creative_workshop.css';
 
 export default function CreativeWorkshopPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const navigate = useNavigate();
     const [projects, setProjects] = useState<CreativeWorkshopProject[]>([]);
     const [loading, setLoading] = useState(true);
@@ -31,12 +31,12 @@ export default function CreativeWorkshopPage() {
                 const { projects: data } = await listCreativeWorkshopProjects(false);
                 setProjects(data);
             } catch {
-                showToast(t.creativeWorkshop.loadFail, 'error');
+                showToast(t('creativeWorkshop.loadFail'), 'error');
             } finally {
                 setLoading(false);
             }
         })();
-    }, [t.creativeWorkshop.loadFail]);
+    }, [t]);
 
     const generatedCount = projects.length;
 
@@ -48,7 +48,7 @@ export default function CreativeWorkshopPage() {
     const handleGenerate = async () => {
         const prompt = methodPrompt.trim();
         if (!prompt) {
-            showToast(t.creativeWorkshop.methodRequired, 'error');
+            showToast(t('creativeWorkshop.methodRequired'), 'error');
             return;
         }
 
@@ -60,9 +60,9 @@ export default function CreativeWorkshopPage() {
             if (!title.trim()) {
                 setTitle('');
             }
-            showToast(t.creativeWorkshop.generateSuccess, 'success');
+            showToast(t('creativeWorkshop.generateSuccess'), 'success');
         } catch (err: unknown) {
-            const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.creativeWorkshop.generateFail;
+            const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t('creativeWorkshop.generateFail');
             showToast(msg, 'error');
         } finally {
             setSubmitting(false);
@@ -76,15 +76,15 @@ export default function CreativeWorkshopPage() {
             setProjects((prev) => prev.map((item) => (
                 item.id === project.id ? { ...item, is_favorited: target } : item
             )));
-            showToast(target ? t.creativeWorkshop.favoriteSuccess : t.creativeWorkshop.unfavoriteSuccess, 'success');
+            showToast(target ? t('creativeWorkshop.favoriteSuccess') : t('creativeWorkshop.unfavoriteSuccess'), 'success');
         } catch {
-            showToast(t.creativeWorkshop.favoriteFail, 'error');
+            showToast(t('creativeWorkshop.favoriteFail'), 'error');
         }
     };
 
     const handleDeleteProject = async (project: CreativeWorkshopProject) => {
         const confirmed = await showConfirm({
-            message: t.creativeWorkshop.deleteConfirm.replace('{title}', project.title),
+            message: t('creativeWorkshop.deleteConfirm').replace('{title}', project.title),
             danger: true,
         });
         if (!confirmed) return;
@@ -93,9 +93,9 @@ export default function CreativeWorkshopPage() {
         try {
             await deleteCreativeWorkshopProject(project.id);
             setProjects((prev) => prev.filter((item) => item.id !== project.id));
-            showToast(t.creativeWorkshop.deleteSuccess, 'success');
+            showToast(t('creativeWorkshop.deleteSuccess'), 'success');
         } catch {
-            showToast(t.creativeWorkshop.deleteFail, 'error');
+            showToast(t('creativeWorkshop.deleteFail'), 'error');
         } finally {
             setDeletingId(null);
         }
@@ -103,14 +103,14 @@ export default function CreativeWorkshopPage() {
 
     return (
         <Layout
-            pageTitle={t.creativeWorkshop.title}
-            pageSubtitle={t.creativeWorkshop.subtitle}
+            pageTitle={t('creativeWorkshop.title')}
+            pageSubtitle={t('creativeWorkshop.subtitle')}
             headerRight={
                 <button
                     className="cw-favorites-entry"
                     onClick={() => navigate('/creative-workshop/favorites')}
                 >
-                    {t.creativeWorkshop.goToFavorites}
+                    {t('creativeWorkshop.goToFavorites')}
                 </button>
             }
         >
@@ -119,23 +119,23 @@ export default function CreativeWorkshopPage() {
                 <section className="cw-editor-card">
                     <div className="cw-grid">
                         <label className="cw-field">
-                            <span>{t.creativeWorkshop.pageTitleLabel}</span>
+                            <span>{t('creativeWorkshop.pageTitleLabel')}</span>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 maxLength={120}
-                                placeholder={t.creativeWorkshop.pageTitlePlaceholder}
+                                placeholder={t('creativeWorkshop.pageTitlePlaceholder')}
                             />
                         </label>
                         <label className="cw-field">
-                            <span>{t.creativeWorkshop.methodLabel}</span>
+                            <span>{t('creativeWorkshop.methodLabel')}</span>
                             <textarea
                                 value={methodPrompt}
                                 onChange={(e) => setMethodPrompt(e.target.value)}
                                 maxLength={3000}
                                 rows={8}
-                                placeholder={t.creativeWorkshop.methodPlaceholder}
+                                placeholder={t('creativeWorkshop.methodPlaceholder')}
                             />
                         </label>
                         <div className="cw-field" style={{ marginTop: '4px' }}>
@@ -144,25 +144,25 @@ export default function CreativeWorkshopPage() {
                     </div>
                     <div className="cw-editor-footer">
                         <div className="cw-counter">
-                            <span>{t.creativeWorkshop.totalPages.replace('{n}', String(generatedCount))}</span>
-                            <span>{t.creativeWorkshop.totalFavorites.replace('{n}', String(favoriteCount))}</span>
+                            <span>{t('creativeWorkshop.totalPages').replace('{n}', String(generatedCount))}</span>
+                            <span>{t('creativeWorkshop.totalFavorites').replace('{n}', String(favoriteCount))}</span>
                         </div>
                         <button
                             className="cw-generate-btn"
                             onClick={handleGenerate}
                             disabled={submitting}
                         >
-                            {submitting ? t.creativeWorkshop.generatingBtn : t.creativeWorkshop.generateBtn}
+                            {submitting ? t('creativeWorkshop.generatingBtn') : t('creativeWorkshop.generateBtn')}
                         </button>
                     </div>
                 </section>
 
                 <section className="cw-list-card">
-                    <div className="cw-section-title">{t.creativeWorkshop.myPagesTitle}</div>
+                    <div className="cw-section-title">{t('creativeWorkshop.myPagesTitle')}</div>
                     {loading ? (
-                        <div className="cw-empty">{t.common.loading}</div>
+                        <div className="cw-empty">{t('common.loading')}</div>
                     ) : projects.length === 0 ? (
-                        <div className="cw-empty">{t.creativeWorkshop.emptyPages}</div>
+                        <div className="cw-empty">{t('creativeWorkshop.emptyPages')}</div>
                     ) : (
                         <div className="cw-list">
                             {projects.map((project) => (
@@ -181,7 +181,7 @@ export default function CreativeWorkshopPage() {
                                             <button
                                                 className={`cw-star ${project.is_favorited ? 'active' : ''}`}
                                                 onClick={() => handleToggleFavorite(project)}
-                                                title={project.is_favorited ? t.creativeWorkshop.unfavoriteBtn : t.creativeWorkshop.favoriteBtn}
+                                                title={project.is_favorited ? t('creativeWorkshop.unfavoriteBtn') : t('creativeWorkshop.favoriteBtn')}
                                             >
                                                 {project.is_favorited ? '★' : '☆'}
                                             </button>
@@ -189,20 +189,20 @@ export default function CreativeWorkshopPage() {
                                                 className="cw-delete-btn"
                                                 onClick={() => handleDeleteProject(project)}
                                                 disabled={deletingId === project.id}
-                                                title={t.creativeWorkshop.deleteBtn}
+                                                title={t('creativeWorkshop.deleteBtn')}
                                             >
-                                                {deletingId === project.id ? t.common.loading : t.creativeWorkshop.deleteBtn}
+                                                {deletingId === project.id ? t('common.loading') : t('creativeWorkshop.deleteBtn')}
                                             </button>
                                         </div>
                                     </div>
                                     <p className="cw-item-desc">{project.method_prompt}</p>
                                     <div className="cw-item-bottom">
-                                        <span>{t.creativeWorkshop.updatedAt.replace('{time}', formatTime(project.updated_at))}</span>
+                                        <span>{t('creativeWorkshop.updatedAt').replace('{time}', formatTime(project.updated_at))}</span>
                                         <button
                                             className="cw-open-btn"
                                             onClick={() => navigate(`/creative-workshop/pages/${project.id}`)}
                                         >
-                                            {t.creativeWorkshop.openPage}
+                                            {t('creativeWorkshop.openPage')}
                                         </button>
                                     </div>
                                 </article>

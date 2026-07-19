@@ -9,7 +9,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
-  const { translations: t } = useLang();
+  const { t } = useLang();
   const location = useLocation();
   const { user } = useAuth();
 
@@ -22,60 +22,60 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </div>
 
       {/* 导航项 */}
-      <div className="sidebar-nav-label">{t.nav.sidebarTitle}</div>
+      <div className="sidebar-nav-label">{t('nav.sidebarTitle')}</div>
       <nav className="sidebar-content" aria-label="Main navigation">
         <Link to="/" className={`sidebar-item ${location.pathname === '/' ? 'active' : ''}`}>
           <span className="sidebar-icon">🏠</span>
-          <span className="sidebar-text">{t.nav.home}</span>
+          <span className="sidebar-text">{t('nav.home')}</span>
         </Link>
         <Link to="/prompts" className={`sidebar-item ${location.pathname === '/prompts' ? 'active' : ''}`}>
           <span className="sidebar-icon">💡</span>
-          <span className="sidebar-text">{t.nav.prompts}</span>
+          <span className="sidebar-text">{t('nav.prompts')}</span>
         </Link>
         {user && (
           <Link to="/practice" className={`sidebar-item ${location.pathname.startsWith('/practice') ? 'active' : ''}`}>
             <span className="sidebar-icon">📚</span>
-            <span className="sidebar-text">{t.nav.practice}</span>
+            <span className="sidebar-text">{t('nav.practice')}</span>
           </Link>
         )}
         {user && (
           <Link to="/vocabulary/plans" className={`sidebar-item ${location.pathname.startsWith('/vocabulary') ? 'active' : ''}`}>
             <span className="sidebar-icon">🃏</span>
-            <span className="sidebar-text">{t.nav.vocab}</span>
+            <span className="sidebar-text">{t('nav.vocab')}</span>
           </Link>
         )}
         {user && (
           <Link to="/store" className={`sidebar-item ${location.pathname.startsWith('/store') ? 'active' : ''}`}>
             <span className="sidebar-icon">🛒</span>
-            <span className="sidebar-text">{t.nav.store}</span>
+            <span className="sidebar-text">{t('nav.store')}</span>
           </Link>
         )}
         {user && (
           <Link to="/feedback" className={`sidebar-item ${location.pathname === '/feedback' ? 'active' : ''}`}>
             <span className="sidebar-icon">🐛</span>
-            <span className="sidebar-text">{t.nav.feedback}</span>
+            <span className="sidebar-text">{t('nav.feedback')}</span>
           </Link>
         )}
         {user && (
           <Link to="/markdown-notes" className={`sidebar-item ${location.pathname.startsWith('/markdown-notes') ? 'active' : ''}`}>
             <span className="sidebar-icon">📝</span>
-            <span className="sidebar-text">{t.nav.notebook}</span>
+            <span className="sidebar-text">{t('nav.notebook')}</span>
           </Link>
         )}
         {user && (
           <Link to="/creative-workshop" className={`sidebar-item ${location.pathname.startsWith('/creative-workshop') ? 'active' : ''}`}>
             <span className="sidebar-icon">🎨</span>
-            <span className="sidebar-text">{t.nav.workshop}</span>
+            <span className="sidebar-text">{t('nav.workshop')}</span>
           </Link>
         )}
       </nav>
 
       {/* 左下角收起按钮 */}
-      <button className="sidebar-collapse-btn" onClick={onToggle} title={t.nav.collapse}>
+      <button className="sidebar-collapse-btn" onClick={onToggle} title={t('nav.collapse')}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
-        <span>{t.nav.collapse}</span>
+        <span>{t('nav.collapse')}</span>
       </button>
     </div>
   );

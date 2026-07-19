@@ -51,7 +51,7 @@ function isReloadNavigation(): boolean {
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export default function VocabularyTrainingDoingPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const navigate = useNavigate();
     const { state } = useLocation();
     const { mode: routeMode } = useParams<{ mode: string }>();
@@ -161,12 +161,12 @@ export default function VocabularyTrainingDoingPage() {
         const timer = setTimeout(() => {
             const entries = parseVocabInput(vocabInput);
             if (mode === 'mcq' && entries.length < 4) {
-                showToast(t.vocab.trainingDoing.toastNeed4, 'error');
+                showToast(t('vocab.trainingDoing.toastNeed4'), 'error');
                 navigate('/vocabulary/practice', { replace: true });
                 return;
             }
             if (entries.length < 1) {
-                showToast(t.vocab.trainingDoing.toastNoWords, 'error');
+                showToast(t('vocab.trainingDoing.toastNoWords'), 'error');
                 navigate('/vocabulary/practice', { replace: true });
                 return;
             }
@@ -231,7 +231,7 @@ export default function VocabularyTrainingDoingPage() {
         const normalizedInput = dictationInput.trim().toLowerCase();
         const normalizedAnswer = q.en.trim().toLowerCase();
         if (!normalizedInput) {
-            showToast(t.vocab.trainingDoing.toastEnterHeard, 'error');
+            showToast(t('vocab.trainingDoing.toastEnterHeard'), 'error');
             return;
         }
 
@@ -269,7 +269,7 @@ export default function VocabularyTrainingDoingPage() {
                 return maskCh === '_' && (completeLetters[idx] ?? '').trim();
             });
         if (!hasAnyInput) {
-            showToast(t.vocab.trainingDoing.toastCompleteWord, 'error');
+            showToast(t('vocab.trainingDoing.toastCompleteWord'), 'error');
             return;
         }
 
@@ -384,15 +384,15 @@ export default function VocabularyTrainingDoingPage() {
     if (step === 'loading') {
         const loadingText =
             mode === 'dictation'
-                ? t.vocab.trainingDoing.preparingDictation
+                ? t('vocab.trainingDoing.preparingDictation')
                 : mode === 'complete'
-                    ? t.vocab.trainingDoing.preparingComplete
-                    : t.vocab.trainingDoing.preparingChoice;
+                    ? t('vocab.trainingDoing.preparingComplete')
+                    : t('vocab.trainingDoing.preparingChoice');
         return (
             <Layout>
                 <div className="practice-container" style={{ textAlign: 'center', paddingTop: '80px' }}>
                     <div style={{ fontSize: '52px', marginBottom: '24px' }}>🧩</div>
-                    <h2 style={{ fontWeight: 700, marginBottom: '10px' }}>{t.vocab.trainingDoing.preparingTitle}</h2>
+                    <h2 style={{ fontWeight: 700, marginBottom: '10px' }}>{t('vocab.trainingDoing.preparingTitle')}</h2>
                     <p style={{ color: 'var(--color-text-secondary)' }}>{loadingText}</p>
                 </div>
             </Layout>
@@ -403,11 +403,11 @@ export default function VocabularyTrainingDoingPage() {
     if (step === 'result') {
         const total = questions.length;
         const pct = Math.round((score / total) * 100);
-        const modeLabel = mode === 'dictation' ? t.vocab.trainingDoing.modeDictation : mode === 'complete' ? t.vocab.trainingDoing.modeComplete : t.vocab.trainingDoing.modeChoice;
+        const modeLabel = mode === 'dictation' ? t('vocab.trainingDoing.modeDictation') : mode === 'complete' ? t('vocab.trainingDoing.modeComplete') : t('vocab.trainingDoing.modeChoice');
         return (
             <Layout
-                pageTitle={t.vocab.trainingDoing.completedTitle}
-                pageSubtitle={t.vocab.trainingDoing.completedSubtitle.replace('{mode}', modeLabel).replace('{n}', String(total))}
+                pageTitle={t('vocab.trainingDoing.completedTitle')}
+                pageSubtitle={t('vocab.trainingDoing.completedSubtitle').replace('{mode}', modeLabel).replace('{n}', String(total))}
             >
                 <div className="practice-container">
 
@@ -420,14 +420,14 @@ export default function VocabularyTrainingDoingPage() {
                             {score} <span style={{ fontSize: '22px', fontWeight: 500, color: 'var(--color-text-secondary)' }}>/ {total}</span>
                         </div>
                         <div style={{ color: 'var(--color-text-secondary)', marginTop: '8px', fontSize: '14px' }}>
-                            {t.vocab.trainingDoing.accuracyLabel.replace('{n}', String(pct))}
+                            {t('vocab.trainingDoing.accuracyLabel').replace('{n}', String(pct))}
                         </div>
                     </div>
 
                     {/* Mistake review */}
                     {mistakes.length > 0 && (
                         <div className="config-card">
-                            <h3>{t.vocab.trainingDoing.mistakesTitle.replace('{n}', String(mistakes.length))}</h3>
+                            <h3>{t('vocab.trainingDoing.mistakesTitle').replace('{n}', String(mistakes.length))}</h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {mistakes.map((m, i) => (
                                     <div key={i} style={{
@@ -446,7 +446,7 @@ export default function VocabularyTrainingDoingPage() {
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button className="skill-btn reading" style={{ flex: 1 }} onClick={handleRestart}>
-                            {t.vocab.trainingDoing.retryBtn}
+                            {t('vocab.trainingDoing.retryBtn')}
                         </button>
                         <button
                             onClick={handleBackToConfig}
@@ -457,7 +457,7 @@ export default function VocabularyTrainingDoingPage() {
                                 cursor: 'pointer', transition: 'all 0.2s',
                             }}
                         >
-                            {t.vocab.trainingDoing.backConfigBtn}
+                            {t('vocab.trainingDoing.backConfigBtn')}
                         </button>
                     </div>
                 </div>
@@ -478,8 +478,8 @@ export default function VocabularyTrainingDoingPage() {
                 <div className="practice-container">
                     <div style={{ marginBottom: '24px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                            <span>{t.vocab.trainingDoing.questionNum.replace('{n}', String(currentIndex + 1)).replace('{total}', String(total))}</span>
-                            <span style={{ color: '#16a34a', fontWeight: 600 }}>{t.vocab.trainingDoing.scoreCorrect.replace('{n}', String(score))}</span>
+                            <span>{t('vocab.trainingDoing.questionNum').replace('{n}', String(currentIndex + 1)).replace('{total}', String(total))}</span>
+                            <span style={{ color: '#16a34a', fontWeight: 600 }}>{t('vocab.trainingDoing.scoreCorrect').replace('{n}', String(score))}</span>
                         </div>
                         <div style={{ height: '6px', borderRadius: '999px', background: 'var(--color-border)', overflow: 'hidden' }}>
                             <div style={{
@@ -493,10 +493,10 @@ export default function VocabularyTrainingDoingPage() {
 
                     <div className="config-card" style={{ textAlign: 'center', padding: '34px 24px 24px', marginBottom: '16px' }}>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>
-                            {t.vocab.trainingDoing.dictationTitle}
+                            {t('vocab.trainingDoing.dictationTitle')}
                         </div>
                         <div style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '18px' }}>
-                            {t.vocab.trainingDoing.dictationHint}
+                            {t('vocab.trainingDoing.dictationHint')}
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 50px', gap: '10px', alignItems: 'center' }}>
@@ -504,7 +504,7 @@ export default function VocabularyTrainingDoingPage() {
                                 type="text"
                                 value={dictationInput}
                                 onChange={(e) => setDictationInput(e.target.value)}
-                                placeholder={t.vocab.trainingDoing.dictationPlaceholder}
+                                placeholder={t('vocab.trainingDoing.dictationPlaceholder')}
                                 disabled={dictationChecked}
                                 style={{
                                     width: '100%',
@@ -520,7 +520,7 @@ export default function VocabularyTrainingDoingPage() {
                             />
                             <button
                                 onClick={() => speakWord(q.en)}
-                                title={t.vocab.common.speakWord}
+                                title={t('vocab.common.speakWord')}
                                 disabled={false}
                                 style={{
                                     width: '50px', height: '50px',
@@ -547,14 +547,14 @@ export default function VocabularyTrainingDoingPage() {
                             style={{ width: '100%', margin: 0 }}
                             onClick={dictationChecked ? handleNext : handleDictationSubmit}
                         >
-                            {dictationChecked ? (currentIndex + 1 >= total ? t.vocab.trainingDoing.viewResults : t.vocab.trainingDoing.nextBtn) : t.vocab.trainingDoing.submitBtn}
+                            {dictationChecked ? (currentIndex + 1 >= total ? t('vocab.trainingDoing.viewResults') : t('vocab.trainingDoing.nextBtn')) : t('vocab.trainingDoing.submitBtn')}
                         </button>
                     </div>
 
                     {dictationChecked && (
                         <div className="config-card" style={{ textAlign: 'center' }}>
                             <div style={{ fontWeight: 600, fontSize: '15px', color: isCorrect ? '#16a34a' : '#dc2626' }}>
-                                {isCorrect ? t.vocab.trainingDoing.spellCorrect : t.vocab.trainingDoing.spellWrongLabel.replace('{answer}', q.en)}
+                                {isCorrect ? t('vocab.trainingDoing.spellCorrect') : t('vocab.trainingDoing.spellWrongLabel').replace('{answer}', q.en)}
                             </div>
                         </div>
                     )}
@@ -569,8 +569,8 @@ export default function VocabularyTrainingDoingPage() {
                 <div className="practice-container">
                     <div style={{ marginBottom: '24px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                            <span>{t.vocab.trainingDoing.questionNum.replace('{n}', String(currentIndex + 1)).replace('{total}', String(total))}</span>
-                            <span style={{ color: '#16a34a', fontWeight: 600 }}>{t.vocab.trainingDoing.scoreCorrect.replace('{n}', String(score))}</span>
+                            <span>{t('vocab.trainingDoing.questionNum').replace('{n}', String(currentIndex + 1)).replace('{total}', String(total))}</span>
+                            <span style={{ color: '#16a34a', fontWeight: 600 }}>{t('vocab.trainingDoing.scoreCorrect').replace('{n}', String(score))}</span>
                         </div>
                         <div style={{ height: '6px', borderRadius: '999px', background: 'var(--color-border)', overflow: 'hidden' }}>
                             <div style={{
@@ -584,15 +584,15 @@ export default function VocabularyTrainingDoingPage() {
 
                     <div className="config-card" style={{ textAlign: 'center', padding: '34px 24px 24px', marginBottom: '16px' }}>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>
-                            {t.vocab.trainingDoing.completeTitle}
+                            {t('vocab.trainingDoing.completeTitle')}
                         </div>
                         <div style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '10px' }}>
-                            {t.vocab.trainingDoing.meaningLabel.replace('{zh}', q.zh)}
+                            {t('vocab.trainingDoing.meaningLabel').replace('{zh}', q.zh)}
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '12px' }}>
                             <button
                                 onClick={() => speakWord(q.en)}
-                                title={t.vocab.common.speakWord}
+                                title={t('vocab.common.speakWord')}
                                 disabled={false}
                                 style={{
                                     width: '44px', height: '44px',
@@ -609,7 +609,7 @@ export default function VocabularyTrainingDoingPage() {
                             </button>
                             <button
                                 onClick={() => setShowCompleteAnswer((v) => !v)}
-                                title={showCompleteAnswer ? t.vocab.trainingDoing.hideOriginal : t.vocab.trainingDoing.showOriginal}
+                                title={showCompleteAnswer ? t('vocab.trainingDoing.hideOriginal') : t('vocab.trainingDoing.showOriginal')}
                                 style={{
                                     width: '44px', height: '44px',
                                     padding: 0,
@@ -632,7 +632,7 @@ export default function VocabularyTrainingDoingPage() {
                                 color: 'var(--color-primary)',
                                 fontWeight: 700,
                             }}>
-                                {t.vocab.trainingDoing.originalWord.replace('{en}', q.en)}
+                                {t('vocab.trainingDoing.originalWord').replace('{en}', q.en)}
                             </div>
                         )}
 
@@ -738,14 +738,14 @@ export default function VocabularyTrainingDoingPage() {
                             style={{ width: '100%', margin: 0 }}
                             onClick={completeChecked ? handleNext : handleCompleteSubmit}
                         >
-                            {completeChecked ? (currentIndex + 1 >= total ? t.vocab.trainingDoing.viewResults : t.vocab.trainingDoing.nextBtn) : t.vocab.trainingDoing.submitBtn}
+                            {completeChecked ? (currentIndex + 1 >= total ? t('vocab.trainingDoing.viewResults') : t('vocab.trainingDoing.nextBtn')) : t('vocab.trainingDoing.submitBtn')}
                         </button>
                     </div>
 
                     {completeChecked && (
                         <div className="config-card" style={{ textAlign: 'center' }}>
                             <div style={{ fontWeight: 600, fontSize: '15px', color: isCorrect ? '#16a34a' : '#dc2626' }}>
-                                {isCorrect ? t.vocab.trainingDoing.spellCorrect : t.vocab.trainingDoing.spellWrongLabel.replace('{answer}', q.en)}
+                                {isCorrect ? t('vocab.trainingDoing.spellCorrect') : t('vocab.trainingDoing.spellWrongLabel').replace('{answer}', q.en)}
                             </div>
                         </div>
                     )}
@@ -760,8 +760,8 @@ export default function VocabularyTrainingDoingPage() {
                 {/* Progress */}
                 <div style={{ marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                        <span>{t.vocab.trainingDoing.questionProgress.replace('{i}', String(currentIndex + 1)).replace('{n}', String(total))}</span>
-                        <span style={{ color: '#16a34a', fontWeight: 600 }}>✅ {t.vocab.trainingDoing.correctCount.replace('{n}', String(score))}</span>
+                        <span>{t('vocab.trainingDoing.questionProgress').replace('{i}', String(currentIndex + 1)).replace('{n}', String(total))}</span>
+                        <span style={{ color: '#16a34a', fontWeight: 600 }}>✅ {t('vocab.trainingDoing.correctCount').replace('{n}', String(score))}</span>
                     </div>
                     <div style={{ height: '6px', borderRadius: '999px', background: 'var(--color-border)', overflow: 'hidden' }}>
                         <div style={{
@@ -776,7 +776,7 @@ export default function VocabularyTrainingDoingPage() {
                 {/* Question card */}
                 <div className="config-card" style={{ textAlign: 'center', padding: '40px 24px 32px', marginBottom: '16px' }}>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-secondary)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>
-                        {t.vocab.trainingDoing.choicePrompt}
+                        {t('vocab.trainingDoing.choicePrompt')}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
                         <div style={{ fontSize: '38px', fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--color-text)', lineHeight: 1.2 }}>
@@ -784,7 +784,7 @@ export default function VocabularyTrainingDoingPage() {
                         </div>
                         <button
                             onClick={() => speakWord(q.en)}
-                            title={t.vocab.common.speakWord}
+                            title={t('vocab.common.speakWord')}
                             style={{
                                 flexShrink: 0,
                                 width: '42px', height: '42px',
@@ -841,7 +841,7 @@ export default function VocabularyTrainingDoingPage() {
                 {selectedOption !== null && (
                     <div className="config-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
                         <div style={{ fontWeight: 600, fontSize: '15px', color: isCorrect ? '#16a34a' : '#dc2626', flex: 1 }}>
-                            {isCorrect ? t.vocab.trainingDoing.answerCorrect : t.vocab.trainingDoing.answerWrongLabel.replace('{answer}', q.zh)}
+                            {isCorrect ? t('vocab.trainingDoing.answerCorrect') : t('vocab.trainingDoing.answerWrongLabel').replace('{answer}', q.zh)}
                         </div>
                         <button
                             className="skill-btn reading"
@@ -849,7 +849,7 @@ export default function VocabularyTrainingDoingPage() {
                             onClick={handleNext}
                             autoFocus
                         >
-                            {currentIndex + 1 >= total ? t.vocab.trainingDoing.viewResults : t.vocab.trainingDoing.nextBtn}
+                            {currentIndex + 1 >= total ? t('vocab.trainingDoing.viewResults') : t('vocab.trainingDoing.nextBtn')}
                         </button>
                     </div>
                 )}

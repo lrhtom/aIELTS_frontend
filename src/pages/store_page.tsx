@@ -8,7 +8,7 @@ import '../styles/practice_page.css'; // Resemble normal card styles
 import '../styles/store_page.css';
 
 export default function StorePage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const { user, updateUser } = useAuth();
     
     const [products, setProducts] = useState<StoreProduct[]>([]);
@@ -25,9 +25,9 @@ export default function StorePage() {
                 setProducts(prodRes.products);
                 setCart(cartRes);
             })
-            .catch(() => showToast(t.store.fetchFail, 'error'))
+            .catch(() => showToast(t('store.fetchFail'), 'error'))
             .finally(() => setLoading(false));
-    }, [t.store.fetchFail]);
+    }, [t]);
 
     const fetchCart = async () => {
         try {
@@ -43,11 +43,11 @@ export default function StorePage() {
         setActionId(product.id);
         try {
             await addToCart(product.id, 1);
-            showToast(t.store.addSuccess, 'success');
+            showToast(t('store.addSuccess'), 'success');
             await fetchCart();
         } catch (err: unknown) {
             const e = err as { response?: { data?: { error?: string } } };
-            showToast(e.response?.data?.error || t.store.addFail, 'error');
+            showToast(e.response?.data?.error || t('store.addFail'), 'error');
         } finally {
             setActionId(null);
         }
@@ -63,7 +63,7 @@ export default function StorePage() {
             await fetchCart();
         } catch (err: unknown) {
             const e = err as { response?: { data?: { error?: string } } };
-            showToast(e.response?.data?.error || t.store.opFail, 'error');
+            showToast(e.response?.data?.error || t('store.opFail'), 'error');
         }
     };
 
@@ -73,7 +73,7 @@ export default function StorePage() {
             await fetchCart();
         } catch (err: unknown) {
             const e = err as { response?: { data?: { error?: string } } };
-            showToast(e.response?.data?.error || t.store.deleteFail, 'error');
+            showToast(e.response?.data?.error || t('store.deleteFail'), 'error');
         }
     };
 
@@ -81,7 +81,7 @@ export default function StorePage() {
         if (cart.items.length === 0) return;
         try {
             const res = await checkoutCart();
-            showToast(res.message || t.store.checkoutSuccess, 'success');
+            showToast(res.message || t('store.checkoutSuccess'), 'success');
             if (res.new_balance !== undefined && user) {
                 updateUser({ ...user, atBalance: res.new_balance });
             }
@@ -89,7 +89,7 @@ export default function StorePage() {
             await fetchCart(); // Will be empty now
         } catch (err: unknown) {
             const e = err as { response?: { data?: { error?: string } } };
-            showToast(e.response?.data?.error || t.store.checkoutFail, 'error');
+            showToast(e.response?.data?.error || t('store.checkoutFail'), 'error');
         }
     };
 
@@ -99,24 +99,24 @@ export default function StorePage() {
                 <div className="store-header">
                     <h1>
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                        {t.nav.store}
+                        {t('nav.store')}
                     </h1>
 
                     <div className="store-header-actions">
                         <div className="store-balance-badge">
-                            <span>{t.store.balance}</span>
+                            <span>{t('store.balance')}</span>
                             <strong>{user?.atBalance || 0} AT</strong>
                         </div>
 
                         <button className="store-cart-trigger" onClick={() => setIsCartOpen(true)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                            {t.store.cart} ({cart.total_items})
+                            {t('store.cart')} ({cart.total_items})
                         </button>
                     </div>
                 </div>
                 
                 {loading ? (
-                    <div className="practice-loading">{t.store.loading}</div>
+                    <div className="practice-loading">{t('store.loading')}</div>
                 ) : (
                     <div className="store-product-grid">
                         {products.map(p => (
@@ -144,8 +144,8 @@ export default function StorePage() {
                                             className="store-card__button"
                                             onClick={() => handleAddToCart(p)}
                                             disabled={actionId !== null}
-                                            title={actionId === p.id ? t.store.adding : t.store.addToCart}
-                                            aria-label={actionId === p.id ? t.store.adding : `${t.store.addToCart}: ${p.name}`}
+                                            title={actionId === p.id ? t('store.adding') : t('store.addToCart')}
+                                            aria-label={actionId === p.id ? t('store.adding') : `${t('store.addToCart')}: ${p.name}`}
                                         >
                                             {actionId === p.id ? (
                                                 <span className="store-card__button-loading">...</span>
@@ -180,26 +180,26 @@ export default function StorePage() {
                     <div className="store-cart-modal" onClick={e => e.stopPropagation()}>
                         
                         <div className="store-cart-header">
-                            <h2 className="store-cart-title">{t.store.cartTitle}</h2>
+                            <h2 className="store-cart-title">{t('store.cartTitle')}</h2>
                             <button className="store-cart-close" onClick={() => setIsCartOpen(false)}>✕</button>
                         </div>
 
                         <div className="store-cart-body">
-                            <div className="shop-name">{t.store.storeName}</div>
-                            <div className="info">{new Date().toLocaleDateString('zh-CN')} · {t.store.cartInfo.replace('{n}', String(cart.total_items))}</div>
+                            <div className="shop-name">{t('store.storeName')}</div>
+                            <div className="info">{new Date().toLocaleDateString('zh-CN')} · {t('store.cartInfo').replace('{n}', String(cart.total_items))}</div>
 
                             {cart.items.length === 0 ? (
-                                <div className="store-cart-empty">{t.store.cartEmpty}</div>
+                                <div className="store-cart-empty">{t('store.cartEmpty')}</div>
                             ) : (
                                 <>
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>{t.store.colProduct}</th>
-                                                <th>{t.store.colQuantity}</th>
-                                                <th>{t.store.colPrice}</th>
-                                                <th>{t.store.colSubtotal}</th>
-                                                <th>{t.store.colAction}</th>
+                                                <th>{t('store.colProduct')}</th>
+                                                <th>{t('store.colQuantity')}</th>
+                                                <th>{t('store.colPrice')}</th>
+                                                <th>{t('store.colSubtotal')}</th>
+                                                <th>{t('store.colAction')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -213,7 +213,7 @@ export default function StorePage() {
                                                                 <button
                                                                     className="receipt-qty-btn"
                                                                     onClick={() => handleUpdateQuantity(item.product_id, -1)}
-                                                                    title={t.store.btnDecrease}
+                                                                    title={t('store.btnDecrease')}
                                                                 >
                                                                     −
                                                                 </button>
@@ -221,7 +221,7 @@ export default function StorePage() {
                                                                 <button
                                                                     className="receipt-qty-btn"
                                                                     onClick={() => handleUpdateQuantity(item.product_id, 1)}
-                                                                    title={t.store.btnIncrease}
+                                                                    title={t('store.btnIncrease')}
                                                                 >
                                                                     +
                                                                 </button>
@@ -233,9 +233,9 @@ export default function StorePage() {
                                                             <button
                                                                 className="receipt-delete-btn"
                                                                 onClick={() => handleRemoveAll(item.product_id)}
-                                                                title={t.store.btnRemoveItem}
+                                                                title={t('store.btnRemoveItem')}
                                                             >
-                                                                {t.store.btnDelete}
+                                                                {t('store.btnDelete')}
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -245,18 +245,18 @@ export default function StorePage() {
                                     </table>
 
                                     <div className="total">
-                                        <span>{t.store.total}</span>
+                                        <span>{t('store.total')}</span>
                                         <span>¥ {cart.total_cny}</span>
                                     </div>
 
-                                    <div className="thanks">{t.store.thanks}</div>
+                                    <div className="thanks">{t('store.thanks')}</div>
                                 </>
                             )}
                         </div>
                         
                         <div className="store-cart-footer">
                             <div>
-                                <span className="store-cart-footer-total-label">{t.store.totalLabel}</span>
+                                <span className="store-cart-footer-total-label">{t('store.totalLabel')}</span>
                                 <span className="store-cart-footer-total-value">¥ {cart.total_cny}</span>
                             </div>
                             <button
@@ -265,7 +265,7 @@ export default function StorePage() {
                                 onClick={handleCheckout}
                                 disabled={cart.items.length === 0}
                             >
-                                {user?.is_staff ? t.store.checkoutFree : t.store.checkoutPay}
+                                {user?.is_staff ? t('store.checkoutFree') : t('store.checkoutPay')}
                             </button>
                         </div>
                         

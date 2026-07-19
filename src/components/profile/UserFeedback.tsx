@@ -4,7 +4,7 @@ import { apiClient } from '../../api/client';
 import { toast } from 'react-hot-toast';
 
 export default function UserFeedback() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -13,7 +13,7 @@ export default function UserFeedback() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim()) {
-            toast.error(t.profile.feedback.placeholderTitle);
+            toast.error(t('profile.feedback.placeholderTitle'));
             return;
         }
 
@@ -28,7 +28,7 @@ export default function UserFeedback() {
             setDescription('');
         } catch (error) {
             console.error('Feedback submission failed:', error);
-            const errMsg = t.common.error;
+            const errMsg = t('common.error');
             toast.error(errMsg);
         } finally {
             setIsSubmitting(false);
@@ -40,14 +40,14 @@ export default function UserFeedback() {
             <div className="user-feedback">
                 <div className="success-card">
                     <div className="success-icon">🎉</div>
-                    <h3>{t.profile.feedback.success}</h3>
-                    <p>{t.profile.welcomeDesc}</p>
+                    <h3>{t('profile.feedback.success')}</h3>
+                    <p>{t('profile.welcomeDesc')}</p>
                     <button
                         className="secondary-button"
                         onClick={() => setSubmitted(false)}
                         style={{ marginTop: '20px' }}
                     >
-                        {t.profile.feedback.backToSubmit}
+                        {t('profile.feedback.backToSubmit')}
                     </button>
                 </div>
                 <style>{`
@@ -78,25 +78,25 @@ export default function UserFeedback() {
 
             <form className="feedback-form" onSubmit={handleSubmit}>
                 <div className="form-group">
-                    <label htmlFor="title">{t.profile.feedback.message} <span className="required">*</span></label>
+                    <label htmlFor="title">{t('profile.feedback.message')} <span className="required">*</span></label>
                     <input
                         type="text"
                         id="title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder={t.profile.feedback.placeholderTitle}
+                        placeholder={t('profile.feedback.placeholderTitle')}
                         maxLength={255}
                         disabled={isSubmitting}
                     />
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="description">{t.profile.feedback.desc}</label>
+                    <label htmlFor="description">{t('profile.feedback.desc')}</label>
                     <textarea
                         id="description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder={t.profile.feedback.placeholderDesc}
+                        placeholder={t('profile.feedback.placeholderDesc')}
                         rows={6}
                         disabled={isSubmitting}
                     />
@@ -107,7 +107,7 @@ export default function UserFeedback() {
                     className="submit-button"
                     disabled={isSubmitting}
                 >
-                    {isSubmitting ? '...' : t.profile.feedback.submit}
+                    {isSubmitting ? '...' : t('profile.feedback.submit')}
                 </button>
             </form>
 

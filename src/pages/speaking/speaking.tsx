@@ -5,7 +5,6 @@ import VocabInput from '../../components/VocabInput';
 import { getInitialVocabInput } from '../../store/word_selection_store';
 import { speakingStore } from '../../store/speaking_page_store';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import { listPlans, getPlanDetail, sortPlansByFavorite, type LearningPlan } from '../../api/learning_plan';
 import { ATInterceptor } from '../../api/atInterceptor';
 import { showToast } from '../../components/common/Toast';
@@ -53,15 +52,13 @@ const SCENARIO_SUBOPTIONS: Record<ScenarioModifierKey, string[]> = {
 };
 
 export default function Speaking() {
-    const { lang } = useLang();
-    const sc = translations[lang].speakingConfig;
-    const tAll = translations[lang];
+    const { t } = useLang();
 
     const PARTS: PartInfo[] = [
-        { id: 'part1', emoji: '💬', title: sc.ieltsPart.parts.part1.title, desc: sc.ieltsPart.parts.part1.desc },
-        { id: 'part2', emoji: '🗣️', title: sc.ieltsPart.parts.part2.title, desc: sc.ieltsPart.parts.part2.desc },
-        { id: 'part3', emoji: '🧠', title: sc.ieltsPart.parts.part3.title, desc: sc.ieltsPart.parts.part3.desc },
-        { id: 'full', emoji: '📋', title: sc.ieltsPart.parts.full.title, desc: sc.ieltsPart.parts.full.desc },
+        { id: 'part1', emoji: '💬', title: t('speakingConfig.ieltsPart.parts.part1.title'), desc: t('speakingConfig.ieltsPart.parts.part1.desc') },
+        { id: 'part2', emoji: '🗣️', title: t('speakingConfig.ieltsPart.parts.part2.title'), desc: t('speakingConfig.ieltsPart.parts.part2.desc') },
+        { id: 'part3', emoji: '🧠', title: t('speakingConfig.ieltsPart.parts.part3.title'), desc: t('speakingConfig.ieltsPart.parts.part3.desc') },
+        { id: 'full', emoji: '📋', title: t('speakingConfig.ieltsPart.parts.full.title'), desc: t('speakingConfig.ieltsPart.parts.full.desc') },
     ];
 
     // 2026-07-07 起 call（通话）模式并入 chat：唯一差异只是隐藏键盘，
@@ -70,22 +67,22 @@ export default function Speaking() {
         {
             id: 'chat',
             emoji: '💬',
-            title: sc.modes.items.chat.title,
-            desc: sc.modes.items.chat.desc,
+            title: t('speakingConfig.modes.items.chat.title'),
+            desc: t('speakingConfig.modes.items.chat.desc'),
             color: 'mode-chat',
         },
         {
             id: 'exam',
             emoji: '🎓',
-            title: sc.modes.items.exam.title,
-            desc: sc.modes.items.exam.desc,
+            title: t('speakingConfig.modes.items.exam.title'),
+            desc: t('speakingConfig.modes.items.exam.desc'),
             color: 'mode-exam',
         },
         {
             id: 'scenario',
             emoji: '🎭',
-            title: sc.modes.items.scenario.title,
-            desc: sc.modes.items.scenario.desc,
+            title: t('speakingConfig.modes.items.scenario.title'),
+            desc: t('speakingConfig.modes.items.scenario.desc'),
             color: 'mode-scenario',
         },
     ];
@@ -140,12 +137,12 @@ export default function Speaking() {
         if (selected.length === 0) return;
         const total = scenarioFiles.length + selected.length;
         if (total > 3) {
-            showToast(sc.toastMaxFiles);
+            showToast(t('speakingConfig.toastMaxFiles'));
             return;
         }
         const oversized = selected.filter(f => f.size > 5 * 1024 * 1024);
         if (oversized.length > 0) {
-            showToast(sc.toastFileTooBig);
+            showToast(t('speakingConfig.toastFileTooBig'));
             return;
         }
         setScenarioFiles(prev => [...prev, ...selected]);
@@ -160,7 +157,7 @@ export default function Speaking() {
                 setScenarioInput(res.data.scenario);
             }
         } catch (err: unknown) {
-            showToast(sc.toastRandomScenarioFail.replace('{msg}', (err as { message?: string }).message ?? ''));
+            showToast(t('speakingConfig.toastRandomScenarioFail').replace('{msg}', (err as { message?: string }).message ?? ''));
         } finally {
             setIsGeneratingScenario(false);
         }
@@ -177,7 +174,7 @@ export default function Speaking() {
             const { plan: detail } = await getPlanDetail(importPlanId);
             const todayWords = detail.today_words || [];
             if (todayWords.length === 0) {
-                showToast(tAll.common.planImport.noWords, 'error');
+                showToast(t('common.planImport.noWords'), 'error');
                 return;
             }
             const validWords = todayWords.filter(w => w.zh && w.zh.trim());
@@ -185,12 +182,12 @@ export default function Speaking() {
             const lines = validWords.map(w => `${w.word} - ${w.zh}`).join('\n');
             handleVocabChange(lines);
             if (skipped > 0) {
-                showToast(tAll.common.planImport.skipped.replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
+                showToast(t('common.planImport.skipped').replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
             } else {
-                showToast(tAll.common.planImport.success.replace('{n}', String(validWords.length)), 'success');
+                showToast(t('common.planImport.success').replace('{n}', String(validWords.length)), 'success');
             }
         } catch {
-            showToast(tAll.common.planImport.failed, 'error');
+            showToast(t('common.planImport.failed'), 'error');
         } finally {
             setImportingPlan(false);
         }
@@ -204,7 +201,7 @@ export default function Speaking() {
 
     const handleStart = async () => {
         if (selectedMode === 'scenario' && !scenarioInput.trim()) {
-            showToast(sc.toastEnterScenario);
+            showToast(t('speakingConfig.toastEnterScenario'));
             return;
         }
 
@@ -213,12 +210,12 @@ export default function Speaking() {
                 setIsChecking(true);
                 const checkRes = await ATInterceptor.checkScenario(scenarioInput.trim());
                 if (!checkRes.data.valid) {
-                    showToast(sc.toastScenarioBlocked.replace('{reason}', checkRes.data.reason || sc.toastScenarioBlockedFallback));
+                    showToast(t('speakingConfig.toastScenarioBlocked').replace('{reason}', checkRes.data.reason || t('speakingConfig.toastScenarioBlockedFallback')));
                     setIsChecking(false);
                     return;
                 }
             } catch (err: unknown) {
-                showToast(sc.toastSafetyFail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(t('speakingConfig.toastSafetyFail').replace('{msg}', (err as { message?: string }).message ?? ''));
                 setIsChecking(false);
                 return;
             } finally {
@@ -259,7 +256,7 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                showToast(sc.toastPart1Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(t('speakingConfig.toastPart1Fail').replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
@@ -280,7 +277,7 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                showToast(sc.toastPart2Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(t('speakingConfig.toastPart2Fail').replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
@@ -301,7 +298,7 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                showToast(sc.toastPart3Fail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(t('speakingConfig.toastPart3Fail').replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
@@ -323,26 +320,26 @@ export default function Speaking() {
                     }
                 });
             } catch (err: unknown) {
-                showToast(sc.toastFullTestFail.replace('{msg}', (err as { message?: string }).message ?? ''));
+                showToast(t('speakingConfig.toastFullTestFail').replace('{msg}', (err as { message?: string }).message ?? ''));
             } finally {
                 setIsChecking(false);
             }
         } else {
-            showToast(sc.comingSoon, 'info');
+            showToast(t('speakingConfig.comingSoon'), 'info');
         }
     };
 
     return (
         <Layout
-            pageTitle={sc.heading}
-            pageSubtitle={sc.subheading}
+            pageTitle={t('speakingConfig.heading')}
+            pageSubtitle={t('speakingConfig.subheading')}
             backUrl='/practice/ai'
-            backText={sc.backToAI}
+            backText={t('speakingConfig.backToAI')}
         >
             <div className="uc-console">
                 {/* ── 1. 左侧：模式切换列 (Sidebar) ── */}
                 <div className="uc-sidebar">
-                        <div className="uc-sidebar-title">{sc.modes.title}</div>
+                        <div className="uc-sidebar-title">{t('speakingConfig.modes.title')}</div>
                         <nav className="uc-sidebar-nav">
                             {MODES.map(m => (
                                 <button
@@ -361,7 +358,7 @@ export default function Speaking() {
                     <div className="uc-main-content">
                         <div className="uc-main-header">
                             <h2>{MODES.find(m => m.id === selectedMode)?.title}</h2>
-                            <p>{sc.modes.items?.[selectedMode as keyof typeof sc.modes.items]?.desc}</p>
+                            <p>{t(`speakingConfig.modes.items.${selectedMode}.desc`)}</p>
                         </div>
 
                         <div className="uc-settings-list">
@@ -372,7 +369,7 @@ export default function Speaking() {
                                         <div className="uc-row-label-flex">
                                             <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📝</span>
-                                                <span className="row-title">{sc.ieltsPart.title}</span>
+                                                <span className="row-title">{t('speakingConfig.ieltsPart.title')}</span>
                                             </div>
                                         </div>
                                     <div className="uc-row-control" style={selectedPart === 'full' ? { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 } : undefined}>
@@ -388,7 +385,7 @@ export default function Speaking() {
                                             ))}
                                         </div>
                                         {selectedPart === 'full' && (
-                                            <span className="ft-inline-text">📋 {sc.ieltsPart.fullTestHint}</span>
+                                            <span className="ft-inline-text">📋 {t('speakingConfig.ieltsPart.fullTestHint')}</span>
                                         )}
                                     </div>
                                 </div>
@@ -401,24 +398,24 @@ export default function Speaking() {
                                             <div className="uc-row-label-flex">
                                                 <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                     <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>🎭</span>
-                                                    <span className="row-title">{sc.scenarioSettings.title}</span>
+                                                    <span className="row-title">{t('speakingConfig.scenarioSettings.title')}</span>
                                                 </div>
                                                 <button className="secondary-btn-console" onClick={handleRandomScenario} disabled={isGeneratingScenario}>
-                                                    {isGeneratingScenario ? sc.scenarioSettings.generating : sc.scenarioSettings.randomBtn}
+                                                    {isGeneratingScenario ? t('speakingConfig.scenarioSettings.generating') : t('speakingConfig.scenarioSettings.randomBtn')}
                                                 </button>
                                             </div>
                                         <textarea
                                             className="uc-console-textarea"
                                             rows={3}
-                                            placeholder={sc.scenarioSettings.placeholder}
+                                            placeholder={t('speakingConfig.scenarioSettings.placeholder')}
                                             value={scenarioInput}
                                             onChange={e => setScenarioInput(e.target.value)}
                                         />
                                     </div>
                                     <div className="uc-list-row">
                                         <div className="uc-row-label">
-                                            <span className="row-title">{sc.attachmentLabel}</span>
-                                            <span className="row-desc">{sc.attachmentDesc}</span>
+                                            <span className="row-title">{t('speakingConfig.attachmentLabel')}</span>
+                                            <span className="row-desc">{t('speakingConfig.attachmentDesc')}</span>
                                         </div>
                                         <div className="uc-row-control">
                                             <input
@@ -430,7 +427,7 @@ export default function Speaking() {
                                                 style={{ display: 'none' }}
                                             />
                                             <button className="secondary-btn-console" onClick={() => fileInputRef.current?.click()}>
-                                                {sc.attachmentSelectBtn}
+                                                {t('speakingConfig.attachmentSelectBtn')}
                                             </button>
                                         </div>
                                     </div>
@@ -454,7 +451,7 @@ export default function Speaking() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                            <span className="row-title">{tAll.components.aiModel.label}</span>
+                                            <span className="row-title">{t('components.aiModel.label')}</span>
                                         </div>
                                     </div>
                                     <div className="uc-row-control console-model-selector">
@@ -469,9 +466,9 @@ export default function Speaking() {
                                     <div className="uc-row-label">
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#10b981', background: '#d1fae5' }}>👁️</span>
-                                            <span className="row-title">{sc.subtitles.title}</span>
+                                            <span className="row-title">{t('speakingConfig.subtitles.title')}</span>
                                         </div>
-                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{sc.subtitles.desc}</span>
+                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{t('speakingConfig.subtitles.desc')}</span>
                                     </div>
                                 <div className="uc-row-control">
                                     <label className="toggle-switch-console">
@@ -487,9 +484,9 @@ export default function Speaking() {
                                         <div className="uc-row-label">
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#6366f1', background: '#e0e7ff' }}>📞</span>
-                                                <span className="row-title">{sc.voiceOnly.title}</span>
+                                                <span className="row-title">{t('speakingConfig.voiceOnly.title')}</span>
                                             </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{sc.voiceOnly.desc}</span>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t('speakingConfig.voiceOnly.desc')}</span>
                                         </div>
                                         <div className="uc-row-control">
                                             <label className="toggle-switch-console">
@@ -507,11 +504,11 @@ export default function Speaking() {
                                             <div className="uc-row-label-flex">
                                                 <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                     <span className="uc-row-icon" style={{ color: '#ef4444', background: '#fee2e2' }}>🎚️</span>
-                                                    <span className="row-title">{sc.scenarioModifiers.sectionTitle}</span>
+                                                    <span className="row-title">{t('speakingConfig.scenarioModifiers.sectionTitle')}</span>
                                                 </div>
                                             </div>
                                             <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
-                                                {sc.scenarioModifiers.sectionDesc}
+                                                {t('speakingConfig.scenarioModifiers.sectionDesc')}
                                             </span>
                                         </div>
                                         {SCENARIO_MODIFIERS.map(m => (
@@ -520,9 +517,9 @@ export default function Speaking() {
                                                     <div className="uc-row-label">
                                                         <div style={{ display: 'flex', alignItems: 'center' }}>
                                                             <span className="uc-row-icon" style={{ color: m.color, background: m.bg }}>{m.icon}</span>
-                                                            <span className="row-title">{sc.scenarioModifiers[m.key].title}</span>
+                                                            <span className="row-title">{t(`speakingConfig.scenarioModifiers.${m.key}.title`)}</span>
                                                         </div>
-                                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{sc.scenarioModifiers[m.key].desc}</span>
+                                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{t(`speakingConfig.scenarioModifiers.${m.key}.desc`)}</span>
                                                     </div>
                                                     <div className="uc-row-control">
                                                         <label className="toggle-switch-console">
@@ -543,7 +540,7 @@ export default function Speaking() {
                                                                     className={`scenario-subchip ${on ? 'active' : ''}`}
                                                                     onClick={() => toggleSub(m.key, sub)}
                                                                 >
-                                                                    {(sc.scenarioModifiers[m.key].subs as Record<string, string>)[sub]}
+                                                                    {t(`speakingConfig.scenarioModifiers.${m.key}.subs.${sub}`)}
                                                                 </button>
                                                             );
                                                         })}
@@ -560,9 +557,9 @@ export default function Speaking() {
                                         <div className="uc-row-label">
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#f43f5e', background: '#ffe4e6' }}>📚</span>
-                                                <span className="row-title">{sc.vocabSettings.title}</span>
+                                                <span className="row-title">{t('speakingConfig.vocabSettings.title')}</span>
                                             </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{sc.vocabSettings.desc}</span>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t('speakingConfig.vocabSettings.desc')}</span>
                                         </div>
                                     <div className="uc-row-control">
                                         <label className="toggle-switch-console">
@@ -579,7 +576,7 @@ export default function Speaking() {
                                                     {sortPlansByFavorite(plans).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                 </select>
                                                 <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
-                                                    {importingPlan ? tAll.common.planImport.importing : tAll.common.planImport.btn}
+                                                    {importingPlan ? t('common.planImport.importing') : t('common.planImport.btn')}
                                                 </button>
                                             </div>
                                         )}
@@ -595,17 +592,17 @@ export default function Speaking() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>🏷️</span>
-                                            <span className="row-title">{tAll.common.customQuestion.sectionTitle}</span>
+                                            <span className="row-title">{t('common.customQuestion.sectionTitle')}</span>
                                         </div>
                                     </div>
                                     <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
-                                        {tAll.common.customQuestion.sectionDesc}
+                                        {t('common.customQuestion.sectionDesc')}
                                     </span>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8, width: '100%' }}>
                                         <input
                                             type="text"
                                             maxLength={80}
-                                            placeholder={tAll.common.customQuestion.namePlaceholder}
+                                            placeholder={t('common.customQuestion.namePlaceholder')}
                                             value={customName}
                                             onChange={e => setCustomName(e.target.value)}
                                             style={{
@@ -616,12 +613,12 @@ export default function Speaking() {
                                                 color: 'var(--color-text)',
                                                 fontSize: 14,
                                             }}
-                                            aria-label={tAll.common.customQuestion.nameLabel}
+                                            aria-label={t('common.customQuestion.nameLabel')}
                                         />
                                         <textarea
                                             maxLength={300}
                                             rows={2}
-                                            placeholder={tAll.common.customQuestion.descPlaceholder}
+                                            placeholder={t('common.customQuestion.descPlaceholder')}
                                             value={customDescription}
                                             onChange={e => setCustomDescription(e.target.value)}
                                             style={{
@@ -634,7 +631,7 @@ export default function Speaking() {
                                                 resize: 'vertical',
                                                 fontFamily: 'inherit',
                                             }}
-                                            aria-label={tAll.common.customQuestion.descLabel}
+                                            aria-label={t('common.customQuestion.descLabel')}
                                         />
                                     </div>
                                 </div>
@@ -647,7 +644,7 @@ export default function Speaking() {
                                 onClick={handleStart}
                                 disabled={isStartDisabled}
                             >
-                                {isChecking ? sc.startPreparing : sc.startPractice}
+                                {isChecking ? t('speakingConfig.startPreparing') : t('speakingConfig.startPractice')}
                             </button>
                         </div>
                     </div>

@@ -32,10 +32,9 @@ interface AiModelSelectorProps {
 }
 
 export default function AiModelSelector({ onModelChange, label, description, variant = 'default' }: AiModelSelectorProps) {
-    const { translations: t } = useLang();
-    const cmT = t.components.customModel;
-    const resolvedLabel = label ?? t.components.aiModel.label;
-    const resolvedDesc = description ?? t.components.aiModel.desc;
+    const { t } = useLang();
+    const resolvedLabel = label ?? t('components.aiModel.label');
+    const resolvedDesc = description ?? t('components.aiModel.desc');
     const { user, updateUser } = useAuth();
     const [provider, setProvider] = useState<string>(() => {
         return (user?.aiProvider as string) || localStorage.getItem('ai_provider') || 'deepseek';
@@ -86,12 +85,12 @@ export default function AiModelSelector({ onModelChange, label, description, var
 
     const renderOptions = () => (
         <>
-            <option value={ADD_SENTINEL}>{cmT.addOption}</option>
+            <option value={ADD_SENTINEL}>{t('components.customModel.addOption')}</option>
             {BUILTIN_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
             ))}
             {customModels.map(m => (
-                <option key={m.id} value={m.provider_id}>★ {m.name}（{cmT.customTag}）</option>
+                <option key={m.id} value={m.provider_id}>★ {m.name}（{t('components.customModel.customTag')}）</option>
             ))}
         </>
     );

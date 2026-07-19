@@ -18,8 +18,7 @@ export default function CustomPromptField({
     onChange: (v: string) => void;
     maxLength?: number;
 }) {
-    const { translations } = useLang();
-    const t = translations.common.customPrompt;
+    const { t } = useLang();
     const [ack, setAck] = useState(false);
 
     const toggleAck = (checked: boolean) => {
@@ -31,18 +30,18 @@ export default function CustomPromptField({
         <div className="cpf-root">
             <div className="cpf-header">
                 <AlertTriangle size={16} className="cpf-warn-icon" />
-                <span className="cpf-title">{t.title}</span>
+                <span className="cpf-title">{t('common.customPrompt.title')}</span>
             </div>
-            <p className="cpf-warning">{t.warning}</p>
+            <p className="cpf-warning">{t('common.customPrompt.warning')}</p>
             <label className="cpf-ack">
                 <input type="checkbox" checked={ack} onChange={e => toggleAck(e.target.checked)} />
-                <span>{t.ack}</span>
+                <span>{t('common.customPrompt.ack')}</span>
             </label>
             <textarea
                 className="cpf-textarea"
                 value={value}
                 onChange={e => onChange(e.target.value.slice(0, maxLength))}
-                placeholder={t.placeholder}
+                placeholder={t('common.customPrompt.placeholder')}
                 disabled={!ack}
                 rows={3}
                 maxLength={maxLength}

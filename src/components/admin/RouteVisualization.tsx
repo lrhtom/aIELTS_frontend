@@ -272,8 +272,8 @@ interface BackendData {
 }
 
 export default function RouteVisualization() {
-    const { translations } = useLang();
-    const rv = translations.routeVis;
+    const { t } = useLang();
+    const rv = t('routeVis', { returnObjects: true }) as RV;
     const resolveName = (key: string) => resolveModuleName(key, rv);
 
     const [tab, setTab] = useState<TreeTab>('frontend');

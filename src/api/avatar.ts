@@ -37,7 +37,7 @@ export const avatarApi = {
         if (!allowedTypes.includes(file.type)) {
             return {
                 isValid: false,
-                error: currentT().profile.avatarUpload.errFormat
+                error: currentT()('profile.avatarUpload.errFormat')
             };
         }
 
@@ -46,7 +46,7 @@ export const avatarApi = {
         if (file.size > maxSize) {
             return {
                 isValid: false,
-                error: currentT().profile.avatarUpload.errSize
+                error: currentT()('profile.avatarUpload.errSize')
             };
         }
 

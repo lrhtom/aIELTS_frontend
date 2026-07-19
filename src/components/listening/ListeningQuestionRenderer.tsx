@@ -121,14 +121,14 @@ function FallbackInputs({ questions, renderedIds, getAnswer, onAnswer, disabled,
     disabled: boolean;
     hasStructuredContent: boolean;
 }): ReactElement | null {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const missing = questions.filter(q => !renderedIds.has(q.id));
     if (missing.length === 0) return null;
     return (
         <div className="listening-fallback-inputs" style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {hasStructuredContent && (
                 <p className="section-instructions" style={{ fontStyle: 'italic', opacity: 0.85 }}>
-                    {t.components.questionRenderer.answerRemaining}
+                    {t('components.questionRenderer.answerRemaining')}
                 </p>
             )}
             {missing.map(q => (
@@ -140,7 +140,7 @@ function FallbackInputs({ questions, renderedIds, getAnswer, onAnswer, disabled,
                         defaultValue={getAnswer(q.id)}
                         onChange={e => onAnswer(q.id, e.target.value)}
                         disabled={disabled}
-                        placeholder={t.components.questionRenderer.typeAnswer}
+                        placeholder={t('components.questionRenderer.typeAnswer')}
                         style={{ flex: 1, maxWidth: 320 }}
                     />
                 </div>
@@ -241,7 +241,7 @@ export function FlowchartRenderer({ data, getAnswer, onAnswer, reviewMode = fals
  *  Short-answer questions
  * ---------------------------------------------------------------------*/
 export function ShortAnswerRenderer({ data, getAnswer, onAnswer, reviewMode = false }: { data: ShortAnswerListeningData } & CommonProps) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     if (!data) return null;
     const questions = Array.isArray(data.questions) ? data.questions : [];
     return (
@@ -258,7 +258,7 @@ export function ShortAnswerRenderer({ data, getAnswer, onAnswer, reviewMode = fa
                             defaultValue={userAns}
                             onChange={e => onAnswer(q.id, e.target.value)}
                             disabled={reviewMode}
-                            placeholder={t.components.questionRenderer.typeAnswer}
+                            placeholder={t('components.questionRenderer.typeAnswer')}
                         />
                         {reviewMode && (
                             <div className={`review-verdict ${verdictText(userAns, q.answers || []).ok ? 'ok' : 'ng'}`}>

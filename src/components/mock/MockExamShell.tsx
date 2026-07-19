@@ -5,7 +5,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { startMockPart, type MockExamPart } from '../../api/mock';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import '../../styles/mock.css';
 
 function fmt(ms: number): string {
@@ -25,8 +24,7 @@ interface MockTimerBarProps {
 }
 
 export function MockTimerBar({ mockId, part, onExpire, onRejected }: MockTimerBarProps) {
-    const { lang } = useLang();
-    const t = translations[lang].mock.examMode;
+    const { t } = useLang();
     const [deadlineMs, setDeadlineMs] = useState<number | null>(null);
     const offsetRef = useRef(0); // serverNow - clientNow
     const expiredFiredRef = useRef(false);
@@ -57,7 +55,7 @@ export function MockTimerBar({ mockId, part, onExpire, onRejected }: MockTimerBa
     if (deadlineMs === null) {
         return (
             <div className="mock-timer-bar">
-                <span className="mock-timer-label">{t.examBadge}</span>
+                <span className="mock-timer-label">{t('mock.examMode.examBadge')}</span>
             </div>
         );
     }
@@ -72,7 +70,7 @@ export function MockTimerBar({ mockId, part, onExpire, onRejected }: MockTimerBa
 
     return (
         <div className={`mock-timer-bar ${cls}`}>
-            <span className="mock-timer-label">{t.examBadge}</span>
+            <span className="mock-timer-label">{t('mock.examMode.examBadge')}</span>
             <span>⏱ {fmt(remaining)}</span>
         </div>
     );

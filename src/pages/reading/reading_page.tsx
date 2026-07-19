@@ -38,7 +38,7 @@ function Reading_page() {
     const difficulty: string = state?.difficulty ?? '7.0';
     const navigate = useNavigate();
     const onReturnHome = () => navigate(mockId ? `/mock/${mockId}` : (bankId ? '/practice/ai/bank' : '/'));
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const absurdMode: boolean = Boolean(state?.absurdMode);
     const mode: 'single' | 'full' = state?.mode === 'full' ? 'full' : 'single';
     const questionType: ReadingQuestionType = state?.questionType || 'multiple_choice';
@@ -137,7 +137,7 @@ function Reading_page() {
             if (isFull) {
                 const fullContent = content as FullQuizData;
                 if (!Array.isArray(fullContent.passages) || fullContent.passages.length === 0) {
-                    showToast(t.aiBank.toastMissingContent, 'error');
+                    showToast(t('aiBank.toastMissingContent'), 'error');
                     navigate('/practice/ai/bank');
                     return;
                 }
@@ -171,7 +171,7 @@ function Reading_page() {
                 return;
             }
             if (!content.passage || !Array.isArray(content.questions)) {
-                showToast(t.aiBank.toastMissingContent, 'error');
+                showToast(t('aiBank.toastMissingContent'), 'error');
                 navigate('/practice/ai/bank');
                 return;
             }
@@ -217,7 +217,7 @@ function Reading_page() {
             }
         } catch (err: unknown) {
             console.error('Bank load error:', err);
-            showToast(t.aiBank.loadFail, 'error');
+            showToast(t('aiBank.loadFail'), 'error');
             navigate('/practice/ai/bank');
         } finally {
             set('isLoading', false);
@@ -279,14 +279,14 @@ function Reading_page() {
 
             sessionStorage.removeItem(CACHE_KEY);
             const justId = parsedData.aiQuestionId ?? null;
-            showToast(t.aiBank.toastGeneratedSaved, 'success');
+            showToast(t('aiBank.toastGeneratedSaved'), 'success');
             navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
             return;
         } catch (err: unknown) { // Changed 'any' to 'unknown'
             console.error("API Error:", err);
             const error = err as { message?: string, status?: number }; // Cast to a type that might have message and status
             const code = error.status ?? (err instanceof TypeError ? 'NET' : undefined);
-            showToast(error.message || t.readingDetails.toastReqFail, 'error', code);
+            showToast(error.message || t('readingDetails.toastReqFail'), 'error', code);
             onReturnHome();
         } finally {
             set('isLoading', false);
@@ -300,11 +300,11 @@ function Reading_page() {
             const isHidden = pageEl.classList.contains('hide-highlights');
             if (isHidden) {
                 pageEl.classList.remove('hide-highlights');
-                btnEl.innerText = t.readingDetails.hideTargets;
+                btnEl.innerText = t('readingDetails.hideTargets');
                 btnEl.classList.remove('active');
             } else {
                 pageEl.classList.add('hide-highlights');
-                btnEl.innerText = t.readingDetails.showTargets;
+                btnEl.innerText = t('readingDetails.showTargets');
                 btnEl.classList.add('active');
             }
         }
@@ -326,7 +326,7 @@ function Reading_page() {
         }
         const answeredQuestions = Object.values(userAnswersRef.current).filter(v => String(v).trim().length > 0).length;
         if (!forced && answeredQuestions < totalQuestions) {
-            if (!(await showConfirm(t.readingDetails.submitConfirm))) return;
+            if (!(await showConfirm(t('readingDetails.submitConfirm')))) return;
         }
 
         // mock 模式：交卷时同步评分（raw + band）进 aiFeedback，供大厅/成绩单读取
@@ -345,11 +345,11 @@ function Reading_page() {
                 await submitAIQuestion(bankId, { ...userAnswersRef.current }, { correct, total, band });
             } catch (err) {
                 console.error('mock submit failed:', err);
-                showToast(t.readingDetails.toastSaveFail, 'error');
+                showToast(t('readingDetails.toastSaveFail'), 'error');
                 if (!forced) return; // 手动交卷失败时留在页面重试；超时强制交卷则继续离场
             }
             if (MOCK_DRAFT_KEY) localStorage.removeItem(MOCK_DRAFT_KEY);
-            showToast(t.mock.examMode.submittedToHub, 'success');
+            showToast(t('mock.examMode.submittedToHub'), 'success');
             navigate(`/mock/${mockId}`, { replace: true });
             return;
         }
@@ -357,7 +357,7 @@ function Reading_page() {
         if (bankId) {
             submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
                 console.error('submit to bank failed:', err);
-                showToast(t.readingDetails.toastSaveFail, 'error');
+                showToast(t('readingDetails.toastSaveFail'), 'error');
             });
         }
         set('step', 3);
@@ -636,7 +636,7 @@ function Reading_page() {
         return (
             <div className="reading-container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <div className="loader">{t.readingDetails.writingPassage}</div>
+                    <div className="loader">{t('readingDetails.writingPassage')}</div>
                 </div>
             </div>
         );
@@ -652,8 +652,8 @@ function Reading_page() {
         const questionPanelTitle = st.fullData
             ? null
             : (st.quizData!.questionType === 'true_false'
-                ? (st.quizData!.judgementMode === 'easy' ? t.readingDetails.questionsTrueFalseEasy : t.readingDetails.questionsTrueFalseNormal)
-                : t.readingDetails.questionsMcq);
+                ? (st.quizData!.judgementMode === 'easy' ? t('readingDetails.questionsTrueFalseEasy') : t('readingDetails.questionsTrueFalseNormal'))
+                : t('readingDetails.questionsMcq'));
 
         return (
             <div className="reading-container">
@@ -663,23 +663,23 @@ function Reading_page() {
                         part="reading"
                         onExpire={() => submitQuiz(true)}
                         onRejected={(msg) => {
-                            showToast(t.mock.examMode.startRejected.replace('{msg}', msg), 'error');
+                            showToast(t('mock.examMode.startRejected').replace('{msg}', msg), 'error');
                             navigate(`/mock/${mockId}`, { replace: true });
                         }}
                     />
                 )}
                 <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
-                    <u>U</u> {t.readingDetails.underline}
+                    <u>U</u> {t('readingDetails.underline')}
                 </div>
 
                 <div id="reading-page-container" className="page">
                     <div className="toolbar-area">
                         <div className="toolbar-left-group">
                             <button className={`toolbar-btn ${st.isLeftOpen ? 'active' : ''}`} onClick={() => { if ((window as any).__didDragSidebar) return; if (leftSidebarRef.current) { leftSidebarRef.current.classList.remove('no-transition'); leftSidebarRef.current.style.width = ''; } set('isLeftOpen', !st.isLeftOpen); }}> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
-                                <span className="btn-icon">📚</span> {t.readingDetails.dictionary}
+                                <span className="btn-icon">📚</span> {t('readingDetails.dictionary')}
                             </button>
                             <button className={`toolbar-btn ${st.isRightOpen ? 'active' : ''}`} onClick={() => { if ((window as any).__didDragSidebar) return; if (rightSidebarRef.current) { rightSidebarRef.current.classList.remove('no-transition'); rightSidebarRef.current.style.width = ''; } set('isRightOpen', !st.isRightOpen); }}> {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
-                                <span className="btn-icon">📝</span> {t.readingDetails.questions}
+                                <span className="btn-icon">📝</span> {t('readingDetails.questions')}
                             </button>
                         </div>
                         <div className="reading-timer">
@@ -702,7 +702,7 @@ function Reading_page() {
                                 className="toolbar-btn toolbar-btn-outline"
                                 onClick={toggleHighlightsPureDOM}
                             >
-                                <span className="btn-icon">💡</span> {t.readingDetails.hideTargets}
+                                <span className="btn-icon">💡</span> {t('readingDetails.hideTargets')}
                             </button>
                         </div>
                     </div>
@@ -710,9 +710,9 @@ function Reading_page() {
                     <div className="reading-layout" ref={layoutRef}>
                         {/* Left Sidebar */}
                         <div id="leftSidebar" ref={leftSidebarRef} className={`reading-sidebar ${st.isLeftOpen ? 'open' : ''}`}>
-                            <h2 style={{ marginTop: 0 }}>{t.readingDetails.dictionary}</h2>
+                            <h2 style={{ marginTop: 0 }}>{t('readingDetails.dictionary')}</h2>
                             <input
-                                type="text" id="vocabSearch" placeholder={t.readingDetails.searchPlaceholder}
+                                type="text" id="vocabSearch" placeholder={t('readingDetails.searchPlaceholder')}
                                 value={st.searchQuery} onChange={(e) => set('searchQuery', e.target.value)}
                             />
                             <div>
@@ -747,13 +747,13 @@ function Reading_page() {
                                 await mockConfirmExit();
                                 return;
                             }
-                            if (await showConfirm(t.readingDetails.exitConfirm)) {
+                            if (await showConfirm(t('readingDetails.exitConfirm'))) {
                                 onReturnHome();
                             }
                         }}
-                        submitLabel={t.readingDetails.submitBtn}
-                        exitLabel={t.readingDetails.exitBtn}
-                        navLabels={t.readingDetails.questionNav}
+                        submitLabel={t('readingDetails.submitBtn')}
+                        exitLabel={t('readingDetails.exitBtn')}
+                        navLabels={(t('readingDetails.questionNav', { returnObjects: true }) as { jumpTo: string; progress: string; barLabel: string })}
                         overviewParts={navOverviewParts}
                         onPartSelect={i => {
                             const p = st.fullData?.passages?.[i];
@@ -795,7 +795,7 @@ function Reading_page() {
                 {/* Results Header */}
                 <div className="results-header">
                     <div className="results-header-left">
-                        <h1>{t.results.analysis}</h1>
+                        <h1>{t('results.analysis')}</h1>
                         <p className="elapsed-time">
                             🕐 {formatTime(st.elapsedSeconds).h}h {formatTime(st.elapsedSeconds).m}m {formatTime(st.elapsedSeconds).s}s
                         </p>
@@ -806,19 +806,19 @@ function Reading_page() {
                             <div className="score-pct">{pct}%</div>
                         </div>
                         {band !== null && (
-                            <div className="score-card score-band-card" title={t.results.estimatedBand}>
-                                <div className="score-band-label">{t.results.estimatedBand}</div>
+                            <div className="score-card score-band-card" title={t('results.estimatedBand')}>
+                                <div className="score-band-label">{t('results.estimatedBand')}</div>
                                 <div className="score-number">{formatBand(band)}<span className="score-total">/9</span></div>
                             </div>
                         )}
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
-                            <span className="btn-icon">{st.isPassageOpen ? '📕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
+                            <span className="btn-icon">{st.isPassageOpen ? '📕' : '📖'}</span> {st.isPassageOpen ? t('results.hidePassage') : t('results.showPassage')}
                         </button>
                         {bankId && !mockId && (
                             // mock 子题一次定档，不允许重做
-                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t.aiBank.redoBtn}</button>
+                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t('aiBank.redoBtn')}</button>
                         )}
-                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{mockId ? '🎯' : bankId ? '📚' : '🏠'}</span> {mockId ? t.mock.examMode.backToHub : bankId ? t.aiBank.backToBank : t.common.home}</button>
+                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{mockId ? '🎯' : bankId ? '📚' : '🏠'}</span> {mockId ? t('mock.examMode.backToHub') : bankId ? t('aiBank.backToBank') : t('common.home')}</button>
                     </div>
                 </div>
 
@@ -826,7 +826,7 @@ function Reading_page() {
                 <div className="results-layout" id="resultsLayout">
                     {/* Passage Sidebar */}
                     <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="passageSidebar">
-                        <h3>{t.results.originalPassage}</h3>
+                        <h3>{t('results.originalPassage')}</h3>
                         {passageBlocks.map(pb => (
                             <ReadingPassageBlock key={pb.passageNum} title={pb.title} passage={pb.passage} idPrefix={`passage-${pb.passageNum}`} />
                         ))}
@@ -852,12 +852,12 @@ function Reading_page() {
                                         {q.id}. {questionText.replace(/\*\*/g, '')}
                                         <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[{(sec.questionType || '').replace(/_/g, ' ')}]</span>
                                     </div>
-                                    <p>{t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.correctAnswer}: <strong>{correctDisplay}</strong></p>
+                                    <p>{t('results.yourAnswer')}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t('results.correctAnswer')}: <strong>{correctDisplay}</strong></p>
                                     <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                        {isCorrect ? `✅ ${t.results.statusCorrect}` : `❌ ${t.results.statusIncorrect}`}
+                                        {isCorrect ? `✅ ${t('results.statusCorrect')}` : `❌ ${t('results.statusIncorrect')}`}
                                     </p>
                                     <div className="explanation">
-                                        <strong>{t.results.explanation}:</strong> {q.explanation}
+                                        <strong>{t('results.explanation')}:</strong> {q.explanation}
                                     </div>
                                 </div>
                             );

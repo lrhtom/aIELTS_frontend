@@ -129,7 +129,7 @@ function clearPlanCaches(planId: number): void {
 }
 
 export default function LearningPlanDetailPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const { id } = useParams<{ id: string }>();
     const planId = Number(id);
     const navigate = useNavigate();
@@ -251,7 +251,7 @@ export default function LearningPlanDetailPage() {
                 // 以后端返回的 fsrs_scheduled_days 为准，避免前端时区重算导致天数偏差。
                 setEntries(r.entries);
             })
-            .catch(() => showToast(t.vocab.details.msgLoadFail, 'error'))
+            .catch(() => showToast(t('vocab.details.msgLoadFail'), 'error'))
             .finally(() => setLoading(false));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [planId]);
@@ -327,9 +327,9 @@ export default function LearningPlanDetailPage() {
             setPlan(p);
             // 修改计划名称后，清除相关缓存以防止不一致
             clearPlanCaches(planId);
-            showToast(t.vocab.details.msgSaveSuccess, 'success');
+            showToast(t('vocab.details.msgSaveSuccess'), 'success');
         } catch {
-            showToast(t.vocab.details.msgSaveFail, 'error');
+            showToast(t('vocab.details.msgSaveFail'), 'error');
             setPlanName(plan.name);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,20 +338,20 @@ export default function LearningPlanDetailPage() {
     const saveDaily = useCallback(async () => {
         if (!plan || dailyCount === plan.daily_count) return;
         if (plan.has_activity_today) {
-            showToast(t.vocab.details.toastDailyLocked, 'error');
+            showToast(t('vocab.details.toastDailyLocked'), 'error');
             setDailyCount(plan.daily_count);
             return;
         }
-        if (dailyCount < 1 || dailyCount > 200) { showToast(t.vocab.details.msgDailyRange, 'error'); return; }
+        if (dailyCount < 1 || dailyCount > 200) { showToast(t('vocab.details.msgDailyRange'), 'error'); return; }
         try {
             const { plan: p } = await updatePlan(planId, { daily_count: dailyCount });
             setPlan(p);
             // 修改daily_count成功后，使用完整的缓存清理函数
             // 这样下次进入学习页面时，会使用新的daily_count重新构建队列
             clearPlanCaches(planId);
-            showToast(t.vocab.details.msgDailySaveSuccess, 'success');
+            showToast(t('vocab.details.msgDailySaveSuccess'), 'success');
         } catch {
-            showToast(t.vocab.details.msgSaveFail, 'error');
+            showToast(t('vocab.details.msgSaveFail'), 'error');
             setDailyCount(plan.daily_count);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -380,10 +380,10 @@ export default function LearningPlanDetailPage() {
             setPlan(updated);
             setCopyRepetitions(clampCopyRepetitions(updated.copy_repetitions ?? nextRepeats));
             setCopyReviewDays(clampCopyReviewDays(updated.copy_review_days ?? nextReviewDays));
-            showToast(t.vocab.details.toastCopyCfgSaved, 'success');
+            showToast(t('vocab.details.toastCopyCfgSaved'), 'success');
         } catch (e: unknown) {
             const errorMsg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            showToast(errorMsg || t.vocab.details.toastCopyCfgFail, 'error');
+            showToast(errorMsg || t('vocab.details.toastCopyCfgFail'), 'error');
             setCopyRepetitions(clampCopyRepetitions(plan.copy_repetitions ?? 3));
             setCopyReviewDays(clampCopyReviewDays(plan.copy_review_days ?? 2));
         }
@@ -404,10 +404,10 @@ export default function LearningPlanDetailPage() {
             });
             setPlan(updated);
             setArticleReviewDays(clampArticleReviewDays(updated.article_review_days ?? nextDays));
-            showToast(t.vocab.details.toastArticleCfgSaved, 'success');
+            showToast(t('vocab.details.toastArticleCfgSaved'), 'success');
         } catch (e: unknown) {
             const errorMsg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            showToast(errorMsg || t.vocab.details.toastArticleCfgFail, 'error');
+            showToast(errorMsg || t('vocab.details.toastArticleCfgFail'), 'error');
             setArticleReviewDays(clampArticleReviewDays(plan.article_review_days ?? 7));
         }
     }, [articleReviewDays, plan, planId]);
@@ -423,7 +423,7 @@ export default function LearningPlanDetailPage() {
             await getArticleCopy(planId, true);
             const result = await startPlan(planId);
             if (result.cards.length === 0) {
-                showToast(t.vocab.details.toastNoWordsToday, 'success');
+                showToast(t('vocab.details.toastNoWordsToday'), 'success');
                 return;
             }
             navigate(`/vocabulary/plans/${planId}/article-copy`, {
@@ -437,7 +437,7 @@ export default function LearningPlanDetailPage() {
             });
         } catch (err: unknown) {
             const errorMsg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            showToast(errorMsg || t.vocab.details.toastRegenFail, 'error');
+            showToast(errorMsg || t('vocab.details.toastRegenFail'), 'error');
         } finally {
             articleRegeneratingRef.current = false;
             setArticleRegenerating(false);
@@ -476,10 +476,10 @@ export default function LearningPlanDetailPage() {
 
             if (cards.length === 0) {
                 const msg = isQuotaDone
-                    ? t.vocab.plans.msgNoReviewRecord
+                    ? t('vocab.plans.msgNoReviewRecord')
                     : stats.remaining_today === 0
-                        ? t.vocab.plans.msgDailyGoalReached.replace('{n}', String(stats.studied_today))
-                        : t.vocab.plans.msgNoDueReview;
+                        ? t('vocab.plans.msgDailyGoalReached').replace('{n}', String(stats.studied_today))
+                        : t('vocab.plans.msgNoDueReview');
                 showToast(msg, 'success');
                 return;
             }
@@ -526,25 +526,25 @@ export default function LearningPlanDetailPage() {
                 error,
             });
 
-            let msg = t.vocab.plans.msgStartFail;
+            let msg = t('vocab.plans.msgStartFail');
 
             // 根据错误类型提供具体的用户消息
             if (status === 402) {
-                msg = t.vocab.details.msgInsufficientAT;
+                msg = t('vocab.details.msgInsufficientAT');
             } else if (status === 400 && errorMsg?.includes('没有单词')) {
-                msg = t.vocab.plans.msgEmptyWord;
+                msg = t('vocab.plans.msgEmptyWord');
             } else if (status === 400 && errorMsg?.includes('词汇')) {
                 msg = errorMsg;
             } else if (status === 404) {
-                msg = t.vocab.details.msgPlanNotFound;
+                msg = t('vocab.details.msgPlanNotFound');
             } else if (status === 409 || status === 422) {
-                msg = t.vocab.details.msgPlanConflict;
+                msg = t('vocab.details.msgPlanConflict');
             } else if (
                 [408, 429, 500, 502, 503, 504].includes(status as number) ||
                 String(errorMsg).includes('timeout') ||
                 String(errorMsg).includes('network')
             ) {
-                msg = t.vocab.details.msgNetworkErr.replace('{n}', String(retryAttempt)).replace('{msg}', errorMsg || t.common.error);
+                msg = t('vocab.details.msgNetworkErr').replace('{n}', String(retryAttempt)).replace('{msg}', errorMsg || t('common.error'));
             } else if (errorMsg) {
                 msg = errorMsg;
             }
@@ -558,8 +558,8 @@ export default function LearningPlanDetailPage() {
     // ── Add words ──────────────────────────────────────────────────────────
     const handleAddManual = async () => {
         const word = addWord_.trim().toLowerCase();
-        if (!word) { showToast(t.vocab.details.msgWordEmpty, 'error'); return; }
-        if (existingWords.has(word)) { showToast(t.vocab.details.msgDuplicate, 'error'); return; }
+        if (!word) { showToast(t('vocab.details.msgWordEmpty'), 'error'); return; }
+        if (existingWords.has(word)) { showToast(t('vocab.details.msgDuplicate'), 'error'); return; }
         setAddBusy(true);
         try {
             const r = await addWord(planId, {
@@ -573,10 +573,10 @@ export default function LearningPlanDetailPage() {
             setAddWord_(''); setAddZh(''); setAddPhonetic(''); setAddGrammar('');
             // 添加词汇后，清理缓存（队列已改变）
             clearPlanCaches(planId);
-            showToast(t.vocab.details.msgAddSuccess, 'success');
+            showToast(t('vocab.details.msgAddSuccess'), 'success');
         } catch (e: unknown) {
             const status = (e as { response?: { status?: number } })?.response?.status;
-            showToast(status === 409 ? t.vocab.details.msgDuplicate : t.vocab.details.msgAddFail, 'error');
+            showToast(status === 409 ? t('vocab.details.msgDuplicate') : t('vocab.details.msgAddFail'), 'error');
         } finally {
             setAddBusy(false);
         }
@@ -588,8 +588,8 @@ export default function LearningPlanDetailPage() {
             const { entries_added } = await addWord(planId, payload);
             const skipped = expectedTotal !== undefined ? Math.max(0, expectedTotal - entries_added) : 0;
             const msg = skipped > 0
-                ? t.vocab.details.msgImportSuccessSkip.replace('{n}', String(entries_added)).replace('{skipped}', String(skipped))
-                : t.vocab.details.msgImportSuccess.replace('{n}', String(entries_added));
+                ? t('vocab.details.msgImportSuccessSkip').replace('{n}', String(entries_added)).replace('{skipped}', String(skipped))
+                : t('vocab.details.msgImportSuccess').replace('{n}', String(entries_added));
             showToast(msg, 'success');
             // 导入词汇后，清理缓存（队列已改变）
             clearPlanCaches(planId);
@@ -597,7 +597,7 @@ export default function LearningPlanDetailPage() {
             const r = await listPlanWords(planId);
             setEntries(r.entries);
         } catch {
-            showToast(t.vocab.details.msgImportFail, 'error');
+            showToast(t('vocab.details.msgImportFail'), 'error');
         } finally {
             setAddBusy(false);
         }
@@ -606,16 +606,16 @@ export default function LearningPlanDetailPage() {
     // ── AI import: parse pasted text → preview chips → confirm import ────────
     const handleAiParse = async () => {
         const text = aiText.trim();
-        if (!text) { showToast(t.vocab.details.aiEmptyInput, 'error'); return; }
+        if (!text) { showToast(t('vocab.details.aiEmptyInput'), 'error'); return; }
         setAiParsing(true);
         try {
             const { words } = await aiParsePlanWords(planId, text);
             setAiParsed(words ?? []);
             if (!words || words.length === 0) {
-                showToast(t.vocab.details.aiNoWords, 'error');
+                showToast(t('vocab.details.aiNoWords'), 'error');
             }
         } catch {
-            showToast(t.vocab.details.aiParseFail, 'error');
+            showToast(t('vocab.details.aiParseFail'), 'error');
         } finally {
             setAiParsing(false);
         }
@@ -633,14 +633,14 @@ export default function LearningPlanDetailPage() {
                 mode: 'ai_list',
                 words: aiParsed.map(w => ({ word: w.word, zh: w.zh })),
             });
-            showToast(t.vocab.details.msgImportSuccess.replace('{n}', String(entries_added)), 'success');
+            showToast(t('vocab.details.msgImportSuccess').replace('{n}', String(entries_added)), 'success');
             clearPlanCaches(planId);
             const r = await listPlanWords(planId);
             setEntries(r.entries);
             setAiText('');
             setAiParsed(null);
         } catch {
-            showToast(t.vocab.details.msgImportFail, 'error');
+            showToast(t('vocab.details.msgImportFail'), 'error');
         } finally {
             setAddBusy(false);
         }
@@ -653,18 +653,18 @@ export default function LearningPlanDetailPage() {
             const { entry: updated } = await updatePlanWord(planId, entry.id, { zh: newZh });
             setEntries(prev => prev.map(e => e.id === entry.id ? updated : e));
         } catch {
-            showToast(t.vocab.details.msgSaveFail, 'error');
+            showToast(t('vocab.details.msgSaveFail'), 'error');
         }
     };
 
     const handleDueDays = async (entry: PlanEntry, days: number) => {
-        if (isNaN(days) || days < 0) { showToast(t.vocab.details.msgDaysInvalid, 'error'); return; }
+        if (isNaN(days) || days < 0) { showToast(t('vocab.details.msgDaysInvalid'), 'error'); return; }
         try {
             const { entry: updated } = await updatePlanWord(planId, entry.id, { next_review_days: days });
             setEntries(prev => prev.map(e => e.id === entry.id ? updated : e));
-            showToast(t.vocab.details.msgUpdateSuccess, 'success');
+            showToast(t('vocab.details.msgUpdateSuccess'), 'success');
         } catch {
-            showToast(t.vocab.details.msgUpdateFail, 'error');
+            showToast(t('vocab.details.msgUpdateFail'), 'error');
         }
     };
 
@@ -678,9 +678,9 @@ export default function LearningPlanDetailPage() {
             await removePlanWord(planId, deletingEntry.id);
             setEntries(prev => prev.filter(e => e.id !== deletingEntry.id));
             clearPlanCaches(planId);
-            showToast(t.vocab.details.msgDeleteSuccess, 'success');
+            showToast(t('vocab.details.msgDeleteSuccess'), 'success');
         } catch {
-            showToast(t.vocab.details.msgDeleteFail, 'error');
+            showToast(t('vocab.details.msgDeleteFail'), 'error');
         } finally {
             setDeletingEntry(null);
         }
@@ -758,12 +758,12 @@ export default function LearningPlanDetailPage() {
     const handlePageJump = () => {
         const rawValue = pageJumpInput.trim();
         if (!rawValue) {
-            showToast(t.vocab.details.toastPageEmpty, 'error');
+            showToast(t('vocab.details.toastPageEmpty'), 'error');
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            showToast(t.vocab.details.toastPageRange.replace('{n}', String(totalPages)), 'error');
+            showToast(t('vocab.details.toastPageRange').replace('{n}', String(totalPages)), 'error');
             return;
         }
         setPage(Math.min(totalPages, Math.max(1, parsed)));
@@ -773,12 +773,12 @@ export default function LearningPlanDetailPage() {
     const handleBookPageJump = () => {
         const rawValue = bookPageJumpInput.trim();
         if (!rawValue) {
-            showToast(t.vocab.details.toastPageEmpty, 'error');
+            showToast(t('vocab.details.toastPageEmpty'), 'error');
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            showToast(t.vocab.details.toastPageRange.replace('{n}', String(bookTotalPages)), 'error');
+            showToast(t('vocab.details.toastPageRange').replace('{n}', String(bookTotalPages)), 'error');
             return;
         }
         setBookPage(Math.min(bookTotalPages, Math.max(1, parsed)));
@@ -800,7 +800,7 @@ export default function LearningPlanDetailPage() {
 
     // ──────────────────────────────────────────────────────────────────────
     return (
-        <Layout backUrl="/vocabulary/plans" backText={t.vocab.details.backToVocab} noPadding={true}>
+        <Layout backUrl="/vocabulary/plans" backText={t('vocab.details.backToVocab')} noPadding={true}>
             <div className="uc-console" style={{ margin: 0, height: 'calc(100vh - 60px)' }}>
                 {/* ── Left Pane: Study Modes ── */}
                 <div className="uc-sidebar lp-side" style={{ width: leftWidth, flex: 'none', borderRight: 'none', minHeight: 0 }}>
@@ -815,20 +815,20 @@ export default function LearningPlanDetailPage() {
                             onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                         />
                         <div className="lp-hero-daily">
-                            <span>{t.vocab.details.dailyPrefix}</span>
+                            <span>{t('vocab.details.dailyPrefix')}</span>
                             <input
                                 type="number"
                                 min={1} max={200}
                                 value={dailyCount}
                                 disabled={isTodayConfigLocked}
-                                title={isTodayConfigLocked ? t.vocab.details.dailyLockedTip : ''}
+                                title={isTodayConfigLocked ? t('vocab.details.dailyLockedTip') : ''}
                                 onChange={e => setDailyCount(Number(e.target.value))}
                                 onBlur={saveDaily}
                                 onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                             />
-                            <span>{t.vocab.details.dailySuffix}</span>
+                            <span>{t('vocab.details.dailySuffix')}</span>
                             {isTodayConfigLocked && (
-                                <span className="lp-hero-locked">{t.vocab.details.todayLockedBadge}</span>
+                                <span className="lp-hero-locked">{t('vocab.details.todayLockedBadge')}</span>
                             )}
                         </div>
                         <button
@@ -836,13 +836,13 @@ export default function LearningPlanDetailPage() {
                             onClick={handleStart}
                             disabled={starting || entries.length === 0}
                         >
-                            {starting ? t.vocab.plans.preparing : isQuotaDone ? t.vocab.plans.startReview : t.vocab.plans.startStudy}
+                            {starting ? t('vocab.plans.preparing') : isQuotaDone ? t('vocab.plans.startReview') : t('vocab.plans.startStudy')}
                         </button>
                     </div>
 
                     {/* ── Study modes + config ── */}
                     <div className="lp-card lp-mode-card">
-                        <div className="lp-card-title">{t.vocab.details.studyModeTitle}</div>
+                        <div className="lp-card-title">{t('vocab.details.studyModeTitle')}</div>
                         <nav className="uc-sidebar-nav lp-mode-nav" style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                         {STUDY_MODES.map(([m, labelKey]) => (
                             <button
@@ -858,7 +858,7 @@ export default function LearningPlanDetailPage() {
                                 <span className="nav-icon">
                                     {m === 'flashcard' ? '🃏' : m === 'read-aloud' ? '🎙️' : m === 'choice' ? '🎯' : m === 'write' ? '✍️' : m === 'copy' ? '📝' : m === 'article_copy' ? '📄' : '🍿'}
                                 </span>
-                                <span className="nav-text">{t.vocab.modes[labelKey]}</span>
+                                <span className="nav-text">{t(`vocab.modes.${labelKey}`)}</span>
                             </button>
                         ))}
                     </nav>
@@ -871,9 +871,9 @@ export default function LearningPlanDetailPage() {
                                         <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📝</span>
-                                                <span className="row-title">{t.vocab.details.copyTimesTitle}</span>
+                                                <span className="row-title">{t('vocab.details.copyTimesTitle')}</span>
                                             </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t.vocab.details.copyTimesDesc}</span>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t('vocab.details.copyTimesDesc')}</span>
                                         </div>
                                         <div className="uc-row-control" style={{ width: '100%' }}>
                                             <input
@@ -892,11 +892,11 @@ export default function LearningPlanDetailPage() {
                                         <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>📅</span>
-                                                <span className="row-title">{t.vocab.details.reviewDaysTitle}</span>
+                                                <span className="row-title">{t('vocab.details.reviewDaysTitle')}</span>
                                             </div>
                                             <span className="row-desc" style={{ marginLeft: '40px' }}>
-                                                {t.vocab.details.copyReviewDesc.replace('{n}', String(copyReviewDays))}
-                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>{t.vocab.details.lockedHint}</span>}
+                                                {t('vocab.details.copyReviewDesc').replace('{n}', String(copyReviewDays))}
+                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>{t('vocab.details.lockedHint')}</span>}
                                             </span>
                                         </div>
                                         <div className="uc-row-control" style={{ width: '100%' }}>
@@ -924,11 +924,11 @@ export default function LearningPlanDetailPage() {
                                         <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>📅</span>
-                                                <span className="row-title">{t.vocab.details.reviewDaysTitle}</span>
+                                                <span className="row-title">{t('vocab.details.reviewDaysTitle')}</span>
                                             </div>
                                             <span className="row-desc" style={{ marginLeft: '40px' }}>
-                                                {t.vocab.details.articleReviewDesc}
-                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>{t.vocab.details.lockedHint}</span>}
+                                                {t('vocab.details.articleReviewDesc')}
+                                                {isTodayConfigLocked && <span style={{ color: 'var(--color-warning)' }}>{t('vocab.details.lockedHint')}</span>}
                                             </span>
                                         </div>
                                         <div className="uc-row-control" style={{ width: '100%' }}>
@@ -949,9 +949,9 @@ export default function LearningPlanDetailPage() {
                                         <div className="uc-row-label" style={{ width: '100%', marginBottom: 8 }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>✨</span>
-                                                <span className="row-title">{t.vocab.details.regenTitle}</span>
+                                                <span className="row-title">{t('vocab.details.regenTitle')}</span>
                                             </div>
-                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t.vocab.details.regenDesc}</span>
+                                            <span className="row-desc" style={{ marginLeft: '40px' }}>{t('vocab.details.regenDesc')}</span>
                                         </div>
                                         <div className="uc-row-control" style={{ width: '100%' }}>
                                             <button
@@ -961,7 +961,7 @@ export default function LearningPlanDetailPage() {
                                                 disabled={articleRegenerating}
                                                 onClick={handleRegenerateArticle}
                                             >
-                                                {articleRegenerating ? t.vocab.details.regenning : t.vocab.details.regenTitle}
+                                                {articleRegenerating ? t('vocab.details.regenning') : t('vocab.details.regenTitle')}
                                             </button>
                                         </div>
                                     </div>
@@ -979,7 +979,7 @@ export default function LearningPlanDetailPage() {
 
                 {/* ── Add section ── */}
                 <div className="lp-add-section">
-                    <h4>{t.vocab.details.addWords}</h4>
+                    <h4>{t('vocab.details.addWords')}</h4>
 
                     <div className="lp-add-tabs">
                         {(['manual', 'notebook', 'book', 'ai'] as AddTab[]).map(tab => (
@@ -988,10 +988,10 @@ export default function LearningPlanDetailPage() {
                                 className={`lp-add-tab${addTab === tab ? ' active' : ''}`}
                                 onClick={() => setAddTab(tab)}
                             >
-                                {tab === 'manual' ? t.vocab.details.tabManual
-                                    : tab === 'notebook' ? t.vocab.details.tabNotebook
-                                    : tab === 'book' ? t.vocab.details.tabBook
-                                    : t.vocab.details.tabAi}
+                                {tab === 'manual' ? t('vocab.details.tabManual')
+                                    : tab === 'notebook' ? t('vocab.details.tabNotebook')
+                                    : tab === 'book' ? t('vocab.details.tabBook')
+                                    : t('vocab.details.tabAi')}
                             </button>
                         ))}
                     </div>
@@ -1003,7 +1003,7 @@ export default function LearningPlanDetailPage() {
                                 <div style={{ position: 'relative', flex: 1 }}>
                                     <input
                                         type="text"
-                                        placeholder={t.vocab.details.manualWord}
+                                        placeholder={t('vocab.details.manualWord')}
                                         value={addWord_}
                                         onChange={e => setAddWord_(e.target.value)}
                                         onKeyDown={e => { if (e.key === 'Enter') handleAddManual(); }}
@@ -1011,30 +1011,30 @@ export default function LearningPlanDetailPage() {
                                         style={{ width: '100%' }}
                                     />
                                     {isDuplicateWord && (
-                                        <span className="lp-duplicate-hint">{t.vocab.details.manualDuplicate}</span>
+                                        <span className="lp-duplicate-hint">{t('vocab.details.manualDuplicate')}</span>
                                     )}
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder={t.vocab.details.manualZh}
+                                    placeholder={t('vocab.details.manualZh')}
                                     value={addZh}
                                     onChange={e => setAddZh(e.target.value)}
                                     onKeyDown={e => { if (e.key === 'Enter') handleAddManual(); }}
                                 />
                                 <button className="lp-add-btn" onClick={handleAddManual} disabled={addBusy || isDuplicateWord}>
-                                    {t.vocab.details.manualAddBtn}
+                                    {t('vocab.details.manualAddBtn')}
                                 </button>
                             </div>
                             <div className="lp-add-row">
                                 <input
                                     type="text"
-                                    placeholder={t.vocab.details.manualPhonetic}
+                                    placeholder={t('vocab.details.manualPhonetic')}
                                     value={addPhonetic}
                                     onChange={e => setAddPhonetic(e.target.value)}
                                 />
                                 <input
                                     type="text"
-                                    placeholder={t.vocab.details.manualGrammar}
+                                    placeholder={t('vocab.details.manualGrammar')}
                                     value={addGrammar}
                                     onChange={e => setAddGrammar(e.target.value)}
                                 />
@@ -1047,29 +1047,29 @@ export default function LearningPlanDetailPage() {
                         <div className="lp-add-form lp-ai-import">
                             <textarea
                                 className="lp-ai-textarea"
-                                placeholder={t.vocab.details.aiPlaceholder}
+                                placeholder={t('vocab.details.aiPlaceholder')}
                                 value={aiText}
                                 onChange={e => setAiText(e.target.value)}
                                 rows={6}
                             />
                             <div className="lp-add-row lp-ai-controls">
-                                <span className="lp-ai-model-label">{t.components.aiModel.label}</span>
+                                <span className="lp-ai-model-label">{t('components.aiModel.label')}</span>
                                 <AiModelSelector variant="minimal" />
                                 <button
                                     className="lp-add-btn"
                                     onClick={handleAiParse}
                                     disabled={aiParsing || !aiText.trim()}
                                 >
-                                    {aiParsing ? t.vocab.details.aiParsing : t.vocab.details.aiParseBtn}
+                                    {aiParsing ? t('vocab.details.aiParsing') : t('vocab.details.aiParseBtn')}
                                 </button>
                             </div>
 
                             {aiParsed && aiParsed.length > 0 && (
                                 <div className="lp-ai-result">
                                     <div className="lp-ai-result-head">
-                                        <span>{t.vocab.details.aiParsedTitle.replace('{n}', String(aiParsed.length))}</span>
+                                        <span>{t('vocab.details.aiParsedTitle').replace('{n}', String(aiParsed.length))}</span>
                                         <button className="lp-ai-clear" onClick={() => setAiParsed(null)}>
-                                            {t.vocab.details.aiClear}
+                                            {t('vocab.details.aiClear')}
                                         </button>
                                     </div>
                                     <div className="lp-ai-chips">
@@ -1077,7 +1077,7 @@ export default function LearningPlanDetailPage() {
                                             <span key={w.word} className={`lp-ai-chip${w.exists ? ' lp-ai-chip-exists' : ''}`}>
                                                 <span className="lp-ai-chip-word">{w.word}</span>
                                                 {w.zh && <span className="lp-ai-chip-zh">{w.zh}</span>}
-                                                {w.exists && <span className="lp-ai-chip-tag">{t.vocab.details.aiExistsTag}</span>}
+                                                {w.exists && <span className="lp-ai-chip-tag">{t('vocab.details.aiExistsTag')}</span>}
                                                 <button
                                                     className="lp-ai-chip-x"
                                                     onClick={() => removeParsedWord(w.word)}
@@ -1091,7 +1091,7 @@ export default function LearningPlanDetailPage() {
                                         onClick={handleAiImport}
                                         disabled={addBusy}
                                     >
-                                        {t.vocab.details.aiImportBtn.replace('{n}', String(aiParsed.filter(w => !w.exists).length))}
+                                        {t('vocab.details.aiImportBtn').replace('{n}', String(aiParsed.filter(w => !w.exists).length))}
                                     </button>
                                 </div>
                             )}
@@ -1103,9 +1103,9 @@ export default function LearningPlanDetailPage() {
                         <div className="lp-add-form">
                             <div className="lp-add-row">
                                 <select value={nbId} onChange={e => setNbId(Number(e.target.value))}>
-                                    <option value="">{t.vocab.details.nbSelect}</option>
+                                    <option value="">{t('vocab.details.nbSelect')}</option>
                                     {notebooks.map(nb => (
-                                        <option key={nb.id} value={nb.id}>{nb.title} ({t.vocab.notebooks.cardWordCount.replace('{n}', String(nb.word_count))})</option>
+                                        <option key={nb.id} value={nb.id}>{nb.title} ({t('vocab.notebooks.cardWordCount').replace('{n}', String(nb.word_count))})</option>
                                     ))}
                                 </select>
                                 <button
@@ -1116,7 +1116,7 @@ export default function LearningPlanDetailPage() {
                                         notebooks.find(nb => nb.id === nbId)?.word_count,
                                     )}
                                 >
-                                    {addBusy ? t.vocab.details.nbImporting : t.vocab.details.nbImportAll}
+                                    {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.nbImportAll')}
                                 </button>
                             </div>
                         </div>
@@ -1135,9 +1135,9 @@ export default function LearningPlanDetailPage() {
                                         setBookPage(1);
                                     }}
                                 >
-                                    <option value="">{t.vocab.details.bookSelect}</option>
+                                    <option value="">{t('vocab.details.bookSelect')}</option>
                                     {books.map(b => (
-                                        <option key={b.id} value={b.id}>{b.name} ({t.vocab.notebooks.cardWordCount.replace('{n}', String(b.word_count))})</option>
+                                        <option key={b.id} value={b.id}>{b.name} ({t('vocab.notebooks.cardWordCount').replace('{n}', String(b.word_count))})</option>
                                     ))}
                                 </select>
                             </div>
@@ -1152,7 +1152,7 @@ export default function LearningPlanDetailPage() {
                                                 style={{ fontSize: 12 }}
                                                 onClick={() => { setBookSubMode(m); setSelectedIds(new Set()); setBookPage(1); }}
                                             >
-                                                {m === 'all' ? t.vocab.details.bookModeAll : m === 'range' ? t.vocab.details.bookModeRange : t.vocab.details.bookModeSelect}
+                                                {m === 'all' ? t('vocab.details.bookModeAll') : m === 'range' ? t('vocab.details.bookModeRange') : t('vocab.details.bookModeSelect')}
                                             </button>
                                         ))}
                                     </div>
@@ -1167,7 +1167,7 @@ export default function LearningPlanDetailPage() {
                                                     books.find(b => b.id === bookId)?.word_count,
                                                 )}
                                             >
-                                                {addBusy ? t.vocab.details.nbImporting : t.vocab.details.bookModeAll}
+                                                {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.bookModeAll')}
                                             </button>
                                         </div>
                                     )}
@@ -1175,7 +1175,7 @@ export default function LearningPlanDetailPage() {
                                     {bookSubMode === 'range' && (
                                         <div className="lp-add-row">
                                             <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
-                                                {t.vocab.details.bookRangeIdx}
+                                                {t('vocab.details.bookRangeIdx')}
                                             </span>
                                             <input
                                                 type="number" min={1} value={rangeStart}
@@ -1198,7 +1198,7 @@ export default function LearningPlanDetailPage() {
                                                     end: rangeEnd,
                                                 }, Math.max(0, rangeEnd - rangeStart + 1))}
                                             >
-                                                {addBusy ? t.vocab.details.nbImporting : t.vocab.details.bookModeRange}
+                                                {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.bookModeRange')}
                                             </button>
                                         </div>
                                     )}
@@ -1208,7 +1208,7 @@ export default function LearningPlanDetailPage() {
                                             <div className="lp-add-row">
                                                 <input
                                                     type="text"
-                                                    placeholder={t.vocab.notebookDetail.searchPlaceholder}
+                                                    placeholder={t('vocab.notebookDetail.searchPlaceholder')}
                                                     value={bookQ}
                                                     onChange={e => { setBookQ(e.target.value); setBookPage(1); }}
                                                 />
@@ -1224,7 +1224,7 @@ export default function LearningPlanDetailPage() {
                                                         setSelectedIds(new Set());
                                                     }}
                                                 >
-                                                    {addBusy ? t.vocab.details.nbImporting : t.vocab.details.bookImportSelected.replace('{n}', String(selectedIds.size))}
+                                                    {addBusy ? t('vocab.details.nbImporting') : t('vocab.details.bookImportSelected').replace('{n}', String(selectedIds.size))}
                                                 </button>
                                             </div>
                                             <div className="lp-book-browser">
@@ -1251,16 +1251,16 @@ export default function LearningPlanDetailPage() {
                                                 ))}
                                             </div>
                                             <div className="lp-book-pager">
-                                                <button disabled={bookPage <= 1} onClick={() => setBookPage(p => p - 1)}>{t.vocab.details.bookPrevPage}</button>
+                                                <button disabled={bookPage <= 1} onClick={() => setBookPage(p => p - 1)}>{t('vocab.details.bookPrevPage')}</button>
                                                 <span>{bookPage} / {bookTotalPages}</span>
                                                 <button
                                                     disabled={bookPage >= bookTotalPages}
                                                     onClick={() => setBookPage(p => p + 1)}
                                                 >
-                                                    {t.vocab.details.bookNextPage}
+                                                    {t('vocab.details.bookNextPage')}
                                                 </button>
                                                 <div className="lp-page-jump">
-                                                    <span>{t.vocab.details.jumpTo}</span>
+                                                    <span>{t('vocab.details.jumpTo')}</span>
                                                     <input
                                                         type="text"
                                                         inputMode="numeric"
@@ -1272,8 +1272,8 @@ export default function LearningPlanDetailPage() {
                                                             }
                                                         }}
                                                         onKeyDown={e => { if (e.key === 'Enter') handleBookPageJump(); }}
-                                                        placeholder={t.vocab.details.pagePlaceholder}
-                                                        aria-label={t.vocab.details.jumpAria}
+                                                        placeholder={t('vocab.details.pagePlaceholder')}
+                                                        aria-label={t('vocab.details.jumpAria')}
                                                     />
                                                     <button
                                                         type="button"
@@ -1313,7 +1313,7 @@ export default function LearningPlanDetailPage() {
                 <div className="lp-word-section">
                     <div className="lp-word-section-header">
                         
-                    <h4 dangerouslySetInnerHTML={{ __html: sanitize(t.vocab.details.listTitle
+                    <h4 dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.details.listTitle')
                         .replace('{learned}', String(entries.filter(e => e.fsrs_state !== 0).length))
                         .replace('{total}', String(entries.length)))
                     }} />
@@ -1327,15 +1327,15 @@ export default function LearningPlanDetailPage() {
                                     setPage(1);
                                 }}
                             >
-                                <option value="default">{t.vocab.details.sortDefault}</option>
-                                <option value="alphabetical">{t.vocab.details.sortAlpha}</option>
-                                <option value="proficiency">{t.vocab.details.sortProf}</option>
+                                <option value="default">{t('vocab.details.sortDefault')}</option>
+                                <option value="alphabetical">{t('vocab.details.sortAlpha')}</option>
+                                <option value="proficiency">{t('vocab.details.sortProf')}</option>
                             </select>
                             {sortBy !== 'default' && (
                                 <button
                                     className="lp-sort-direction"
                                     onClick={() => setSortAsc(!sortAsc)}
-                                    title={sortAsc ? t.vocab.details.sortDesc : t.vocab.details.sortAsc}
+                                    title={sortAsc ? t('vocab.details.sortDesc') : t('vocab.details.sortAsc')}
                                 >
                                     {sortAsc ? '↑' : '↓'}
                                 </button>
@@ -1344,22 +1344,22 @@ export default function LearningPlanDetailPage() {
                         <input
                             className="lp-search"
                             type="text"
-                            placeholder={`${t.vocab.details.listSearch}${t.vocab.details.searchEg}`}
+                            placeholder={`${t('vocab.details.listSearch')}${t('vocab.details.searchEg')}`}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                         {hasSearchText && (
                             <div className="lp-search-result-count">
-                                {t.vocab.details.searchResult.replace('{n}', String(filtered.length))}
+                                {t('vocab.details.searchResult').replace('{n}', String(filtered.length))}
                             </div>
                         )}
                     </div>
 
                     {loading ? (
-                        <div className="lp-empty">{t.common.loading}</div>
+                        <div className="lp-empty">{t('common.loading')}</div>
                     ) : filtered.length === 0 ? (
                         <div className="lp-empty">
-                            {search ? t.vocab.details.listNoMatch : t.vocab.details.listEmpty}
+                            {search ? t('vocab.details.listNoMatch') : t('vocab.details.listEmpty')}
                         </div>
                     ) : (
                         <>
@@ -1381,20 +1381,20 @@ export default function LearningPlanDetailPage() {
                                         disabled={safePage <= 1}
                                         onClick={() => setPage(p => Math.max(1, p - 1))}
                                     >
-                                        {t.vocab.details.prevPage}
+                                        {t('vocab.details.prevPage')}
                                     </button>
                                     <span className="lp-page-info">
-                                        {t.vocab.details.pageInfo.replace('{page}', String(safePage)).replace('{total}', String(totalPages)).replace('{n}', String(filtered.length))}
+                                        {t('vocab.details.pageInfo').replace('{page}', String(safePage)).replace('{total}', String(totalPages)).replace('{n}', String(filtered.length))}
                                     </span>
                                     <button
                                         className="lp-page-btn"
                                         disabled={safePage >= totalPages}
                                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                     >
-                                        {t.vocab.details.nextPage}
+                                        {t('vocab.details.nextPage')}
                                     </button>
                                     <div className="lp-page-jump">
-                                        <span>{t.vocab.details.jumpTo}</span>
+                                        <span>{t('vocab.details.jumpTo')}</span>
                                         <input
                                             type="text"
                                             inputMode="numeric"
@@ -1406,8 +1406,8 @@ export default function LearningPlanDetailPage() {
                                                 }
                                             }}
                                             onKeyDown={e => { if (e.key === 'Enter') handlePageJump(); }}
-                                            placeholder={t.vocab.details.pagePlaceholder}
-                                            aria-label={t.vocab.details.jumpAria}
+                                            placeholder={t('vocab.details.pagePlaceholder')}
+                                            aria-label={t('vocab.details.jumpAria')}
                                         />
                                         <button
                                             type="button"
@@ -1428,8 +1428,8 @@ export default function LearningPlanDetailPage() {
 
             <ConfirmDialog
                 open={deletingEntry !== null}
-                title={t.vocab.details.confirmDeleteTitle}
-                message={t.vocab.details.msgDeleteConfirm.replace('{word}', deletingEntry?.word ?? '')}
+                title={t('vocab.details.confirmDeleteTitle')}
+                message={t('vocab.details.msgDeleteConfirm').replace('{word}', deletingEntry?.word ?? '')}
                 variant="danger"
                 onConfirm={handleDeleteConfirmed}
                 onCancel={() => setDeletingEntry(null)}

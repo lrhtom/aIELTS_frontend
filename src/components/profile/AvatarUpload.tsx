@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { avatarApi } from '../../api/avatar';
 import { showToast } from '../common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import { mediaUrl } from '../../utils/media';
 import '../../styles/avatarUpload.css';
 
@@ -17,8 +16,7 @@ interface AvatarUploadProps {
 
 export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'medium', disabled = false }: AvatarUploadProps) {
     const { user, updateUser } = useAuth();
-    const { lang } = useLang();
-    const t = translations[lang].profile.avatarUpload;
+    const { t } = useLang();
     const [isUploading, setIsUploading] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -41,7 +39,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
         // 验证文件
         const validation = avatarApi.validateImageFile(file);
         if (!validation.isValid) {
-            showToast(validation.error || t.fileValidationError, 'error');
+            showToast(validation.error || t('profile.avatarUpload.fileValidationError'), 'error');
             return;
         }
 
@@ -58,11 +56,11 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
             updateUser(response.user);
             onAvatarUpdate?.(response.user.avatar_url || null);
 
-            showToast(t.uploadSuccess, 'success');
+            showToast(t('profile.avatarUpload.uploadSuccess'), 'success');
         } catch (error: unknown) {
             const e = error as { response?: { data?: { error?: string } } };
             console.error('头像上传失败:', error);
-            showToast(e.response?.data?.error || t.uploadFailed, 'error');
+            showToast(e.response?.data?.error || t('profile.avatarUpload.uploadFailed'), 'error');
             setPreviewUrl(mediaUrl(user?.avatar_url) || null);
         } finally {
             setIsUploading(false);
@@ -76,7 +74,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
     const handleDeleteAvatar = async () => {
         if (!user?.avatar_url) return;
 
-        if (!(await showConfirm({ message: t.deleteConfirm, danger: true }))) {
+        if (!(await showConfirm({ message: t('profile.avatarUpload.deleteConfirm'), danger: true }))) {
             return;
         }
 
@@ -89,11 +87,11 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
             onAvatarUpdate?.(null);
             setPreviewUrl(null);
 
-            showToast(t.deleteSuccess, 'success');
+            showToast(t('profile.avatarUpload.deleteSuccess'), 'success');
         } catch (error: unknown) {
             const e = error as { response?: { data?: { error?: string } } };
             console.error('删除头像失败:', error);
-            showToast(e.response?.data?.error || t.deleteFailed, 'error');
+            showToast(e.response?.data?.error || t('profile.avatarUpload.deleteFailed'), 'error');
         } finally {
             setIsUploading(false);
         }
@@ -106,7 +104,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
 
     const getAvatarContent = () => {
         if (previewUrl) {
-            return <img src={previewUrl} alt={t.avatarAlt} className="avatar-image" />;
+            return <img src={previewUrl} alt={t('profile.avatarUpload.avatarAlt')} className="avatar-image" />;
         } else if (user) {
             return (
                 <div className="avatar-placeholder">
@@ -130,13 +128,13 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
                 {isUploading && (
                     <div className="avatar-upload-overlay">
                         <div className="avatar-upload-spinner"></div>
-                        <span>{t.uploading}</span>
+                        <span>{t('profile.avatarUpload.uploading')}</span>
                     </div>
                 )}
 
                 {!isUploading && isHovering && !disabled && (
                     <div className="avatar-upload-overlay">
-                        <span>{t.clickToChange}</span>
+                        <span>{t('profile.avatarUpload.clickToChange')}</span>
                     </div>
                 )}
             </div>
@@ -156,12 +154,12 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
                     onClick={handleDeleteAvatar}
                     disabled={isUploading}
                 >
-                    {t.deleteBtn}
+                    {t('profile.avatarUpload.deleteBtn')}
                 </button>
             )}
 
             <div className="avatar-upload-hint">
-                {t.hint}
+                {t('profile.avatarUpload.hint')}
             </div>
         </div>
     );

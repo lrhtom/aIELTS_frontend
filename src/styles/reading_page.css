@@ -1043,9 +1043,13 @@
     color: var(--color-primary);
     font-size: 13px;
 }
-.rd-blank-input {
-    padding: 4px 8px;
+/* 用 input[type="text"] 提高特异性 — 否则 index.css 的全局
+   input[type="text"]{padding:12px 16px; font-size:15px} 会压过本规则，把填空框撑得过高 */
+input[type="text"].rd-blank-input {
+    padding: 3px 8px;
     font-size: 13px;
+    line-height: 1.4;
+    height: auto;
     border: 1px solid var(--color-border);
     border-radius: 4px;
     background: #fafafa;
@@ -1054,13 +1058,13 @@
     max-width: 180px;
     transition: border-color 0.15s, box-shadow 0.15s;
 }
-.rd-blank-input:focus {
+input[type="text"].rd-blank-input:focus {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
     background: white;
 }
-.rd-blank-input:disabled {
+input[type="text"].rd-blank-input:disabled {
     background: #f1f5f9;
     color: var(--color-text-secondary);
 }

@@ -45,7 +45,7 @@ function parseStoryText(text: string): PillToken[] {
 /* ── component ─────────────────────────────────────────────────────────────── */
 
 export default function StoryModePage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const { id } = useParams<{ id: string }>();
     const planId = Number(id);
     const navigate = useNavigate();
@@ -85,7 +85,7 @@ export default function StoryModePage() {
     /* ── load story ──────────────────────────────────────────────────────── */
     const loadStory = useCallback(async (refresh = false) => {
         if (!planId || Number.isNaN(planId)) {
-            setError(t.vocab.storyMode.errInvalidPlan);
+            setError(t('vocab.storyMode.errInvalidPlan'));
             setLoading(false);
             return;
         }
@@ -109,7 +109,7 @@ export default function StoryModePage() {
         } catch (err: unknown) {
             if ((err as { name?: string }).name === 'CanceledError' || ctrl.signal.aborted) return;
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            setError(msg || t.vocab.storyMode.errLoadFail);
+            setError(msg || t('vocab.storyMode.errLoadFail'));
         } finally {
             setLoading(false);
         }
@@ -178,7 +178,7 @@ export default function StoryModePage() {
             setCompleteResult(result);
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            showToast(msg || t.vocab.storyMode.submitFail, 'error');
+            showToast(msg || t('vocab.storyMode.submitFail'), 'error');
         } finally {
             setCompleting(false);
         }
@@ -221,8 +221,8 @@ export default function StoryModePage() {
                 <div className="sm-container">
                     <div className="sm-main" style={{ alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                            <p>{t.vocab.storyMode.generatingTitle}</p>
-                            <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>{t.vocab.storyMode.generatingDesc}</p>
+                            <p>{t('vocab.storyMode.generatingTitle')}</p>
+                            <p style={{ fontSize: '0.85rem', opacity: 0.6 }}>{t('vocab.storyMode.generatingDesc')}</p>
                         </div>
                     </div>
                 </div>
@@ -236,7 +236,7 @@ export default function StoryModePage() {
                 <div className="sm-container">
                     <div className="sm-main" style={{ alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                            <p>{error || t.vocab.storyMode.unavailable}</p>
+                            <p>{error || t('vocab.storyMode.unavailable')}</p>
                             <button
                                 onClick={() => navigate(-1)}
                                 style={{
@@ -245,7 +245,7 @@ export default function StoryModePage() {
                                     border: 'none', borderRadius: 6, cursor: 'pointer',
                                 }}
                             >
-                                {t.vocab.storyMode.backBtn}
+                                {t('vocab.storyMode.backBtn')}
                             </button>
                         </div>
                     </div>
@@ -264,7 +264,7 @@ export default function StoryModePage() {
                 <div className="sm-header">
                     <div>
                         <span className="sm-header-title">
-                            {titles[0] || t.vocab.storyMode.fallbackTitle}
+                            {titles[0] || t('vocab.storyMode.fallbackTitle')}
                         </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -290,7 +290,7 @@ export default function StoryModePage() {
                                 fontSize: '0.85rem', whiteSpace: 'nowrap',
                             }}
                         >
-                            {t.common.back}
+                            {t('common.back')}
                         </button>
                     </div>
                 </div>
@@ -346,28 +346,28 @@ export default function StoryModePage() {
             {completeResult && (
                 <div className="ac-complete-overlay">
                     <div className="ac-complete-card">
-                        <h3>{t.vocab.storyMode.completedTitle}</h3>
+                        <h3>{t('vocab.storyMode.completedTitle')}</h3>
 
                         <div className="ac-complete-stats">
                             <div className="ac-complete-row">
-                                <span>{t.vocab.storyMode.collectedLabel}</span>
+                                <span>{t('vocab.storyMode.collectedLabel')}</span>
                                 <span>{collectedCount}/{targetWords.size}</span>
                             </div>
                             <div className="ac-complete-row">
-                                <span>{t.vocab.storyMode.markedLabel}</span>
-                                <span>{completeResult.marked_count} {t.vocab.storyMode.markedUnit}</span>
+                                <span>{t('vocab.storyMode.markedLabel')}</span>
+                                <span>{completeResult.marked_count} {t('vocab.storyMode.markedUnit')}</span>
                             </div>
                         </div>
 
                         <p className="ac-complete-done">
-                            {t.vocab.storyMode.allMarkedMsg}
+                            {t('vocab.storyMode.allMarkedMsg')}
                         </p>
 
                         <button
                             className="ac-back-btn ac-back-btn-large"
                             onClick={() => navigate(`/vocabulary/plans/${planId}`)}
                         >
-                            {t.vocab.storyMode.backToPlan}
+                            {t('vocab.storyMode.backToPlan')}
                         </button>
                     </div>
                 </div>
@@ -378,7 +378,7 @@ export default function StoryModePage() {
                 <div className="ac-complete-overlay">
                     <div className="ac-complete-card">
                         <div className="ac-loading-spinner" style={{ marginBottom: 16 }} />
-                        <p className="ac-completing-msg">{t.vocab.storyMode.submittingMsg}</p>
+                        <p className="ac-completing-msg">{t('vocab.storyMode.submittingMsg')}</p>
                     </div>
                 </div>
             )}

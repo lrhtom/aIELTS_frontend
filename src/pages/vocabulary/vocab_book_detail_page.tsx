@@ -11,7 +11,7 @@ import '../../styles/vocabulary_learning_plan.css';
 const PAGE_SIZE = 20;
 
 export default function VocabBookDetailPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const { id } = useParams<{ id: string }>();
     const bookId = Number(id);
 
@@ -47,7 +47,7 @@ export default function VocabBookDetailPage() {
             setWords(r.words);
             setTotal(r.total);
         } catch {
-            showToast(t.vocab.common.loadWordsFail, 'error');
+            showToast(t('vocab.common.loadWordsFail'), 'error');
         } finally {
             setLoading(false);
         }
@@ -60,12 +60,12 @@ export default function VocabBookDetailPage() {
     const handlePageJump = () => {
         const rawValue = pageJumpInput.trim();
         if (!rawValue) {
-            showToast(t.vocab.pagination.errEnterPage, 'error');
+            showToast(t('vocab.pagination.errEnterPage'), 'error');
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            showToast(t.vocab.pagination.errPageRange.replace('{n}', String(totalPages)), 'error');
+            showToast(t('vocab.pagination.errPageRange').replace('{n}', String(totalPages)), 'error');
             return;
         }
         setPage(Math.min(totalPages, Math.max(1, parsed)));
@@ -74,10 +74,10 @@ export default function VocabBookDetailPage() {
 
     return (
         <Layout
-    pageTitle={book?.name || t.vocab.bookDetail.titleDefault}
+    pageTitle={book?.name || t('vocab.bookDetail.titleDefault')}
     pageSubtitle={book?.description}
     backUrl='/vocabulary/books'
-    backText={`${t.common.back}${t.vocab.books.title}`}
+    backText={`${t('common.back')}${t('vocab.books.title')}`}
 >
             <div className="config-page-wrap">
                 {/* Search */}
@@ -85,7 +85,7 @@ export default function VocabBookDetailPage() {
                     <div className="nb-search-bar">
                         <input
                             className="nb-search-input"
-                            placeholder={t.vocab.bookDetail.searchPlaceholder}
+                            placeholder={t('vocab.bookDetail.searchPlaceholder')}
                             value={searchQ}
                             onChange={e => { setSearchQ(e.target.value); setPage(1); }}
                         />
@@ -95,11 +95,11 @@ export default function VocabBookDetailPage() {
                 {/* Word list */}
                 <div className="config-card" style={{ padding: 0, overflow: 'hidden' }}>
                     {loading ? (
-                        <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '30px' }}>{t.common.loading}</p>
+                        <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '30px' }}>{t('common.loading')}</p>
                     ) : words.length === 0 ? (
                         <div className="nb-empty">
                             <span className="nb-empty-icon">📖</span>
-                            {searchQ ? t.vocab.bookDetail.emptySearch : t.vocab.bookDetail.emptyTitle}
+                            {searchQ ? t('vocab.bookDetail.emptySearch') : t('vocab.bookDetail.emptyTitle')}
                         </div>
                     ) : (
                         <div className="word-list">
@@ -123,14 +123,14 @@ export default function VocabBookDetailPage() {
                 {totalPages > 1 && (
                     <div className="lp-pager" style={{ marginTop: 12 }}>
                         <button className="lp-page-btn" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
-                            {t.vocab.bookDetail.prevPage}
+                            {t('vocab.bookDetail.prevPage')}
                         </button>
-                        <span className="lp-page-info">{t.vocab.bookDetail.pagerTemplate.replace('{page}', String(page)).replace('{total}', String(totalPages)).replace('{count}', String(total))}</span>
+                        <span className="lp-page-info">{t('vocab.bookDetail.pagerTemplate').replace('{page}', String(page)).replace('{total}', String(totalPages)).replace('{count}', String(total))}</span>
                         <button className="lp-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
-                            {t.vocab.bookDetail.nextPage}
+                            {t('vocab.bookDetail.nextPage')}
                         </button>
                         <div className="lp-page-jump">
-                            <span>{t.vocab.pagination.jumpTo}</span>
+                            <span>{t('vocab.pagination.jumpTo')}</span>
                             <input
                                 type="text"
                                 inputMode="numeric"
@@ -142,8 +142,8 @@ export default function VocabBookDetailPage() {
                                     }
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter') handlePageJump(); }}
-                                placeholder={t.vocab.pagination.pagePlaceholder}
-                                aria-label={t.vocab.pagination.jumpAria}
+                                placeholder={t('vocab.pagination.pagePlaceholder')}
+                                aria-label={t('vocab.pagination.jumpAria')}
                             />
                             <button
                                 type="button"

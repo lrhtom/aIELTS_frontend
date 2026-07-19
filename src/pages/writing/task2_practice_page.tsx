@@ -8,9 +8,11 @@ import { showConfirm } from '../../components/common/ConfirmService';
 import { api } from '../../api/client';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { MockTimerBar } from '../../components/mock/MockExamShell';
+import { MockWritingTaskBar } from '../../components/mock/MockWritingTaskBar';
+import { mockWritingTaskRoute } from '../../components/mock/mock_writing_routes';
+import { getMockDetail } from '../../api/mock';
 import { useMockExamGuard } from '../../components/mock/useMockExamGuard';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import { type WritingStep } from '../../types/writing_page';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
@@ -33,8 +35,7 @@ function PromptMarkdown({ prompt }: { prompt?: string }) {
 
 export default function Task2PracticePage() {
     const navigate = useNavigate();
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { t } = useLang();
 
     const [searchParams] = useSearchParams();
     const { state } = useLocation();
@@ -70,23 +71,37 @@ export default function Task2PracticePage() {
         const text = userAnswer.trim();
         if (!text) {
             if (forced) navigate(`/mock/${mockId}`, { replace: true });
-            else showToast(t.practiceSandbox.toastEmpty, 'error');
+            else showToast(t('practiceSandbox.toastEmpty'), 'error');
             return;
         }
         if (!forced && !(await showConfirm({
-            title: t.mock.examMode.essaySubmitConfirmTitle,
-            message: t.mock.examMode.essaySubmitConfirmBody,
-            confirmText: t.mock.examMode.essaySubmitOk,
-            cancelText: t.mock.examMode.exitConfirmCancel,
+            title: t('mock.examMode.essaySubmitConfirmTitle'),
+            message: t('mock.examMode.essaySubmitConfirmBody'),
+            confirmText: t('mock.examMode.essaySubmitOk'),
+            cancelText: t('mock.examMode.exitConfirmCancel'),
         }))) return;
         mockSubmittingRef.current = true;
         try {
             await submitAIQuestion(bankId, userAnswer);
             sessionStorage.removeItem(cacheKey);
-            showToast(t.mock.examMode.submittedToHub, 'success');
-            navigate(`/mock/${mockId}`, { replace: true });
+            // 另一篇（Task 1）还没写 → 直接进另一篇；两篇都完成才回大厅
+            let nextRoute: string | null = null;
+            if (!forced) {
+                try {
+                    const d = await getMockDetail(mockId);
+                    const sibling = d.parts.writing.task1;
+                    if (sibling && !sibling.isAnswered) nextRoute = mockWritingTaskRoute(mockId, 'task1', sibling);
+                } catch { /* 拿不到详情就回大厅 */ }
+            }
+            if (nextRoute) {
+                showToast(t('mock.examMode.essaySubmittedNext'), 'success');
+                navigate(nextRoute, { replace: true });
+            } else {
+                showToast(t('mock.examMode.submittedToHub'), 'success');
+                navigate(`/mock/${mockId}`, { replace: true });
+            }
         } catch (err) {
-            showToast((err as Error).message ?? t.common.error, 'error');
+            showToast((err as Error).message ?? t('common.error'), 'error');
             mockSubmittingRef.current = false;
             if (forced) navigate(`/mock/${mockId}`, { replace: true });
         }
@@ -151,7 +166,7 @@ export default function Task2PracticePage() {
                 const detail = await getAIQuestion(id);
                 const content = (detail.content || {}) as { prompt?: string };
                 if (!content.prompt) {
-                    showToast(translations[lang].aiBank.toastMissingContent, 'error');
+                    showToast(t('aiBank.toastMissingContent'), 'error');
                     navigate('/practice/ai/bank');
                     return;
                 }
@@ -161,7 +176,7 @@ export default function Task2PracticePage() {
                 setStep('answering');
             } catch (err: unknown) {
                 console.error('Bank load error:', err);
-                showToast(translations[lang].aiBank.loadFail, 'error');
+                showToast(t('aiBank.loadFail'), 'error');
                 navigate('/practice/ai/bank');
             }
         }
@@ -182,13 +197,13 @@ export default function Task2PracticePage() {
                 });
                 // 生成后直接进入 AI 题库
                 sessionStorage.removeItem(cacheKey);
-                showToast(translations[lang].aiBank.toastGeneratedSaved, 'success');
+                showToast(t('aiBank.toastGeneratedSaved'), 'success');
                 const justId = res.aiQuestionId ?? null;
                 navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
             } catch (err: unknown) {
                 console.error('Generate task2 error:', err);
                 const error = err as { message?: string };
-                showToast(error.message || t.practiceSandbox.toastFailGenTask2, 'error');
+                showToast(error.message || t('practiceSandbox.toastFailGenTask2'), 'error');
                 navigate(-1);
             }
         }
@@ -198,7 +213,7 @@ export default function Task2PracticePage() {
         } else {
             fetchPrompt();
         }
-    }, [type, topicCategory, navigate, cacheKey, bankId, t.practiceSandbox.toastFailGenTask2]);
+    }, [type, topicCategory, navigate, cacheKey, bankId, t]);
 
     // Word count calculation
     const wordCount = useMemo(() => {
@@ -207,15 +222,15 @@ export default function Task2PracticePage() {
         return trimmed.split(/\s+/).length;
     }, [userAnswer]);
 
-    const wordBadge = t.practiceSandbox.wordCountBadgeTask2.replace('{n}', String(wordCount));
+    const wordBadge = t('practiceSandbox.wordCountBadgeTask2').replace('{n}', String(wordCount));
 
     const handleSubmitAnser = () => {
         if (!userAnswer.trim()) {
-            showToast(t.practiceSandbox.toastEmpty, 'error');
+            showToast(t('practiceSandbox.toastEmpty'), 'error');
             return;
         }
         if (wordCount < 100) {
-            showToast(t.practiceSandbox.toastTooShortTask2, 'error');
+            showToast(t('practiceSandbox.toastTooShortTask2'), 'error');
         }
         // mock：跳过结算浮层，直接落库回大厅（批改延迟到成绩单生成）
         if (mockId) {
@@ -242,22 +257,22 @@ export default function Task2PracticePage() {
     };
 
     const typeNameMap: Record<string, string> = {
-        'opinion': t.task2Selection.types.opinion.title,
-        'opinion_agree': t.task2OpinionSelection.types.agree.title,
-        'opinion_discuss': t.task2OpinionSelection.types.discuss.title,
-        'opinion_advantages': t.task2OpinionSelection.types.advantages.title,
-        'report': t.task2Selection.types.report.title,
-        'mixed': t.task2Selection.types.mixed.title,
-        'random': t.task2Selection.types.random.title,
-        'innovation': t.task2Selection.types.innovation.title,
+        'opinion': t('task2Selection.types.opinion.title'),
+        'opinion_agree': t('task2OpinionSelection.types.agree.title'),
+        'opinion_discuss': t('task2OpinionSelection.types.discuss.title'),
+        'opinion_advantages': t('task2OpinionSelection.types.advantages.title'),
+        'report': t('task2Selection.types.report.title'),
+        'mixed': t('task2Selection.types.mixed.title'),
+        'random': t('task2Selection.types.random.title'),
+        'innovation': t('task2Selection.types.innovation.title'),
     };
-    const titleName = typeNameMap[type] || t.practiceSandbox.typeFallback;
+    const titleName = typeNameMap[type] || t('practiceSandbox.typeFallback');
 
     const renderLoading = () => (
         <div className="wp-state-wrap">
             <div className="spinner wp-loading-spinner"></div>
-            <h2>{t.practiceSandbox.loadingTitleTask2}</h2>
-            <p>{t.practiceSandbox.loadingDescTask2.replace('{type}', titleName)}</p>
+            <h2>{t('practiceSandbox.loadingTitleTask2')}</h2>
+            <p>{t('practiceSandbox.loadingDescTask2').replace('{type}', titleName)}</p>
         </div>
     );
 
@@ -266,7 +281,7 @@ export default function Task2PracticePage() {
             {/* Left: Prompt */}
             <div className="wp-panel">
                 <div className="wp-panel-header">
-                    <h3>📜 {t.practiceSandbox.promptTitle}</h3>
+                    <h3>📜 {t('practiceSandbox.promptTitle')}</h3>
                 </div>
                 <div className="wp-panel-body">
                     <div className="wp-prompt-block">
@@ -278,7 +293,7 @@ export default function Task2PracticePage() {
             {/* Right: Editor */}
             <div className="wp-panel">
                 <div className="wp-panel-header">
-                    <h3>✍️ {t.practiceSandbox.yourAnswer}</h3>
+                    <h3>✍️ {t('practiceSandbox.yourAnswer')}</h3>
                     <span className={`wp-word-badge${wordCount >= 250 ? ' ok' : ''}`}>
                         {wordBadge}
                     </span>
@@ -286,14 +301,14 @@ export default function Task2PracticePage() {
                 <div className="wp-panel-body">
                     <textarea
                         className="wp-answer-textarea"
-                        placeholder={t.practiceSandbox.placeholderTask2}
+                        placeholder={t('practiceSandbox.placeholderTask2')}
                         value={userAnswer}
                         onChange={(e) => setUserAnswer(e.target.value)}
                     />
                 </div>
                 <div className="wp-panel-footer">
                     <button className="wp-submit-btn" onClick={handleSubmitAnser}>
-                        {t.practiceSandbox.finishBtn}
+                        {t('practiceSandbox.finishBtn')}
                     </button>
                 </div>
             </div>
@@ -304,9 +319,9 @@ export default function Task2PracticePage() {
         <div className="wp-settlement-overlay">
             <div className="wp-settlement-content">
                 <div className="wp-settlement-icon">🎉</div>
-                <h2>{t.practiceSandbox.settlementTitle}</h2>
+                <h2>{t('practiceSandbox.settlementTitle')}</h2>
                 <p className="wp-settlement-desc">
-                    {t.practiceSandbox.settlementDesc}
+                    {t('practiceSandbox.settlementDesc')}
                 </p>
 
             <div className="wp-settlement-actions">
@@ -314,13 +329,13 @@ export default function Task2PracticePage() {
                     className="primary-button"
                     onClick={handleStartEvaluation}
                 >
-                    <span>🎯</span> {t.practiceSandbox.callAiBtn}
+                    <span>🎯</span> {t('practiceSandbox.callAiBtn')}
                 </button>
                 <button
                     className="wp-ghost-btn"
                     onClick={() => navigate(bankId ? '/practice/ai/bank' : '/writing/task2')}
                 >
-                    {t.practiceSandbox.backBtn}
+                    {t('practiceSandbox.backBtn')}
                 </button>
             </div>
             </div>
@@ -333,20 +348,23 @@ export default function Task2PracticePage() {
                 ? (mockId ? () => { mockConfirmExit(); } : () => navigate(-1))
                 : undefined}
             backText={(step === 'loading' || step === 'answering')
-                ? (mockId ? t.mock.examMode.backToHub : t.practiceSandbox.abortBtn)
+                ? (mockId ? t('mock.examMode.backToHub') : t('practiceSandbox.abortBtn'))
                 : undefined}
-            pageTitle={`🖋️ ${t.practiceSandbox.titleTask2.replace('{type}', titleName)}`}
+            pageTitle={`🖋️ ${t('practiceSandbox.titleTask2').replace('{type}', titleName)}`}
         >
             {mockId !== null && (
-                <MockTimerBar
-                    mockId={mockId}
-                    part="writing"
-                    onExpire={() => mockSubmitEssay(true)}
-                    onRejected={(msg) => {
-                        showToast(t.mock.examMode.startRejected.replace('{msg}', msg), 'error');
-                        navigate(`/mock/${mockId}`, { replace: true });
-                    }}
-                />
+                <>
+                    <MockTimerBar
+                        mockId={mockId}
+                        part="writing"
+                        onExpire={() => mockSubmitEssay(true)}
+                        onRejected={(msg) => {
+                            showToast(t('mock.examMode.startRejected').replace('{msg}', msg), 'error');
+                            navigate(`/mock/${mockId}`, { replace: true });
+                        }}
+                    />
+                    <MockWritingTaskBar mockId={mockId} current="task2" />
+                </>
             )}
             <div className="practice-container writing-practice-page">
 

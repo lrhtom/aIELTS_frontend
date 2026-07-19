@@ -1,11 +1,9 @@
 import { type ReactNode, useState } from 'react';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import '../../styles/ChromeOnlyGuard.css';
 
 export default function ChromeOnlyGuard({ children }: { children: ReactNode }) {
-    const { lang } = useLang();
-    const t = translations[lang].chromeOnlyGuard;
+    const { t } = useLang();
 
     // 兼容 iOS Chrome (CriOS) 和桌面端/安卓端 Chrome
     // 同时排除 Edge (Edg) 和 Opera (OPR)
@@ -40,12 +38,12 @@ export default function ChromeOnlyGuard({ children }: { children: ReactNode }) {
                     <div className="chrome-guard-banner-content">
                         <span className="chrome-guard-banner-icon">⚠️</span>
                         <div className="chrome-guard-banner-text">
-                            <strong>{t.warningTitle}</strong>
-                            {t.warningDesc}
+                            <strong>{t('chromeOnlyGuard.warningTitle')}</strong>
+                            {t('chromeOnlyGuard.warningDesc')}
                         </div>
                         <div className="chrome-guard-banner-actions">
                             <button className="chrome-guard-banner-copy" onClick={handleCopy}>
-                                {t.copyUrl}
+                                {t('chromeOnlyGuard.copyUrl')}
                             </button>
                             <button className="chrome-guard-banner-close" onClick={dismiss}>✕</button>
                         </div>

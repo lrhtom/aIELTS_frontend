@@ -40,21 +40,21 @@ export default function FlashcardMode({
     canFlip = true,
 }: Props) {
     const zhFirst = frontFace === 'zh';
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const flipLocked = !simpleMode && !canFlip;
 
     const RATING_INFO = [
-        { id: 1, label: t.vocab.ratings.again, cls: 'btn-again', key: '1' },
-        { id: 2, label: t.vocab.ratings.hard,  cls: 'btn-hard',  key: '2' },
-        { id: 3, label: t.vocab.ratings.good,  cls: 'btn-good',  key: '3' },
-        { id: 4, label: t.vocab.ratings.easy,  cls: 'btn-easy',  key: '4' },
+        { id: 1, label: t('vocab.ratings.again'), cls: 'btn-again', key: '1' },
+        { id: 2, label: t('vocab.ratings.hard'),  cls: 'btn-hard',  key: '2' },
+        { id: 3, label: t('vocab.ratings.good'),  cls: 'btn-good',  key: '3' },
+        { id: 4, label: t('vocab.ratings.easy'),  cls: 'btn-easy',  key: '4' },
     ];
 
     const STATE_LABELS: Record<number, string> = {
-        0: t.vocab.status.new,
-        1: t.vocab.status.learning,
-        2: t.vocab.status.review,
-        3: t.vocab.status.relearn,
+        0: t('vocab.status.new'),
+        1: t('vocab.status.learning'),
+        2: t('vocab.status.review'),
+        3: t('vocab.status.relearn'),
     };
 
     return (
@@ -68,7 +68,7 @@ export default function FlashcardMode({
                     if (e.code === 'Space' && !flipLocked) { e.preventDefault(); onFlip(); }
                 }}
                 aria-disabled={flipLocked}
-                aria-label={isFlipped ? t.vocab.common.flipFront : t.vocab.common.flipBack}
+                aria-label={isFlipped ? t('vocab.common.flipFront') : t('vocab.common.flipBack')}
                 style={flipLocked ? { cursor: 'not-allowed' } : undefined}
             >
                 <div
@@ -79,7 +79,7 @@ export default function FlashcardMode({
                             type="button"
                             className="fc-speak-btn"
                             onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                            aria-label={t.vocab.common.speakPronunciation}
+                            aria-label={t('vocab.common.speakPronunciation')}
                         ><Volume2 size={18} /></button>
                         {zhFirst ? (
                             <div className="fc-word fc-word--zh">{currentCard.zh}</div>
@@ -95,8 +95,8 @@ export default function FlashcardMode({
                         )}
                         {currentCard.reps > 0 && (
                             <div className="fc-reps-badge">
-                                {t.vocab.repsDone.replace('{n}', currentCard.reps.toString())}
-                                {currentCard.lapses > 0 && ` · ${t.vocab.lapsesCount.replace('{n}', currentCard.lapses.toString())}`}
+                                {t('vocab.repsDone').replace('{n}', currentCard.reps.toString())}
+                                {currentCard.lapses > 0 && ` · ${t('vocab.lapsesCount').replace('{n}', currentCard.lapses.toString())}`}
                             </div>
                         )}
                         {simpleMode && (
@@ -113,7 +113,7 @@ export default function FlashcardMode({
                             {flipLocked ? (
                                 <>
                                     <Volume2 size={13} />
-                                    {t.vocab.common.speakWait}
+                                    {t('vocab.common.speakWait')}
                                 </>
                             ) : (
                                 <>
@@ -121,7 +121,7 @@ export default function FlashcardMode({
                                         stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                                         <path d="M12 5v14M5 12l7 7 7-7" />
                                     </svg>
-                                    {t.vocab.tapToFlip}
+                                    {t('vocab.tapToFlip')}
                                 </>
                             )}
                         </div>
@@ -135,7 +135,7 @@ export default function FlashcardMode({
                                     type="button"
                                     className="fc-speak-btn fc-speak-btn--inline"
                                     onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                                    aria-label={t.vocab.common.speakPronunciation}
+                                    aria-label={t('vocab.common.speakPronunciation')}
                                 ><Volume2 size={18} /></button>
                             </div>
                             {currentCard.phonetic && (
@@ -182,7 +182,7 @@ export default function FlashcardMode({
                             <div className="fc-state-pill">
                                 <span className="fc-state-dot" data-state={currentCard.state}></span>
                                 <span>{STATE_LABELS[currentCard.state]}</span>
-                                {currentCard.stability > 0 && <span className="fc-stability">· {t.vocab.stability} {currentCard.stability.toFixed(1)}</span>}
+                                {currentCard.stability > 0 && <span className="fc-stability">· {t('vocab.stability')} {currentCard.stability.toFixed(1)}</span>}
                             </div>
                         </div>
                     </div>
@@ -208,7 +208,7 @@ export default function FlashcardMode({
                 ))}
             </div>
             <div className="fc-kb-hint">
-                {t.vocab.ratingHint}
+                {t('vocab.ratingHint')}
             </div>
         </>
     );

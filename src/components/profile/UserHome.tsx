@@ -11,7 +11,7 @@ import { Clock, Coins, BookMarked, Library, ChevronRight } from 'lucide-react';
 
 export default function UserHome() {
     const { user } = useAuth();
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const navigate = useNavigate();
     const [todayLearningSeconds, setTodayLearningSeconds] = useState<number | null>(null);
     const [plans, setPlans] = useState<LearningPlan[]>([]);
@@ -40,10 +40,10 @@ export default function UserHome() {
         const m = Math.floor((total % 3600) / 60);
         const s = total % 60;
         const parts: string[] = [];
-        if (d > 0) parts.push(`${d}${t.profile.timeFormat.day} `);
-        if (h > 0) parts.push(`${h}${t.profile.timeFormat.hour} `);
-        if (m > 0) parts.push(`${m}${t.profile.timeFormat.minute} `);
-        if (s > 0 || parts.length === 0) parts.push(`${s}${t.profile.timeFormat.second}`);
+        if (d > 0) parts.push(`${d}${t('profile.timeFormat.day')} `);
+        if (h > 0) parts.push(`${h}${t('profile.timeFormat.hour')} `);
+        if (m > 0) parts.push(`${m}${t('profile.timeFormat.minute')} `);
+        if (s > 0 || parts.length === 0) parts.push(`${s}${t('profile.timeFormat.second')}`);
         return parts.join('').trim();
     };
 
@@ -52,9 +52,9 @@ export default function UserHome() {
         const h = Math.floor(secs / 3600);
         const m = Math.floor((secs % 3600) / 60);
         const s = secs % 60;
-        if (h > 0) return `${h}${t.profile.timeFormat.hour}${m > 0 ? ' ' + m + t.profile.timeFormat.minute : ''}`;
-        if (m > 0) return `${m}${t.profile.timeFormat.minute}${s > 0 ? ' ' + s + t.profile.timeFormat.second : ''}`;
-        return `${s}${t.profile.timeFormat.second}`;
+        if (h > 0) return `${h}${t('profile.timeFormat.hour')}${m > 0 ? ' ' + m + t('profile.timeFormat.minute') : ''}`;
+        if (m > 0) return `${m}${t('profile.timeFormat.minute')}${s > 0 ? ' ' + s + t('profile.timeFormat.second') : ''}`;
+        return `${s}${t('profile.timeFormat.second')}`;
     };
 
     useEffect(() => {
@@ -124,7 +124,7 @@ export default function UserHome() {
         }
 
         // ── build month-grouped grid ──
-        const MONTHS = t.profile.home.calendar.months;
+        const MONTHS = t('profile.home.calendar.months', { returnObjects: true }) as string[];
         type CalCell = { date?: string; level?: number; entry?: CalendarEntry | null; inRange: boolean };
         const monthsData: { label: string; weeks: CalCell[][] }[] = [];
         
@@ -194,8 +194,8 @@ export default function UserHome() {
             {/* Welcome row */}
             <div className="profile-home-header">
                 <div>
-                    <h2>{t.profile.welcome}, {user?.username}</h2>
-                    <p>{t.profile.welcomeDesc}</p>
+                    <h2>{t('profile.welcome')}, {user?.username}</h2>
+                    <p>{t('profile.welcomeDesc')}</p>
                 </div>
             </div>
 
@@ -205,28 +205,28 @@ export default function UserHome() {
                     <div className="stat-icon-wrap"><Clock size={20} /></div>
                     <div className="stat-info">
                         <div className="stat-value">{formatDuration(todayLearningSeconds)}</div>
-                        <div className="stat-label">{t.profile.info.todayLearningTime}</div>
+                        <div className="stat-label">{t('profile.info.todayLearningTime')}</div>
                     </div>
                 </div>
                 <div className="profile-stat-card">
                     <div className="stat-icon-wrap"><Coins size={20} /></div>
                     <div className="stat-info">
                         <div className="stat-value">{formatATBalance(user?.atBalance)} <span className="stat-unit">AT</span></div>
-                        <div className="stat-label">{t.profile.balance.title}</div>
+                        <div className="stat-label">{t('profile.balance.title')}</div>
                     </div>
                 </div>
                 <div className="profile-stat-card">
                     <div className="stat-icon-wrap"><BookMarked size={20} /></div>
                     <div className="stat-info">
                         <div className="stat-value">{plans.length}</div>
-                        <div className="stat-label">{t.profile.quickAccess.targets}</div>
+                        <div className="stat-label">{t('profile.quickAccess.targets')}</div>
                     </div>
                 </div>
                 <div className="profile-stat-card">
                     <div className="stat-icon-wrap"><Library size={20} /></div>
                     <div className="stat-info">
                         <div className="stat-value">{vocabTotal ?? '--'}</div>
-                        <div className="stat-label">{t.profile.home.vocabTotal}</div>
+                        <div className="stat-label">{t('profile.home.vocabTotal')}</div>
                     </div>
                 </div>
             </div>
@@ -261,14 +261,14 @@ export default function UserHome() {
                     /* ── Real calendar ── */
                     <>
                         <div className="lc-cal-topbar">
-                            <span className="lc-cal-topbar-title">{t.profile.home.calendar.yearSummary.replace('{time}', formatSecondsLong(totalYearSeconds))}</span>
+                            <span className="lc-cal-topbar-title">{t('profile.home.calendar.yearSummary').replace('{time}', formatSecondsLong(totalYearSeconds))}</span>
                             <div className="lc-cal-topbar-right">
-                                <span className="lc-cal-topbar-stat">{t.profile.home.calendar.cumulativeDays.replace('{n}', String(calData.cumulativeDays))}</span>
+                                <span className="lc-cal-topbar-stat">{t('profile.home.calendar.cumulativeDays').replace('{n}', String(calData.cumulativeDays))}</span>
                                 <span className="lc-cal-topbar-divider" />
-                                <span className="lc-cal-topbar-stat">{t.profile.home.calendar.consecutive.replace('{n}', String(calData.consecutive))}</span>
+                                <span className="lc-cal-topbar-stat">{t('profile.home.calendar.consecutive').replace('{n}', String(calData.consecutive))}</span>
                                 <span className="lc-cal-topbar-divider" />
                                 <span className="lc-cal-topbar-select">
-                                    {t.profile.home.calendar.pastYear} <span className="lc-cal-topbar-arrow">▼</span>
+                                    {t('profile.home.calendar.pastYear')} <span className="lc-cal-topbar-arrow">▼</span>
                                 </span>
                             </div>
                         </div>
@@ -301,20 +301,19 @@ export default function UserHome() {
                                                         const e = cell.entry;
                                                         const buildTooltip = () => {
                                                             const secs = e?.learning_seconds ?? 0;
-                                                            const tt = t.profile.home.calendar.tooltip;
                                                             const dateStr = cell.date ?? '';
                                                             if (secs === 0) {
-                                                                const parts = [dateStr, tt.noActivity];
-                                                                if (e?.checked) parts.push(tt.checkedIn);
+                                                                const parts = [dateStr, t('profile.home.calendar.tooltip.noActivity')];
+                                                                if (e?.checked) parts.push(t('profile.home.calendar.tooltip.checkedIn'));
                                                                 return parts.join('\n');
                                                             }
-                                                            const parts: string[] = [dateStr, tt.studied.replace('{time}', formatSecondsMid(secs))];
-                                                            if (e?.checked)   parts.push(tt.checkedIn);
-                                                            if (e?.vocab)     parts.push(tt.vocab.replace('{n}', String(e.vocab)));
-                                                            if (e?.reading)   parts.push(tt.reading.replace('{n}', String(e.reading)));
-                                                            if (e?.listening) parts.push(tt.listening.replace('{n}', String(e.listening)));
-                                                            if (e?.speaking)  parts.push(tt.speaking.replace('{n}', String(e.speaking)));
-                                                            if (e?.writing)   parts.push(tt.writing.replace('{n}', String(e.writing)));
+                                                            const parts: string[] = [dateStr, t('profile.home.calendar.tooltip.studied').replace('{time}', formatSecondsMid(secs))];
+                                                            if (e?.checked)   parts.push(t('profile.home.calendar.tooltip.checkedIn'));
+                                                            if (e?.vocab)     parts.push(t('profile.home.calendar.tooltip.vocab').replace('{n}', String(e.vocab)));
+                                                            if (e?.reading)   parts.push(t('profile.home.calendar.tooltip.reading').replace('{n}', String(e.reading)));
+                                                            if (e?.listening) parts.push(t('profile.home.calendar.tooltip.listening').replace('{n}', String(e.listening)));
+                                                            if (e?.speaking)  parts.push(t('profile.home.calendar.tooltip.speaking').replace('{n}', String(e.speaking)));
+                                                            if (e?.writing)   parts.push(t('profile.home.calendar.tooltip.writing').replace('{n}', String(e.writing)));
                                                             return parts.join('\n');
                                                         };
                                                         return (
@@ -341,16 +340,16 @@ export default function UserHome() {
                                     ))}
                                 </div>
                                 <div className="lc-cal-legend">
-                                    <span>{t.profile.home.calendar.legend.labels[0]}</span>
+                                    <span>{(t('profile.home.calendar.legend.labels', { returnObjects: true }) as string[])[0]}</span>
                                     <div className="lc-dot lc-lvl-0" />
-                                    <span>{t.profile.home.calendar.legend.labels[1]}</span>
+                                    <span>{(t('profile.home.calendar.legend.labels', { returnObjects: true }) as string[])[1]}</span>
                                     <div className="lc-dot lc-lvl-1" />
-                                    <span>{t.profile.home.calendar.legend.labels[2]}</span>
+                                    <span>{(t('profile.home.calendar.legend.labels', { returnObjects: true }) as string[])[2]}</span>
                                     <div className="lc-dot lc-lvl-2" />
-                                    <span>{t.profile.home.calendar.legend.labels[3]}</span>
+                                    <span>{(t('profile.home.calendar.legend.labels', { returnObjects: true }) as string[])[3]}</span>
                                     <div className="lc-dot lc-lvl-3" />
                                     <div className="lc-dot lc-lvl-4" />
-                                    <span>{t.profile.home.calendar.legend.labels[4]}</span>
+                                    <span>{(t('profile.home.calendar.legend.labels', { returnObjects: true }) as string[])[4]}</span>
                                 </div>
                             </div>
                         </div>
@@ -376,9 +375,9 @@ export default function UserHome() {
                 {/* Plans quick view */}
                 <div className="profile-plans-card">
                     <div className="card-header">
-                        <h3>{t.profile.quickAccess.targets}</h3>
+                        <h3>{t('profile.quickAccess.targets')}</h3>
                         <button className="card-action-link" onClick={() => navigate('/vocabulary/plans')}>
-                            {t.profile.home.plans.viewAll} <ChevronRight size={16} />
+                            {t('profile.home.plans.viewAll')} <ChevronRight size={16} />
                         </button>
                     </div>
                     {loading ? (
@@ -400,8 +399,8 @@ export default function UserHome() {
                     ) : plans.length === 0 ? (
                         <div className="plans-empty">
                             <BookMarked size={32} opacity={0.3} />
-                            <p>{t.profile.home.plans.empty}</p>
-                            <button onClick={() => navigate('/vocabulary/plans')}>{t.profile.home.plans.createFirst}</button>
+                            <p>{t('profile.home.plans.empty')}</p>
+                            <button onClick={() => navigate('/vocabulary/plans')}>{t('profile.home.plans.createFirst')}</button>
                         </div>
                     ) : (
                         <div className="plans-list">
@@ -424,7 +423,7 @@ export default function UserHome() {
                                         <div className="plan-item-top">
                                             <span className="plan-item-name">{plan.name}</span>
                                             <span className="plan-item-progress-text">
-                                                {t.profile.home.plans.today} {plan.studied_today}/{plan.today_target}
+                                                {t('profile.home.plans.today')} {plan.studied_today}/{plan.today_target}
                                             </span>
                                         </div>
                                         <div className="plan-progress-bar">
@@ -432,7 +431,7 @@ export default function UserHome() {
                                         </div>
                                         <div className="plan-item-bottom">
                                             <span className="plan-item-total-label">
-                                                {t.profile.home.plans.studied} {plan.studied_total || 0}/{plan.word_count} {t.profile.home.plans.words}
+                                                {t('profile.home.plans.studied')} {plan.studied_total || 0}/{plan.word_count} {t('profile.home.plans.words')}
                                             </span>
                                             <div className="plan-progress-bar plan-progress-bar-total">
                                                 <div className="plan-progress-fill-total" style={{ width: `${totalPct}%` }} />
@@ -448,23 +447,23 @@ export default function UserHome() {
                 {/* Account info card */}
                 <div className="user-info-card">
                     <div className="card-header">
-                        <h3>{t.profile.info.title}</h3>
+                        <h3>{t('profile.info.title')}</h3>
                     </div>
                     <div className="user-info-grid">
                         <div className="user-info-item">
-                            <div className="user-info-label">{t.profile.info.username}</div>
+                            <div className="user-info-label">{t('profile.info.username')}</div>
                             <div className="user-info-value">{user?.username}</div>
                         </div>
                         <div className="user-info-item">
-                            <div className="user-info-label">{t.profile.info.email}</div>
+                            <div className="user-info-label">{t('profile.info.email')}</div>
                             <div className="user-info-value">{user?.email}</div>
                         </div>
                         <div className="user-info-item">
-                            <div className="user-info-label">{t.profile.info.created}</div>
+                            <div className="user-info-label">{t('profile.info.created')}</div>
                             <div className="user-info-value">{new Date(user?.createdAt || '').toLocaleDateString()}</div>
                         </div>
                         <div className="user-info-item">
-                            <div className="user-info-label">{t.profile.info.lastLogin}</div>
+                            <div className="user-info-label">{t('profile.info.lastLogin')}</div>
                             <div className="user-info-value">{user?.last_login ? new Date(user.last_login).toLocaleString() : '-'}</div>
                         </div>
                     </div>

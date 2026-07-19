@@ -9,7 +9,6 @@ import {
     type OpinionDrillQuestion,
 } from '../../api/task2_opinion_drill';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
 import '../../styles/writing_correction.css';
 import '../../styles/task2_opinion_drill.css';
@@ -79,8 +78,7 @@ function clearSessionState() {
 export default function Task2OpinionDrillDoingPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { t, lang } = useLang();
 
     const bootstrappedRef = useRef(false);
 
@@ -101,7 +99,7 @@ export default function Task2OpinionDrillDoingPage() {
         return text.split(/\s+/).length;
     }, [currentAnswer]);
 
-    const progressText = t.task2OpinionDrill.progress
+    const progressText = t('task2OpinionDrill.progress')
         .replace('{current}', String(Math.min(currentIndex + 1, Math.max(questions.length, 1))))
         .replace('{total}', String(Math.max(questions.length, 1)));
 
@@ -183,9 +181,9 @@ export default function Task2OpinionDrillDoingPage() {
         }
 
         clearSessionState();
-        showToast(t.task2OpinionDrill.missingConfig, 'error');
+        showToast(t('task2OpinionDrill.missingConfig'), 'error');
         navigate('/writing/task2/opinion-drill', { replace: true });
-    }, [location.state, navigate, t.task2OpinionDrill.missingConfig]);
+    }, [location.state, navigate, t]);
 
     useEffect(() => {
         if (!bootReady || questions.length === 0) {
@@ -251,7 +249,7 @@ export default function Task2OpinionDrillDoingPage() {
                 setStep('reviewing');
             } catch (err: unknown) {
                 if (cancelled) return;
-                showToast(parseErrorMessage(err, t.task2OpinionDrill.evalFail), 'error');
+                showToast(parseErrorMessage(err, t('task2OpinionDrill.evalFail')), 'error');
                 setPendingEvaluation(null);
                 setStep('answering');
             }
@@ -262,14 +260,14 @@ export default function Task2OpinionDrillDoingPage() {
         return () => {
             cancelled = true;
         };
-    }, [bootReady, step, pendingEvaluation, lang, t.task2OpinionDrill.evalFail]);
+    }, [bootReady, step, pendingEvaluation, lang, t]);
 
     const handleSubmitAnswer = () => {
         if (!currentQuestion) return;
 
         const answer = currentAnswer.trim();
         if (!answer) {
-            showToast(t.task2OpinionDrill.emptyAnswer, 'error');
+            showToast(t('task2OpinionDrill.emptyAnswer'), 'error');
             return;
         }
 
@@ -302,9 +300,9 @@ export default function Task2OpinionDrillDoingPage() {
     return (
         <Layout
             backUrl="/writing/task2/opinion-drill"
-            backText={t.task2OpinionDrill.backToSetup}
-            pageTitle={t.task2OpinionDrill.heading}
-            pageSubtitle={t.task2OpinionDrill.subheading}
+            backText={t('task2OpinionDrill.backToSetup')}
+            pageTitle={t('task2OpinionDrill.heading')}
+            pageSubtitle={t('task2OpinionDrill.subheading')}
             headerRight={<AiModelSelector variant="minimal" />}
         >
             <div className="practice-container writing-selection-page">
@@ -312,8 +310,8 @@ export default function Task2OpinionDrillDoingPage() {
                 {!bootReady && (
                     <div className="wp-state-wrap">
                         <div className="spinner wp-loading-spinner"></div>
-                        <h2>{t.task2OpinionDrill.generatingTitle}</h2>
-                        <p>{t.task2OpinionDrill.generatingDesc}</p>
+                        <h2>{t('task2OpinionDrill.generatingTitle')}</h2>
+                        <p>{t('task2OpinionDrill.generatingDesc')}</p>
                     </div>
                 )}
 
@@ -332,9 +330,9 @@ export default function Task2OpinionDrillDoingPage() {
                         <div className="wp-split">
                             <div className="wp-panel">
                                 <div className="wp-panel-header">
-                                    <h3>📜 {t.task2OpinionDrill.questionLabel}</h3>
+                                    <h3>📜 {t('task2OpinionDrill.questionLabel')}</h3>
                                     <span className="wp-word-badge">
-                                        {t.task2OpinionDrill.categories[currentQuestion.category]}
+                                        {t(`task2OpinionDrill.categories.${currentQuestion.category}`)}
                                     </span>
                                 </div>
                                 <div className="wp-panel-body">
@@ -344,13 +342,13 @@ export default function Task2OpinionDrillDoingPage() {
 
                             <div className="wp-panel">
                                 <div className="wp-panel-header">
-                                    <h3>✍️ {t.task2OpinionDrill.answerLabel}</h3>
-                                    <span className="wp-word-badge">{t.task2OpinionDrill.wordCount.replace('{n}', String(wordCount))}</span>
+                                    <h3>✍️ {t('task2OpinionDrill.answerLabel')}</h3>
+                                    <span className="wp-word-badge">{t('task2OpinionDrill.wordCount').replace('{n}', String(wordCount))}</span>
                                 </div>
                                 <div className="wp-panel-body">
                                     <textarea
                                         className="wp-answer-textarea"
-                                        placeholder={t.task2OpinionDrill.answerPlaceholder}
+                                        placeholder={t('task2OpinionDrill.answerPlaceholder')}
                                         value={currentAnswer}
                                         disabled={step !== 'answering'}
                                         onChange={(e) => setCurrentAnswer(e.target.value)}
@@ -360,8 +358,8 @@ export default function Task2OpinionDrillDoingPage() {
                                     {step === 'reviewing' ? (
                                         <button className="wp-submit-btn" onClick={handleNextQuestion}>
                                             {currentIndex >= questions.length - 1
-                                                ? t.task2OpinionDrill.viewSummaryBtn
-                                                : t.task2OpinionDrill.nextQuestionBtn}
+                                                ? t('task2OpinionDrill.viewSummaryBtn')
+                                                : t('task2OpinionDrill.nextQuestionBtn')}
                                         </button>
                                     ) : (
                                         <button
@@ -370,8 +368,8 @@ export default function Task2OpinionDrillDoingPage() {
                                             onClick={handleSubmitAnswer}
                                         >
                                             {step === 'evaluating'
-                                                ? t.task2OpinionDrill.evaluatingTitle
-                                                : t.task2OpinionDrill.submitBtn}
+                                                ? t('task2OpinionDrill.evaluatingTitle')
+                                                : t('task2OpinionDrill.submitBtn')}
                                         </button>
                                     )}
                                 </div>
@@ -381,21 +379,21 @@ export default function Task2OpinionDrillDoingPage() {
                         {step === 'reviewing' && reviewResult && (
                             <div className="opinion-drill-result-card">
                                 <div className="opinion-drill-result-head">
-                                    <strong>{t.task2OpinionDrill.currentResultTitle}</strong>
-                                    <span>{t.task2OpinionDrill.categories[reviewResult.question.category]}</span>
+                                    <strong>{t('task2OpinionDrill.currentResultTitle')}</strong>
+                                    <span>{t(`task2OpinionDrill.categories.${reviewResult.question.category}`)}</span>
                                 </div>
                                 <div className="opinion-drill-result-scores">
-                                    <span>{t.task2OpinionDrill.grammar}: {reviewResult.scores.grammar.toFixed(1)}</span>
-                                    <span>{t.task2OpinionDrill.relevance}: {reviewResult.scores.relevance.toFixed(1)}</span>
-                                    <span>{t.task2OpinionDrill.vocabulary}: {reviewResult.scores.vocabulary.toFixed(1)}</span>
-                                    <span>{t.task2OpinionDrill.overallAvg}: {reviewResult.overall.toFixed(1)}</span>
+                                    <span>{t('task2OpinionDrill.grammar')}: {reviewResult.scores.grammar.toFixed(1)}</span>
+                                    <span>{t('task2OpinionDrill.relevance')}: {reviewResult.scores.relevance.toFixed(1)}</span>
+                                    <span>{t('task2OpinionDrill.vocabulary')}: {reviewResult.scores.vocabulary.toFixed(1)}</span>
+                                    <span>{t('task2OpinionDrill.overallAvg')}: {reviewResult.overall.toFixed(1)}</span>
                                 </div>
                                 <div className="opinion-drill-result-feedback">
-                                    <div className="opinion-drill-feedback-label">{t.task2OpinionDrill.feedback}</div>
+                                    <div className="opinion-drill-feedback-label">{t('task2OpinionDrill.feedback')}</div>
                                     <p>{reviewResult.feedback}</p>
                                 </div>
                                 <div className="opinion-drill-result-feedback">
-                                    <div className="opinion-drill-feedback-label">{t.task2OpinionDrill.referenceAnswer}</div>
+                                    <div className="opinion-drill-feedback-label">{t('task2OpinionDrill.referenceAnswer')}</div>
                                     <p>{reviewResult.referenceAnswer}</p>
                                 </div>
                             </div>
@@ -406,24 +404,24 @@ export default function Task2OpinionDrillDoingPage() {
                 {step === 'summary' && (
                     <div className="opinion-drill-summary">
                         <div className="wc-result-card">
-                            <h2>{t.task2OpinionDrill.summaryTitle}</h2>
-                            <p className="opinion-drill-summary-desc">{t.task2OpinionDrill.summaryDesc}</p>
+                            <h2>{t('task2OpinionDrill.summaryTitle')}</h2>
+                            <p className="opinion-drill-summary-desc">{t('task2OpinionDrill.summaryDesc')}</p>
 
                             <div className="opinion-drill-summary-grid">
                                 <div className="opinion-drill-metric">
-                                    <div className="opinion-drill-metric-label">{t.task2OpinionDrill.overallAvg}</div>
+                                    <div className="opinion-drill-metric-label">{t('task2OpinionDrill.overallAvg')}</div>
                                     <div className="opinion-drill-metric-value">{summary.overall.toFixed(1)}</div>
                                 </div>
                                 <div className="opinion-drill-metric">
-                                    <div className="opinion-drill-metric-label">{t.task2OpinionDrill.grammar}</div>
+                                    <div className="opinion-drill-metric-label">{t('task2OpinionDrill.grammar')}</div>
                                     <div className="opinion-drill-metric-value">{summary.grammar.toFixed(1)}</div>
                                 </div>
                                 <div className="opinion-drill-metric">
-                                    <div className="opinion-drill-metric-label">{t.task2OpinionDrill.relevance}</div>
+                                    <div className="opinion-drill-metric-label">{t('task2OpinionDrill.relevance')}</div>
                                     <div className="opinion-drill-metric-value">{summary.relevance.toFixed(1)}</div>
                                 </div>
                                 <div className="opinion-drill-metric">
-                                    <div className="opinion-drill-metric-label">{t.task2OpinionDrill.vocabulary}</div>
+                                    <div className="opinion-drill-metric-label">{t('task2OpinionDrill.vocabulary')}</div>
                                     <div className="opinion-drill-metric-value">{summary.vocabulary.toFixed(1)}</div>
                                 </div>
                             </div>
@@ -432,23 +430,23 @@ export default function Task2OpinionDrillDoingPage() {
                                 {results.map((item, index) => (
                                     <div key={`${item.question.id}-${index}`} className="opinion-drill-result-card">
                                         <div className="opinion-drill-result-head">
-                                            <strong>{t.task2OpinionDrill.questionLabel} {index + 1}</strong>
-                                            <span>{t.task2OpinionDrill.categories[item.question.category]}</span>
+                                            <strong>{t('task2OpinionDrill.questionLabel')} {index + 1}</strong>
+                                            <span>{t(`task2OpinionDrill.categories.${item.question.category}`)}</span>
                                         </div>
                                         <div className="opinion-drill-result-prompt">{item.question.prompt}</div>
                                         <div className="opinion-drill-result-answer">{item.answer}</div>
                                         <div className="opinion-drill-result-scores">
-                                            <span>{t.task2OpinionDrill.grammar}: {item.scores.grammar.toFixed(1)}</span>
-                                            <span>{t.task2OpinionDrill.relevance}: {item.scores.relevance.toFixed(1)}</span>
-                                            <span>{t.task2OpinionDrill.vocabulary}: {item.scores.vocabulary.toFixed(1)}</span>
-                                            <span>{t.task2OpinionDrill.overallAvg}: {item.overall.toFixed(1)}</span>
+                                            <span>{t('task2OpinionDrill.grammar')}: {item.scores.grammar.toFixed(1)}</span>
+                                            <span>{t('task2OpinionDrill.relevance')}: {item.scores.relevance.toFixed(1)}</span>
+                                            <span>{t('task2OpinionDrill.vocabulary')}: {item.scores.vocabulary.toFixed(1)}</span>
+                                            <span>{t('task2OpinionDrill.overallAvg')}: {item.overall.toFixed(1)}</span>
                                         </div>
                                         <div className="opinion-drill-result-feedback">
-                                            <div className="opinion-drill-feedback-label">{t.task2OpinionDrill.feedback}</div>
+                                            <div className="opinion-drill-feedback-label">{t('task2OpinionDrill.feedback')}</div>
                                             <p>{item.feedback}</p>
                                         </div>
                                         <div className="opinion-drill-result-feedback">
-                                            <div className="opinion-drill-feedback-label">{t.task2OpinionDrill.referenceAnswer}</div>
+                                            <div className="opinion-drill-feedback-label">{t('task2OpinionDrill.referenceAnswer')}</div>
                                             <p>{item.referenceAnswer}</p>
                                         </div>
                                     </div>
@@ -457,10 +455,10 @@ export default function Task2OpinionDrillDoingPage() {
 
                             <div className="opinion-drill-summary-actions">
                                 <button className="primary-button" onClick={() => handleExit('/writing/task2/opinion-drill')}>
-                                    {t.task2OpinionDrill.restartBtn}
+                                    {t('task2OpinionDrill.restartBtn')}
                                 </button>
                                 <button className="secondary-button" onClick={() => handleExit('/writing/task2')}>
-                                    {t.task2OpinionDrill.backBtn}
+                                    {t('task2OpinionDrill.backBtn')}
                                 </button>
                             </div>
                         </div>

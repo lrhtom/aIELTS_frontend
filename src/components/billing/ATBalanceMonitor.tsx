@@ -9,7 +9,7 @@ import { showToast } from '../common/Toast';
  */
 export default function ATBalanceMonitor() {
     const { user, updateUser } = useAuth();
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
     useEffect(() => {
         // 监听AT币消耗事件
@@ -25,7 +25,7 @@ export default function ATBalanceMonitor() {
 
                 // 显示消耗提示
                 if (detail.consumed > 0) {
-                    showToast(t.billing.consumedToast.replace('{n}', detail.consumed.toString()), 'success');
+                    showToast(t('billing.consumedToast').replace('{n}', detail.consumed.toString()), 'success');
                 }
             }
         };
@@ -36,7 +36,7 @@ export default function ATBalanceMonitor() {
             const { refunded } = customEvent.detail;
             if (user && refunded > 0) {
                 updateUser({ ...user, atBalance: (user.atBalance || 0) + refunded });
-                showToast(t.billing.refundToast.replace('{n}', refunded.toString()), 'error');
+                showToast(t('billing.refundToast').replace('{n}', refunded.toString()), 'error');
             }
         };
 
@@ -44,11 +44,11 @@ export default function ATBalanceMonitor() {
         const handleATBalanceInsufficient = (event: Event) => {
             const customEvent = event as CustomEvent<{ message?: string; currentBalance?: number; requiredBalance?: number }>;
             const detail = customEvent.detail;
-            const message = detail.message || t.billing.insufficientBalance;
+            const message = detail.message || t('billing.insufficientBalance');
             const currentBalance = detail.currentBalance || user?.atBalance || 0;
             const requiredBalance = detail.requiredBalance || 0;
 
-            const fullMessage = t.billing.needMoreBalance
+            const fullMessage = t('billing.needMoreBalance')
                 .replace('{message}', message)
                 .replace('{required}', requiredBalance.toString())
                 .replace('{current}', currentBalance.toString());

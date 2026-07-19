@@ -34,71 +34,71 @@ import { useExitWarning } from '../../hooks/useExitWarning';
 import { useVocabFlashcardStore, resetVocabFlashcardStore } from '../../store/vocab_flashcard_store';
 
 export default function VocabularyFlashcardDoingPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const { user } = useAuth();
     const location = useLocation();
     const navigate  = useNavigate();
     const userSessionScope = user?.id ?? null;
 
     const STATE_LABELS: Record<number, string> = useMemo(() => ({
-        0: t.vocab.status.new,
-        1: t.vocab.status.learning,
-        2: t.vocab.status.review,
-        3: t.vocab.status.relearn,
+        0: t('vocab.status.new'),
+        1: t('vocab.status.learning'),
+        2: t('vocab.status.review'),
+        3: t('vocab.status.relearn'),
     }), [t]);
 
     const MODE_LABELS: Record<StudyMode, string> = useMemo(() => ({
-        flashcard: t.vocab.modes.flashcard,
-        'flashcard-simple': t.vocab.modes.flashcardSimple,
-        'read-aloud': t.vocab.modes.readAloud,
-        choice:    t.vocab.modes.choice,
-        write:     t.vocab.modes.write,
-        copy:      t.vocab.modes.copy,
-        article_copy: t.vocab.modes.articleCopy,
-        story_mode: t.vocab.modes.storyMode,
+        flashcard: t('vocab.modes.flashcard'),
+        'flashcard-simple': t('vocab.modes.flashcardSimple'),
+        'read-aloud': t('vocab.modes.readAloud'),
+        choice:    t('vocab.modes.choice'),
+        write:     t('vocab.modes.write'),
+        copy:      t('vocab.modes.copy'),
+        article_copy: t('vocab.modes.articleCopy'),
+        story_mode: t('vocab.modes.storyMode'),
     }), [t]);
 
     const TRACKING_LABELS: Record<TrackingMode, string> = useMemo(() => ({
-        none:  t.vocab.flashcardTracking.none,
-        eye:   t.vocab.flashcardTracking.eye,
-        mouse: t.vocab.flashcardTracking.mouse,
+        none:  t('vocab.flashcardTracking.none'),
+        eye:   t('vocab.flashcardTracking.eye'),
+        mouse: t('vocab.flashcardTracking.mouse'),
     }), [t]);
 
     const RS_CLASSES = ['rs-again', 'rs-hard', 'rs-good', 'rs-easy'];
     const RS_LABELS  = useMemo(() => [
-        t.vocab.ratings.again,
-        t.vocab.ratings.hard,
-        t.vocab.ratings.good,
-        t.vocab.ratings.easy,
+        t('vocab.ratings.again'),
+        t('vocab.ratings.hard'),
+        t('vocab.ratings.good'),
+        t('vocab.ratings.easy'),
     ], [t]);
 
     const estimateInterval = useCallback((card: VocabCard, rating: number): string => {
         const { state, stability: s } = card;
         if (state === 0 || state === 1 || state === 3) {
-            if (rating <= 3) return t.vocab.intervals.tomorrow;
-            return `${t.vocab.intervals.approx}${Math.max(1, Math.round(s || 4))}${t.vocab.intervals.daysUnit}`;
+            if (rating <= 3) return t('vocab.intervals.tomorrow');
+            return `${t('vocab.intervals.approx')}${Math.max(1, Math.round(s || 4))}${t('vocab.intervals.daysUnit')}`;
         }
-        if (rating === 1) return t.vocab.intervals.minsAfter.replace('{n}', '5');
+        if (rating === 1) return t('vocab.intervals.minsAfter').replace('{n}', '5');
         const factor = rating === 2 ? 0.6 : rating === 3 ? 1.0 : 1.5;
         const days = Math.max(1, Math.round((s || 1) * factor));
-        return days === 1 ? `1${t.vocab.intervals.daysUnit}` : `${t.vocab.intervals.approx}${days}${t.vocab.intervals.daysUnit}`;
+        return days === 1 ? `1${t('vocab.intervals.daysUnit')}` : `${t('vocab.intervals.approx')}${days}${t('vocab.intervals.daysUnit')}`;
     }, [t]);
 
     const formatDue = useCallback((isoStr: string): string => {
-        if (!isoStr) return t.vocab.intervals.toSync;
+        if (!isoStr) return t('vocab.intervals.toSync');
         const diff = new Date(isoStr).getTime() - Date.now();
         const mins = Math.round(diff / 60000);
-        if (mins <= 0) return t.vocab.intervals.today;
-        if (mins < 60) return t.vocab.intervals.minsAfter.replace('{n}', mins.toString());
+        if (mins <= 0) return t('vocab.intervals.today');
+        if (mins < 60) return t('vocab.intervals.minsAfter').replace('{n}', mins.toString());
         const days = Math.round(diff / 86400000);
-        if (days < 2) return t.vocab.intervals.tomorrow;
-        return t.vocab.intervals.daysAfter.replace('{n}', days.toString());
+        if (days < 2) return t('vocab.intervals.tomorrow');
+        return t('vocab.intervals.daysAfter').replace('{n}', days.toString());
     }, [t]);
 
     const formatDueDate = useCallback((isoStr: string): string => {
-        if (!isoStr) return t.vocab.intervals.toSync;
+        if (!isoStr) return t('vocab.intervals.toSync');
         const date = new Date(isoStr);
-        if (Number.isNaN(date.getTime())) return t.vocab.intervals.toSync;
+        if (Number.isNaN(date.getTime())) return t('vocab.intervals.toSync');
         return date.toLocaleDateString('zh-CN', {
             year: 'numeric',
             month: '2-digit',
@@ -114,8 +114,8 @@ export default function VocabularyFlashcardDoingPage() {
         const now = new Date();
         const due = predictNextDueAt(card, rating, now);
         return formatDueLabel(due, now, {
-            today: t.vocab.intervals.today,
-            tomorrow: t.vocab.intervals.tomorrow,
+            today: t('vocab.intervals.today'),
+            tomorrow: t('vocab.intervals.tomorrow'),
         });
     }, [t]);
 
@@ -475,7 +475,7 @@ export default function VocabularyFlashcardDoingPage() {
                     updatedCard = nextCard;
                 }
             } catch {
-                showToast(t.vocab.toastSyncFail, 'error');
+                showToast(t('vocab.toastSyncFail'), 'error');
                 submittedFsrsIndices.current.delete(ci);
                 setSubmitting(false);
                 return;
@@ -512,7 +512,7 @@ export default function VocabularyFlashcardDoingPage() {
         reinsertAfterGapForWrite,
         reviewOnly,
         mode,
-        t.vocab.toastSyncFail,
+        t,
         copyWordHidden,
         setSubmitting,
     ]);
@@ -815,7 +815,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         const normalizedInput = copyInput.trim().toLowerCase();
         if (!normalizedInput) {
-            showToast(t.vocab.flashcardDoing.toastCopyEmpty, 'error');
+            showToast(t('vocab.flashcardDoing.toastCopyEmpty'), 'error');
             return;
         }
         const currentRemaining = Math.max(0, copyRemaining[currentCardIdx] ?? copyRepetitions);
@@ -823,7 +823,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         const correctCount = countCopies(copyInput, currentCard.word);
         if (correctCount < currentRemaining) {
-            showToast(t.vocab.flashcardDoing.toastCopyNotEnough.replace('{n}', String(currentRemaining)), 'error');
+            showToast(t('vocab.flashcardDoing.toastCopyNotEnough').replace('{n}', String(currentRemaining)), 'error');
             return;
         }
 
@@ -834,7 +834,7 @@ export default function VocabularyFlashcardDoingPage() {
 
         if (remainingAfterSubmit === 0) {
             if (!planId || !currentCard.entry_id) {
-                showToast(t.vocab.flashcardDoing.toastEntryMissing, 'error');
+                showToast(t('vocab.flashcardDoing.toastEntryMissing'), 'error');
                 return;
             }
 
@@ -858,7 +858,7 @@ export default function VocabularyFlashcardDoingPage() {
                     last_review: new Date().toISOString(),
                 });
             } catch {
-                showToast(t.vocab.flashcardDoing.toastWriteBackFail, 'error');
+                showToast(t('vocab.flashcardDoing.toastWriteBackFail'), 'error');
                 setSubmitting(false);
                 return;
             } finally {
@@ -1028,7 +1028,7 @@ export default function VocabularyFlashcardDoingPage() {
             })
             .catch((error) => {
                 console.error('[词汇学习] 退出前同步失败', error);
-                showToast(t.vocab.flashcardDoing.toastExitSyncFail, 'error');
+                showToast(t('vocab.flashcardDoing.toastExitSyncFail'), 'error');
                 setLeaving(false);
             });
     }, [backPath, navigate, leaving, submitting, syncCurrentAnsweredBeforeExit, syncLearningTimerOnExit, setLeaving]);
@@ -1037,7 +1037,7 @@ export default function VocabularyFlashcardDoingPage() {
     useExitWarning({
         enabled: initialized,
         hasPendingWork: queue.length > 0,
-        exitConfirmMessage: t.vocab.exitConfirm,
+        exitConfirmMessage: t('vocab.exitConfirm'),
         onPageHide: useCallback(() => {
             void syncLearningTimerOnExit(true);
         }, [syncLearningTimerOnExit]),
@@ -1047,13 +1047,13 @@ export default function VocabularyFlashcardDoingPage() {
     if (!initialized || (!currentCard && step === 'doing')) {
         return (
             <Layout
-                pageTitle={`${t.vocab.resultTitle}${planName ? ` · ${planName}` : ''}`}
-                pageSubtitle={t.vocab.masteredCount.replace('{n}', results.length.toString())}
+                pageTitle={`${t('vocab.resultTitle')}${planName ? ` · ${planName}` : ''}`}
+                pageSubtitle={t('vocab.masteredCount').replace('{n}', results.length.toString())}
                 backUrl="/vocabulary"
-                backText={t.common.back}
+                backText={t('common.back')}
             >
                 <div className="config-page-wrap fc-loading">
-                    <p>{t.common.loading}</p>
+                    <p>{t('common.loading')}</p>
                 </div>
             </Layout>
         );
@@ -1105,13 +1105,13 @@ export default function VocabularyFlashcardDoingPage() {
                             justifyContent: 'center', fontSize: 13,
                             color: 'var(--color-text-secondary)',
                         }}>
-                            <span>✅ {t.vocab.flashcardDoing.statGraduated} <strong style={{ color: 'var(--color-text)' }}>{graduatedTotal}</strong> {t.vocab.flashcardDoing.statWordUnit}</span>
-                            <span>🖱 {t.vocab.flashcardDoing.statRated} <strong style={{ color: 'var(--color-text)' }}>{totalClicks}</strong> {t.vocab.flashcardDoing.statTimesUnit}</span>
-                            <span>❌ {t.vocab.flashcardDoing.statForgot} <strong style={{ color: totalForgets > 0 ? '#dc2626' : 'var(--color-text)' }}>{totalForgets}</strong> {t.vocab.flashcardDoing.statTimesUnit}</span>
+                            <span>✅ {t('vocab.flashcardDoing.statGraduated')} <strong style={{ color: 'var(--color-text)' }}>{graduatedTotal}</strong> {t('vocab.flashcardDoing.statWordUnit')}</span>
+                            <span>🖱 {t('vocab.flashcardDoing.statRated')} <strong style={{ color: 'var(--color-text)' }}>{totalClicks}</strong> {t('vocab.flashcardDoing.statTimesUnit')}</span>
+                            <span>❌ {t('vocab.flashcardDoing.statForgot')} <strong style={{ color: totalForgets > 0 ? '#dc2626' : 'var(--color-text)' }}>{totalForgets}</strong> {t('vocab.flashcardDoing.statTimesUnit')}</span>
                         </div>
                     </div>
                     <div className="config-card">
-                        <h3>{t.vocab.reviewDetail}</h3>
+                        <h3>{t('vocab.reviewDetail')}</h3>
                         <ul className="fc-result-list">
                             {results.map((r, i) => (
                                 <li key={i} className="fc-result-item">
@@ -1122,9 +1122,9 @@ export default function VocabularyFlashcardDoingPage() {
                             ))}
                         </ul>
                         <div className="fc-result-actions">
-                            <button type="button" className="fc-action-btn" onClick={handleRetry}><RotateCcw size={16} /> {t.vocab.retry}</button>
+                            <button type="button" className="fc-action-btn" onClick={handleRetry}><RotateCcw size={16} /> {t('vocab.retry')}</button>
                             <button type="button" className="fc-action-btn primary" onClick={handleBack}>
-                                {t.common.back}
+                                {t('common.back')}
                             </button>
                         </div>
                     </div>
@@ -1139,11 +1139,11 @@ export default function VocabularyFlashcardDoingPage() {
     return (
         <Layout
             onBack={handleBack}
-            backText={t.common.back}
+            backText={t('common.back')}
             pageTitle={
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {planName || t.vocab.studyTitle}
-                    {reviewOnly && <span className="fc-review-badge">{t.vocab.reviewMode}</span>}
+                    {planName || t('vocab.studyTitle')}
+                    {reviewOnly && <span className="fc-review-badge">{t('vocab.reviewMode')}</span>}
                 </span>
             }
         >
@@ -1153,7 +1153,7 @@ export default function VocabularyFlashcardDoingPage() {
                     <span className="fc-counter">
                         ✓ {dailyDone} / {dailyTotal}
                         <span className="fc-queue-remaining">
-                            {t.vocab.queue} {queue.length}
+                            {t('vocab.queue')} {queue.length}
                         </span>
                     </span>
                     <div className="fc-header-right">
@@ -1161,12 +1161,12 @@ export default function VocabularyFlashcardDoingPage() {
                             type="button"
                             className="fc-auto-speak-btn"
                             onClick={toggleAutoSpeak}
-                            aria-label={autoSpeakEnabled ? t.vocab.flashcardDoing.autoSpeakDisableAria : t.vocab.flashcardDoing.autoSpeakEnableAria}
+                            aria-label={autoSpeakEnabled ? t('vocab.flashcardDoing.autoSpeakDisableAria') : t('vocab.flashcardDoing.autoSpeakEnableAria')}
                         >
-                            {autoSpeakEnabled ? <><Volume2 size={14} /> {t.vocab.flashcardDoing.autoSpeakOn}</> : <><VolumeX size={14} /> {t.vocab.flashcardDoing.autoSpeakOff}</>}
+                            {autoSpeakEnabled ? <><Volume2 size={14} /> {t('vocab.flashcardDoing.autoSpeakOn')}</> : <><VolumeX size={14} /> {t('vocab.flashcardDoing.autoSpeakOff')}</>}
                         </button>
-                        <span className="fc-learning-timer" title={t.vocab.flashcardDoing.timerTitle}>
-                            {t.vocab.flashcardDoing.todayDuration.replace('{t}', todayLearningDuration)}
+                        <span className="fc-learning-timer" title={t('vocab.flashcardDoing.timerTitle')}>
+                            {t('vocab.flashcardDoing.todayDuration').replace('{t}', todayLearningDuration)}
                         </span>
                         <div className="fc-mode-badge-wrap" ref={trackingMenuRef}>
                             {(() => {
@@ -1177,20 +1177,20 @@ export default function VocabularyFlashcardDoingPage() {
                                         <button
                                             className={`fc-mode-badge${isCardMode ? ' has-submenu' : ''}`}
                                             onClick={() => isCardMode && setTrackingMenuOpen((v) => !v)}
-                                            title={isCardMode ? t.vocab.flashcardDoing.modeMenuTitle : undefined}
+                                            title={isCardMode ? t('vocab.flashcardDoing.modeMenuTitle') : undefined}
                                         >
                                             {MODE_LABELS[mode]}
                                             {isFlashcardOnly && trackingMode !== 'none' && (
                                                 <span className="fc-mode-badge-sub">· {TRACKING_LABELS[trackingMode]}</span>
                                             )}
                                             {isFlashcardOnly && cardFrontFace === 'zh' && (
-                                                <span className="fc-mode-badge-sub">{t.vocab.flashcardDoing.zhFrontBadge}</span>
+                                                <span className="fc-mode-badge-sub">{t('vocab.flashcardDoing.zhFrontBadge')}</span>
                                             )}
                                             {isCardMode && <span className="fc-mode-badge-arrow">▾</span>}
                                         </button>
                                         {trackingMenuOpen && isCardMode && (
                                             <div className="fc-tracking-menu">
-                                                <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t.vocab.flashcardDoing.menuStudyMode}</div>
+                                                <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t('vocab.flashcardDoing.menuStudyMode')}</div>
                                                 {(['flashcard', 'flashcard-simple', 'read-aloud'] as StudyMode[]).map((m) => (
                                                     <button
                                                         key={m}
@@ -1205,8 +1205,8 @@ export default function VocabularyFlashcardDoingPage() {
                                                 {isFlashcardOnly && (
                                                     <>
                                                         <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
-                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t.vocab.flashcardDoing.menuCardFace}</div>
-                                                        {([['en', t.vocab.flashcardDoing.faceEn], ['zh', t.vocab.flashcardDoing.faceZh]] as [('en' | 'zh'), string][]).map(([face, label]) => (
+                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t('vocab.flashcardDoing.menuCardFace')}</div>
+                                                        {([['en', t('vocab.flashcardDoing.faceEn')], ['zh', t('vocab.flashcardDoing.faceZh')]] as [('en' | 'zh'), string][]).map(([face, label]) => (
                                                             <button
                                                                 key={face}
                                                                 className={`fc-tracking-menu-item${cardFrontFace === face ? ' active' : ''}`}
@@ -1218,7 +1218,7 @@ export default function VocabularyFlashcardDoingPage() {
                                                             </button>
                                                         ))}
                                                         <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
-                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t.vocab.flashcardDoing.menuTracking}</div>
+                                                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t('vocab.flashcardDoing.menuTracking')}</div>
                                                         {(['none', 'eye', 'mouse'] as TrackingMode[]).map((tm) => (
                                                             <button
                                                                 key={tm}
@@ -1240,7 +1240,7 @@ export default function VocabularyFlashcardDoingPage() {
                         </div>
                         <span className="fc-state-label-inline">
                             {STATE_LABELS[currentCard.state] ?? ''}
-                            {currentCard.reps > 0 && t.vocab.flashcardDoing.reviewTimes.replace('{n}', String(currentCard.reps))}
+                            {currentCard.reps > 0 && t('vocab.flashcardDoing.reviewTimes').replace('{n}', String(currentCard.reps))}
                         </span>
                     </div>
                 </div>
@@ -1250,7 +1250,7 @@ export default function VocabularyFlashcardDoingPage() {
                     aria-valuenow={progress}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-label={t.vocab.flashcardDoing.progressAria}
+                    aria-label={t('vocab.flashcardDoing.progressAria')}
                 >
                     <div className="fc-progress-fill" style={{ width: `${progress}%` }} />
                 </div>

@@ -54,7 +54,7 @@ function formatTimer(seconds: number): string {
 /* ── component ─────────────────────────────────────────────────────────────── */
 
 export default function ArticleCopyPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const { id } = useParams<{ id: string }>();
     const planId = Number(id);
     const navigate = useNavigate();
@@ -106,7 +106,7 @@ export default function ArticleCopyPage() {
     /* ── load article ────────────────────────────────────────────────────── */
     const loadArticle = useCallback(async (refresh = false) => {
         if (!planId || Number.isNaN(planId)) {
-            setError(t.vocab.articleCopy.errInvalidPlan);
+            setError(t('vocab.articleCopy.errInvalidPlan'));
             setLoading(false);
             return;
         }
@@ -139,7 +139,7 @@ export default function ArticleCopyPage() {
         } catch (err: unknown) {
             if ((err as { name?: string }).name === 'CanceledError' || ctrl.signal.aborted) return;
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-            setError(msg || t.vocab.articleCopy.errLoadFail);
+            setError(msg || t('vocab.articleCopy.errLoadFail'));
         } finally {
             setLoading(false);
             if (loadingStepsTimerRef.current) {
@@ -237,7 +237,7 @@ export default function ArticleCopyPage() {
                     setCompleteResult(result);
                 } catch (err: unknown) {
                     const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-                    showToast(msg || t.vocab.articleCopy.submitFail, 'error');
+                    showToast(msg || t('vocab.articleCopy.submitFail'), 'error');
                 } finally {
                     setCompleting(false);
                 }
@@ -430,17 +430,17 @@ export default function ArticleCopyPage() {
 
     if (loading) {
         const steps = [
-            { label: t.vocab.articleCopy.stepConnectLabel, desc: t.vocab.articleCopy.stepConnectDesc },
-            { label: t.vocab.articleCopy.stepGeneratingLabel, desc: t.vocab.articleCopy.stepGeneratingDesc },
-            { label: t.vocab.articleCopy.stepAnalyzingLabel, desc: t.vocab.articleCopy.stepAnalyzingDesc },
+            { label: t('vocab.articleCopy.stepConnectLabel'), desc: t('vocab.articleCopy.stepConnectDesc') },
+            { label: t('vocab.articleCopy.stepGeneratingLabel'), desc: t('vocab.articleCopy.stepGeneratingDesc') },
+            { label: t('vocab.articleCopy.stepAnalyzingLabel'), desc: t('vocab.articleCopy.stepAnalyzingDesc') },
         ];
 
         return (
             <Layout>
                 <div className="ac-loading">
                     <div className="ac-loading-spinner" />
-                    <h2 className="ac-loading-title">{t.vocab.articleCopy.preparingTitle}</h2>
-                    <p className="ac-loading-hint">{t.vocab.articleCopy.preparingHint}</p>
+                    <h2 className="ac-loading-title">{t('vocab.articleCopy.preparingTitle')}</h2>
+                    <p className="ac-loading-hint">{t('vocab.articleCopy.preparingHint')}</p>
 
                     <div className="ac-loading-steps">
                         {steps.map((step, i) => (
@@ -468,11 +468,11 @@ export default function ArticleCopyPage() {
                         className="ac-cancel-btn"
                         onClick={() => { abortRef.current?.abort(); navigate(-1); }}
                     >
-                        {t.vocab.articleCopy.cancelBtn}
+                        {t('vocab.articleCopy.cancelBtn')}
                     </button>
 
                     {loadingStep >= 1 && (
-                        <p className="ac-loading-slow">{t.vocab.articleCopy.slowHint}</p>
+                        <p className="ac-loading-slow">{t('vocab.articleCopy.slowHint')}</p>
                     )}
                 </div>
             </Layout>
@@ -483,8 +483,8 @@ export default function ArticleCopyPage() {
         return (
             <Layout>
                 <div className="ac-error">
-                    <p>{error || t.vocab.articleCopy.unavailable}</p>
-                    <button onClick={() => navigate(-1)}>{t.vocab.articleCopy.backBtn}</button>
+                    <p>{error || t('vocab.articleCopy.unavailable')}</p>
+                    <button onClick={() => navigate(-1)}>{t('vocab.articleCopy.backBtn')}</button>
                 </div>
             </Layout>
         );
@@ -499,16 +499,16 @@ export default function ArticleCopyPage() {
                         className="ac-back-btn"
                         onClick={() => navigate(`/vocabulary/plans/${planId}`)}
                     >
-                        {t.vocab.articleCopy.backToPlan}
+                        {t('vocab.articleCopy.backToPlan')}
                     </button>
-                    <span className="ac-plan-name">{planNameRef.current || t.vocab.articleCopy.fallbackTitle}</span>
-                    {cached && <span className="ac-cached-badge">{t.vocab.articleCopy.cachedBadge}</span>}
+                    <span className="ac-plan-name">{planNameRef.current || t('vocab.articleCopy.fallbackTitle')}</span>
+                    {cached && <span className="ac-cached-badge">{t('vocab.articleCopy.cachedBadge')}</span>}
                     <button
                         className="ac-regenerate-btn"
                         onClick={handleRegenerate}
                         disabled={regenerating}
                     >
-                        {regenerating ? t.vocab.articleCopy.regeneratingBtn : t.vocab.articleCopy.regenerateBtn}
+                        {regenerating ? t('vocab.articleCopy.regeneratingBtn') : t('vocab.articleCopy.regenerateBtn')}
                     </button>
                     <span className="ac-timer">{formatTimer(elapsedSeconds)}</span>
                 </div>
@@ -516,14 +516,14 @@ export default function ArticleCopyPage() {
                 {/* progress */}
                 <div className="ac-progress">
                     <div className="ac-progress-item">
-                        <span className="ac-progress-label">{t.vocab.articleCopy.overallProgress}</span>
+                        <span className="ac-progress-label">{t('vocab.articleCopy.overallProgress')}</span>
                         <span className="ac-progress-value">{progress.pct}%</span>
                         <div className="ac-progress-bar">
                             <div className="ac-progress-fill" style={{ width: `${progress.pct}%` }} />
                         </div>
                     </div>
                     <div className="ac-progress-item">
-                        <span className="ac-progress-label">{t.vocab.articleCopy.correctnessLabel}</span>
+                        <span className="ac-progress-label">{t('vocab.articleCopy.correctnessLabel')}</span>
                         <span className="ac-progress-value">{progress.accuracy}%</span>
                         <div className="ac-progress-bar">
                             <div
@@ -534,10 +534,10 @@ export default function ArticleCopyPage() {
                     </div>
                     <div className="ac-progress-item">
                         <span className="ac-progress-label">
-                            {t.vocab.articleCopy.targetWords.replace('{done}', String(progress.wordsDone)).replace('{total}', String(progress.wordsTotal))}
+                            {t('vocab.articleCopy.targetWords').replace('{done}', String(progress.wordsDone)).replace('{total}', String(progress.wordsTotal))}
                         </span>
                         <span className="ac-progress-value">
-                            {t.vocab.articleCopy.charProgress.replace('{typed}', String(progress.typed)).replace('{total}', String(progress.total))}
+                            {t('vocab.articleCopy.charProgress').replace('{typed}', String(progress.typed)).replace('{total}', String(progress.total))}
                         </span>
                         <div className="ac-progress-bar">
                             <div
@@ -569,11 +569,11 @@ export default function ArticleCopyPage() {
                             disabled={currentPage === 0}
                             onClick={() => goToPage(currentPage - 1)}
                         >
-                            {t.vocab.articleCopy.prevPage}
+                            {t('vocab.articleCopy.prevPage')}
                         </button>
                         <div className="ac-page-nav-info">
                             <span className="ac-page-nav-index">
-                                {t.vocab.articleCopy.pageNum.replace('{n}', String(currentPage + 1)).replace('{total}', String(totalPages))}
+                                {t('vocab.articleCopy.pageNum').replace('{n}', String(currentPage + 1)).replace('{total}', String(totalPages))}
                             </span>
                             {boundaries[currentPage] && (
                                 <span className="ac-page-title">
@@ -586,7 +586,7 @@ export default function ArticleCopyPage() {
                             disabled={currentPage >= totalPages - 1}
                             onClick={() => goToPage(currentPage + 1)}
                         >
-                            {t.vocab.articleCopy.nextPage}
+                            {t('vocab.articleCopy.nextPage')}
                         </button>
                     </div>
                 )}
@@ -601,7 +601,7 @@ export default function ArticleCopyPage() {
                         <button
                             className="ac-sidebar-toggle"
                             onClick={() => setSidebarOpen(prev => !prev)}
-                            title={sidebarOpen ? t.vocab.articleCopy.sidebarClose : t.vocab.articleCopy.sidebarOpen}
+                            title={sidebarOpen ? t('vocab.articleCopy.sidebarClose') : t('vocab.articleCopy.sidebarOpen')}
                         >
                             {sidebarOpen ? '◀' : '▶'}
                         </button>
@@ -615,13 +615,13 @@ export default function ArticleCopyPage() {
                                             className={`ac-sidebar-tab${sidebarTab === 'words' ? ' active' : ''}`}
                                             onClick={() => setSidebarTab('words')}
                                         >
-                                            {t.vocab.articleCopy.targetWordsCount.replace('{done}', String(progress.wordsDone)).replace('{total}', String(progress.wordsTotal))}
+                                            {t('vocab.articleCopy.targetWordsCount').replace('{done}', String(progress.wordsDone)).replace('{total}', String(progress.wordsTotal))}
                                         </button>
                                         <button
                                             className={`ac-sidebar-tab${sidebarTab === 'translation' ? ' active' : ''}`}
                                             onClick={() => setSidebarTab('translation')}
                                         >
-                                            {t.vocab.articleCopy.translationTab}
+                                            {t('vocab.articleCopy.translationTab')}
                                         </button>
                                     </div>
 
@@ -653,7 +653,7 @@ export default function ArticleCopyPage() {
                                                     <>
                                                         {boundaries.length > 0 && (
                                                             <p className="ac-translation-page-hint">
-                                                                {t.vocab.articleCopy.pageTranslation.replace('{n}', String(currentPage + 1))}
+                                                                {t('vocab.articleCopy.pageTranslation').replace('{n}', String(currentPage + 1))}
                                                             </p>
                                                         )}
                                                         <p className="ac-translation-text">
@@ -661,7 +661,7 @@ export default function ArticleCopyPage() {
                                                         </p>
                                                     </>
                                                 ) : (
-                                                    <p className="ac-translation-empty">{t.vocab.articleCopy.emptyTranslation}</p>
+                                                    <p className="ac-translation-empty">{t('vocab.articleCopy.emptyTranslation')}</p>
                                                 )}
                                             </>
                                         )}
@@ -671,7 +671,7 @@ export default function ArticleCopyPage() {
                         )}
 
                         {!sidebarOpen && (
-                            <span className="ac-sidebar-collapsed-text">{t.vocab.articleCopy.sidebarLabel}</span>
+                            <span className="ac-sidebar-collapsed-text">{t('vocab.articleCopy.sidebarLabel')}</span>
                         )}
                     </aside>
 
@@ -710,8 +710,8 @@ export default function ArticleCopyPage() {
                 {article.atConsumed !== undefined && article.atConsumed > 0 && (
                     <div className="ac-cost">
                         {article.cached
-                            ? t.vocab.articleCopy.cachedNoAT
-                            : t.vocab.articleCopy.atConsumed.replace('{n}', article.atConsumed.toLocaleString())}
+                            ? t('vocab.articleCopy.cachedNoAT')
+                            : t('vocab.articleCopy.atConsumed').replace('{n}', article.atConsumed.toLocaleString())}
                     </div>
                 )}
             </div>
@@ -720,32 +720,32 @@ export default function ArticleCopyPage() {
             {completeResult && (
                 <div className="ac-complete-overlay">
                     <div className="ac-complete-card">
-                        <h3>{t.vocab.articleCopy.completedTitle}</h3>
+                        <h3>{t('vocab.articleCopy.completedTitle')}</h3>
 
                         <div className="ac-complete-stats">
                             <div className="ac-complete-row">
-                                <span>{t.vocab.articleCopy.timeUsedLabel}</span>
+                                <span>{t('vocab.articleCopy.timeUsedLabel')}</span>
                                 <span>{formatTimer(elapsedSeconds)}</span>
                             </div>
                             <div className="ac-complete-row">
-                                <span>{t.vocab.articleCopy.correctnessValueLabel}</span>
+                                <span>{t('vocab.articleCopy.correctnessValueLabel')}</span>
                                 <span>{progress.accuracy}%</span>
                             </div>
                             <div className="ac-complete-row">
-                                <span>{t.vocab.articleCopy.markedWordsLabel}</span>
-                                <span>{completeResult.marked_count} {t.vocab.articleCopy.markedUnit}</span>
+                                <span>{t('vocab.articleCopy.markedWordsLabel')}</span>
+                                <span>{completeResult.marked_count} {t('vocab.articleCopy.markedUnit')}</span>
                             </div>
                         </div>
 
                         <p className="ac-complete-done">
-                            {t.vocab.articleCopy.allMarkedMsg}
+                            {t('vocab.articleCopy.allMarkedMsg')}
                         </p>
 
                         <button
                             className="ac-back-btn ac-back-btn-large"
                             onClick={() => navigate(`/vocabulary/plans/${planId}`)}
                         >
-                            {t.vocab.storyMode.backToPlan}
+                            {t('vocab.storyMode.backToPlan')}
                         </button>
                     </div>
                 </div>
@@ -756,7 +756,7 @@ export default function ArticleCopyPage() {
                 <div className="ac-complete-overlay">
                     <div className="ac-complete-card">
                         <div className="ac-loading-spinner" style={{ marginBottom: 16 }} />
-                        <p className="ac-completing-msg">{t.vocab.articleCopy.submittingMsg}</p>
+                        <p className="ac-completing-msg">{t('vocab.articleCopy.submittingMsg')}</p>
                     </div>
                 </div>
             )}

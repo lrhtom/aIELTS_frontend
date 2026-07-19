@@ -9,7 +9,7 @@ import remarkGfm from 'remark-gfm';
 import { apiClient, fetchStream, assistantApi } from '../../api/client';
 import { checkinApi } from '../../api/checkin';
 import { useLang } from '../../i18n/LanguageContext';
-import type { Translations } from '../../i18n/translations';
+import type { TFunction } from 'i18next';
 
 async function readSseStream(
     response: Response,
@@ -381,20 +381,20 @@ function getSpeechRecognitionConstructor(): BrowserSpeechRecognitionConstructor 
     return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
 }
 
-function mapSpeechRecognitionError(errorCode: string, t: Translations['assistant']['speech']) {
+function mapSpeechRecognitionError(errorCode: string, t: TFunction<'translation'>) {
     if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed') {
-        return t.noMicPermission;
+        return t('assistant.speech.noMicPermission');
     }
     if (errorCode === 'no-speech') {
-        return t.noSpeech;
+        return t('assistant.speech.noSpeech');
     }
     if (errorCode === 'audio-capture') {
-        return t.micUnavailable;
+        return t('assistant.speech.micUnavailable');
     }
     if (errorCode === 'network') {
-        return t.networkError;
+        return t('assistant.speech.networkError');
     }
-    return t.genericError;
+    return t('assistant.speech.genericError');
 }
 
 function trimCompactText(value: string, maxLen: number) {
@@ -633,13 +633,13 @@ const STEP_ICON: Record<string, string> = {
     error: '❌',
 };
 
-function getStepLabel(type: string, t: Translations['assistant']['agent']) {
+function getStepLabel(type: string, t: TFunction<'translation'>) {
     const labels: Record<string, string> = {
-        thinking: t.thinkingTitle,
-        action: t.stepAction,
-        observation: t.stepObservation,
-        final: t.stepFinal,
-        error: t.stepError,
+        thinking: t('assistant.agent.thinkingTitle'),
+        action: t('assistant.agent.stepAction'),
+        observation: t('assistant.agent.stepObservation'),
+        final: t('assistant.agent.stepFinal'),
+        error: t('assistant.agent.stepError'),
     };
     return labels[type] || type;
 }
@@ -647,7 +647,7 @@ function getStepLabel(type: string, t: Translations['assistant']['agent']) {
 export default function GlobalAssistantBall() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { lang, setLang, translations: t } = useLang();
+    const { lang, setLang, t } = useLang();
     const initialViewport = getViewportSize();
 
     const [viewport, setViewport] = useState(initialViewport);
@@ -674,10 +674,10 @@ export default function GlobalAssistantBall() {
     const sourceTextareaRef = useRef<HTMLTextAreaElement | null>(null);
     const synonymReqRef = useRef(0);
     const [agentProfile, setAgentProfile] = useState<PersonalAgentProfile>({
-        name: t.assistant.agent.defaultProfile.name,
-        role: t.assistant.agent.defaultProfile.role,
-        goal: t.assistant.agent.defaultProfile.goal,
-        style: t.assistant.agent.defaultProfile.style,
+        name: t('assistant.agent.defaultProfile.name'),
+        role: t('assistant.agent.defaultProfile.role'),
+        goal: t('assistant.agent.defaultProfile.goal'),
+        style: t('assistant.agent.defaultProfile.style'),
     });
     const [agentMessages, setAgentMessages] = useState<AgentChatMessage[]>([]);
     const [agentInputText, setAgentInputText] = useState('');
@@ -728,7 +728,7 @@ export default function GlobalAssistantBall() {
         const remaining = todos.filter(item => !item.done);
         if (remaining.length < todos.length) {
             setTodos(remaining); assistantApi.clearCompletedTodos().catch(err => { console.error(err); showToast('Failed to clear completed todos', 'error'); setTodos(todos); });
-            showToast(t.assistant.todo.cleared, 'success');
+            showToast(t('assistant.todo.cleared'), 'success');
         }
     };
 
@@ -782,7 +782,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
         
         // Basic URL validation
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            showToast(t.assistant.shortcuts.invalidUrl, 'error');
+            showToast(t('assistant.shortcuts.invalidUrl'), 'error');
             return;
         }
 
@@ -1125,12 +1125,12 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
     const handleTranslate = useCallback(async () => {
         const trimmed = inputText.trim();
         if (!trimmed) {
-            showToast(t.assistant.translate.toastEmpty, 'error');
+            showToast(t('assistant.translate.toastEmpty'), 'error');
             return;
         }
 
         if (sourceLang !== 'auto' && sourceLang === targetLang) {
-            showToast(t.assistant.translate.toastSameLang, 'error');
+            showToast(t('assistant.translate.toastSameLang'), 'error');
             return;
         }
 
@@ -1152,7 +1152,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             const decoded = decodeHtmlEntities(translated);
             setTranslatedText(decoded);
             setSynonyms([]);
-            showToast(t.assistant.translate.toastSuccess, 'success');
+            showToast(t('assistant.translate.toastSuccess'), 'success');
 
             // 译文为单个英文单词时，后台拉取近义词，帮助扩充同义表达。
             // 不阻塞主流程；用请求序号防止旧结果覆盖新结果。
@@ -1166,7 +1166,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             }
         } catch (error) {
             console.error('Translate failed', error);
-            showToast(t.assistant.translate.toastFail, 'error');
+            showToast(t('assistant.translate.toastFail'), 'error');
         } finally {
             setIsTranslating(false);
         }
@@ -1268,7 +1268,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
         };
 
         recognition.onerror = (event) => {
-            const message = mapSpeechRecognitionError(String(event.error || '').trim(), t.assistant.speech);
+            const message = mapSpeechRecognitionError(String(event.error || '').trim(), t);
             console.warn('Voice input error:', message);
             voiceManualStopRef.current = true;
         };
@@ -1330,7 +1330,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
     const speakText = useCallback((text: string, lang: string) => {
         const trimmed = text.trim();
         if (!trimmed) {
-            showToast(t.assistant.voice.noText, 'error');
+            showToast(t('assistant.voice.noText'), 'error');
             return;
         }
 
@@ -1372,17 +1372,17 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
         };
 
         if (!normalizedProfile.name || !normalizedProfile.role || !normalizedProfile.goal || !normalizedProfile.style) {
-            showToast(t.assistant.agent.toastEmptyProfile, 'error');
+            showToast(t('assistant.agent.toastEmptyProfile'), 'error');
             return;
         }
 
         try {
             window.localStorage.setItem(PERSONAL_AGENT_STORAGE_KEY, JSON.stringify(normalizedProfile));
             setAgentProfile(normalizedProfile);
-            showToast(t.assistant.agent.toastProfileSaved, 'success');
+            showToast(t('assistant.agent.toastProfileSaved'), 'success');
         } catch (error) {
             console.error('Save personal agent profile failed', error);
-            showToast(t.assistant.agent.toastProfileSaveFail, 'error');
+            showToast(t('assistant.agent.toastProfileSaveFail'), 'error');
         }
     };
 
@@ -1393,7 +1393,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
         setAgentSteps([]);
         setIsAgentRunning(false);
         setIsAgentThinkingExpanded(false);
-        showToast(t.assistant.agent.toastChatCleared, 'success');
+        showToast(t('assistant.agent.toastChatCleared'), 'success');
     };
 
     const handleQuickCheckin = useCallback(async () => {
@@ -1407,14 +1407,14 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             // Compose from structured fields — the backend `message` string is
             // Chinese-only and bypasses i18n.
             const embed = result.ok
-                ? `**${t.assistant.checkin.successMessage.replace('{bonus}', (result.bonus ?? 0).toLocaleString())}**\n\n` +
-                  `${t.assistant.checkin.balance}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
-                  `${t.assistant.checkin.streak}: ${result.checkin_streak ?? 0} ${t.assistant.checkin.daysUnit}\n` +
-                  `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}` +
+                ? `**${t('assistant.checkin.successMessage').replace('{bonus}', (result.bonus ?? 0).toLocaleString())}**\n\n` +
+                  `${t('assistant.checkin.balance')}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
+                  `${t('assistant.checkin.streak')}: ${result.checkin_streak ?? 0} ${t('assistant.checkin.daysUnit')}\n` +
+                  `${t('assistant.checkin.totalCheckins')}: ${result.checkin_count ?? 0} ${t('assistant.checkin.daysUnit')}` +
                   (result.card_awarded
-                      ? `\n\n${t.assistant.checkin.cardAwarded.replace('{n}', String(result.checkin_streak ?? 0))}`
+                      ? `\n\n${t('assistant.checkin.cardAwarded').replace('{n}', String(result.checkin_streak ?? 0))}`
                       : '')
-                : `**${t.assistant.checkin.alreadyMessage}**`;
+                : `**${t('assistant.checkin.alreadyMessage')}**`;
             const assistantMessage: AgentChatMessage = {
                 id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
                 role: 'assistant',
@@ -1422,7 +1422,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             };
             setAgentMessages(prev => [...prev, assistantMessage]);
         } catch {
-            showToast(t.assistant.checkin.failMessage, 'error');
+            showToast(t('assistant.checkin.failMessage'), 'error');
         } finally {
             setIsCheckingIn(false);
         }
@@ -1470,10 +1470,10 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                 try {
                     const result = await checkinApi.doCheckin();
                     const embed = result.ok
-                        ? `**${t.assistant.checkin.successMessage.replace('{bonus}', (result.bonus ?? 0).toLocaleString())}**\n\n` +
-                          `${t.assistant.checkin.balance}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
-                          `${t.assistant.checkin.totalCheckins}: ${result.checkin_count ?? 0} ${t.assistant.checkin.daysUnit}`
-                        : `**${t.assistant.checkin.alreadyMessage}**`;
+                        ? `**${t('assistant.checkin.successMessage').replace('{bonus}', (result.bonus ?? 0).toLocaleString())}**\n\n` +
+                          `${t('assistant.checkin.balance')}: ${(result.balance ?? 0).toLocaleString()} AT\n` +
+                          `${t('assistant.checkin.totalCheckins')}: ${result.checkin_count ?? 0} ${t('assistant.checkin.daysUnit')}`
+                        : `**${t('assistant.checkin.alreadyMessage')}**`;
                     const assistantMessage: AgentChatMessage = {
                         id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
                         role: 'assistant',
@@ -1484,7 +1484,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                     const failMessage: AgentChatMessage = {
                         id: `${Date.now()}-a-${Math.random().toString(16).slice(2, 8)}`,
                         role: 'assistant',
-                        content: t.assistant.checkin.failMessage,
+                        content: t('assistant.checkin.failMessage'),
                     };
                     setAgentMessages(prev => [...prev, failMessage]);
                 }
@@ -1706,7 +1706,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                 setAgentSteps(prev => [...prev, {
                     id: `route-disabled-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
                     type: 'thinking',
-                    summary: t.assistant.agent.routeOpenPagesDisabled,
+                    summary: t('assistant.agent.routeOpenPagesDisabled'),
                 }]);
             }
 
@@ -1744,14 +1744,14 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             });
 
             if (!receivedReply) {
-                throw new Error(t.assistant.agent.toastNoReply);
+                throw new Error(t('assistant.agent.toastNoReply'));
             }
 
         } catch (error) {
             console.error('Agent chat failed', error);
             const responseData = (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
             const backendMessage = String(responseData?.error || responseData?.message || (error as Error).message || '').trim();
-            showToast(backendMessage || t.assistant.agent.toastReplyFail, 'error');
+            showToast(backendMessage || t('assistant.agent.toastReplyFail'), 'error');
         } finally {
             setIsAgentReplying(false);
             replyLockRef.current = false;
@@ -1812,7 +1812,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             });
 
             if (!blob) {
-                showToast(t.assistant.screenshot.toastGenerateFail, 'error');
+                showToast(t('assistant.screenshot.toastGenerateFail'), 'error');
                 return;
             }
 
@@ -1828,7 +1828,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                     const writable = await handle.createWritable();
                     await writable.write(blob);
                     await writable.close();
-                    showToast(t.assistant.screenshot.toastSaved, 'success');
+                    showToast(t('assistant.screenshot.toastSaved'), 'success');
                     return;
                 } catch (e) {
                     // User cancelled the picker — silently return
@@ -1845,10 +1845,10 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             a.click();
             URL.revokeObjectURL(url);
 
-            showToast(t.assistant.screenshot.toastSaved, 'success');
+            showToast(t('assistant.screenshot.toastSaved'), 'success');
         } catch (e) {
             console.error('Screenshot failed', e);
-            showToast(t.assistant.screenshot.toastFail, 'error');
+            showToast(t('assistant.screenshot.toastFail'), 'error');
         } finally {
             // Restore assistant visibility
             rootRef.current!.style.display = prevDisplay;
@@ -1871,7 +1871,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             <button
                 type="button"
                 className="assistant-ball"
-                aria-label={t.assistant.openAria}
+                aria-label={t('assistant.openAria')}
                 onPointerDown={handleBallPointerDown}
                 onClick={handleBallClick}
             >
@@ -1883,22 +1883,22 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                     className={`assistant-panel ${dockSide === 'right' ? 'assistant-panel--left' : 'assistant-panel--right'}`}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div className="assistant-panel-title">{t.assistant.title}</div>
+                        <div className="assistant-panel-title">{t('assistant.title')}</div>
                         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                             <button
                                 type="button"
                                 className="assistant-panel-lang-btn"
-                                title={lang === 'zh' ? t.assistant.switchLangTitleEn : t.assistant.switchLangTitleZh}
-                                aria-label={lang === 'zh' ? t.assistant.switchLangTitleEn : t.assistant.switchLangTitleZh}
+                                title={lang === 'zh' ? t('assistant.switchLangTitleEn') : t('assistant.switchLangTitleZh')}
+                                aria-label={lang === 'zh' ? t('assistant.switchLangTitleEn') : t('assistant.switchLangTitleZh')}
                                 onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
                             >
-                                {lang === 'zh' ? t.assistant.switchLangBtnEn : t.assistant.switchLangBtnZh}
+                                {lang === 'zh' ? t('assistant.switchLangBtnEn') : t('assistant.switchLangBtnZh')}
                             </button>
                             <button
                                 type="button"
                                 className="assistant-panel-screenshot-btn"
-                                title={t.assistant.screenshotTitle}
-                                aria-label={t.assistant.screenshotAria}
+                                title={t('assistant.screenshotTitle')}
+                                aria-label={t('assistant.screenshotAria')}
                                 disabled={isCapturing}
                                 onClick={handleScreenshot}
                             >
@@ -1907,8 +1907,8 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                             <button
                                 type="button"
                                 className="assistant-panel-close-btn"
-                                title={t.assistant.collapseTitle}
-                                aria-label={t.assistant.collapseAria}
+                                title={t('assistant.collapseTitle')}
+                                aria-label={t('assistant.collapseAria')}
                                 onClick={() => {
                                     setMenuOpen(false);
                                     setActiveAction(null);
@@ -1925,14 +1925,14 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                             className={`assistant-option-btn ${activeAction === 'translate' ? 'is-active' : ''}`}
                             onClick={() => setActiveAction(prev => (prev === 'translate' ? null : 'translate'))}
                         >
-                            {t.assistant.actions.translate}
+                            {t('assistant.actions.translate')}
                         </button>
                         <button
                             type="button"
                             className={`assistant-option-btn ${activeAction === 'personal-agent' ? 'is-active' : ''}`}
                             onClick={() => setActiveAction(prev => (prev === 'personal-agent' ? null : 'personal-agent'))}
                         >
-                            {t.assistant.actions.personalAgent}
+                            {t('assistant.actions.personalAgent')}
                         </button>
 
                         <button
@@ -1940,14 +1940,14 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                             className={`assistant-option-btn ${activeAction === 'todo' ? 'is-active' : ''}`}
                             onClick={() => setActiveAction(prev => (prev === 'todo' ? null : 'todo'))}
                         >
-                            {t.assistant.actions.todoList}
+                            {t('assistant.actions.todoList')}
                         </button>
                         <button
                             type="button"
                             className={`assistant-option-btn ${activeAction === 'shortcuts' ? 'is-active' : ''}`}
                             onClick={() => setActiveAction(prev => (prev === 'shortcuts' ? null : 'shortcuts'))}
                         >
-                            {t.assistant.actions.shortcuts}
+                            {t('assistant.actions.shortcuts')}
                         </button>
                         <button
                             type="button"
@@ -1955,7 +1955,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                             onClick={handleQuickCheckin}
                             disabled={isCheckingIn || hasCheckedInToday}
                         >
-                            {isCheckingIn ? t.assistant.actions.checking : hasCheckedInToday ? t.assistant.actions.checkinDone : t.assistant.actions.checkin}
+                            {isCheckingIn ? t('assistant.actions.checking') : hasCheckedInToday ? t('assistant.actions.checkinDone') : t('assistant.actions.checkin')}
                         </button>
                     </div>
 
@@ -1963,7 +1963,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                         <div className="assistant-translate-panel">
                             <div className="assistant-translate-lang-row">
                                 <label>
-                                    {t.assistant.translate.sourceLang}
+                                    {t('assistant.translate.sourceLang')}
                                     <select value={sourceLang} onChange={e => handleSourceLangChange(e.target.value)}>
                                         <option value="zh-CN">中文</option>
                                         <option value="en">English</option>
@@ -1974,13 +1974,13 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                     type="button"
                                     className="assistant-translate-swap-btn"
                                     onClick={handleSwapLanguages}
-                                    title={t.assistant.translate.swapTitle}
-                                    aria-label={t.assistant.translate.swapAria}
+                                    title={t('assistant.translate.swapTitle')}
+                                    aria-label={t('assistant.translate.swapAria')}
                                 >
                                     ⇄
                                 </button>
                                 <label>
-                                    {t.assistant.translate.targetLang}
+                                    {t('assistant.translate.targetLang')}
                                     <select value={targetLang} onChange={e => setTargetLang(e.target.value)}>
                                         <option value="en">English</option>
                                         <option value="zh-CN">中文</option>
@@ -1991,14 +1991,14 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                             </div>
 
                             <div className="assistant-translate-field-head">
-                                <span>{t.assistant.translate.sourceText}</span>
+                                <span>{t('assistant.translate.sourceText')}</span>
                                 <div className="assistant-translate-btn-group">
                                     <button
                                         type="button"
                                         className="assistant-voice-btn"
                                         onClick={handleSpeakSourceText}
-                                        title={t.assistant.translate.speakSourceTitle}
-                                        aria-label={t.assistant.translate.speakSourceAria}
+                                        title={t('assistant.translate.speakSourceTitle')}
+                                        aria-label={t('assistant.translate.speakSourceAria')}
                                     >
                                         🔊
                                     </button>
@@ -2006,8 +2006,8 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                         type="button"
                                         className={`assistant-voice-input-btn ${isVoiceListening ? 'is-listening' : ''}`}
                                         onClick={isVoiceListening ? handleStopVoiceForTranslate : handleStartVoiceForTranslate}
-                                        title={isVoiceListening ? t.assistant.translate.stopVoiceTitle : t.assistant.translate.startVoiceTitle}
-                                        aria-label={isVoiceListening ? t.assistant.translate.stopVoiceTitle : t.assistant.translate.startVoiceTitle}
+                                        title={isVoiceListening ? t('assistant.translate.stopVoiceTitle') : t('assistant.translate.startVoiceTitle')}
+                                        aria-label={isVoiceListening ? t('assistant.translate.stopVoiceTitle') : t('assistant.translate.startVoiceTitle')}
                                     >
                                         {isVoiceListening ? '🎤⏹' : '🎤'}
                                     </button>
@@ -2019,7 +2019,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                 className="assistant-translate-input"
                                 value={inputText}
                                 onChange={e => setInputText(e.target.value)}
-                                placeholder={t.assistant.translate.inputPlaceholder}
+                                placeholder={t('assistant.translate.inputPlaceholder')}
                             />
 
                             <button
@@ -2028,30 +2028,30 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                 disabled={isTranslating}
                                 onClick={handleTranslate}
                             >
-                                {isTranslating ? t.assistant.translate.translating : t.assistant.translate.translateBtn}
+                                {isTranslating ? t('assistant.translate.translating') : t('assistant.translate.translateBtn')}
                             </button>
 
                             <div className="assistant-translate-field-head">
-                                <span>{t.assistant.translate.translatedText}</span>
+                                <span>{t('assistant.translate.translatedText')}</span>
                                 <button
                                     type="button"
                                     className="assistant-voice-btn"
                                     onClick={handleSpeakTranslatedText}
-                                    title={t.assistant.translate.speakTranslatedTitle}
-                                    aria-label={t.assistant.translate.speakTranslatedAria}
+                                    title={t('assistant.translate.speakTranslatedTitle')}
+                                    aria-label={t('assistant.translate.speakTranslatedAria')}
                                 >
                                     🔊
                                 </button>
                             </div>
 
                             <div className="assistant-translate-output" aria-live="polite">
-                                {translatedText || t.assistant.translate.outputPlaceholder}
+                                {translatedText || t('assistant.translate.outputPlaceholder')}
                             </div>
 
                             {synonyms.length > 0 && (
                                 <div className="assistant-translate-synonyms">
                                     <span className="assistant-translate-synonyms-label">
-                                        {t.assistant.translate.synonymsLabel}
+                                        {t('assistant.translate.synonymsLabel')}
                                     </span>
                                     <div className="assistant-translate-synonyms-list">
                                         {synonyms.map(syn => (
@@ -2060,7 +2060,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                                 type="button"
                                                 className="assistant-translate-synonym-chip"
                                                 onClick={() => speakText(syn, targetLang)}
-                                                title={t.assistant.translate.synonymSpeakTitle}
+                                                title={t('assistant.translate.synonymSpeakTitle')}
                                             >
                                                 {syn}
                                             </button>
@@ -2074,7 +2074,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                     {activeAction === 'personal-agent' && (
                         <div className="assistant-agent-panel">
                             <p className="assistant-agent-tip">
-                                {t.assistant.agent.tip}
+                                {t('assistant.agent.tip')}
                             </p>
 
                             <div className="assistant-agent-actions">
@@ -2083,10 +2083,10 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                     className="assistant-agent-btn is-secondary"
                                     onClick={() => setIsAgentConfigExpanded(prev => !prev)}
                                 >
-                                    {isAgentConfigExpanded ? t.assistant.agent.collapseConfig : t.assistant.agent.expandConfig}
+                                    {isAgentConfigExpanded ? t('assistant.agent.collapseConfig') : t('assistant.agent.expandConfig')}
                                 </button>
                                 <button type="button" className="assistant-agent-btn" onClick={handleResetAgentChat}>
-                                    {t.assistant.agent.clearChat}
+                                    {t('assistant.agent.clearChat')}
                                 </button>
                             </div>
 
@@ -2094,45 +2094,45 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                 <div className="assistant-agent-config-wrap">
                                     <div className="assistant-agent-config-grid">
                                         <label className="assistant-agent-field">
-                                            {t.assistant.agent.nameLabel}
+                                            {t('assistant.agent.nameLabel')}
                                             <input
                                                 type="text"
                                                 value={agentProfile.name}
                                                 onChange={e => handleAgentFieldChange('name', e.target.value)}
-                                                placeholder={t.assistant.agent.namePlaceholder}
+                                                placeholder={t('assistant.agent.namePlaceholder')}
                                             />
                                         </label>
 
                                         <label className="assistant-agent-field">
-                                            {t.assistant.agent.roleLabel}
+                                            {t('assistant.agent.roleLabel')}
                                             <textarea
                                                 value={agentProfile.role}
                                                 onChange={e => handleAgentFieldChange('role', e.target.value)}
-                                                placeholder={t.assistant.agent.rolePlaceholder}
+                                                placeholder={t('assistant.agent.rolePlaceholder')}
                                             />
                                         </label>
 
                                         <label className="assistant-agent-field">
-                                            {t.assistant.agent.goalLabel}
+                                            {t('assistant.agent.goalLabel')}
                                             <textarea
                                                 value={agentProfile.goal}
                                                 onChange={e => handleAgentFieldChange('goal', e.target.value)}
-                                                placeholder={t.assistant.agent.goalPlaceholder}
+                                                placeholder={t('assistant.agent.goalPlaceholder')}
                                             />
                                         </label>
 
                                         <label className="assistant-agent-field">
-                                            {t.assistant.agent.styleLabel}
+                                            {t('assistant.agent.styleLabel')}
                                             <textarea
                                                 value={agentProfile.style}
                                                 onChange={e => handleAgentFieldChange('style', e.target.value)}
-                                                placeholder={t.assistant.agent.stylePlaceholder}
+                                                placeholder={t('assistant.agent.stylePlaceholder')}
                                             />
                                         </label>
                                     </div>
 
                                     <button type="button" className="assistant-agent-btn is-secondary" onClick={handleSaveAgentProfile}>
-                                        {t.assistant.agent.saveConfig}
+                                        {t('assistant.agent.saveConfig')}
                                     </button>
                                 </div>
                             )}
@@ -2147,7 +2147,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                             aria-expanded={isAgentThinkingExpanded}
                                         >
                                             <span className="assistant-agent-thinking-title">
-                                                {t.assistant.agent.thinkingTitle}
+                                                {t('assistant.agent.thinkingTitle')}
                                                 {agentSteps.length > 0 ? ` (${agentSteps.length})` : ''}
                                             </span>
                                             <span className="assistant-agent-thinking-toggle">
@@ -2170,7 +2170,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                                                 </div>
                                                                 <div className="agent-step-body">
                                                                     <div className="agent-step-label">
-                                                                        {getStepLabel(s.type, t.assistant.agent)}
+                                                                        {getStepLabel(s.type, t)}
                                                                         {s.step != null && <span className="agent-step-num"> (Step {s.step})</span>}
                                                                     </div>
                                                                     {s.type === 'thinking' && s.summary && (
@@ -2190,7 +2190,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                                                     {s.type === 'observation' && (
                                                                         <div className="agent-step-detail">
                                                                             <span className={`agent-step-status ${s.status === 'ok' ? 'is-ok' : 'is-err'}`}>
-                                                                                {s.status === 'ok' ? t.assistant.agent.stepObsSuccess : t.assistant.agent.stepObsFail}
+                                                                                {s.status === 'ok' ? t('assistant.agent.stepObsSuccess') : t('assistant.agent.stepObsFail')}
                                                                             </span>
                                                                             {s.summary && <span className="agent-step-summary">{s.summary}</span>}
                                                                         </div>
@@ -2204,7 +2204,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                                     </div>
                                                 ) : (
                                                     <div className="assistant-agent-thinking-placeholder">
-                                                        {t.assistant.agent.thinkingInit}
+                                                        {t('assistant.agent.thinkingInit')}
                                                     </div>
                                                 )}
                                             </div>
@@ -2214,7 +2214,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
 
                                 {agentMessages.length === 0 && !isAgentReplying && (
                                     <div className="assistant-agent-empty">
-                                        {t.assistant.agent.emptyChat}
+                                        {t('assistant.agent.emptyChat')}
                                     </div>
                                 )}
 
@@ -2229,7 +2229,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                             className={`assistant-agent-bubble ${isAssistantMessage ? 'is-assistant' : 'is-user'}`}
                                         >
                                             <div className="assistant-agent-bubble-role">
-                                                {isAssistantMessage ? agentProfile.name || t.assistant.agent.fallbackName : t.assistant.agent.you}
+                                                {isAssistantMessage ? agentProfile.name || t('assistant.agent.fallbackName') : t('assistant.agent.you')}
                                             </div>
                                             <div className={`assistant-agent-bubble-markdown ${canCollapse && !isExpanded ? 'is-collapsed' : ''}`}>
                                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -2248,7 +2248,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                                         }));
                                                     }}
                                                 >
-                                                    {isExpanded ? t.assistant.agent.collapseMsg : t.assistant.agent.expandMsg}
+                                                    {isExpanded ? t('assistant.agent.collapseMsg') : t('assistant.agent.expandMsg')}
                                                 </button>
                                             )}
                                         </div>
@@ -2257,9 +2257,9 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
 
                                 {shouldShowAgentPendingBubble && (
                                     <div className="assistant-agent-bubble is-assistant is-pending">
-                                        <div className="assistant-agent-bubble-role">{agentProfile.name || t.assistant.agent.fallbackName}</div>
+                                        <div className="assistant-agent-bubble-role">{agentProfile.name || t('assistant.agent.fallbackName')}</div>
                                         <div className="assistant-agent-pending-text">
-                                            <span className="assistant-agent-pending-label">{t.assistant.agent.thinking}</span>
+                                            <span className="assistant-agent-pending-label">{t('assistant.agent.thinking')}</span>
                                             <span className="assistant-agent-typing-dots" aria-hidden="true">
                                                 <i />
                                                 <i />
@@ -2276,7 +2276,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                     value={agentInputText}
                                     onChange={e => setAgentInputText(e.target.value)}
                                     onKeyDown={handleAgentInputKeyDown}
-                                    placeholder={t.assistant.agent.inputPlaceholder}
+                                    placeholder={t('assistant.agent.inputPlaceholder')}
                                 />
                                 <button
                                     type="button"
@@ -2286,7 +2286,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                     }}
                                     disabled={isAgentReplying || !agentInputText.trim()}
                                 >
-                                    {isAgentReplying ? t.assistant.agent.replying : t.assistant.agent.send}
+                                    {isAgentReplying ? t('assistant.agent.replying') : t('assistant.agent.send')}
                                 </button>
                             </div>
                         </div>
@@ -2304,7 +2304,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                         if (e.nativeEvent.isComposing) return;
                                         if (e.key === 'Enter') handleAddTodo();
                                     }}
-                                    placeholder={t.assistant.todo.inputPlaceholder}
+                                    placeholder={t('assistant.todo.inputPlaceholder')}
                                 />
                                 <button
                                     type="button"
@@ -2312,14 +2312,14 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                     onClick={handleAddTodo}
                                     disabled={!todoInput.trim()}
                                 >
-                                    {t.assistant.todo.addBtn}
+                                    {t('assistant.todo.addBtn')}
                                 </button>
                             </div>
 
                             {todos.length > 0 && (
                                 <div className="assistant-todo-meta">
                                     <span className="assistant-todo-remaining">
-                                        {t.assistant.todo.remaining.replace('{n}', String(todos.filter(item => !item.done).length))}
+                                        {t('assistant.todo.remaining').replace('{n}', String(todos.filter(item => !item.done).length))}
                                     </span>
                                     {todos.some(item => item.done) && (
                                         <button
@@ -2327,7 +2327,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                             className="assistant-todo-clear-btn"
                                             onClick={handleClearCompletedTodos}
                                         >
-                                            {t.assistant.todo.cleared}
+                                            {t('assistant.todo.cleared')}
                                         </button>
                                     )}
                                 </div>
@@ -2338,7 +2338,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
 
                             <div className="assistant-todo-list">
                                 {todos.length === 0 ? (
-                                    <div className="assistant-todo-empty">{t.assistant.todo.empty}</div>
+                                    <div className="assistant-todo-empty">{t('assistant.todo.empty')}</div>
                                 ) : (
                                     todos.map(item => (
                                         <div
@@ -2358,7 +2358,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                                 type="button"
                                                 className="assistant-todo-delete-btn"
                                                 onClick={() => handleDeleteTodo(item.id)}
-                                                aria-label={t.assistant.todo.deleteAria}
+                                                aria-label={t('assistant.todo.deleteAria')}
                                             >
                                                 ×
                                             </button>
@@ -2376,7 +2376,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                     className="assistant-shortcut-input-title"
                                     value={shortcutTitleInput}
                                     onChange={e => setShortcutTitleInput(e.target.value)}
-                                    placeholder={t.assistant.shortcuts.titlePlaceholder}
+                                    placeholder={t('assistant.shortcuts.titlePlaceholder')}
                                 />
                                 <input
                                     type="text"
@@ -2387,7 +2387,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                         if (e.nativeEvent.isComposing) return;
                                         if (e.key === 'Enter') handleAddShortcut();
                                     }}
-                                    placeholder={t.assistant.shortcuts.urlPlaceholder}
+                                    placeholder={t('assistant.shortcuts.urlPlaceholder')}
                                 />
                                 
                                 <div className="assistant-shortcut-options-row">
@@ -2397,7 +2397,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                             checked={shortcutNewTabInput}
                                             onChange={e => setShortcutNewTabInput(e.target.checked)}
                                         />
-                                        <span>{t.assistant.shortcuts.newTabLabel}</span>
+                                        <span>{t('assistant.shortcuts.newTabLabel')}</span>
                                     </label>
                                     <button
                                         type="button"
@@ -2405,14 +2405,14 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                         onClick={handleAddShortcut}
                                         disabled={!shortcutTitleInput.trim() || !shortcutUrlInput.trim()}
                                     >
-                                        {t.assistant.shortcuts.addBtn}
+                                        {t('assistant.shortcuts.addBtn')}
                                     </button>
                                 </div>
                             </div>
 
                             <div className="assistant-shortcuts-list">
                                 {customShortcuts.length === 0 ? (
-                                    <div className="assistant-shortcuts-empty">{t.assistant.shortcuts.empty}</div>
+                                    <div className="assistant-shortcuts-empty">{t('assistant.shortcuts.empty')}</div>
                                 ) : (
                                     <div className="assistant-shortcuts-grid">
                                         {customShortcuts.map(item => (
@@ -2428,7 +2428,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                                     checked={!!item.openInNewTab}
                                                     onChange={() => {}}
                                                     onClick={(e) => handleToggleShortcutNewTab(item.id, e)}
-                                                    title={t.assistant.shortcuts.newTabLabel}
+                                                    title={t('assistant.shortcuts.newTabLabel')}
                                                 />
                                                 <span className="shortcut-icon">🔗</span>
                                                 <span className="shortcut-label">{item.title}</span>
@@ -2436,7 +2436,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                                                     type="button"
                                                     className="assistant-shortcut-delete-btn"
                                                     onClick={(e) => handleDeleteShortcut(item.id, e)}
-                                                    aria-label={t.assistant.shortcuts.deleteAria}
+                                                    aria-label={t('assistant.shortcuts.deleteAria')}
                                                 >
                                                     ×
                                                 </button>

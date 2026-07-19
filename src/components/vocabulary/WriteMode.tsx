@@ -44,7 +44,7 @@ export default function WriteMode({
     onWriteUndo,
     formatDueDate,
 }: Props) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
     return (
         <>
@@ -65,7 +65,7 @@ export default function WriteMode({
                                     {currentCard.word}
                                 </span>
                                 <span className="fc-write-hint-len" style={{ marginLeft: 8 }}>
-                                    {t.vocab.charsCount.replace('{n}', currentCard.word.length.toString())}
+                                    {t('vocab.charsCount').replace('{n}', currentCard.word.length.toString())}
                                 </span>
                             </div>
                         )}
@@ -76,7 +76,7 @@ export default function WriteMode({
                                     {'_'.repeat(currentCard.word.length - 1)}
                                 </span>
                                 <span className="fc-write-hint-len" style={{ marginLeft: 8 }}>
-                                    {t.vocab.charsCount.replace('{n}', currentCard.word.length.toString())}
+                                    {t('vocab.charsCount').replace('{n}', currentCard.word.length.toString())}
                                 </span>
                             </div>
                         )}
@@ -91,13 +91,13 @@ export default function WriteMode({
                                 <button
                                     className="fc-speak-btn fc-speak-btn--inline"
                                     onClick={() => speak(currentCard.word)}
-                                    title={t.vocab.common.speak}
+                                    title={t('vocab.common.speak')}
                                 >🔊</button>
                             </div>
                         )}
                         {completionDueHint && (
                             <div className="fc-completion-hint fc-completion-hint--in-card" role="status" aria-live="polite">
-                                <span className="fc-completion-hint__label">{t.vocab.common.nextStudy}</span>
+                                <span className="fc-completion-hint__label">{t('vocab.common.nextStudy')}</span>
                                 <span className="fc-completion-hint__word">{completionDueHint.word}</span>
                                 <span className="fc-completion-hint__date">{formatDueDate(completionDueHint.dueAt)}</span>
                             </div>
@@ -114,7 +114,7 @@ export default function WriteMode({
                                 ? writeCorrect ? ' write-correct' : ' write-wrong'
                                 : ''
                         }`}
-                        placeholder={unknownMode ? t.vocab.copyPlaceholder : t.vocab.writePlaceholder}
+                        placeholder={unknownMode ? t('vocab.copyPlaceholder') : t('vocab.writePlaceholder')}
                         value={writeInput}
                         onChange={e => onWriteInput(e.target.value)}
                         onKeyDown={e => {
@@ -137,12 +137,12 @@ export default function WriteMode({
                         onClick={onWriteSubmit}
                         disabled={writeSubmitted || !writeInput.trim() || submitting}
                     >
-                        {t.vocab.submit} <span className="fc-qa-key">[{t.vocab.common.keyboard}↵]</span>
+                        {t('vocab.submit')} <span className="fc-qa-key">[{t('vocab.common.keyboard')}↵]</span>
                     </button>
                     <button
                         className="fc-speak-btn fc-speak-btn--standalone"
                         onClick={() => speak(currentCard.word)}
-                        title={t.vocab.common.speakWord}
+                        title={t('vocab.common.speakWord')}
                     >🔊</button>
                 </div>
                 {!writeSubmitted && !unknownMode && !writeInput.trim() && (
@@ -151,41 +151,41 @@ export default function WriteMode({
                             className="fc-qa-btn fc-qa-unknown"
                             onClick={() => onQuickAssess(false)}
                             disabled={submitting}
-                        >{t.vocab.dontKnow} <span className="fc-qa-key">[{t.vocab.common.keyboard}↓]</span></button>
+                        >{t('vocab.dontKnow')} <span className="fc-qa-key">[{t('vocab.common.keyboard')}↓]</span></button>
                         <button
                             className="fc-qa-btn fc-qa-proficient"
                             onClick={() => onQuickAssess(true)}
                             disabled={submitting}
-                        >{t.vocab.common.proficient} <span className="fc-qa-key">[{t.vocab.common.keyboard}↑]</span></button>
+                        >{t('vocab.common.proficient')} <span className="fc-qa-key">[{t('vocab.common.keyboard')}↑]</span></button>
                     </div>
                 )}
                 {unknownMode && !writeSubmitted && (
                     <button className="fc-write-undo" onClick={onWriteUndo}>
-                        ↩ {t.vocab.undo}
+                        ↩ {t('vocab.undo')}
                     </button>
                 )}
                 {writeSubmitted && (
                     <div className={`fc-write-result ${writeCorrect ? 'correct' : 'wrong'}`}>
                         <span>
                             {unknownMode
-                                ? `✓ ${t.vocab.copiedLabel}：${currentCard.word}`
+                                ? `✓ ${t('vocab.copiedLabel')}：${currentCard.word}`
                                 : writeCorrect
-                                    ? `✓ ${t.vocab.correctLabel}：${currentCard.word}`
-                                    : `✗ ${t.vocab.wrongLabel}：${currentCard.word}`}
+                                    ? `✓ ${t('vocab.correctLabel')}：${currentCard.word}`
+                                    : `✗ ${t('vocab.wrongLabel')}：${currentCard.word}`}
                         </span>
                         <button
                             className="fc-write-next"
                             onClick={onWriteNext}
                             disabled={submitting}
                         >
-                            {t.vocab.next} → <span className="fc-qa-key">{t.vocab.common.enterKeyHint}</span>
+                            {t('vocab.next')} → <span className="fc-qa-key">{t('vocab.common.enterKeyHint')}</span>
                         </button>
                         <button
                             className="fc-write-undo"
                             onClick={onWriteUndo}
                             disabled={submitting}
                         >
-                            ↩ {t.vocab.undo}
+                            ↩ {t('vocab.undo')}
                         </button>
                     </div>
                 )}

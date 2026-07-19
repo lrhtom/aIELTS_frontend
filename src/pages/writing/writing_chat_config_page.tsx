@@ -4,16 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import VocabInput from '../../components/VocabInput';
 import { getInitialVocabInput } from '../../store/word_selection_store';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import { listPlans, getPlanDetail, sortPlansByFavorite, type LearningPlan } from '../../api/learning_plan';
 import { showToast } from '../../components/common/Toast';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import '../../styles/practice_page.css';
 
 export default function WritingChatConfigPage() {
-    const { lang } = useLang();
-    const t = translations[lang].writingChatConfig;
-    const tAll = translations[lang];
+    const { t } = useLang();
 
     const [vocabInput, setVocabInput] = useState(() => getInitialVocabInput());
     const [useCustomVocab, setUseCustomVocab] = useState(false);
@@ -43,7 +40,7 @@ export default function WritingChatConfigPage() {
             const { plan: detail } = await getPlanDetail(importPlanId);
             const todayWords = detail.today_words || [];
             if (todayWords.length === 0) {
-                showToast(t.planNoWords, 'error');
+                showToast(t('writingChatConfig.planNoWords'), 'error');
                 return;
             }
             const validWords = todayWords.filter(w => w.zh && w.zh.trim());
@@ -51,12 +48,12 @@ export default function WritingChatConfigPage() {
             const lines = validWords.map(w => `${w.word} - ${w.zh}`).join('\n');
             handleVocabChange(lines);
             if (skipped > 0) {
-                showToast(t.planImportSkipped.replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
+                showToast(t('writingChatConfig.planImportSkipped').replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
             } else {
-                showToast(t.planImportSuccess.replace('{n}', String(validWords.length)), 'success');
+                showToast(t('writingChatConfig.planImportSuccess').replace('{n}', String(validWords.length)), 'success');
             }
         } catch {
-            showToast(t.planImportFailed, 'error');
+            showToast(t('writingChatConfig.planImportFailed'), 'error');
         } finally {
             setImportingPlan(false);
         }
@@ -72,16 +69,16 @@ export default function WritingChatConfigPage() {
 
     return (
         <Layout
-            pageTitle={'💬 ' + t.heading}
-            pageSubtitle={t.subheading}
+            pageTitle={'💬 ' + t('writingChatConfig.heading')}
+            pageSubtitle={t('writingChatConfig.subheading')}
             backUrl='/writing'
-            backText={t.backToWriting}
+            backText={t('writingChatConfig.backToWriting')}
         >
             <div className="uc-console">
                 <div className="uc-main-content" style={{ borderLeft: 'none' }}>
                     <div className="uc-main-header">
-                        <h2>{t.heading}</h2>
-                        <p>{t.subheading}</p>
+                        <h2>{t('writingChatConfig.heading')}</h2>
+                        <p>{t('writingChatConfig.subheading')}</p>
                     </div>
 
                     <div className="uc-settings-list">
@@ -91,7 +88,7 @@ export default function WritingChatConfigPage() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                        <span className="row-title">{tAll.components.aiModel.label}</span>
+                                        <span className="row-title">{t('components.aiModel.label')}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control console-model-selector">
@@ -107,9 +104,9 @@ export default function WritingChatConfigPage() {
                                     <div className="uc-row-label">
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#f43f5e', background: '#ffe4e6' }}>📚</span>
-                                            <span className="row-title">{t.vocabSettings.title}</span>
+                                            <span className="row-title">{t('writingChatConfig.vocabSettings.title')}</span>
                                         </div>
-                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{t.vocabSettings.desc}</span>
+                                        <span className="row-desc" style={{ marginLeft: '40px' }}>{t('writingChatConfig.vocabSettings.desc')}</span>
                                     </div>
                                     <div className="uc-row-control">
                                         <label className="toggle-switch-console">
@@ -131,7 +128,7 @@ export default function WritingChatConfigPage() {
                                                     value={importPlanId}
                                                     onChange={e => setImportPlanId(Number(e.target.value))}
                                                 >
-                                                    <option value={0} disabled>{t.planImportPlaceholder}</option>
+                                                    <option value={0} disabled>{t('writingChatConfig.planImportPlaceholder')}</option>
                                                     {sortPlansByFavorite(plans).map(p => (
                                                         <option key={p.id} value={p.id}>{p.name}</option>
                                                     ))}
@@ -141,7 +138,7 @@ export default function WritingChatConfigPage() {
                                                     onClick={handleImportPlan}
                                                     disabled={importingPlan || !importPlanId}
                                                 >
-                                                    {importingPlan ? t.planImporting : t.planImportBtn}
+                                                    {importingPlan ? t('writingChatConfig.planImporting') : t('writingChatConfig.planImportBtn')}
                                                 </button>
                                             </div>
                                         )}
@@ -154,7 +151,7 @@ export default function WritingChatConfigPage() {
 
                     <div className="uc-console-footer">
                         <button className="uc-console-start-btn" onClick={handleStart}>
-                            💬 {t.startBtn}
+                            💬 {t('writingChatConfig.startBtn')}
                         </button>
                     </div>
                 </div>

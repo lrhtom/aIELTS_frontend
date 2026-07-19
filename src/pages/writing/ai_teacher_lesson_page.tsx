@@ -261,19 +261,19 @@ function BilingualBlock({ en, zh, label }: { en: string; zh: string; label?: str
 }
 
 function ExplanationBlock({ arg }: { arg: BilingualArg }) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [isSubdivided, setIsSubdivided] = useState(false);
 
     // Fallback logic for older cached data without explanation_steps
     const steps: ExplanationStep[] = arg.explanation_steps?.length ? arg.explanation_steps : (() => {
         const enSentences = arg.explanation_en.split(/(?<=\.|\?|\!)\s+/).filter(s => s.trim());
         const zhSentences = arg.explanation_zh.split(/(?<=[。？！])\s*/).filter(s => s.trim());
-        const labels = [t.writingAiTeacher.lesson.stepBg, t.writingAiTeacher.lesson.stepForward, t.writingAiTeacher.lesson.stepBackward];
+        const labels = [t('writingAiTeacher.lesson.stepBg'), t('writingAiTeacher.lesson.stepForward'), t('writingAiTeacher.lesson.stepBackward')];
         const fallbackSteps: ExplanationStep[] = [];
         const maxLen = Math.max(enSentences.length, zhSentences.length, 1);
         for (let i = 0; i < maxLen; i++) {
             fallbackSteps.push({
-                step_name: labels[i] || `${t.writingAiTeacher.lesson.stepFallbackName} ${i + 1}`,
+                step_name: labels[i] || `${t('writingAiTeacher.lesson.stepFallbackName')} ${i + 1}`,
                 en: enSentences[i] || '',
                 zh: zhSentences[i] || ''
             });
@@ -287,7 +287,7 @@ function ExplanationBlock({ arg }: { arg: BilingualArg }) {
         <div className="at-bilingual-container" style={{ marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <div className="at-bilingual-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--practice-accent)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {t.writingAiTeacher.lesson.explanationTab}
+                    {t('writingAiTeacher.lesson.explanationTab')}
                 </div>
                 {hasSteps && (
                     <button 
@@ -306,9 +306,9 @@ function ExplanationBlock({ arg }: { arg: BilingualArg }) {
                             gap: '0.3rem',
                             transition: 'all 0.2s'
                         }}
-                        title={t.writingAiTeacher.lesson.toggleStepBreakdown}
+                        title={t('writingAiTeacher.lesson.toggleStepBreakdown')}
                     >
-                        {isSubdivided ? t.writingAiTeacher.lesson.fullParagraphBtn : t.writingAiTeacher.lesson.parseStepsBtn}
+                        {isSubdivided ? t('writingAiTeacher.lesson.fullParagraphBtn') : t('writingAiTeacher.lesson.parseStepsBtn')}
                     </button>
                 )}
             </div>
@@ -419,9 +419,9 @@ function ExplanationBlock({ arg }: { arg: BilingualArg }) {
                                                         <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.75rem' }}>
                                                             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
                                                                 <span style={{ background: '#e0e7ff', color: '#4f46e5', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>{clause.grammar.pattern}</span>
-                                                                <span style={{ background: '#fce7f3', color: '#db2777', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{t.writingAiTeacher.lesson.grammarSubject}: {clause.grammar.subject}</span>
-                                                                <span style={{ background: '#dcfce7', color: '#16a34a', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{t.writingAiTeacher.lesson.grammarVerb}: {clause.grammar.verb}</span>
-                                                                <span style={{ background: '#fef3c7', color: '#d97706', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{t.writingAiTeacher.lesson.grammarObject}: {clause.grammar.object}</span>
+                                                                <span style={{ background: '#fce7f3', color: '#db2777', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{t('writingAiTeacher.lesson.grammarSubject')}: {clause.grammar.subject}</span>
+                                                                <span style={{ background: '#dcfce7', color: '#16a34a', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{t('writingAiTeacher.lesson.grammarVerb')}: {clause.grammar.verb}</span>
+                                                                <span style={{ background: '#fef3c7', color: '#d97706', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{t('writingAiTeacher.lesson.grammarObject')}: {clause.grammar.object}</span>
                                                             </div>
                                                             <div style={{ color: '#64748b', marginTop: '0.3rem' }}>💡 {clause.grammar.explanation_zh}</div>
                                                         </div>
@@ -460,7 +460,7 @@ const SESSION_KEY = 'aiTeacherLesson';
 type PageState = 'loading' | 'error' | 'ready';
 
 export default function AiTeacherLessonPage() {
-    const { translations: t, lang } = useLang();
+    const { t, lang } = useLang();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -529,7 +529,7 @@ export default function AiTeacherLessonPage() {
                     throw new Error('Load failed');
                 }
             } catch (e: any) {
-                setErrorMsg(t.writingAiTeacher.lesson.loadRecordFail);
+                setErrorMsg(t('writingAiTeacher.lesson.loadRecordFail'));
                 setState('error');
             } finally {
                 fetchingRef.current = false;
@@ -556,7 +556,7 @@ export default function AiTeacherLessonPage() {
                 let errorData = null;
                 try { errorData = await res.json(); } catch(e) {}
                 if (errorData?.error === 'INVALID_TOPIC') {
-                    showToast(t.writingAiTeacher.lesson.invalidTopicNotIelts + '\n' + (errorData.reason || ''), 'error');
+                    showToast(t('writingAiTeacher.lesson.invalidTopicNotIelts') + '\n' + (errorData.reason || ''), 'error');
                     navigate('/writing/ai-teacher', { replace: true });
                     return;
                 }
@@ -584,7 +584,7 @@ export default function AiTeacherLessonPage() {
 
                         if (data.error) {
                             if (data.error === 'INVALID_TOPIC') {
-                                showToast(t.writingAiTeacher.lesson.invalidTopicNotIelts + '\n' + (data.reason || ''), 'error');
+                                showToast(t('writingAiTeacher.lesson.invalidTopicNotIelts') + '\n' + (data.reason || ''), 'error');
                                 navigate('/writing/ai-teacher', { replace: true });
                                 return;
                             }
@@ -606,7 +606,7 @@ export default function AiTeacherLessonPage() {
                             // Auto-save logic
                             apiClient.post<{status: string, id: number}>('/writing/records', {
                                 service_type: 'task2_teacher',
-                                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : t.writingAiTeacher.lesson.fallbackTitleTask2,
+                                title: topic ? (topic.length > 50 ? topic.slice(0, 50) + '...' : topic) : t('writingAiTeacher.lesson.fallbackTitleTask2'),
                                 content: { ...lessonData, original_topic: topic },
                             }).catch(err => console.error("Auto-save failed", err));
                         }
@@ -622,11 +622,11 @@ export default function AiTeacherLessonPage() {
             }
         } catch (e: any) {
             if ((e as Error).name === 'AbortError') {
-                setErrorMsg(t.writingAiTeacher.lesson.genTimeout);
+                setErrorMsg(t('writingAiTeacher.lesson.genTimeout'));
             } else {
                 const msg = (e as { response?: { data?: { error?: string, detail?: string } } })?.response?.data?.error
                     || (e as Error).message
-                    || t.writingAiTeacher.errorGen;
+                    || t('writingAiTeacher.errorGen');
                 setErrorMsg(msg);
             }
             setState('error');
@@ -634,7 +634,7 @@ export default function AiTeacherLessonPage() {
             clearTimeout(streamTimeout);
             fetchingRef.current = false;
         }
-    }, [topic, navigate, lang, t]);
+    }, [topic, navigate, t]);
 
     useEffect(() => {
         if (!data) {
@@ -646,7 +646,7 @@ export default function AiTeacherLessonPage() {
         }
     }, [data, topic, navigate, fetchLesson]);
 
-    const sectionNames = t.writingAiTeacher.sectionNames;
+    const sectionNames = t('writingAiTeacher.sectionNames', { returnObjects: true }) as string[];
     const totalSections = sectionNames.length;
 
     const goPrev = () => setCurrentSection(s => Math.max(0, s - 1));
@@ -762,7 +762,7 @@ export default function AiTeacherLessonPage() {
 
     const buildLogicTree = (d: LessonData) => {
         const root = {
-            name: t.writingAiTeacher.lesson.coreThesisName,
+            name: t('writingAiTeacher.lesson.coreThesisName'),
             attributes: {
                 en: d.part1.structure.paragraphs.find(p => p.name_en.includes('Introduction'))?.content_guide_en || 'Topic',
                 zh: d.part1.structure.paragraphs.find(p => p.name_en.includes('Introduction'))?.content_guide_zh || '题目'
@@ -771,28 +771,28 @@ export default function AiTeacherLessonPage() {
         };
 
         const introNode = {
-            name: t.writingAiTeacher.lesson.introSectionName,
+            name: t('writingAiTeacher.lesson.introSectionName'),
             attributes: { en: 'Opening sentences', zh: '开头句' },
             children: d.part2.opening.sentences.map(s => ({
-                name: t.writingAiTeacher.lesson.introSentenceName,
+                name: t('writingAiTeacher.lesson.introSentenceName'),
                 attributes: { en: s.text_en, zh: s.text_zh }
             }))
         };
         root.children.push(introNode);
 
         const bodyNode = {
-            name: t.writingAiTeacher.lesson.bodySectionName,
+            name: t('writingAiTeacher.lesson.bodySectionName'),
             attributes: { en: 'Arguments', zh: '论点' },
             children: [d.part2.arguments.body1, d.part2.arguments.body2].filter(Boolean).map((arg: any, i) => {
                 const steps = arg.explanation_steps?.length ? arg.explanation_steps : (() => {
                     const enSentences = (arg.explanation_en || '').split(/(?<=\.|\?|\!)\s+/).filter((s: string) => s.trim());
                     const zhSentences = (arg.explanation_zh || '').split(/(?<=[。？！])\s*/).filter((s: string) => s.trim());
-                    const labels = [t.writingAiTeacher.lesson.stepBg, t.writingAiTeacher.lesson.stepForward, t.writingAiTeacher.lesson.stepBackward];
+                    const labels = [t('writingAiTeacher.lesson.stepBg'), t('writingAiTeacher.lesson.stepForward'), t('writingAiTeacher.lesson.stepBackward')];
                     const fallbackSteps = [];
                     const maxLen = Math.max(enSentences.length, zhSentences.length, 1);
                     for (let k = 0; k < maxLen; k++) {
                         fallbackSteps.push({
-                            step_name: labels[k] || `${t.writingAiTeacher.lesson.stepFallbackName} ${k + 1}`,
+                            step_name: labels[k] || `${t('writingAiTeacher.lesson.stepFallbackName')} ${k + 1}`,
                             en: enSentences[k] || '',
                             zh: zhSentences[k] || ''
                         });
@@ -801,7 +801,7 @@ export default function AiTeacherLessonPage() {
                 })();
 
                 const argChildren = steps.map((step: any, j: number) => ({
-                    name: step.step_name || `${t.writingAiTeacher.lesson.logicStepName} ${j + 1}`,
+                    name: step.step_name || `${t('writingAiTeacher.lesson.logicStepName')} ${j + 1}`,
                     attributes: { en: step.en, zh: step.zh },
                     children: (step.clauses || []).map((clause: any) => ({
                         name: clause.label,
@@ -810,7 +810,7 @@ export default function AiTeacherLessonPage() {
                             zh: clause.zh,
                             ...(clause.grammar ? { 
                                 grammar_pattern: clause.grammar.pattern,
-                                grammar_svo: `${t.writingAiTeacher.lesson.grammarSubject}: ${clause.grammar.subject} | ${t.writingAiTeacher.lesson.grammarVerb}: ${clause.grammar.verb} | ${t.writingAiTeacher.lesson.grammarObject}: ${clause.grammar.object}`
+                                grammar_svo: `${t('writingAiTeacher.lesson.grammarSubject')}: ${clause.grammar.subject} | ${t('writingAiTeacher.lesson.grammarVerb')}: ${clause.grammar.verb} | ${t('writingAiTeacher.lesson.grammarObject')}: ${clause.grammar.object}`
                             } : {})
                         }
                     }))
@@ -818,13 +818,13 @@ export default function AiTeacherLessonPage() {
 
                 if (arg.example_en || arg.example_zh) {
                     argChildren.push({
-                        name: t.writingAiTeacher.lesson.bodyExampleName,
+                        name: t('writingAiTeacher.lesson.bodyExampleName'),
                         attributes: { en: arg.example_en, zh: arg.example_zh }
                     });
                 }
 
                 return {
-                    name: `${t.writingAiTeacher.lesson.argumentSectionName} ${i + 1}`,
+                    name: `${t('writingAiTeacher.lesson.argumentSectionName')} ${i + 1}`,
                     attributes: { en: arg.main_idea_en, zh: arg.main_idea_zh },
                     children: argChildren
                 };
@@ -833,10 +833,10 @@ export default function AiTeacherLessonPage() {
         root.children.push(bodyNode);
 
         const closingNode = {
-            name: t.writingAiTeacher.lesson.conclusionSectionName,
+            name: t('writingAiTeacher.lesson.conclusionSectionName'),
             attributes: { en: 'Closing sentences', zh: '结尾句' },
             children: d.part2.closing.sentences.map(s => ({
-                name: t.writingAiTeacher.lesson.conclusionSentenceName,
+                name: t('writingAiTeacher.lesson.conclusionSentenceName'),
                 attributes: { en: s.text_en, zh: s.text_zh }
             }))
         };
@@ -886,13 +886,13 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                     <h3>{sectionNames[0]}</h3>
                     
                     <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                        {renderCategoryBadges(t.writingAiTeacher.lesson.subjectArea, SUBJECT_CATEGORIES, qa.subject_category_zh)}
-                        {renderCategoryBadges(t.writingAiTeacher.lesson.questionType, QUESTION_TYPES, qa.question_type_zh)}
+                        {renderCategoryBadges(t('writingAiTeacher.lesson.subjectArea'), SUBJECT_CATEGORIES, qa.subject_category_zh)}
+                        {renderCategoryBadges(t('writingAiTeacher.lesson.questionType'), QUESTION_TYPES, qa.question_type_zh)}
                     </div>
 
                     <SingleLangBlock en={qa.correct_approach_en} zh={qa.correct_approach_zh} />
 
-                    <h4 style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>{t.writingAiTeacher.lesson.keyFocusPoints}</h4>
+                    <h4 style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>{t('writingAiTeacher.lesson.keyFocusPoints')}</h4>
                     <div className="at-lang-block" style={{ marginBottom: '1rem' }}>
                         <ul className="at-focus-list">
                             {(lang === 'zh' ? qa.focus_points_zh : qa.focus_points_en).map((pt, i) => (
@@ -905,9 +905,9 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
 
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: '#ef4444', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>⚠️</span> {t.writingAiTeacher.lesson.offTopicAlert}
+                        <span>⚠️</span> {t('writingAiTeacher.lesson.offTopicAlert')}
                     </h5>
-                    <SingleLangBadBox en={qa.off_topic_en} zh={qa.off_topic_zh} label={t.writingAiTeacher.badExample} />
+                    <SingleLangBadBox en={qa.off_topic_en} zh={qa.off_topic_zh} label={t('writingAiTeacher.badExample')} />
                 </div>
             </div>
         );
@@ -933,11 +933,11 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                                 <div key={i} className="at-structure-item">
                                     <h4>{p.name_en}<span className="at-structure-name-zh">{p.name_zh}</span></h4>
                                       <div style={{ marginBottom: '0.5rem' }}>
-                                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--practice-accent)', textTransform: 'uppercase', marginBottom: '0.2rem', display: 'inline-block' }}>{t.writingAiTeacher.lesson.paragraphPurpose}</span>
+                                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--practice-accent)', textTransform: 'uppercase', marginBottom: '0.2rem', display: 'inline-block' }}>{t('writingAiTeacher.lesson.paragraphPurpose')}</span>
                                           <SingleLangBlock en={p.purpose_en} zh={p.purpose_zh} />
                                       </div>
                                       <div>
-                                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-primary)', textTransform: 'uppercase', marginBottom: '0.2rem', display: 'inline-block' }}>{t.writingAiTeacher.lesson.contentGuide}</span>
+                                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-primary)', textTransform: 'uppercase', marginBottom: '0.2rem', display: 'inline-block' }}>{t('writingAiTeacher.lesson.contentGuide')}</span>
                                           <SingleLangBlock en={p.content_guide_en} zh={p.content_guide_zh} />
                                       </div>
                                 </div>
@@ -947,11 +947,11 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                     
                     <div className="at-section-card" style={{ marginTop: '1.5rem' }}>
                         <h4 style={{ fontSize: '1.1rem', color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span>🧠</span> {t.writingAiTeacher.lesson.aiLogicChains}
+                            <span>🧠</span> {t('writingAiTeacher.lesson.aiLogicChains')}
                         </h4>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
                             <div style={{ width: '100%', fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                                {t.writingAiTeacher.lesson.logicChainsHint}
+                                {t('writingAiTeacher.lesson.logicChainsHint')}
                             </div>
                             {LOGICAL_FRAMEWORKS.map((fw, idx) => {
                                 const isActive = activeIndices.has(idx);
@@ -981,9 +981,9 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
 
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: '#ef4444', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>⚠️</span> {t.writingAiTeacher.lesson.commonStructureMistakes}
+                        <span>⚠️</span> {t('writingAiTeacher.lesson.commonStructureMistakes')}
                     </h5>
-                    <SingleLangBadBox en={st.wrong_structure_en} zh={st.wrong_structure_zh} label={t.writingAiTeacher.badExample} />
+                    <SingleLangBadBox en={st.wrong_structure_en} zh={st.wrong_structure_zh} label={t('writingAiTeacher.badExample')} />
                 </div>
             </div>
         );
@@ -1020,7 +1020,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
 
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: '#ef4444', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>⚠️</span> {t.writingAiTeacher.lesson.commonMistakes}
+                        <span>⚠️</span> {t('writingAiTeacher.lesson.commonMistakes')}
                     </h5>
                     <BadExampleList badExamples={op.bad_examples} />
                 </div>
@@ -1034,14 +1034,14 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
             <div className="at-argument-card at-split-layout">
                 <div className="at-split-main">
                     <h4>{titleEn} <span className="at-structure-name-zh">{titleZh}</span></h4>
-                    <BilingualBlock en={arg.main_idea_en} zh={arg.main_idea_zh} label={t.writingAiTeacher.lesson.mainIdeaLabel} />
+                    <BilingualBlock en={arg.main_idea_en} zh={arg.main_idea_zh} label={t('writingAiTeacher.lesson.mainIdeaLabel')} />
                 <ExplanationBlock arg={arg} />
-                <BilingualBlock en={arg.example_en} zh={arg.example_zh} label={t.writingAiTeacher.lesson.exampleLabel} />
+                <BilingualBlock en={arg.example_en} zh={arg.example_zh} label={t('writingAiTeacher.lesson.exampleLabel')} />
                 </div>
 
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: '#ef4444', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>⚠️</span> {t.writingAiTeacher.lesson.commonMistakes}
+                        <span>⚠️</span> {t('writingAiTeacher.lesson.commonMistakes')}
                     </h5>
                     <BadExampleList badExamples={arg.bad_examples} />
                 </div>
@@ -1050,8 +1050,8 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
         return (
             <div className="at-section-card">
                 <h3>{sectionNames[3]}</h3>
-                {renderArg('Body 1', t.writingAiTeacher.lesson.body1Zh, args.body1)}
-                {renderArg('Body 2', t.writingAiTeacher.lesson.body2Zh, args.body2)}
+                {renderArg('Body 1', t('writingAiTeacher.lesson.body1Zh'), args.body1)}
+                {renderArg('Body 2', t('writingAiTeacher.lesson.body2Zh'), args.body2)}
             </div>
         );
     };
@@ -1087,7 +1087,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
 
                 <div className="at-split-side">
                     <h5 className="at-split-side-title" style={{ color: '#ef4444', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', margin: '0 0 1rem 0' }}>
-                        <span>⚠️</span> {t.writingAiTeacher.lesson.commonConclusionMistakes}
+                        <span>⚠️</span> {t('writingAiTeacher.lesson.commonConclusionMistakes')}
                     </h5>
                     <BadExampleList badExamples={cl.bad_examples || []} />
                 </div>
@@ -1105,7 +1105,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                 <div className="at-split-layout">
                     <div className="at-section-card">
                         <h3>{sectionNames[5]}</h3>
-                        <p>{t.writingAiTeacher.lesson.templateEmpty}</p>
+                        <p>{t('writingAiTeacher.lesson.templateEmpty')}</p>
                     </div>
                 </div>
             );
@@ -1165,7 +1165,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                             <div className="at-template-viewer-content">
                                 <div className="at-template-viewer-title">
                                     <span style={{ marginRight: '6px' }}>📝</span>
-                                    {t.writingAiTeacher.lesson.aiSegmentTitle}
+                                    {t('writingAiTeacher.lesson.aiSegmentTitle')}
                                 </div>
                                 <div className="at-template-viewer-text">
                                     {activeTemplateContent.actual_content_en || activeTemplateContent.actual_content}
@@ -1179,7 +1179,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                         ) : (
                             <div className="at-template-viewer-empty">
                                 <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>👈</div>
-                                <div>{t.writingAiTeacher.lesson.templateClickHint}</div>
+                                <div>{t('writingAiTeacher.lesson.templateClickHint')}</div>
                             </div>
                         )}
                     </div>
@@ -1196,11 +1196,11 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                     <h3 style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         {sectionNames[6]}
                         <button onClick={handleDownload} disabled={isDownloading} style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px', background: 'var(--color-surface, #fff)', color: 'var(--color-text)', border: '1px solid var(--color-border, #e2e8f0)', cursor: isDownloading ? 'not-allowed' : 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                            📸 {isDownloading ? '...' : t.writingAiTeacher.lesson.exportBtn}
+                            📸 {isDownloading ? '...' : t('writingAiTeacher.lesson.exportBtn')}
                         </button>
                     </h3>
                     <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                        {t.writingAiTeacher.lesson.canvasDragTip}
+                        {t('writingAiTeacher.lesson.canvasDragTip')}
                     </div>
                 </div>
                 <div ref={treeRef} style={{ width: '100%', flex: 1, background: '#f8fafc', borderRadius: '12px', overflow: 'hidden', padding: '1rem' }}>
@@ -1223,7 +1223,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
         return (
             <div className="at-split-layout" style={{ gridTemplateColumns: '1fr 1fr' }}>
                 <div className="at-section-card" style={{ height: '100%' }}>
-                    <h3>{t.writingAiTeacher.lesson.coreVocabHeading}</h3>
+                    <h3>{t('writingAiTeacher.lesson.coreVocabHeading')}</h3>
                     <div className="at-summary-list">
                         {p3.section_summary.map((ss, i) => (
                             <div key={i} className="at-summary-item">
@@ -1280,16 +1280,16 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
     /* ── Main render ── */
 
     if (state === 'loading') {
-        const steps = t.writingAiTeacher.loadingSteps;
+        const steps = t('writingAiTeacher.loadingSteps', { returnObjects: true }) as string[];
         return (
             <Layout
-                pageTitle={t.writingAiTeacher.lessonTitle}
+                pageTitle={t('writingAiTeacher.lessonTitle')}
                 backUrl="/writing/ai-teacher"
-                backText={t.writingAiTeacher.genTitle}
+                backText={t('writingAiTeacher.genTitle')}
             >
                 <div className="at-loading-wrap">
                     <div className="at-loading-spinner" />
-                    <div className="at-loading-title">{recordId ? t.writingAiTeacher.lesson.loadingRecord : t.writingAiTeacher.loading}</div>
+                    <div className="at-loading-title">{recordId ? t('writingAiTeacher.lesson.loadingRecord') : t('writingAiTeacher.loading')}</div>
                     {!recordId && (
                         <div className="at-loading-steps">
                             {steps.map((step, i) => (
@@ -1313,7 +1313,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
     if (state === 'error') {
         return (
             <Layout
-                pageTitle={t.writingAiTeacher.lessonTitle}
+                pageTitle={t('writingAiTeacher.lessonTitle')}
                 backUrl="/writing/ai-teacher"
             >
                 <div className="at-error-wrap">
@@ -1328,9 +1328,9 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
 
     return (
         <Layout
-            pageTitle={t.writingAiTeacher.lessonTitle}
+            pageTitle={t('writingAiTeacher.lessonTitle')}
             backUrl={recordId ? "/writing/ai-teachers/records" : "/writing/ai-teacher"}
-            backText={t.writingAiTeacher.genTitle}
+            backText={t('writingAiTeacher.genTitle')}
             onBack={handleBack}
             headerRight={
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -1350,7 +1350,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                     {state === 'ready' && data && (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <button onClick={() => setShowTopic(true)} style={{ padding: '0.25rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '20px', background: 'rgba(59, 130, 246, 0.08)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-                                📑 {t.writingAiTeacher.lesson.topicToggleBtn}
+                                📑 {t('writingAiTeacher.lesson.topicToggleBtn')}
                             </button>
                             
                         </div>
@@ -1382,7 +1382,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                         
                     >
                         <div style={{ textAlign: 'center', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '2rem' }}>
-                            <h1 style={{ fontSize: '2.5rem', color: '#1e293b', margin: '0 0 1rem 0' }}>{t.writingAiTeacher.lessonTitle}</h1>
+                            <h1 style={{ fontSize: '2.5rem', color: '#1e293b', margin: '0 0 1rem 0' }}>{t('writingAiTeacher.lessonTitle')}</h1>
                             <div style={{ color: '#475569', fontSize: '1.2rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px', display: 'inline-block', maxWidth: '800px', lineHeight: '1.6' }}>
                                 <strong style={{color: '#3b82f6'}}>Topic:</strong> {topic}
                             </div>
@@ -1408,7 +1408,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                 <div className="at-topic-modal-overlay" onClick={() => setShowTopic(false)}>
                     <div className="at-topic-modal-content" onClick={e => e.stopPropagation()}>
                         <div className="at-topic-modal-header">
-                            <h3>{t.writingAiTeacher.lesson.essayTopicHeading}</h3>
+                            <h3>{t('writingAiTeacher.lesson.essayTopicHeading')}</h3>
                             <button className="at-topic-modal-close" onClick={() => setShowTopic(false)}>
                                 &times;
                             </button>

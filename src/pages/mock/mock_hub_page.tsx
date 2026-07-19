@@ -10,13 +10,11 @@ import {
     getMockDetail, startMockPart, finalizeMock, regenerateMockSlot,
     type MockChildView, type MockDetail, type MockExamPart, type MockGenSlot, type MockReport,
 } from '../../api/mock';
-import { api } from '../../api/client';
-import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
+import { getWritingAnalytics } from '../../api/analytics';
 import { ATInterceptor } from '../../api/atInterceptor';
 import { speakingStore } from '../../store/speaking_page_store';
 import { roundIeltsOverall } from '../../utils/ielts_band';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import '../../styles/mock.css';
 
 const PART_ICONS: Record<MockExamPart, string> = {
@@ -34,8 +32,7 @@ export default function MockHubPage() {
     const { id } = useParams();
     const mockId = Number(id);
     const navigate = useNavigate();
-    const { lang } = useLang();
-    const t = translations[lang].mock.hub;
+    const { t } = useLang();
 
     const [detail, setDetail] = useState<MockDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -50,11 +47,11 @@ export default function MockHubPage() {
             clockOffsetRef.current = new Date(d.now).getTime() - Date.now();
             setDetail(d);
         } catch (err) {
-            showToast(`${t.loadFail}: ${(err as Error).message ?? ''}`, 'error');
+            showToast(`${t('mock.hub.loadFail')}: ${(err as Error).message ?? ''}`, 'error');
         } finally {
             setLoading(false);
         }
-    }, [mockId, t.loadFail]);
+    }, [mockId, t]);
 
     useEffect(() => { reload(); }, [reload]);
 
@@ -135,13 +132,13 @@ export default function MockHubPage() {
         const durationSec = detail.durations[part];
         if (pv.status === 'ready') {
             const body = durationSec
-                ? t.startConfirmBody.replace('{duration}', t.minutes.replace('{n}', String(Math.round(durationSec / 60))))
-                : t.startConfirmBodyNoTimer;
+                ? t('mock.hub.startConfirmBody').replace('{duration}', t('mock.hub.minutes').replace('{n}', String(Math.round(durationSec / 60))))
+                : t('mock.hub.startConfirmBodyNoTimer');
             const ok = await showConfirm({
-                title: t.startConfirmTitle.replace('{part}', t.parts[part]),
+                title: t('mock.hub.startConfirmTitle').replace('{part}', t(`mock.hub.parts.${part}`)),
                 message: body,
-                confirmText: t.startConfirmOk,
-                cancelText: t.startConfirmCancel,
+                confirmText: t('mock.hub.startConfirmOk'),
+                cancelText: t('mock.hub.startConfirmCancel'),
                 danger: true,
             });
             if (!ok) return;
@@ -156,7 +153,7 @@ export default function MockHubPage() {
                 if (route) navigate(route);
             }
         } catch (err) {
-            showToast(t.startFail.replace('{msg}', (err as Error).message ?? ''), 'error');
+            showToast(t('mock.hub.startFail').replace('{msg}', (err as Error).message ?? ''), 'error');
             reload();
         } finally {
             setBusy(false);
@@ -180,10 +177,10 @@ export default function MockHubPage() {
         setBusy(true);
         try {
             await regenerateMockSlot(detail.id, slot);
-            showToast(t.regenStarted, 'success');
+            showToast(t('mock.hub.regenStarted'), 'success');
             reload();
         } catch (err) {
-            showToast(t.regenFail.replace('{msg}', (err as Error).message ?? ''), 'error');
+            showToast(t('mock.hub.regenFail').replace('{msg}', (err as Error).message ?? ''), 'error');
         } finally {
             setBusy(false);
         }
@@ -214,44 +211,54 @@ export default function MockHubPage() {
         return { bands, overall };
     };
 
-    // 作文延迟批改：考试中提交只落库正文，成绩单生成时统一跑 AI 批改并把反馈挂回子行
-    const gradeEssayIfNeeded = async (child: MockChildView | null | undefined, taskType: 'task1' | 'task2'): Promise<number> => {
+    // 成绩单自动生成（四科全部结束后无需点击）。写作单科不再触发 AI 批改：
+    // 子行已有批改结果（用户写完自己批改过）就用批改分，否则默认用写作历史平均分，
+    // 没有历史数据按 0 计入。
+    const writingBandFor = (child: MockChildView | null | undefined, avg: number | null): number => {
         if (!child || !child.isAnswered) return 0;
         if (child.band != null) return child.band;
-        const childDetail = await getAIQuestion(child.id);
-        const essay = typeof childDetail.userAnswer === 'string' ? childDetail.userAnswer : '';
-        const prompt = String((childDetail.content as Record<string, unknown>)?.prompt ?? '');
-        if (!essay.trim()) return 0;
-        const res = await api<{ Overall_Band?: number }>('/writing/generate', {
-            method: 'POST',
-            body: { text: essay, prompt, task_type: taskType, lang },
-        });
-        await submitAIQuestion(child.id, essay, res);
-        return typeof res.Overall_Band === 'number' ? res.Overall_Band : 0;
+        return avg ?? 0;
     };
 
-    const [grading, setGrading] = useState(false);
-
-    const handleFinalize = async () => {
-        if (!detail || busy) return;
-        setBusy(true);
+    const autoFinalizeFiredRef = useRef(false);
+    const autoFinalize = async (d: MockDetail) => {
         try {
-            const wv = detail.parts.writing;
-            const needGrading = [wv.task1, wv.task2].some(c => c?.isAnswered && c.band == null);
-            if (needGrading) setGrading(true);
-            const t1 = wv.status === 'submitted' ? await gradeEssayIfNeeded(wv.task1, 'task1') : 0;
-            const t2 = wv.status === 'submitted' ? await gradeEssayIfNeeded(wv.task2, 'task2') : 0;
-            setGrading(false);
-            const report = computeReport(detail, { t1, t2 });
-            await finalizeMock(detail.id, report);
+            const wv = d.parts.writing;
+            let t1 = 0;
+            let t2 = 0;
+            if (wv.status === 'submitted') {
+                let avg: number | null = null;
+                const needAvg = [wv.task1, wv.task2].some(c => c?.isAnswered && c.band == null);
+                if (needAvg) {
+                    try {
+                        const wa = await getWritingAnalytics();
+                        const all = [...wa.task1_trend, ...wa.task2_trend].filter(r => r.overall > 0);
+                        if (all.length > 0) {
+                            avg = Math.round((all.reduce((s, r) => s + r.overall, 0) / all.length) * 10) / 10;
+                        }
+                    } catch { /* 拿不到历史数据按无数据处理 */ }
+                    if (avg === null) showToast(t('mock.hub.report.noAvgData'), 'error');
+                }
+                t1 = writingBandFor(wv.task1, avg);
+                t2 = writingBandFor(wv.task2, avg);
+            }
+            const report = computeReport(d, { t1, t2 });
+            await finalizeMock(d.id, report);
             await reload();
         } catch (err) {
-            showToast(t.report.finalizeFail.replace('{msg}', (err as Error).message ?? ''), 'error');
-        } finally {
-            setGrading(false);
-            setBusy(false);
+            showToast(t('mock.hub.report.finalizeFail').replace('{msg}', (err as Error).message ?? ''), 'error');
         }
     };
+
+    // 四科全部终态且还没有成绩单 → 自动生成一次
+    useEffect(() => {
+        if (!detail || detail.report || autoFinalizeFiredRef.current) return;
+        const done = detail.order.every(p => ['submitted', 'forfeited', 'expired'].includes(detail.parts[p].status));
+        if (!done) return;
+        autoFinalizeFiredRef.current = true;
+        void autoFinalize(detail);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [detail]);
 
     // ── 渲染 ──
     const readyCount = useMemo(() => {
@@ -261,15 +268,15 @@ export default function MockHubPage() {
 
     if (loading) {
         return (
-            <Layout pageTitle={t.pageTitle} backUrl="/practice/ai/bank" backText={t.backToBank}>
-                <div className="mock-hub"><p className="mock-hub-loading">{t.loading}</p></div>
+            <Layout pageTitle={t('mock.hub.pageTitle')} backUrl="/practice/ai/bank" backText={t('mock.hub.backToBank')}>
+                <div className="mock-hub"><p className="mock-hub-loading">{t('mock.hub.loading')}</p></div>
             </Layout>
         );
     }
     if (!detail) {
         return (
-            <Layout pageTitle={t.pageTitle} backUrl="/practice/ai/bank" backText={t.backToBank}>
-                <div className="mock-hub"><p className="mock-hub-loading">{t.loadFail}</p></div>
+            <Layout pageTitle={t('mock.hub.pageTitle')} backUrl="/practice/ai/bank" backText={t('mock.hub.backToBank')}>
+                <div className="mock-hub"><p className="mock-hub-loading">{t('mock.hub.loadFail')}</p></div>
             </Layout>
         );
     }
@@ -281,7 +288,7 @@ export default function MockHubPage() {
 
         let action: React.ReactNode = null;
         if (status === 'generating') {
-            action = <span className="mock-badge mock-badge-generating">{t.status.generating}</span>;
+            action = <span className="mock-badge mock-badge-generating">{t('mock.hub.status.generating')}</span>;
         } else if (status === 'gen_failed') {
             const failedSlots: MockGenSlot[] = part === 'writing'
                 ? ([['writingTask1', pv.task1], ['writingTask2', pv.task2]] as const)
@@ -289,10 +296,10 @@ export default function MockHubPage() {
                 : [part as MockGenSlot];
             action = (
                 <div className="mock-row-actions">
-                    <span className="mock-badge mock-badge-failed">{t.status.gen_failed}</span>
+                    <span className="mock-badge mock-badge-failed">{t('mock.hub.status.gen_failed')}</span>
                     {failedSlots.map(slot => (
                         <button key={slot} className="mock-btn mock-btn-ghost" disabled={busy} onClick={() => handleRegenerate(slot)}>
-                            {t.regenBtn}
+                            {t('mock.hub.regenBtn')}
                         </button>
                     ))}
                 </div>
@@ -300,14 +307,14 @@ export default function MockHubPage() {
         } else if (status === 'locked') {
             action = (
                 <div className="mock-row-actions">
-                    <span className="mock-badge mock-badge-locked">{t.status.locked}</span>
-                    <span className="mock-row-hint">{t.status.lockedHint}</span>
+                    <span className="mock-badge mock-badge-locked">{t('mock.hub.status.locked')}</span>
+                    <span className="mock-row-hint">{t('mock.hub.status.lockedHint')}</span>
                 </div>
             );
         } else if (status === 'ready') {
             action = (
                 <button className="mock-btn mock-btn-primary" disabled={busy} onClick={() => handleStart(part)}>
-                    ▶ {t.status.ready}
+                    ▶ {t('mock.hub.status.ready')}
                 </button>
             );
         } else if (status === 'in_progress') {
@@ -315,29 +322,32 @@ export default function MockHubPage() {
                 <div className="mock-row-actions">
                     {rem !== null && (
                         <span className="mock-badge mock-badge-timer">
-                            {t.status.in_progressHint.replace('{time}', fmtRemaining(rem))}
+                            {t('mock.hub.status.in_progressHint').replace('{time}', fmtRemaining(rem))}
                         </span>
                     )}
                     <button className="mock-btn mock-btn-primary" disabled={busy} onClick={() => handleStart(part)}>
-                        ⏸ {t.status.in_progress}
+                        ⏸ {t('mock.hub.status.in_progress')}
                     </button>
                 </div>
             );
         } else if (status === 'submitted') {
+            // 真考规则：任何单科结果都要等四个部分全部结束后才能查看
             action = (
                 <div className="mock-row-actions">
-                    <span className="mock-badge mock-badge-done">{t.status.submitted}</span>
-                    {part === 'writing' ? (
+                    <span className="mock-badge mock-badge-done">{t('mock.hub.status.submitted')}</span>
+                    {!allTerminal ? (
+                        <span className="mock-row-hint">{t('mock.hub.status.resultLockedHint')}</span>
+                    ) : part === 'writing' ? (
                         <>
                             {pv.task1?.isAnswered && (
-                                <button className="mock-btn mock-btn-ghost" onClick={() => viewResult(part, 'task1')}>Task 1 · {t.status.viewResult}</button>
+                                <button className="mock-btn mock-btn-ghost" onClick={() => viewResult(part, 'task1')}>Task 1 · {t('mock.hub.status.viewResult')}</button>
                             )}
                             {pv.task2?.isAnswered && (
-                                <button className="mock-btn mock-btn-ghost" onClick={() => viewResult(part, 'task2')}>Task 2 · {t.status.viewResult}</button>
+                                <button className="mock-btn mock-btn-ghost" onClick={() => viewResult(part, 'task2')}>Task 2 · {t('mock.hub.status.viewResult')}</button>
                             )}
                         </>
                     ) : (
-                        <button className="mock-btn mock-btn-ghost" onClick={() => viewResult(part)}>{t.status.viewResult}</button>
+                        <button className="mock-btn mock-btn-ghost" onClick={() => viewResult(part)}>{t('mock.hub.status.viewResult')}</button>
                     )}
                 </div>
             );
@@ -345,7 +355,7 @@ export default function MockHubPage() {
             // forfeited / expired
             action = (
                 <span className={`mock-badge ${status === 'forfeited' ? 'mock-badge-forfeited' : 'mock-badge-expired'}`}>
-                    {status === 'forfeited' ? t.status.forfeited : t.status.expired}
+                    {status === 'forfeited' ? t('mock.hub.status.forfeited') : t('mock.hub.status.expired')}
                 </span>
             );
         }
@@ -354,8 +364,8 @@ export default function MockHubPage() {
             <div key={part} className={`mock-part-row is-${status}`}>
                 <div className="mock-part-icon">{PART_ICONS[part]}</div>
                 <div className="mock-part-info">
-                    <div className="mock-part-name">{t.parts[part]}</div>
-                    <div className="mock-part-meta">{t.partMeta[part]}</div>
+                    <div className="mock-part-name">{t(`mock.hub.parts.${part}`)}</div>
+                    <div className="mock-part-meta">{t(`mock.hub.partMeta.${part}`)}</div>
                 </div>
                 <div className="mock-part-action">{action}</div>
             </div>
@@ -365,11 +375,11 @@ export default function MockHubPage() {
     const report = detail.report;
 
     return (
-        <Layout pageTitle={detail.title || t.pageTitle} backUrl="/practice/ai/bank" backText={t.backToBank}>
+        <Layout pageTitle={detail.title || t('mock.hub.pageTitle')} backUrl="/practice/ai/bank" backText={t('mock.hub.backToBank')}>
             <div className="mock-hub">
                 {anyGenerating && (
                     <div className="mock-gen-progress">
-                        {t.genProgress.replace('{done}', String(readyCount)).replace('{total}', String(detail.order.length))}
+                        {t('mock.hub.genProgress').replace('{done}', String(readyCount)).replace('{total}', String(detail.order.length))}
                     </div>
                 )}
 
@@ -380,20 +390,19 @@ export default function MockHubPage() {
                     <div className={`mock-part-row mock-report-row ${allTerminal ? 'is-ready' : 'is-locked'}`}>
                         <div className="mock-part-icon">📋</div>
                         <div className="mock-part-info">
-                            <div className="mock-part-name">{t.report.rowTitle}</div>
+                            <div className="mock-part-name">{t('mock.hub.report.rowTitle')}</div>
                             <div className="mock-part-meta">
                                 {report
-                                    ? t.report.rowDescDone.replace('{overall}', report.overall.toFixed(1))
-                                    : allTerminal ? t.report.rowDescReady : t.report.rowDescLocked}
+                                    ? t('mock.hub.report.rowDescDone').replace('{overall}', report.overall.toFixed(1))
+                                    : allTerminal ? t('mock.hub.report.rowDescReady') : t('mock.hub.report.rowDescLocked')}
                             </div>
                         </div>
                         <div className="mock-part-action">
                             {report ? (
-                                <span className="mock-badge mock-badge-done">{t.report.overall} {report.overall.toFixed(1)}</span>
+                                <span className="mock-badge mock-badge-done">{t('mock.hub.report.overall')} {report.overall.toFixed(1)}</span>
                             ) : allTerminal ? (
-                                <button className="mock-btn mock-btn-primary" disabled={busy} onClick={handleFinalize}>
-                                    {grading ? t.report.grading : t.report.generateBtn}
-                                </button>
+                                /* 四科结束自动生成，无需点击 */
+                                <span className="mock-badge mock-badge-timer">{t('mock.hub.report.autoGenerating')}</span>
                             ) : (
                                 <span className="mock-badge mock-badge-locked">🔒</span>
                             )}
@@ -404,20 +413,20 @@ export default function MockHubPage() {
                 {/* ── 成绩单详情 ── */}
                 {report && (
                     <div className="mock-report-card">
-                        <h3>{t.report.title}</h3>
+                        <h3>{t('mock.hub.report.title')}</h3>
                         <div className="mock-report-grid">
                             {detail.order.map(p => (
                                 <div key={p} className="mock-report-cell">
-                                    <div className="mock-report-cell-label">{PART_ICONS[p]} {t.parts[p]}</div>
+                                    <div className="mock-report-cell-label">{PART_ICONS[p]} {t(`mock.hub.parts.${p}`)}</div>
                                     <div className="mock-report-cell-band">{(report.bands[p] ?? 0).toFixed(1)}</div>
                                 </div>
                             ))}
                             <div className="mock-report-cell mock-report-cell-overall">
-                                <div className="mock-report-cell-label">{t.report.overall}</div>
+                                <div className="mock-report-cell-label">{t('mock.hub.report.overall')}</div>
                                 <div className="mock-report-cell-band">{report.overall.toFixed(1)}</div>
                             </div>
                         </div>
-                        <p className="mock-report-note">{t.report.forfeitNote}</p>
+                        <p className="mock-report-note">{t('mock.hub.report.forfeitNote')}</p>
                     </div>
                 )}
             </div>

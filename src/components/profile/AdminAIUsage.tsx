@@ -41,8 +41,7 @@ interface UserPickResult {
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function AdminAIUsage() {
-    const { translations } = useLang();
-    const t = translations.profile.admin.aiUsage;
+    const { t } = useLang();
     const [mode, setMode] = useState<Mode>('all');
     const [days, setDays] = useState<number>(30);
     const [chartType, setChartType] = useState<ChartType>('bar');
@@ -113,16 +112,16 @@ export default function AdminAIUsage() {
             <ResponsiveContainer width="99%" height={360} minWidth={0}>
                 <BarChart data={chartData} margin={{ top: 12, right: 16, bottom: 8, left: 8 }}>
                     {commonAxes}
-                    <Bar yAxisId="left" dataKey="at_consumed" name={t.metricAt} fill="#0d9488" />
-                    <Bar yAxisId="right" dataKey="call_count" name={t.metricCalls} fill="#8b5cf6" />
+                    <Bar yAxisId="left" dataKey="at_consumed" name={t('profile.admin.aiUsage.metricAt')} fill="#0d9488" />
+                    <Bar yAxisId="right" dataKey="call_count" name={t('profile.admin.aiUsage.metricCalls')} fill="#8b5cf6" />
                 </BarChart>
             </ResponsiveContainer>
         ) : (
             <ResponsiveContainer width="99%" height={360} minWidth={0}>
                 <LineChart data={chartData} margin={{ top: 12, right: 16, bottom: 8, left: 8 }}>
                     {commonAxes}
-                    <Line yAxisId="left" type="monotone" dataKey="at_consumed" name={t.metricAt} stroke="#0d9488" strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="call_count" name={t.metricCalls} stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="at_consumed" name={t('profile.admin.aiUsage.metricAt')} stroke="#0d9488" strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="call_count" name={t('profile.admin.aiUsage.metricCalls')} stroke="#8b5cf6" strokeWidth={2} dot={false} />
                 </LineChart>
             </ResponsiveContainer>
         );
@@ -131,9 +130,9 @@ export default function AdminAIUsage() {
     return (
         <div style={{ padding: '20px 24px' }}>
             <div style={{ marginBottom: 20 }}>
-                <h2 style={{ margin: 0, fontSize: 22, color: 'var(--color-text)' }}>{t.heading}</h2>
+                <h2 style={{ margin: 0, fontSize: 22, color: 'var(--color-text)' }}>{t('profile.admin.aiUsage.heading')}</h2>
                 <p style={{ margin: '6px 0 0', color: 'var(--color-text-secondary)', fontSize: 13 }}>
-                    {t.description}
+                    {t('profile.admin.aiUsage.description')}
                 </p>
             </div>
 
@@ -143,11 +142,11 @@ export default function AdminAIUsage() {
                     <button
                         onClick={() => setMode('all')}
                         style={pillStyle(mode === 'all')}
-                    >{t.modeAll}</button>
+                    >{t('profile.admin.aiUsage.modeAll')}</button>
                     <button
                         onClick={() => setMode('user')}
                         style={pillStyle(mode === 'user')}
-                    >{t.modeUser}</button>
+                    >{t('profile.admin.aiUsage.modeUser')}</button>
                 </div>
 
                 <select
@@ -155,16 +154,16 @@ export default function AdminAIUsage() {
                     onChange={(e) => setDays(Number(e.target.value))}
                     style={selectStyle}
                 >
-                    <option value={7}>{t.daysLastN.replace('{n}', '7')}</option>
-                    <option value={30}>{t.daysLastN.replace('{n}', '30')}</option>
-                    <option value={90}>{t.daysLastN.replace('{n}', '90')}</option>
-                    <option value={180}>{t.daysLastN.replace('{n}', '180')}</option>
-                    <option value={365}>{t.daysLastN.replace('{n}', '365')}</option>
+                    <option value={7}>{t('profile.admin.aiUsage.daysLastN').replace('{n}', '7')}</option>
+                    <option value={30}>{t('profile.admin.aiUsage.daysLastN').replace('{n}', '30')}</option>
+                    <option value={90}>{t('profile.admin.aiUsage.daysLastN').replace('{n}', '90')}</option>
+                    <option value={180}>{t('profile.admin.aiUsage.daysLastN').replace('{n}', '180')}</option>
+                    <option value={365}>{t('profile.admin.aiUsage.daysLastN').replace('{n}', '365')}</option>
                 </select>
 
                 <div style={{ display: 'flex', gap: 4, background: 'var(--color-bg)', padding: 4, borderRadius: 8 }}>
-                    <button onClick={() => setChartType('bar')} style={pillStyle(chartType === 'bar')}>{t.chartBar}</button>
-                    <button onClick={() => setChartType('line')} style={pillStyle(chartType === 'line')}>{t.chartLine}</button>
+                    <button onClick={() => setChartType('bar')} style={pillStyle(chartType === 'bar')}>{t('profile.admin.aiUsage.chartBar')}</button>
+                    <button onClick={() => setChartType('line')} style={pillStyle(chartType === 'line')}>{t('profile.admin.aiUsage.chartLine')}</button>
                 </div>
             </div>
 
@@ -173,7 +172,7 @@ export default function AdminAIUsage() {
                 <div style={{ position: 'relative', marginBottom: 16, maxWidth: 420 }}>
                     <input
                         type="text"
-                        placeholder={pickedUser ? t.userPickedPlaceholder.replace('{name}', pickedUser.username).replace('{id}', String(pickedUser.id)) : t.userSearchPlaceholder}
+                        placeholder={pickedUser ? t('profile.admin.aiUsage.userPickedPlaceholder').replace('{name}', pickedUser.username).replace('{id}', String(pickedUser.id)) : t('profile.admin.aiUsage.userSearchPlaceholder')}
                         value={searchQ}
                         onFocus={() => setSearchOpen(true)}
                         onChange={(e) => { setSearchQ(e.target.value); setSearchOpen(true); }}
@@ -217,11 +216,11 @@ export default function AdminAIUsage() {
             )}
 
             {/* Loading / error / data */}
-            {loading && <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-secondary)' }}>{t.loading}</div>}
+            {loading && <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-secondary)' }}>{t('profile.admin.aiUsage.loading')}</div>}
             {error && !loading && <div style={{ padding: 20, background: '#fef2f2', color: '#dc2626', borderRadius: 8 }}>{error}</div>}
             {!loading && !error && mode === 'user' && !pickedUser && (
                 <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                    {t.pickUserFirst}
+                    {t('profile.admin.aiUsage.pickUserFirst')}
                 </div>
             )}
 
@@ -230,22 +229,22 @@ export default function AdminAIUsage() {
                     {/* Totals cards */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
                         <div style={cardStyle}>
-                            <div style={cardLabelStyle}>{t.totalAt}</div>
+                            <div style={cardLabelStyle}>{t('profile.admin.aiUsage.totalAt')}</div>
                             <div style={{ ...cardValueStyle, color: '#0d9488' }}>{data.totals.at_consumed.toLocaleString()}</div>
                         </div>
                         <div style={cardStyle}>
-                            <div style={cardLabelStyle}>{t.totalCalls}</div>
+                            <div style={cardLabelStyle}>{t('profile.admin.aiUsage.totalCalls')}</div>
                             <div style={{ ...cardValueStyle, color: '#8b5cf6' }}>{data.totals.call_count.toLocaleString()}</div>
                         </div>
                         {data.user && (
                             <div style={cardStyle}>
-                                <div style={cardLabelStyle}>{t.userBalance}</div>
+                                <div style={cardLabelStyle}>{t('profile.admin.aiUsage.userBalance')}</div>
                                 <div style={cardValueStyle}>{data.user.at_balance.toLocaleString()} AT</div>
                             </div>
                         )}
                         <div style={cardStyle}>
-                            <div style={cardLabelStyle}>{t.timeRange}</div>
-                            <div style={cardValueStyle}>{t.rangeLastNDays.replace('{n}', String(data.days))}</div>
+                            <div style={cardLabelStyle}>{t('profile.admin.aiUsage.timeRange')}</div>
+                            <div style={cardValueStyle}>{t('profile.admin.aiUsage.rangeLastNDays').replace('{n}', String(data.days))}</div>
                         </div>
                     </div>
 

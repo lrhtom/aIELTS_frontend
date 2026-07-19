@@ -35,7 +35,7 @@ export default function ReadAloudMode({
     estimateInterval,
     previewNextDueLabel,
 }: Props) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
     const supported = isSpeechRecognitionSupported();
     const [stage, setStage] = useState<Stage>('en');
@@ -87,13 +87,13 @@ export default function ReadAloudMode({
             },
             onError: (err) => {
                 if (err === 'not-allowed' || err === 'service-not-allowed') {
-                    setMicError(t.vocab.readAloud.micDenied);
+                    setMicError(t('vocab.readAloud.micDenied'));
                     setListening(false);
                 } else if (err === 'not-supported') {
-                    setMicError(t.vocab.readAloud.micUnsupported);
+                    setMicError(t('vocab.readAloud.micUnsupported'));
                     setListening(false);
                 } else if (err !== 'no-speech' && err !== 'aborted') {
-                    setMicError(t.vocab.readAloud.micError.replace('{msg}', String(err)));
+                    setMicError(t('vocab.readAloud.micError').replace('{msg}', String(err)));
                 }
             },
         });
@@ -147,14 +147,14 @@ export default function ReadAloudMode({
     const unlocked = (enPassed && zhPassed) || manualOverride;
 
     const RATING_INFO = [
-        { id: 1, label: t.vocab.ratings.again, cls: 'btn-again', key: '1' },
-        { id: 2, label: t.vocab.ratings.hard,  cls: 'btn-hard',  key: '2' },
-        { id: 3, label: t.vocab.ratings.good,  cls: 'btn-good',  key: '3' },
-        { id: 4, label: t.vocab.ratings.easy,  cls: 'btn-easy',  key: '4' },
+        { id: 1, label: t('vocab.ratings.again'), cls: 'btn-again', key: '1' },
+        { id: 2, label: t('vocab.ratings.hard'),  cls: 'btn-hard',  key: '2' },
+        { id: 3, label: t('vocab.ratings.good'),  cls: 'btn-good',  key: '3' },
+        { id: 4, label: t('vocab.ratings.easy'),  cls: 'btn-easy',  key: '4' },
     ];
 
     const stateLabelKey = STATE_LABELS_KEY[currentCard.state] ?? 'new';
-    const stateLabel = t.vocab.status[stateLabelKey];
+    const stateLabel = t(`vocab.status.${stateLabelKey}`);
 
     return (
         <>
@@ -165,7 +165,7 @@ export default function ReadAloudMode({
                             type="button"
                             className="fc-speak-btn"
                             onClick={(e) => { e.stopPropagation(); speakWord(currentCard.word); }}
-                            aria-label={t.vocab.common.speakPronunciation}
+                            aria-label={t('vocab.common.speakPronunciation')}
                         ><Volume2 size={18} /></button>
 
                         <div className="fc-word">{currentCard.word}</div>
@@ -200,13 +200,13 @@ export default function ReadAloudMode({
                                 <span className="fc-read-stage-icon">
                                     {enPassed ? <Check size={16} /> : stage === 'en' && listening ? <Loader2 size={16} className="fc-read-spin" /> : '①'}
                                 </span>
-                                <span className="fc-read-stage-label">{t.vocab.readAloud.stageEn}</span>
+                                <span className="fc-read-stage-label">{t('vocab.readAloud.stageEn')}</span>
                             </div>
                             <div className={`fc-read-stage ${zhPassed ? 'is-passed' : stage === 'zh' ? 'is-active' : ''}`}>
                                 <span className="fc-read-stage-icon">
                                     {zhPassed ? <Check size={16} /> : stage === 'zh' && listening ? <Loader2 size={16} className="fc-read-spin" /> : '②'}
                                 </span>
-                                <span className="fc-read-stage-label">{t.vocab.readAloud.stageZh}</span>
+                                <span className="fc-read-stage-label">{t('vocab.readAloud.stageZh')}</span>
                             </div>
                         </div>
 
@@ -218,8 +218,8 @@ export default function ReadAloudMode({
                                 <span className="fc-read-transcript-text">
                                     {transcript || (
                                         stage === 'en'
-                                            ? t.vocab.readAloud.promptSpeakEn.replace('{word}', currentCard.word)
-                                            : t.vocab.readAloud.promptSpeakZh
+                                            ? t('vocab.readAloud.promptSpeakEn').replace('{word}', currentCard.word)
+                                            : t('vocab.readAloud.promptSpeakZh')
                                     )}
                                 </span>
                             </div>
@@ -231,7 +231,7 @@ export default function ReadAloudMode({
 
                         {!supported && (
                             <div className="fc-read-error">
-                                {t.vocab.readAloud.micUnsupportedHint}
+                                {t('vocab.readAloud.micUnsupportedHint')}
                             </div>
                         )}
 
@@ -243,21 +243,21 @@ export default function ReadAloudMode({
                                     onClick={handleRetry}
                                     disabled={!supported}
                                 >
-                                    {t.vocab.readAloud.retryBtn}
+                                    {t('vocab.readAloud.retryBtn')}
                                 </button>
                                 <button
                                     type="button"
                                     className="fc-read-action-btn fc-read-action-skip"
                                     onClick={handleSkip}
                                 >
-                                    {t.vocab.readAloud.skipBtn}
+                                    {t('vocab.readAloud.skipBtn')}
                                 </button>
                             </div>
                         )}
 
                         {unlocked && (
                             <div className="fc-read-unlocked-hint">
-                                <Check size={14} /> {manualOverride ? t.vocab.readAloud.skippedLabel : t.vocab.readAloud.passedLabel}
+                                <Check size={14} /> {manualOverride ? t('vocab.readAloud.skippedLabel') : t('vocab.readAloud.passedLabel')}
                             </div>
                         )}
 
@@ -265,7 +265,7 @@ export default function ReadAloudMode({
                             <div className="fc-state-pill">
                                 <span className="fc-state-dot" data-state={currentCard.state}></span>
                                 <span>{stateLabel}</span>
-                                {currentCard.stability > 0 && <span className="fc-stability">· {t.vocab.stability} {currentCard.stability.toFixed(1)}</span>}
+                                {currentCard.stability > 0 && <span className="fc-stability">· {t('vocab.stability')} {currentCard.stability.toFixed(1)}</span>}
                             </div>
                         </div>
                     </div>
@@ -291,7 +291,7 @@ export default function ReadAloudMode({
                 ))}
             </div>
             <div className="fc-kb-hint">
-                {unlocked ? t.vocab.ratingHint : t.vocab.readAloud.ratingLocked}
+                {unlocked ? t('vocab.ratingHint') : t('vocab.readAloud.ratingLocked')}
             </div>
         </>
     );

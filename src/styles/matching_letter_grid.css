@@ -7,6 +7,14 @@
     border-radius: 8px;
     border: 1px solid #e5e7eb;
     padding: 0;
+    /* 容器查询：窄容器（如阅读右侧 300px 题目栏）切换为芯片模式，
+       否则表格 min-width 会把 radio 圆点推到横向溢出区，用户无法作答 */
+    container-type: inline-size;
+}
+
+/* 芯片模式的字母标签 — 宽表格模式下隐藏（字母显示在表头） */
+.mg-cell-letter {
+    display: none;
 }
 
 .matching-grid {
@@ -195,4 +203,73 @@
     .matching-grid .mg-letter-head { min-width: 40px; padding: 12px 0; font-size: 15px; }
     .mg-cell-label { padding: 16px 0; }
     .mg-dot { width: 20px; height: 20px; }
+}
+
+/* ── 窄容器芯片模式：每题一行「题干 + A-F 字母按钮」，不再用宽表格 ──
+   触发条件是容器宽度（阅读右侧题目栏 ~300px），与视口宽度无关。 */
+@container (max-width: 560px) {
+    .matching-grid thead { display: none; }
+    .matching-grid,
+    .matching-grid tbody { display: block; width: 100%; }
+    .matching-grid .mg-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 10px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .matching-grid tbody tr:last-child.mg-row { border-bottom: none; }
+    .matching-grid .mg-row-label {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        border-right: none;
+        border-bottom: none;
+        padding: 0 0 8px;
+    }
+    .matching-grid .mg-cell {
+        display: block;
+        border-bottom: none;
+        background: transparent;
+    }
+    .mg-cell-label { padding: 0; }
+    .mg-cell-label .mg-dot { display: none; }
+    .mg-cell-letter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 6px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        color: #334155;
+        background: white;
+        transition: all 0.15s;
+    }
+    .mg-cell-label:hover .mg-cell-letter { border-color: var(--color-primary); color: var(--color-primary); }
+    .mg-cell.is-checked .mg-cell-letter {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+        color: #fff;
+    }
+    .mg-cell.is-cell-correct .mg-cell-letter { background: #10b981; border-color: #10b981; color: #fff; }
+    .mg-cell.is-cell-wrong .mg-cell-letter { background: #ef4444; border-color: #ef4444; color: #fff; }
+    .mg-cell.is-cell-answer .mg-cell-letter { border-color: #10b981; border-style: dashed; color: #10b981; background: white; }
+}
+
+/* 选择格从 label+隐藏radio 改为显式按钮：抹平 button 默认样式 */
+button.mg-cell-label {
+    background: transparent;
+    border: none;
+    width: 100%;
+    font: inherit;
+    color: inherit;
+}
+button.mg-cell-label:disabled {
+    cursor: not-allowed;
 }

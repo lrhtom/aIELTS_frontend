@@ -13,7 +13,7 @@ const EXAMPLE_TOPICS = [
 ];
 
 export default function AiTeacherGenPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const navigate = useNavigate();
     const [topic, setTopic] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -24,7 +24,7 @@ export default function AiTeacherGenPage() {
     const handleSubmit = () => {
         const trimmed = topic.trim();
         if (!trimmed) {
-            showToast(t.writingAiTeacher.errorTopic, 'error');
+            showToast(t('writingAiTeacher.errorTopic'), 'error');
             return;
         }
         setSubmitting(true);
@@ -47,20 +47,20 @@ export default function AiTeacherGenPage() {
 
     return (
         <Layout
-            pageTitle={t.writingAiTeacher.genTitle}
-            pageSubtitle={t.writingAiTeacher.genSubtitle}
+            pageTitle={t('writingAiTeacher.genTitle')}
+            pageSubtitle={t('writingAiTeacher.genSubtitle')}
             backUrl="/writing/ai-teachers"
-            backText={t.writingHub.backToPractice}
+            backText={t('writingHub.backToPractice')}
             headerRight={<AiModelSelector variant="minimal" label="" description="" />}
         >
             <div className="at-gen-wrap">
                 <div className="at-gen-card">
-                    <h2>{t.writingAiTeacher.genTitle}</h2>
-                    <p>{t.writingAiTeacher.genSubtitle}</p>
+                    <h2>{t('writingAiTeacher.genTitle')}</h2>
+                    <p>{t('writingAiTeacher.genSubtitle')}</p>
 
                     <textarea
                         className="at-gen-textarea"
-                        placeholder={t.writingAiTeacher.genPlaceholder}
+                        placeholder={t('writingAiTeacher.genPlaceholder')}
                         value={topic}
                         onChange={e => setTopic(e.target.value)}
                         onKeyDown={handleKeyDown}
@@ -74,38 +74,38 @@ export default function AiTeacherGenPage() {
                             onClick={() => setAdvancedOpen(!advancedOpen)}
                         >
                             <span>{advancedOpen ? '▼' : '▶'}</span>
-                            {t.writingAiTeacher.advancedSettings.title}
+                            {t('writingAiTeacher.advancedSettings.title')}
                         </div>
 
                         {advancedOpen && (
                             <div className="at-gen-advanced-panel">
                                 <div>
-                                    <div className="at-gen-advanced-label">{t.writingAiTeacher.advancedSettings.viewpointLabel}</div>
+                                    <div className="at-gen-advanced-label">{t('writingAiTeacher.advancedSettings.viewpointLabel')}</div>
                                     <div className="at-gen-radio-group">
                                         <label className={`at-gen-radio-label ${viewpoint === '' ? 'is-active' : ''}`}>
                                             <input type="radio" name="vp" checked={viewpoint === ''} onChange={() => setViewpoint('')} />
-                                            {t.writingAiTeacher.advancedSettings.viewpointOptions.none}
+                                            {t('writingAiTeacher.advancedSettings.viewpointOptions.none')}
                                         </label>
                                         <label className={`at-gen-radio-label ${viewpoint === 'positive' ? 'is-active' : ''}`}>
                                             <input type="radio" name="vp" checked={viewpoint === 'positive'} onChange={() => setViewpoint('positive')} />
-                                            {t.writingAiTeacher.advancedSettings.viewpointOptions.positive}
+                                            {t('writingAiTeacher.advancedSettings.viewpointOptions.positive')}
                                         </label>
                                         <label className={`at-gen-radio-label ${viewpoint === 'negative' ? 'is-active' : ''}`}>
                                             <input type="radio" name="vp" checked={viewpoint === 'negative'} onChange={() => setViewpoint('negative')} />
-                                            {t.writingAiTeacher.advancedSettings.viewpointOptions.negative}
+                                            {t('writingAiTeacher.advancedSettings.viewpointOptions.negative')}
                                         </label>
                                         <label className={`at-gen-radio-label ${viewpoint === 'both' ? 'is-active' : ''}`}>
                                             <input type="radio" name="vp" checked={viewpoint === 'both'} onChange={() => setViewpoint('both')} />
-                                            {t.writingAiTeacher.advancedSettings.viewpointOptions.both}
+                                            {t('writingAiTeacher.advancedSettings.viewpointOptions.both')}
                                         </label>
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="at-gen-advanced-label">{t.writingAiTeacher.advancedSettings.instructionsLabel}</div>
+                                    <div className="at-gen-advanced-label">{t('writingAiTeacher.advancedSettings.instructionsLabel')}</div>
                                     <textarea
                                         className="at-gen-textarea"
                                         style={{ minHeight: '80px', height: '80px' }}
-                                        placeholder={t.writingAiTeacher.advancedSettings.instructionsPlaceholder}
+                                        placeholder={t('writingAiTeacher.advancedSettings.instructionsPlaceholder')}
                                         value={customInstructions}
                                         onChange={e => setCustomInstructions(e.target.value)}
                                         maxLength={500}
@@ -120,7 +120,7 @@ export default function AiTeacherGenPage() {
                         onClick={handleSubmit}
                         disabled={submitting || !topic.trim()}
                     >
-                        {t.writingAiTeacher.genBtn}
+                        {t('writingAiTeacher.genBtn')}
                     </button>
 
                     <div className="at-gen-examples">

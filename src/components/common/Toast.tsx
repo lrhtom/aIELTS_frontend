@@ -30,7 +30,7 @@ export function showToast(message: string, type: ToastType = 'error', code?: str
  * Toast 容器组件 —— 放在 App 根组件中即可
  */
 export default function ToastContainer() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [toasts, setToasts] = useState<ToastItem[]>([]);
 
     const addToast = useCallback((message: string, type: ToastType, code?: string | number) => {
@@ -66,7 +66,7 @@ export default function ToastContainer() {
                     </span>
                     <span className="toast-message">
                         {tItem.type === 'error'
-                            ? <><span className="toast-code">{tItem.code ?? t.common.error}</span>：{tItem.message}</>
+                            ? <><span className="toast-code">{tItem.code ?? t('common.error')}</span>：{tItem.message}</>
                             : tItem.message
                         }
                     </span>

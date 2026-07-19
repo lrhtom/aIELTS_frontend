@@ -12,8 +12,7 @@ import '../../styles/custom_model.css';
 
 /** Settings-page panel: list the user's custom models with test / edit / delete + add. */
 export default function CustomModelManager() {
-    const { translations } = useLang();
-    const t = translations.components.customModel;
+    const { t } = useLang();
 
     const [models, setModels] = useState<CustomModel[]>([]);
     const [loading, setLoading] = useState(false);
@@ -40,12 +39,12 @@ export default function CustomModelManager() {
 
     const statusText = (r: ModelTestResult): string => {
         switch (r.status) {
-            case 'ok': return t.testOk;
-            case 'auth': return t.testAuth;
-            case 'ratelimited': return t.testRateLimited;
-            case 'reqerror': return t.testReqError;
-            case 'unconfigured': return t.testUnconfigured;
-            default: return t.testError;
+            case 'ok': return t('components.customModel.testOk');
+            case 'auth': return t('components.customModel.testAuth');
+            case 'ratelimited': return t('components.customModel.testRateLimited');
+            case 'reqerror': return t('components.customModel.testReqError');
+            case 'unconfigured': return t('components.customModel.testUnconfigured');
+            default: return t('components.customModel.testError');
         }
     };
 
@@ -72,7 +71,7 @@ export default function CustomModelManager() {
             const msg = axios.isAxiosError(e)
                 ? (e.response?.data as { error?: string } | undefined)?.error
                 : undefined;
-            setOfficialErrors(prev => ({ ...prev, [provider]: msg || t.testError }));
+            setOfficialErrors(prev => ({ ...prev, [provider]: msg || t('components.customModel.testError') }));
             setOfficialResults(prev => {
                 const next = { ...prev };
                 delete next[provider];
@@ -84,12 +83,12 @@ export default function CustomModelManager() {
     };
 
     const handleDelete = async (m: CustomModel) => {
-        if (!window.confirm(t.deleteConfirm)) return;
+        if (!window.confirm(t('components.customModel.deleteConfirm'))) return;
         try {
             await deleteCustomModel(m.id);
             setModels(prev => prev.filter(x => x.id !== m.id));
         } catch {
-            window.alert(t.deleteFail);
+            window.alert(t('components.customModel.deleteFail'));
         }
     };
 
@@ -108,15 +107,15 @@ export default function CustomModelManager() {
         <div className="cm-manager">
             <div className="cm-manager-head">
                 <div>
-                    <h4 className="cm-manager-title">{t.managerTitle}</h4>
-                    <p className="cm-manager-desc">{t.managerDesc}</p>
+                    <h4 className="cm-manager-title">{t('components.customModel.managerTitle')}</h4>
+                    <p className="cm-manager-desc">{t('components.customModel.managerDesc')}</p>
                 </div>
                 <button className="cm-add-btn" onClick={openAdd}>
-                    <Plus size={15} /> {t.addBtn}
+                    <Plus size={15} /> {t('components.customModel.addBtn')}
                 </button>
             </div>
 
-            {!loading && models.length === 0 && <div className="cm-empty">{t.empty}</div>}
+            {!loading && models.length === 0 && <div className="cm-empty">{t('components.customModel.empty')}</div>}
 
             {models.length > 0 && (
                 <div className="cm-list">
@@ -135,10 +134,10 @@ export default function CustomModelManager() {
                                 </div>
                                 <div className="cm-row-actions">
                                     <button className="cm-row-btn" onClick={() => handleTest(m)} disabled={testingId === m.id}>
-                                        {testingId === m.id ? t.testing : t.test}
+                                        {testingId === m.id ? t('components.customModel.testing') : t('components.customModel.test')}
                                     </button>
-                                    <button className="cm-row-btn" onClick={() => openEdit(m)}>{t.edit}</button>
-                                    <button className="cm-row-btn cm-row-danger" onClick={() => handleDelete(m)}>{t.delete}</button>
+                                    <button className="cm-row-btn" onClick={() => openEdit(m)}>{t('components.customModel.edit')}</button>
+                                    <button className="cm-row-btn cm-row-danger" onClick={() => handleDelete(m)}>{t('components.customModel.delete')}</button>
                                 </div>
                             </div>
                         );
@@ -148,8 +147,8 @@ export default function CustomModelManager() {
 
             <div className="cm-manager-head cm-official-head">
                 <div>
-                    <h4 className="cm-manager-title">{t.officialTitle}</h4>
-                    <p className="cm-manager-desc">{t.officialDesc}</p>
+                    <h4 className="cm-manager-title">{t('components.customModel.officialTitle')}</h4>
+                    <p className="cm-manager-desc">{t('components.customModel.officialDesc')}</p>
                 </div>
             </div>
             <div className="cm-list">
@@ -163,7 +162,7 @@ export default function CustomModelManager() {
                                 {r && (
                                     <span className={`cm-row-status cm-test-${r.status}`}>
                                         <span className="cm-test-dot" /> {statusText(r)}
-                                        {r.status === 'ok' && ` · ${t.officialCostNote.replace('{n}', String(r.at_cost))}`}
+                                        {r.status === 'ok' && ` · ${t('components.customModel.officialCostNote').replace('{n}', String(r.at_cost))}`}
                                     </span>
                                 )}
                                 {!r && err && (
@@ -178,7 +177,7 @@ export default function CustomModelManager() {
                                     onClick={() => handleOfficialTest(o.value)}
                                     disabled={officialTesting !== null}
                                 >
-                                    {officialTesting === o.value ? t.testing : t.test}
+                                    {officialTesting === o.value ? t('components.customModel.testing') : t('components.customModel.test')}
                                 </button>
                             </div>
                         </div>

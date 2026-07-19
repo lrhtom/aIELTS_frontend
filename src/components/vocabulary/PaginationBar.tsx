@@ -25,7 +25,7 @@ export default function PaginationBar({
     jumpLabel = 'GO',
     pageInfo,
 }: PaginationBarProps) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     return (
         <div className="lp-pager">
             <button
@@ -34,7 +34,7 @@ export default function PaginationBar({
                 disabled={page <= 1}
                 onClick={() => onPageChange(page - 1)}
             >
-                {prevLabel ?? t.vocab.pagination.prev}
+                {prevLabel ?? t('vocab.pagination.prev')}
             </button>
             <span className="lp-page-info">{pageInfo ?? `${page} / ${totalPages}`}</span>
             <button
@@ -43,18 +43,18 @@ export default function PaginationBar({
                 disabled={page >= totalPages}
                 onClick={() => onPageChange(page + 1)}
             >
-                {nextLabel ?? t.vocab.pagination.next}
+                {nextLabel ?? t('vocab.pagination.next')}
             </button>
             <span className="lp-page-jump">
-                <span>{t.vocab.pagination.jumpTo}</span>
+                <span>{t('vocab.pagination.jumpTo')}</span>
                 <input
                     type="text"
                     inputMode="numeric"
                     value={pageJumpInput}
                     onChange={(e) => onPageJumpInputChange(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') onPageJump(); }}
-                    placeholder={t.vocab.pagination.pagePlaceholder}
-                    aria-label={t.vocab.pagination.jumpAria}
+                    placeholder={t('vocab.pagination.pagePlaceholder')}
+                    aria-label={t('vocab.pagination.jumpAria')}
                 />
                 <button type="button" onClick={onPageJump} disabled={!pageJumpInput.trim()}>{jumpLabel}</button>
             </span>

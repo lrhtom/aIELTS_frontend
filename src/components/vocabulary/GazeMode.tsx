@@ -47,7 +47,7 @@ export default function GazeMode({
     simpleMode,
     canFlip = true,
 }: Props) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const flipLocked = !simpleMode && !canFlip;
 
     const [activeTracking, setActiveTracking] = useState<'eye' | 'mouse'>(trackingMode);
@@ -275,7 +275,7 @@ export default function GazeMode({
             setCalibrating(false);
             setActiveTracking('mouse');
             setGazeReady(true);
-            setError(t.vocab.gaze.cameraDenied);
+            setError(t('vocab.gaze.cameraDenied'));
         }
     }, [t]);
 
@@ -366,10 +366,10 @@ export default function GazeMode({
     }, []);
 
     const RATING_INFO = [
-        { id: 1, label: t.vocab.ratings.again, cls: 'btn-again', key: '1' },
-        { id: 2, label: t.vocab.ratings.hard,  cls: 'btn-hard',  key: '2' },
-        { id: 3, label: t.vocab.ratings.good,  cls: 'btn-good',  key: '3' },
-        { id: 4, label: t.vocab.ratings.easy,  cls: 'btn-easy',  key: '4' },
+        { id: 1, label: t('vocab.ratings.again'), cls: 'btn-again', key: '1' },
+        { id: 2, label: t('vocab.ratings.hard'),  cls: 'btn-hard',  key: '2' },
+        { id: 3, label: t('vocab.ratings.good'),  cls: 'btn-good',  key: '3' },
+        { id: 4, label: t('vocab.ratings.easy'),  cls: 'btn-easy',  key: '4' },
     ];
 
     // Unified Tracking loop (Gaze + Mouse)
@@ -466,10 +466,10 @@ export default function GazeMode({
     }, [activeTracking, gazeReady, markLetterScanned]);
 
     const STATE_LABELS: Record<number, string> = {
-        0: t.vocab.status.new,
-        1: t.vocab.status.learning,
-        2: t.vocab.status.review,
-        3: t.vocab.status.relearn,
+        0: t('vocab.status.new'),
+        1: t('vocab.status.learning'),
+        2: t('vocab.status.review'),
+        3: t('vocab.status.relearn'),
     };
 
     // Custom high-performance cursor
@@ -516,7 +516,7 @@ export default function GazeMode({
                     if (e.code === 'Space' && !flipLocked) { e.preventDefault(); onFlip(); }
                 }}
                 aria-disabled={flipLocked}
-                aria-label={isFlipped ? t.vocab.common.flipFront : t.vocab.common.flipBack}
+                aria-label={isFlipped ? t('vocab.common.flipFront') : t('vocab.common.flipBack')}
                 style={flipLocked ? { cursor: 'not-allowed' } : undefined}
             >
                 <div
@@ -528,12 +528,12 @@ export default function GazeMode({
                             type="button"
                             className="fc-speak-btn"
                             onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                            aria-label={t.vocab.common.speakPronunciation}
+                            aria-label={t('vocab.common.speakPronunciation')}
                         ><Volume2 size={18} /></button>
 
                         {!gazeReady ? (
                             <div className="fc-gaze-loading">
-                                {calibrating ? t.vocab.gaze.calibrating : error || t.vocab.gaze.notSupported}
+                                {calibrating ? t('vocab.gaze.calibrating') : error || t('vocab.gaze.notSupported')}
                             </div>
                         ) : (
                             <>
@@ -556,11 +556,11 @@ export default function GazeMode({
                                     </div>
                                 )}
                                 <div className="fc-gaze-prompt">
-                                    {allScanned ? t.vocab.gaze.scanComplete : t.vocab.gaze.scanPrompt}
+                                    {allScanned ? t('vocab.gaze.scanComplete') : t('vocab.gaze.scanPrompt')}
                                 </div>
                                 <div className="fc-gaze-tracker-row">
                                     <span className="fc-gaze-tracker-badge">
-                                        {activeTracking === 'eye' ? t.vocab.gaze.trackingEye : t.vocab.gaze.trackingMouse}
+                                        {activeTracking === 'eye' ? t('vocab.gaze.trackingEye') : t('vocab.gaze.trackingMouse')}
                                     </span>
                                 </div>
                             </>
@@ -573,8 +573,8 @@ export default function GazeMode({
                         )}
                         {currentCard.reps > 0 && (
                             <div className="fc-reps-badge">
-                                {t.vocab.repsDone.replace('{n}', currentCard.reps.toString())}
-                                {currentCard.lapses > 0 && ` · ${t.vocab.lapsesCount.replace('{n}', currentCard.lapses.toString())}`}
+                                {t('vocab.repsDone').replace('{n}', currentCard.reps.toString())}
+                                {currentCard.lapses > 0 && ` · ${t('vocab.lapsesCount').replace('{n}', currentCard.lapses.toString())}`}
                             </div>
                         )}
                     </div>
@@ -587,7 +587,7 @@ export default function GazeMode({
                                 type="button"
                                 className="fc-speak-btn fc-speak-btn--inline"
                                 onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                                aria-label={t.vocab.common.speakPronunciation}
+                                aria-label={t('vocab.common.speakPronunciation')}
                             ><Volume2 size={18} /></button>
                         </div>
                         {currentCard.phonetic && (
@@ -619,7 +619,7 @@ export default function GazeMode({
                         )}
                         <div className="fc-state-label">
                             {STATE_LABELS[currentCard.state]}
-                            {currentCard.stability > 0 && ` · ${t.vocab.stability} ${currentCard.stability.toFixed(1)}`}
+                            {currentCard.stability > 0 && ` · ${t('vocab.stability')} ${currentCard.stability.toFixed(1)}`}
                         </div>
                     </div>
                 </div>
@@ -645,7 +645,7 @@ export default function GazeMode({
                 ))}
             </div>
             <div className="fc-kb-hint">
-                {t.vocab.ratingHint}
+                {t('vocab.ratingHint')}
             </div>
         </>
     );

@@ -1,13 +1,17 @@
 /**
- * PracticeAnalyticsPanel — Reading / Listening 正确率统计.
+ * PracticeAnalyticsPanel — Reading / Listening 全套卷成绩统计（9 分制）.
  *
- * Renders per-skill KPI cards + accuracy trend line chart + by-subtype
- * table + recent-attempts list.  Data source: GET /analytics/practice.
+ * 2026-07-17 起统计口径：只统计完整 40 题全套卷（含全套模拟的子卷），
+ * 后端返回 correct/total，前端用官方换算表 (utils/ielts_band.ts) 转 band。
+ * 另导出 MockAnalyticsPanel：全套模拟成绩单（overall + 四科 band）趋势。
+ * Data source: GET /analytics/practice.
  */
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { getPracticeAnalytics, type PracticeAnalytics, type PracticeSkillStats, type PracticeAttempt } from '../../api/analytics';
+import { getPracticeAnalytics, type PracticeAnalytics, type PracticeAttempt, type MockReportItem } from '../../api/analytics';
+import { rawToBand, formatBand } from '../../utils/ielts_band';
 import { useLang } from '../../i18n/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 type Skill = 'reading' | 'listening';
 
@@ -25,23 +29,22 @@ function fmtDate(iso: string | null): string {
     }
 }
 
-function accuracyClass(a: number): string {
-    if (a >= 0.85) return 'pa-acc-high';
-    if (a >= 0.6) return 'pa-acc-mid';
+function bandClass(b: number): string {
+    if (b >= 7) return 'pa-acc-high';
+    if (b >= 5.5) return 'pa-acc-mid';
     return 'pa-acc-low';
 }
 
-/* ── Accuracy trend line chart ──────────────────────────────────── */
+/* ── Band trend line chart（y 轴 9 分制）──────────────────────── */
 interface TrendPoint {
     idx: number;              // 0-based sequence
-    accuracy: number;         // 0..1
-    correct: number;
-    total: number;
+    band: number;             // 0..9
     date: string | null;
-    title: string;
+    tipExtra?: string[];      // tooltip 附加行
 }
 
-function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: string }) {
+function BandTrendChart({ points, color, targetBand }: { points: TrendPoint[]; color: string; targetBand?: number | null }) {
+    const { t } = useLang();
     const [tip, setTip] = useState<{ x: number; y: number; lines: string[] } | null>(null);
     const hide = useCallback(() => setTip(null), []);
 
@@ -54,22 +57,36 @@ function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: st
     const graphW = W - padL - padR;
     const graphH = H - padT - padB;
 
+    // 自适应下限：常见 5-9 区间不被压扁，低分数据（或低目标分）也不出图外（与写作趋势图同策略）
+    const maxBand = 9;
+    const minBand = useMemo(() => {
+        let lo = 4;
+        for (const p of points) {
+            if (p.band < lo) lo = Math.floor(p.band);
+        }
+        if (typeof targetBand === 'number' && targetBand > 0 && targetBand < lo) lo = Math.floor(targetBand);
+        return Math.max(0, Math.min(lo, maxBand - 1));
+    }, [points, targetBand]);
+
     // With a single point, center it horizontally so it doesn't hug the left edge.
     const singlePoint = points.length === 1;
     const maxIdx = points.length > 1 ? points[points.length - 1].idx : 1;
     const getX = (idx: number) => singlePoint
         ? padL + graphW / 2
         : padL + (maxIdx > 0 ? (idx / maxIdx) * graphW : graphW / 2);
-    const getY = (acc: number) => padT + graphH - acc * graphH;
+    const getY = (band: number) => padT + graphH - ((band - minBand) / (maxBand - minBand)) * graphH;
 
-    const linePoints = points.map(p => `${getX(p.idx)},${getY(p.accuracy)}`);
+    const linePoints = points.map(p => `${getX(p.idx)},${getY(p.band)}`);
 
     const areaD = linePoints.length > 0
         ? `M ${linePoints[0]} L ${linePoints.join(' L ')} L ${getX(points[points.length - 1].idx)},${padT + graphH} L ${padL},${padT + graphH} Z`
         : '';
 
-    // Y ticks at 0/25/50/75/100 %
-    const yTickValues = [0, 0.25, 0.5, 0.75, 1];
+    const yTickValues = useMemo(() => {
+        const out: number[] = [];
+        for (let v = minBand; v <= maxBand; v += 1) out.push(v);
+        return out;
+    }, [minBand]);
 
     // X labels: show up to 8 dates
     const xLabelCount = Math.min(8, points.length);
@@ -83,16 +100,14 @@ function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: st
         }
     }
 
-    const { translations: t } = useLang();
     const showTip = useCallback((ev: React.MouseEvent, p: TrendPoint) => {
-        const pct = `${Math.round(p.accuracy * 100)}%`;
         const dateStr = p.date ? new Date(p.date).toLocaleString(undefined, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
         setTip({
             x: ev.clientX,
             y: ev.clientY,
-            lines: [`${dateStr}`, t.analytics.practice.tooltipAccuracy.replace('{pct}', pct), `${p.correct}/${p.total}${p.title ? ' · ' + p.title : ''}`],
+            lines: [dateStr, `Band ${formatBand(p.band)}`, ...(p.tipExtra ?? [])],
         });
-    }, [t]);
+    }, []);
 
     return (
         <>
@@ -103,18 +118,27 @@ function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: st
                         <stop offset="100%" stopColor={color} stopOpacity="0.02" />
                     </linearGradient>
                 </defs>
-                {/* Y-axis gridlines + labels */}
+                {/* Y-axis gridlines + labels (band scale) */}
                 {yTickValues.map(v => {
                     const y = getY(v);
                     return (
                         <g key={v}>
                             <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="var(--color-border)" strokeWidth="0.5" />
                             <text x={padL - 6} y={y + 4} textAnchor="end" className="analytics-axis-label">
-                                {Math.round(v * 100)}%
+                                {v.toFixed(0)}
                             </text>
                         </g>
                     );
                 })}
+                {/* 目标分虚线（与写作/口语趋势图一致） */}
+                {typeof targetBand === 'number' && targetBand >= minBand && targetBand <= maxBand && (
+                    <g>
+                        <line x1={padL} y1={getY(targetBand)} x2={W - padR} y2={getY(targetBand)} stroke="var(--color-primary)" strokeWidth="1.5" strokeDasharray="5 5" />
+                        <text x={W - padR - 5} y={getY(targetBand) - 6} textAnchor="end" fontSize="12" fill="var(--color-primary)" fontWeight="bold">
+                            {t('analytics.skillsAvg.target')} {targetBand.toFixed(1)}
+                        </text>
+                    </g>
+                )}
                 {areaD && <path d={areaD} fill={`url(#paTrendGrad-${color.replace('#', '')})`} />}
                 {linePoints.length > 1 && (
                     <polyline
@@ -131,7 +155,7 @@ function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: st
                     <circle
                         key={`hit-${i}`}
                         cx={getX(p.idx)}
-                        cy={getY(p.accuracy)}
+                        cy={getY(p.band)}
                         r="10"
                         fill="transparent"
                         style={{ cursor: 'pointer' }}
@@ -146,7 +170,7 @@ function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: st
                         {singlePoint && (
                             <circle
                                 cx={getX(p.idx)}
-                                cy={getY(p.accuracy)}
+                                cy={getY(p.band)}
                                 r="12"
                                 fill={color}
                                 opacity="0.15"
@@ -154,7 +178,7 @@ function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: st
                         )}
                         <circle
                             cx={getX(p.idx)}
-                            cy={getY(p.accuracy)}
+                            cy={getY(p.band)}
                             r={singlePoint ? 6 : 3.5}
                             fill={singlePoint ? color : 'var(--color-surface)'}
                             stroke={color}
@@ -181,106 +205,117 @@ function AccuracyTrendChart({ points, color }: { points: TrendPoint[]; color: st
     );
 }
 
-function SkillCard({ skill, stats, label }: { skill: Skill; stats: PracticeSkillStats; label: string }) {
-    const { translations: t } = useLang();
-    const pt = t.analytics.practice;
+/* ── 单科（听/读）全套卷成绩卡 ─────────────────────────────── */
+interface BandAttempt {
+    attempt: PracticeAttempt;
+    band: number;
+}
+
+function SkillCard({ skill, data, label }: { skill: Skill; data: PracticeAnalytics; label: string }) {
+    const { t } = useLang();
+    const { user } = useAuth();
+    const stats = data[skill];
     const icon = skill === 'reading' ? '📖' : '🎧';
-    const accClass = accuracyClass(stats.accuracy);
+    const targetRaw = skill === 'reading' ? user?.target_reading : user?.target_listening;
+    const targetBand = targetRaw != null && Number(targetRaw) > 0 ? Number(targetRaw) : null;
+
+    // 只有 total>=38 的全套卷才有官方 band（后端已按 subtype='full' 过滤，这里再兜底）
+    const bandAttempts: BandAttempt[] = useMemo(() => {
+        const out: BandAttempt[] = [];
+        for (const a of stats.recent) {
+            const band = rawToBand(skill, a.correct, a.total);
+            if (band !== null) out.push({ attempt: a, band });
+        }
+        return out;
+    }, [stats.recent, skill]);
+
     // Recent attempts come back newest-first; the trend chart wants oldest-left → reverse.
     const trendPoints: TrendPoint[] = useMemo(() => {
-        const filtered = stats.recent.filter((a: PracticeAttempt) => a.total > 0);
-        const reversed = [...filtered].reverse();
-        return reversed.map((a, idx) => ({
+        const reversed = [...bandAttempts].reverse();
+        return reversed.map((x, idx) => ({
             idx,
-            accuracy: a.accuracy,
-            correct: a.correct,
-            total: a.total,
-            date: a.date,
-            title: a.title,
+            band: x.band,
+            date: x.attempt.date,
+            tipExtra: [`${x.attempt.correct}/${x.attempt.total}${x.attempt.title ? ' · ' + x.attempt.title : ''}`],
         }));
-    }, [stats.recent]);
+    }, [bandAttempts]);
+
+    const avgBand = useMemo(() => {
+        if (bandAttempts.length === 0) return null;
+        const sum = bandAttempts.reduce((s, x) => s + x.band, 0);
+        return Math.round((sum / bandAttempts.length) * 10) / 10;
+    }, [bandAttempts]);
+
     const trendColor = skill === 'reading' ? '#0d9488' : '#7c3aed';
     return (
         <div className="pa-skill-card">
             <div className="pa-skill-header">
                 <span className="pa-skill-icon">{icon}</span>
                 <span className="pa-skill-title">{label}</span>
+                <span className="pa-skill-scope-badge">{t('analytics.practice.fullOnlyBadge')}</span>
             </div>
             {stats.attempts === 0 ? (
                 <div className="pa-empty">
                     <div className="pa-empty-icon">📊</div>
-                    <div className="pa-empty-title">{pt.emptyTitle.replace('{label}', label)}</div>
+                    <div className="pa-empty-title">{t('analytics.practice.emptyTitle').replace('{label}', label)}</div>
                     <div className="pa-empty-hint">
-                        {pt.emptyHint.replace('{skill}', skill === 'reading' ? pt.skillReading : pt.skillListening)}
+                        {t('analytics.practice.emptyHint').replace('{skill}', skill === 'reading' ? t('analytics.practice.skillReading') : t('analytics.practice.skillListening'))}
                     </div>
                 </div>
             ) : (
                 <>
                     <div className="pa-kpi-row">
-                        <div className={`pa-kpi-main ${accClass}`}>
-                            <div className="pa-kpi-value">{fmtPct(stats.accuracy)}</div>
-                            <div className="pa-kpi-label">{pt.kpiAccuracy}</div>
+                        <div className={`pa-kpi-main ${avgBand !== null ? bandClass(avgBand) : ''}`}>
+                            <div className="pa-kpi-value">{avgBand !== null ? formatBand(avgBand) : '—'}</div>
+                            <div className="pa-kpi-label">{t('analytics.practice.kpiBand')}</div>
+                        </div>
+                        <div className="pa-kpi-sub">
+                            <div><span className="pa-kpi-num">{bandAttempts.length > 0 ? formatBand(bandAttempts[0].band) : '—'}</span></div>
+                            <div className="pa-kpi-sublabel">{t('analytics.practice.kpiLatestBand')}</div>
+                        </div>
+                        <div className="pa-kpi-sub">
+                            <div><span className="pa-kpi-num">{fmtPct(stats.accuracy)}</span></div>
+                            <div className="pa-kpi-sublabel">{t('analytics.practice.kpiAccuracy')}</div>
                         </div>
                         <div className="pa-kpi-sub">
                             <div><span className="pa-kpi-num">{stats.correct_questions}</span> / {stats.total_questions}</div>
-                            <div className="pa-kpi-sublabel">{pt.kpiQuestions}</div>
+                            <div className="pa-kpi-sublabel">{t('analytics.practice.kpiQuestions')}</div>
                         </div>
                         <div className="pa-kpi-sub">
                             <div><span className="pa-kpi-num">{stats.attempts}</span></div>
-                            <div className="pa-kpi-sublabel">{pt.kpiSets}</div>
+                            <div className="pa-kpi-sublabel">{t('analytics.practice.kpiSets')}</div>
                         </div>
                     </div>
 
                     {trendPoints.length >= 1 && (
                         <div className="pa-section">
                             <div className="pa-section-title">
-                                {pt.trendTitle.replace('{n}', String(trendPoints.length))}
-                                {trendPoints.length === 1 && <span className="pa-section-hint">{pt.trendHint}</span>}
+                                {t('analytics.practice.trendTitle').replace('{n}', String(trendPoints.length))}
+                                {trendPoints.length === 1 && <span className="pa-section-hint">{t('analytics.practice.trendHint')}</span>}
                             </div>
                             <div className="pa-trend-chart">
-                                <AccuracyTrendChart points={trendPoints} color={trendColor} />
-                            </div>
-                        </div>
-                    )}
-
-                    {stats.by_type.length > 0 && (
-                        <div className="pa-section">
-                            <div className="pa-section-title">{pt.byType}</div>
-                            <div className="pa-type-list">
-                                {stats.by_type.map(row => (
-                                    <div key={row.subtype} className="pa-type-row">
-                                        <span className="pa-type-name">{row.subtype.replace(/_/g, ' ')}</span>
-                                        <div className="pa-type-bar-wrap">
-                                            <div
-                                                className={`pa-type-bar ${accuracyClass(row.accuracy)}`}
-                                                style={{ width: `${Math.max(2, Math.round(row.accuracy * 100))}%` }}
-                                            />
-                                        </div>
-                                        <span className="pa-type-stat">
-                                            <strong>{fmtPct(row.accuracy)}</strong>
-                                            <span className="pa-type-tally"> ({row.correct}/{row.total}, {row.attempts}{pt.setsSuffix})</span>
-                                        </span>
-                                    </div>
-                                ))}
+                                <BandTrendChart points={trendPoints} color={trendColor} targetBand={targetBand} />
                             </div>
                         </div>
                     )}
 
                     {stats.recent.length > 0 && (
                         <div className="pa-section">
-                            <div className="pa-section-title">{pt.recent}</div>
+                            <div className="pa-section-title">{t('analytics.practice.recent')}</div>
                             <div className="pa-attempts-list">
-                                {stats.recent.map(a => (
-                                    <div key={a.id} className="pa-attempt-row">
-                                        <span className="pa-attempt-date">{fmtDate(a.date)}</span>
-                                        <span className="pa-attempt-title" title={a.title}>{a.title || pt.untitled}</span>
-                                        <span className="pa-attempt-subtype">{a.subtype.replace(/_/g, ' ')}</span>
-                                        <span className={`pa-attempt-acc ${accuracyClass(a.accuracy)}`}>
-                                            {fmtPct(a.accuracy)}
-                                            <span className="pa-attempt-tally"> · {a.correct}/{a.total}</span>
-                                        </span>
-                                    </div>
-                                ))}
+                                {stats.recent.map(a => {
+                                    const band = rawToBand(skill, a.correct, a.total);
+                                    return (
+                                        <div key={a.id} className="pa-attempt-row">
+                                            <span className="pa-attempt-date">{fmtDate(a.date)}</span>
+                                            <span className="pa-attempt-title" title={a.title}>{a.title || t('analytics.practice.untitled')}</span>
+                                            <span className={`pa-attempt-acc ${band !== null ? bandClass(band) : ''}`}>
+                                                {band !== null ? `Band ${formatBand(band)}` : fmtPct(a.accuracy)}
+                                                <span className="pa-attempt-tally"> · {a.correct}/{a.total}</span>
+                                            </span>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -295,15 +330,13 @@ interface Props {
 }
 
 export default function PracticeAnalyticsPanel({ skill }: Props) {
-    const { translations: t } = useLang();
-    const pt = t.analytics.practice;
+    const { t } = useLang();
     const [data, setData] = useState<PracticeAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState<string | null>(null);
 
     useEffect(() => {
-        setLoading(true);
-        setErr(null);
+        // loading 初值即 true，effect 只负责取数
         getPracticeAnalytics()
             .then(setData)
             .catch(e => setErr(e?.message || 'failed'))
@@ -311,17 +344,144 @@ export default function PracticeAnalyticsPanel({ skill }: Props) {
     }, []);
 
     if (loading) {
-        return <div className="analytics-page"><div className="pa-loading">{pt.loading}</div></div>;
+        return <div className="analytics-page"><div className="pa-loading">{t('analytics.practice.loading')}</div></div>;
     }
     if (err || !data) {
-        return <div className="analytics-page"><div className="pa-loading">{pt.loadFail} {err}</div></div>;
+        return <div className="analytics-page"><div className="pa-loading">{t('analytics.practice.loadFail')} {err}</div></div>;
     }
 
-    const stats = data[skill];
-    const label = skill === 'reading' ? pt.readingLabel : pt.listeningLabel;
+    const label = skill === 'reading' ? t('analytics.practice.readingLabel') : t('analytics.practice.listeningLabel');
     return (
         <div className="pa-panel">
-            <SkillCard skill={skill} stats={stats} label={label} />
+            <SkillCard skill={skill} data={data} label={label} />
+        </div>
+    );
+}
+
+/* ── 全套模拟总分统计面板（成绩单 overall + 四科 band 趋势）───── */
+const MOCK_PART_ORDER = ['listening', 'reading', 'writing', 'speaking'] as const;
+const MOCK_PART_ICONS: Record<string, string> = { listening: '🎧', reading: '📖', writing: '✍️', speaking: '🗣️' };
+
+export function MockAnalyticsPanel() {
+    const { t } = useLang();
+    const { user } = useAuth();
+    const [data, setData] = useState<PracticeAnalytics | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [err, setErr] = useState<string | null>(null);
+    // 总分目标 = 用户设置的 overall 目标分
+    const targetOverall = user?.target_score != null && Number(user.target_score) > 0 ? Number(user.target_score) : null;
+
+    useEffect(() => {
+        // loading 初值即 true，effect 只负责取数
+        getPracticeAnalytics()
+            .then(setData)
+            .catch(e => setErr(e?.message || 'failed'))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const reports: MockReportItem[] = useMemo(() => data?.mock?.reports ?? [], [data]);
+
+    // 新→旧 反转成时间轴
+    const trendPoints: TrendPoint[] = useMemo(() => {
+        const reversed = [...reports].reverse();
+        return reversed.map((r, idx) => ({
+            idx,
+            band: r.overall,
+            date: r.date,
+            tipExtra: [
+                MOCK_PART_ORDER
+                    .filter(p => typeof r.bands[p] === 'number')
+                    .map(p => `${MOCK_PART_ICONS[p]} ${formatBand(r.bands[p])}`)
+                    .join('  '),
+                ...(r.title ? [r.title] : []),
+            ],
+        }));
+    }, [reports]);
+
+    if (loading) {
+        return <div className="analytics-page"><div className="pa-loading">{t('analytics.practice.loading')}</div></div>;
+    }
+    if (err || !data) {
+        return <div className="analytics-page"><div className="pa-loading">{t('analytics.practice.loadFail')} {err}</div></div>;
+    }
+
+    if (reports.length === 0) {
+        return (
+            <div className="pa-panel">
+                <div className="pa-skill-card">
+                    <div className="pa-empty">
+                        <div className="pa-empty-icon">🎯</div>
+                        <div className="pa-empty-title">{t('analytics.mockPanel.emptyTitle')}</div>
+                        <div className="pa-empty-hint">{t('analytics.mockPanel.emptyHint')}</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const latest = reports[0];
+    const best = reports.reduce((b, r) => (r.overall > b.overall ? r : b), reports[0]);
+    const avgOverall = Math.round((reports.reduce((s, r) => s + r.overall, 0) / reports.length) * 10) / 10;
+
+    return (
+        <div className="pa-panel">
+            <div className="pa-skill-card">
+                <div className="pa-skill-header">
+                    <span className="pa-skill-icon">🎯</span>
+                    <span className="pa-skill-title">{t('analytics.mockPanel.title')}</span>
+                </div>
+                <div className="pa-kpi-row">
+                    <div className={`pa-kpi-main ${bandClass(latest.overall)}`}>
+                        <div className="pa-kpi-value">{formatBand(latest.overall)}</div>
+                        <div className="pa-kpi-label">{t('analytics.mockPanel.kpiLatest')}</div>
+                    </div>
+                    <div className="pa-kpi-sub">
+                        <div><span className="pa-kpi-num">{formatBand(best.overall)}</span></div>
+                        <div className="pa-kpi-sublabel">{t('analytics.mockPanel.kpiBest')}</div>
+                    </div>
+                    <div className="pa-kpi-sub">
+                        <div><span className="pa-kpi-num">{formatBand(avgOverall)}</span></div>
+                        <div className="pa-kpi-sublabel">{t('analytics.mockPanel.kpiAvg')}</div>
+                    </div>
+                    <div className="pa-kpi-sub">
+                        <div><span className="pa-kpi-num">{data.mock.total}</span></div>
+                        <div className="pa-kpi-sublabel">{t('analytics.mockPanel.kpiCount')}</div>
+                    </div>
+                </div>
+
+                {trendPoints.length >= 1 && (
+                    <div className="pa-section">
+                        <div className="pa-section-title">
+                            {t('analytics.mockPanel.trendTitle').replace('{n}', String(trendPoints.length))}
+                            {trendPoints.length === 1 && <span className="pa-section-hint">{t('analytics.practice.trendHint')}</span>}
+                        </div>
+                        <div className="pa-trend-chart">
+                            <BandTrendChart points={trendPoints} color="#0d9488" targetBand={targetOverall} />
+                        </div>
+                    </div>
+                )}
+
+                <div className="pa-section">
+                    <div className="pa-section-title">{t('analytics.mockPanel.listTitle')}</div>
+                    <div className="pa-attempts-list">
+                        {reports.map(r => (
+                            <div key={r.id} className="pa-attempt-row">
+                                <span className="pa-attempt-date">{fmtDate(r.date)}</span>
+                                <span className="pa-attempt-title" title={r.title}>{r.title || t('analytics.practice.untitled')}</span>
+                                <span className="pa-attempt-subtype">
+                                    {MOCK_PART_ORDER
+                                        .filter(p => typeof r.bands[p] === 'number')
+                                        .map(p => `${MOCK_PART_ICONS[p]}${formatBand(r.bands[p])}`)
+                                        .join(' ')}
+                                </span>
+                                <span className={`pa-attempt-acc ${bandClass(r.overall)}`}>
+                                    Band {formatBand(r.overall)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

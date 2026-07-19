@@ -44,8 +44,7 @@ const EN_TAG_MAP: Record<string, string> = {
 };
 
 export default function WritingServiceRecordsPage() {
-    const { lang, translations } = useLang();
-    const t = translations.writingHub?.records;
+    const { lang, t } = useLang();
     const navigate = useNavigate();
     
     const translateTag = (zhTag: string | undefined) => {
@@ -70,15 +69,15 @@ export default function WritingServiceRecordsPage() {
             if (res.data.status === 'success') {
                 setRecords(res.data.data);
             } else {
-                showToast(t?.loadFail || 'Failed to load records', 'error');
+                showToast(t('writingHub.records.loadFail') || 'Failed to load records', 'error');
             }
         } catch (error) {
             console.error('Failed to fetch records:', error);
-            showToast(t?.error || 'Error loading records', 'error');
+            showToast(t('writingHub.records.error') || 'Error loading records', 'error');
         } finally {
             setLoading(false);
         }
-    }, [search, serviceType, lang]);
+    }, [search, serviceType, t]);
 
     useEffect(() => {
         fetchRecords();
@@ -95,39 +94,39 @@ export default function WritingServiceRecordsPage() {
         if (targetRoute) {
             navigate(targetRoute, { state: { record_id: record.id } });
         } else {
-            showToast(t?.viewerNotSupported || 'Viewer not supported for this type', 'info');
+            showToast(t('writingHub.records.viewerNotSupported') || 'Viewer not supported for this type', 'info');
         }
     };
 
     const handleDelete = async (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        if (!(await showConfirm({ message: t?.deleteConfirm || 'Are you sure to delete this record?', danger: true }))) return;
+        if (!(await showConfirm({ message: t('writingHub.records.deleteConfirm') || 'Are you sure to delete this record?', danger: true }))) return;
         try {
             const res = await apiClient.delete<{status: string}>(`/writing/records/${id}`);
             if (res.data.status === 'success') {
-                showToast(t?.deleteSuccess || 'Deleted successfully', 'success');
+                showToast(t('writingHub.records.deleteSuccess') || 'Deleted successfully', 'success');
                 fetchRecords();
             } else {
-                showToast(t?.deleteFail || 'Delete failed', 'error');
+                showToast(t('writingHub.records.deleteFail') || 'Delete failed', 'error');
             }
         } catch (error) {
             console.error(error);
-            showToast(t?.deleteFail || 'Delete error', 'error');
+            showToast(t('writingHub.records.deleteFail') || 'Delete error', 'error');
         }
     };
 
     return (
         <Layout
-            pageTitle={t?.pageTitle || 'Service Records'}
-            pageSubtitle={t?.pageSubtitle || 'Review your past writing practices and AI feedback'}
+            pageTitle={t('writingHub.records.pageTitle') || 'Service Records'}
+            pageSubtitle={t('writingHub.records.pageSubtitle') || 'Review your past writing practices and AI feedback'}
             backUrl="/writing/ai-teachers"
-            backText={t?.backToHub || 'Back'}
+            backText={t('writingHub.records.backToHub') || 'Back'}
         >
             <div className="wsr-container">
                 <div className="wsr-filters">
                     <input 
                         type="text" 
-                        placeholder={t?.searchPlaceholder || 'Search titles...'}
+                        placeholder={t('writingHub.records.searchPlaceholder') || 'Search titles...'}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="wsr-search-input"
@@ -137,23 +136,23 @@ export default function WritingServiceRecordsPage() {
                         onChange={(e) => setServiceType(e.target.value)}
                         className="wsr-type-select"
                     >
-                        <option value="">{t?.allTypes || 'All Types'}</option>
-                        {Object.entries(t?.serviceTypes || {}).map(([key, label]) => (
+                        <option value="">{t('writingHub.records.allTypes') || 'All Types'}</option>
+                        {Object.entries((t('writingHub.records.serviceTypes', { returnObjects: true }) as Record<string, string>) || {}).map(([key, label]) => (
                             <option key={key} value={key}>{label}</option>
                         ))}
                     </select>
                 </div>
 
                 {loading ? (
-                    <div className="wsr-loading">{t?.loading || 'Loading...'}</div>
+                    <div className="wsr-loading">{t('writingHub.records.loading') || 'Loading...'}</div>
                 ) : records.length === 0 ? (
-                    <div className="wsr-empty">{t?.empty || 'No service records found'}</div>
+                    <div className="wsr-empty">{t('writingHub.records.empty') || 'No service records found'}</div>
                 ) : (
                     <div className="wsr-list">
                         {records.map(record => (
                                 <div className="wsr-card" key={record.id} onClick={() => handleCardClick(record)}>
                                 <div className="wsr-card-header">
-                                    <span className="wsr-badge">{(t?.serviceTypes as any)?.[record.service_type] || record.service_type}</span>
+                                    <span className="wsr-badge">{(t('writingHub.records.serviceTypes', { returnObjects: true }) as any)?.[record.service_type] || record.service_type}</span>
                                     <button className="wsr-delete-btn" onClick={(e) => handleDelete(e, record.id)}>
                                         &times;
                                     </button>

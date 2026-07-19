@@ -40,7 +40,7 @@ export default function ChoiceMode({
     onChoiceNext,
     formatDueDate,
 }: Props) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
     return (
         <>
@@ -52,8 +52,8 @@ export default function ChoiceMode({
                         <button
                             className="choice-speak-btn"
                             onClick={e => { e.stopPropagation(); speak(currentCard.word); }}
-                            title={t.vocab.common.speak}
-                            aria-label={t.vocab.common.speakWord}
+                            title={t('vocab.common.speak')}
+                            aria-label={t('vocab.common.speakWord')}
                         >
                             🎤
                         </button>
@@ -69,7 +69,7 @@ export default function ChoiceMode({
                     )}
                     {completionDueHint && (
                         <div className="fc-completion-hint fc-completion-hint--in-card" role="status" aria-live="polite">
-                            <span className="fc-completion-hint__label">{t.vocab.common.nextStudy}</span>
+                            <span className="fc-completion-hint__label">{t('vocab.common.nextStudy')}</span>
                             <span className="fc-completion-hint__word">{completionDueHint.word}</span>
                             <span className="fc-completion-hint__date">{formatDueDate(completionDueHint.dueAt)}</span>
                         </div>
@@ -87,7 +87,7 @@ export default function ChoiceMode({
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        {t.vocab.know}
+                        {t('vocab.know')}
                     </button>
                     <button
                         className="choice-btn-unknown-big"
@@ -98,7 +98,7 @@ export default function ChoiceMode({
                             <line x1="18" y1="6" x2="6" y2="18" />
                             <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
-                        {t.vocab.dontKnow}
+                        {t('vocab.dontKnow')}
                     </button>
                 </div>
             )}
@@ -150,28 +150,28 @@ export default function ChoiceMode({
                                     onClick={onChoiceHideQuestion}
                                     disabled={submitting}
                                 >
-                                    {t.vocab.hide}
+                                    {t('vocab.hide')}
                                 </button>
                                 <button
                                     className="choice-btn-unknown-sm"
                                     onClick={onChoiceUnknown}
                                     disabled={submitting}
                                 >
-                                    {t.vocab.dontKnow}
+                                    {t('vocab.dontKnow')}
                                 </button>
                             </div>
                         )}
                         {choiceSelected !== null && (
                             <div className="choice-feedback-result">
                                 <span className={`choice-feedback-tag ${choiceCorrect ? 'is-correct' : 'is-wrong'}`}>
-                                    {choiceCorrect ? t.vocab.common.correctAnswer : t.vocab.common.wrongAnswer}
+                                    {choiceCorrect ? t('vocab.common.correctAnswer') : t('vocab.common.wrongAnswer')}
                                 </span>
                                 <button
                                     className="choice-btn-next"
                                     onClick={onChoiceNext}
                                     disabled={submitting}
                                 >
-                                    {t.vocab.next} →
+                                    {t('vocab.next')} →
                                 </button>
                             </div>
                         )}

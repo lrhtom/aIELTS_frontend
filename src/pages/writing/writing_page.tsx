@@ -1,24 +1,22 @@
 import Layout from '../../components/layout/Layout';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
 
 export default function Writing_page() {
     const navigate = useNavigate();
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { t } = useLang();
 
     return (
         <Layout
-    pageTitle={t.writingHub.heading}
-    pageSubtitle={t.writingHub.subheading}
+    pageTitle={t('writingHub.heading')}
+    pageSubtitle={t('writingHub.subheading')}
     backUrl='/practice/ai'
-    backText={t.writingHub.backToPractice}
+    backText={t('writingHub.backToPractice')}
 >
             <div className="practice-container">
                 <div className="config-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <h3>{t.writingHub.practiceMode}</h3>
+                    <h3>{t('writingHub.practiceMode')}</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
                         <button
                             style={{
@@ -36,9 +34,9 @@ export default function Writing_page() {
                             onClick={() => navigate('/writing/task1')}
                         >
                             <span style={{ fontSize: '24px' }}>📊</span>
-                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.task1.title}</div>
+                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t('writingHub.task1.title')}</div>
                             <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                                {t.writingHub.task1.desc}
+                                {t('writingHub.task1.desc')}
                             </div>
                         </button>
 
@@ -58,9 +56,9 @@ export default function Writing_page() {
                             onClick={() => navigate('/writing/task2')}
                         >
                             <span style={{ fontSize: '24px' }}>🖋️</span>
-                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.task2.title}</div>
+                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t('writingHub.task2.title')}</div>
                             <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                                {t.writingHub.task2.desc}
+                                {t('writingHub.task2.desc')}
                             </div>
                         </button>
 
@@ -80,9 +78,9 @@ export default function Writing_page() {
                             onClick={() => navigate('/writing/task2/opinion-drill')}
                         >
                             <span style={{ fontSize: '24px' }}>🧠</span>
-                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.opinionDrill.title}</div>
+                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t('writingHub.opinionDrill.title')}</div>
                             <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                                {t.writingHub.opinionDrill.desc}
+                                {t('writingHub.opinionDrill.desc')}
                             </div>
                         </button>
 
@@ -102,9 +100,9 @@ export default function Writing_page() {
                             onClick={() => navigate('/writing/chat-config')}
                         >
                             <span style={{ fontSize: '24px' }}>💬</span>
-                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.typingChat?.title || 'Opinion Typing Chat'}</div>
+                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t('writingHub.typingChat.title') || 'Opinion Typing Chat'}</div>
                             <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                                {t.writingHub.typingChat?.desc || 'Interactive chat to practice writing speed and vocabulary'}
+                                {t('writingHub.typingChat.desc') || 'Interactive chat to practice writing speed and vocabulary'}
                             </div>
                         </button>
 
@@ -124,9 +122,9 @@ export default function Writing_page() {
                             onClick={() => navigate('/writing/ai-teachers')}
                         >
                             <span style={{ fontSize: '24px' }}>👨‍🏫</span>
-                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.aiTeacher.title}</div>
+                            <div style={{ fontSize: '18px', fontWeight: '600' }}>{t('writingHub.aiTeacher.title')}</div>
                             <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                                {t.writingHub.aiTeacher.desc}
+                                {t('writingHub.aiTeacher.desc')}
                             </div>
                         </button>
                     </div>

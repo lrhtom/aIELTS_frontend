@@ -70,8 +70,7 @@ function fmtBytes(n: number) {
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function AdminCodeStats() {
-    const { translations } = useLang();
-    const t = translations.profile.admin.codeStats;
+    const { t } = useLang();
 
     const [data, setData] = useState<CodeStats | null>(null);
     const [loading, setLoading] = useState(false);
@@ -87,15 +86,15 @@ export default function AdminCodeStats() {
             });
             setData(resp.data);
         } catch {
-            setError(t.loadFail);
+            setError(t('profile.admin.codeStats.loadFail'));
         } finally {
             setLoading(false);
         }
-    }, [t.loadFail]);
+    }, [t]);
 
     useEffect(() => { void load(false); }, [load]);
 
-    const metricLabel = metric === 'lines' ? t.metricLines : t.metricFiles;
+    const metricLabel = metric === 'lines' ? t('profile.admin.codeStats.metricLines') : t('profile.admin.codeStats.metricFiles');
     const langData = (data?.by_language ?? []).map(r => ({ name: r.language, value: r[metric], files: r.files, lines: r.lines }));
     const dirData = (data?.by_directory ?? []).map(r => ({ name: r.dir, value: r[metric], files: r.files, lines: r.lines }));
     const layerData = (data?.by_layer ?? []).map(r => ({ name: r.layer, value: r.lines, files: r.files, lines: r.lines }));
@@ -105,30 +104,30 @@ export default function AdminCodeStats() {
             {/* Header */}
             <div className="acs-header">
                 <div>
-                    <h2 className="acs-heading">{t.heading}</h2>
-                    <p className="acs-desc">{t.description}</p>
+                    <h2 className="acs-heading">{t('profile.admin.codeStats.heading')}</h2>
+                    <p className="acs-desc">{t('profile.admin.codeStats.description')}</p>
                 </div>
                 <button className="acs-refresh-btn" onClick={() => void load(true)} disabled={loading}>
                     <RefreshCw size={15} className={loading ? 'acs-spin' : ''} />
-                    {loading ? t.scanning : t.refresh}
+                    {loading ? t('profile.admin.codeStats.scanning') : t('profile.admin.codeStats.refresh')}
                 </button>
             </div>
 
             {data && (
                 <div className="acs-meta">
-                    <span>{t.updatedAt.replace('{time}', new Date(data.generated_at).toLocaleString())}</span>
+                    <span>{t('profile.admin.codeStats.updatedAt').replace('{time}', new Date(data.generated_at).toLocaleString())}</span>
                     <span>·</span>
-                    <span>{t.scanTook.replace('{n}', String(data.scan_seconds))}</span>
-                    {data.cached && <span className="acs-cached">{t.cached}</span>}
+                    <span>{t('profile.admin.codeStats.scanTook').replace('{n}', String(data.scan_seconds))}</span>
+                    {data.cached && <span className="acs-cached">{t('profile.admin.codeStats.cached')}</span>}
                 </div>
             )}
 
             {error && <div className="acs-error">{error}</div>}
 
-            {!data && loading && <div className="acs-empty">{t.loading}</div>}
+            {!data && loading && <div className="acs-empty">{t('profile.admin.codeStats.loading')}</div>}
 
             {data && data.totals.files === 0 && (
-                <div className="acs-empty">{t.empty}</div>
+                <div className="acs-empty">{t('profile.admin.codeStats.empty')}</div>
             )}
 
             {data && data.totals.files > 0 && (
@@ -138,22 +137,22 @@ export default function AdminCodeStats() {
                         <div className="acs-kpi">
                             <FileCode2 size={18} className="acs-kpi-icon" style={{ color: '#0d9488' }} />
                             <div className="acs-kpi-value">{fmt(data.totals.files)}</div>
-                            <div className="acs-kpi-label">{t.kpiFiles}</div>
+                            <div className="acs-kpi-label">{t('profile.admin.codeStats.kpiFiles')}</div>
                         </div>
                         <div className="acs-kpi">
                             <AlignLeft size={18} className="acs-kpi-icon" style={{ color: '#6366f1' }} />
                             <div className="acs-kpi-value">{fmt(data.totals.lines)}</div>
-                            <div className="acs-kpi-label">{t.kpiLines}</div>
+                            <div className="acs-kpi-label">{t('profile.admin.codeStats.kpiLines')}</div>
                         </div>
                         <div className="acs-kpi">
                             <Code2 size={18} className="acs-kpi-icon" style={{ color: '#f59e0b' }} />
                             <div className="acs-kpi-value">{fmt(data.totals.code)}</div>
-                            <div className="acs-kpi-label">{t.kpiCode}</div>
+                            <div className="acs-kpi-label">{t('profile.admin.codeStats.kpiCode')}</div>
                         </div>
                         <div className="acs-kpi">
                             <HardDrive size={18} className="acs-kpi-icon" style={{ color: '#ec4899' }} />
                             <div className="acs-kpi-value">{fmtBytes(data.totals.size_bytes)}</div>
-                            <div className="acs-kpi-label">{t.kpiSize}</div>
+                            <div className="acs-kpi-label">{t('profile.admin.codeStats.kpiSize')}</div>
                         </div>
                     </div>
 
@@ -163,13 +162,13 @@ export default function AdminCodeStats() {
                             className={metric === 'lines' ? 'is-active' : ''}
                             onClick={() => setMetric('lines')}
                         >
-                            {t.metricLines}
+                            {t('profile.admin.codeStats.metricLines')}
                         </button>
                         <button
                             className={metric === 'files' ? 'is-active' : ''}
                             onClick={() => setMetric('files')}
                         >
-                            {t.metricFiles}
+                            {t('profile.admin.codeStats.metricFiles')}
                         </button>
                     </div>
 
@@ -177,7 +176,7 @@ export default function AdminCodeStats() {
                     <div className="acs-charts">
                         {/* By language */}
                         <div className="acs-chart-card">
-                            <h3 className="acs-chart-title">{t.byLanguage.replace('{metric}', metricLabel)}</h3>
+                            <h3 className="acs-chart-title">{t('profile.admin.codeStats.byLanguage').replace('{metric}', metricLabel)}</h3>
                             <ResponsiveContainer width="100%" height={Math.max(180, langData.length * 34)}>
                                 <BarChart data={langData} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
                                     <XAxis type="number" tick={{ fontSize: 11 }} />
@@ -196,7 +195,7 @@ export default function AdminCodeStats() {
 
                         {/* By layer (pie) */}
                         <div className="acs-chart-card">
-                            <h3 className="acs-chart-title">{t.byLayer}</h3>
+                            <h3 className="acs-chart-title">{t('profile.admin.codeStats.byLayer')}</h3>
                             <ResponsiveContainer width="100%" height={240}>
                                 <PieChart>
                                     <Pie
@@ -215,7 +214,7 @@ export default function AdminCodeStats() {
                                         formatter={(v, _n, p) => {
                                             const pl = (p as { payload?: { files?: number; name?: string } })?.payload;
                                             return [
-                                                `${fmt(Number(v))} ${t.unitLines} · ${fmt(pl?.files ?? 0)} ${t.unitFiles}`,
+                                                `${fmt(Number(v))} ${t('profile.admin.codeStats.unitLines')} · ${fmt(pl?.files ?? 0)} ${t('profile.admin.codeStats.unitFiles')}`,
                                                 pl?.name ?? '',
                                             ];
                                         }}
@@ -231,7 +230,7 @@ export default function AdminCodeStats() {
 
                         {/* By directory */}
                         <div className="acs-chart-card acs-chart-wide">
-                            <h3 className="acs-chart-title">{t.byDirectory.replace('{metric}', metricLabel)}</h3>
+                            <h3 className="acs-chart-title">{t('profile.admin.codeStats.byDirectory').replace('{metric}', metricLabel)}</h3>
                             <ResponsiveContainer width="100%" height={Math.max(200, dirData.length * 30)}>
                                 <BarChart data={dirData} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
                                     <XAxis type="number" tick={{ fontSize: 11 }} />
@@ -247,7 +246,7 @@ export default function AdminCodeStats() {
 
                         {/* Largest files */}
                         <div className="acs-chart-card acs-chart-wide">
-                            <h3 className="acs-chart-title">{t.largestFiles}</h3>
+                            <h3 className="acs-chart-title">{t('profile.admin.codeStats.largestFiles')}</h3>
                             <ul className="acs-file-list">
                                 {data.largest_files.map(f => (
                                     <li key={f.path} className="acs-file-row">

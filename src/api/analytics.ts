@@ -100,6 +100,15 @@ export interface PracticeSkillStats {
     recent: PracticeAttempt[];
 }
 
+/* 全套模拟成绩单（finalize 后的 overall + 四科 band） */
+export interface MockReportItem {
+    id: number;
+    title: string;
+    date: string | null;
+    overall: number;
+    bands: Record<string, number>;  // listening/reading/writing/speaking
+}
+
 export interface PracticeAnalytics {
     reading: PracticeSkillStats;
     listening: PracticeSkillStats;
@@ -108,6 +117,10 @@ export interface PracticeAnalytics {
         correct_questions: number;
         accuracy: number;
         attempts: number;
+    };
+    mock: {
+        total: number;
+        reports: MockReportItem[];  // 新→旧
     };
 }
 

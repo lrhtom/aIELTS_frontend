@@ -1,5 +1,5 @@
 import React from 'react';
-import { translations } from '../../i18n/translations';
+import i18n from '../../i18n/i18next';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -33,12 +33,12 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
 
   render() {
     if (this.state.hasError) {
-      const t = translations[pickLang()].errorBoundary;
+      const t = i18n.getFixedT(pickLang(), 'translation');
       return (
         <div style={{ color: 'red', padding: 24 }}>
-          <h2>{t.heading}</h2>
+          <h2>{t('errorBoundary.heading')}</h2>
           <pre>{this.state.error?.message}</pre>
-          <p>{t.hint}</p>
+          <p>{t('errorBoundary.hint')}</p>
         </div>
       );
     }

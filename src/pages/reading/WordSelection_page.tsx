@@ -98,10 +98,8 @@ export default function WordSelection_page() {
     const [customDescription, setCustomDescription] = useState('');
     const [customPrompt, setCustomPrompt] = useState('');
 
-    const { lang } = useLang();
-    const t = translations[lang].readingConfig;
-    const tAll = translations[lang];
-    const qtMap = useMemo(() => getQTMap(t.questionType), [t]);
+    const { t } = useLang();
+    const qtMap = useMemo(() => getQTMap(t('readingConfig.questionType', { returnObjects: true }) as ReturnType<typeof pickReading>['questionType']), [t]);
 
     useEffect(() => {
         listPlans().then(({ plans: ps }) => {
@@ -129,7 +127,7 @@ export default function WordSelection_page() {
             const { plan: detail } = await getPlanDetail(importPlanId);
             const todayWords = detail.today_words || [];
             if (todayWords.length === 0) {
-                showToast(tAll.common.planImport.noWords, 'error');
+                showToast(t('common.planImport.noWords'), 'error');
                 return;
             }
             const validWords = todayWords.filter(w => w.zh && w.zh.trim());
@@ -137,12 +135,12 @@ export default function WordSelection_page() {
             const lines = validWords.map(w => `${w.word} - ${w.zh}`).join('\n');
             setVocabInput(lines);
             if (skipped > 0) {
-                showToast(tAll.common.planImport.skipped.replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
+                showToast(t('common.planImport.skipped').replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
             } else {
-                showToast(tAll.common.planImport.success.replace('{n}', String(validWords.length)), 'success');
+                showToast(t('common.planImport.success').replace('{n}', String(validWords.length)), 'success');
             }
         } catch {
-            showToast(tAll.common.planImport.failed, 'error');
+            showToast(t('common.planImport.failed'), 'error');
         } finally {
             setImportingPlan(false);
         }
@@ -159,7 +157,7 @@ export default function WordSelection_page() {
 
     const handleStart = () => {
         if (mode === 'single' && useCustomVocab && !vocabInput.trim()) {
-            showToast(t.toast.noVocab, 'error');
+            showToast(t('readingConfig.toast.noVocab'), 'error');
             return;
         }
         sessionStorage.removeItem('reading_session_cache');
@@ -199,24 +197,24 @@ export default function WordSelection_page() {
 
     return (
         <Layout
-            pageTitle={t.heading}
-            pageSubtitle={t.subheading}
+            pageTitle={t('readingConfig.heading')}
+            pageSubtitle={t('readingConfig.subheading')}
             backUrl='/practice/ai'
-            backText={t.backToAI}
+            backText={t('readingConfig.backToAI')}
         >
             <div className="uc-console">
                 {/* ── Sidebar ── */}
                 <div className="uc-sidebar">
                     {/* Mode toggle */}
-                    <div className="uc-sidebar-title" style={{ marginBottom: 8 }}>{t.modeToggle.label}</div>
+                    <div className="uc-sidebar-title" style={{ marginBottom: 8 }}>{t('readingConfig.modeToggle.label')}</div>
                     <div className="uc-segmented-control" style={{ marginBottom: 20 }}>
-                        <button className={`seg-btn ${mode === 'single' ? 'active' : ''}`} onClick={() => setMode('single')}>{t.modeToggle.single}</button>
-                        <button className={`seg-btn ${mode === 'full' ? 'active' : ''}`} onClick={() => setMode('full')}>{t.modeToggle.full}</button>
+                        <button className={`seg-btn ${mode === 'single' ? 'active' : ''}`} onClick={() => setMode('single')}>{t('readingConfig.modeToggle.single')}</button>
+                        <button className={`seg-btn ${mode === 'full' ? 'active' : ''}`} onClick={() => setMode('full')}>{t('readingConfig.modeToggle.full')}</button>
                     </div>
 
                     {mode === 'single' && (
                         <>
-                            <div className="uc-sidebar-title">{t.questionType.label}</div>
+                            <div className="uc-sidebar-title">{t('readingConfig.questionType.label')}</div>
                             <nav className="uc-sidebar-nav">
                                 {(Object.entries(QT_GROUPS) as [GroupKey, ReadingQuestionTypeKey[]][]).map(([g, keys]) => (
                                     <div key={g} className="uc-nav-group">
@@ -227,7 +225,7 @@ export default function WordSelection_page() {
                                             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'transparent', border: 'none', width: '100%', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}
                                         >
                                             <span>{openGroup === g ? '▾' : '▸'}</span>
-                                            <span>{t.questionType.groups[g]}</span>
+                                            <span>{t(`readingConfig.questionType.groups.${g}`)}</span>
                                         </button>
                                         {openGroup === g && keys.map(k => (
                                             <button
@@ -257,8 +255,8 @@ export default function WordSelection_page() {
                             </>
                         ) : (
                             <>
-                                <h2>{t.fullTest.title}</h2>
-                                <p>{t.fullTest.desc} · {t.fullTest.summary}</p>
+                                <h2>{t('readingConfig.fullTest.title')}</h2>
+                                <p>{t('readingConfig.fullTest.desc')} · {t('readingConfig.fullTest.summary')}</p>
                             </>
                         )}
                     </div>
@@ -270,17 +268,17 @@ export default function WordSelection_page() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>🏷️</span>
-                                        <span className="row-title">{tAll.common.customQuestion.sectionTitle}</span>
+                                        <span className="row-title">{t('common.customQuestion.sectionTitle')}</span>
                                     </div>
                                     <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
-                                        {tAll.common.customQuestion.sectionDesc}
+                                        {t('common.customQuestion.sectionDesc')}
                                     </span>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
                                     <input
                                         type="text"
                                         maxLength={80}
-                                        placeholder={tAll.common.customQuestion.namePlaceholder}
+                                        placeholder={t('common.customQuestion.namePlaceholder')}
                                         value={customName}
                                         onChange={e => setCustomName(e.target.value)}
                                         style={{
@@ -291,12 +289,12 @@ export default function WordSelection_page() {
                                             color: 'var(--color-text)',
                                             fontSize: 14,
                                         }}
-                                        aria-label={tAll.common.customQuestion.nameLabel}
+                                        aria-label={t('common.customQuestion.nameLabel')}
                                     />
                                     <textarea
                                         maxLength={300}
                                         rows={2}
-                                        placeholder={tAll.common.customQuestion.descPlaceholder}
+                                        placeholder={t('common.customQuestion.descPlaceholder')}
                                         value={customDescription}
                                         onChange={e => setCustomDescription(e.target.value)}
                                         style={{
@@ -309,7 +307,7 @@ export default function WordSelection_page() {
                                             resize: 'vertical',
                                             fontFamily: 'inherit',
                                         }}
-                                        aria-label={tAll.common.customQuestion.descLabel}
+                                        aria-label={t('common.customQuestion.descLabel')}
                                     />
                                 </div>
                             </div>
@@ -325,13 +323,13 @@ export default function WordSelection_page() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#0d9488', background: '#ccfbf1' }}>🎛️</span>
-                                            <span className="row-title">{t.fullTest.scope.label}</span>
+                                            <span className="row-title">{t('readingConfig.fullTest.scope.label')}</span>
                                         </div>
                                     </div>
                                     <div className="uc-row-control">
                                         <div className="uc-segmented-control">
-                                            <button className={`seg-btn ${fullScope === 'all' ? 'active' : ''}`} onClick={() => setFullScope('all')}>{t.fullTest.scope.all}</button>
-                                            <button className={`seg-btn ${fullScope === 'single' ? 'active' : ''}`} onClick={() => setFullScope('single')}>{t.fullTest.scope.single}</button>
+                                            <button className={`seg-btn ${fullScope === 'all' ? 'active' : ''}`} onClick={() => setFullScope('all')}>{t('readingConfig.fullTest.scope.all')}</button>
+                                            <button className={`seg-btn ${fullScope === 'single' ? 'active' : ''}`} onClick={() => setFullScope('single')}>{t('readingConfig.fullTest.scope.single')}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -341,14 +339,14 @@ export default function WordSelection_page() {
                                             <div className="uc-row-label-flex">
                                                 <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                     <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>📑</span>
-                                                    <span className="row-title">{t.fullTest.singlePassage.label}</span>
+                                                    <span className="row-title">{t('readingConfig.fullTest.singlePassage.label')}</span>
                                                 </div>
                                             </div>
                                             <div className="uc-row-control">
                                                 <div className="uc-segmented-control">
                                                     {([1, 2, 3] as const).map(n => (
                                                         <button key={n} className={`seg-btn ${passageNum === n ? 'active' : ''}`} onClick={() => setPassageNum(n)}>
-                                                            {t.fullTest.singlePassage[`p${n}` as 'p1' | 'p2' | 'p3']}
+                                                            {t(`readingConfig.fullTest.singlePassage.p${n}`)}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -358,9 +356,9 @@ export default function WordSelection_page() {
                                             <div className="uc-row-label-flex">
                                                 <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                     <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🧩</span>
-                                                    <span className="row-title">{t.fullTest.singleMix.label} ({singleMix.length}/3)</span>
+                                                    <span className="row-title">{t('readingConfig.fullTest.singleMix.label')} ({singleMix.length}/3)</span>
                                                 </div>
-                                                <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t.fullTest.singleMix.desc}</span>
+                                                <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('readingConfig.fullTest.singleMix.desc')}</span>
                                             </div>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
                                                 {(Object.keys(QT_KEY_TO_I18N) as ReadingQuestionTypeKey[]).map(k => {
@@ -394,7 +392,7 @@ export default function WordSelection_page() {
                                                         onClick={() => setSingleMix([])}
                                                         style={{ padding: '6px 12px', borderRadius: 20, border: '1px dashed var(--color-border)', background: 'transparent', color: 'var(--color-text-secondary)', fontSize: 13, cursor: 'pointer' }}
                                                     >
-                                                        ✕ {t.fullTest.singleMix.clear}
+                                                        ✕ {t('readingConfig.fullTest.singleMix.clear')}
                                                     </button>
                                                 )}
                                             </div>
@@ -410,7 +408,7 @@ export default function WordSelection_page() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                        <span className="row-title">{tAll.components.aiModel.label}</span>
+                                        <span className="row-title">{t('components.aiModel.label')}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control console-model-selector">
@@ -423,7 +421,7 @@ export default function WordSelection_page() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📊</span>
-                                        <span className="row-title">{t.targetScore}</span>
+                                        <span className="row-title">{t('readingConfig.targetScore')}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control">
@@ -442,14 +440,14 @@ export default function WordSelection_page() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#10b981', background: '#d1fae5' }}>🏷️</span>
-                                        <span className="row-title">{t.topic.label}</span>
+                                        <span className="row-title">{t('readingConfig.topic.label')}</span>
                                     </div>
-                                    <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t.topic.desc}</span>
+                                    <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('readingConfig.topic.desc')}</span>
                                 </div>
                                 <div className="uc-row-control">
                                     <select className="console-select" value={topic} onChange={e => setTopic(e.target.value)}>
-                                        <option value="random">{t.topic.random}</option>
-                                        {Object.entries(t.topic.list).map(([key, name]) => (
+                                        <option value="random">{t('readingConfig.topic.random')}</option>
+                                        {Object.entries(t('readingConfig.topic.list', { returnObjects: true }) as Record<string, string>).map(([key, name]) => (
                                             <option key={key} value={key}>{name}</option>
                                         ))}
                                     </select>
@@ -462,16 +460,16 @@ export default function WordSelection_page() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>⚖️</span>
-                                            <span className="row-title">{t.judgementMode.label}</span>
+                                            <span className="row-title">{t('readingConfig.judgementMode.label')}</span>
                                         </div>
                                     </div>
                                     <div className="uc-row-control">
                                         <div className="uc-segmented-control">
                                             <button className={`seg-btn ${judgementMode === 'easy' ? 'active' : ''}`} onClick={() => setJudgementMode('easy')}>
-                                                {t.judgementMode.easy.title}
+                                                {t('readingConfig.judgementMode.easy.title')}
                                             </button>
                                             <button className={`seg-btn ${judgementMode === 'normal' ? 'active' : ''}`} onClick={() => setJudgementMode('normal')}>
-                                                {t.judgementMode.normal.title}
+                                                {t('readingConfig.judgementMode.normal.title')}
                                             </button>
                                         </div>
                                     </div>
@@ -484,22 +482,22 @@ export default function WordSelection_page() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#6366f1', background: '#eef2ff' }}>🔢</span>
-                                            <span className="row-title">{t.wordCount.label}</span>
+                                            <span className="row-title">{t('readingConfig.wordCount.label')}</span>
                                         </div>
                                         <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
                                             {wordCountMin === wordCountMax
-                                                ? t.wordCount.hintExact.replace('{n}', String(wordCountMin))
-                                                : t.wordCount.hintRange.replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
+                                                ? t('readingConfig.wordCount.hintExact').replace('{n}', String(wordCountMin))
+                                                : t('readingConfig.wordCount.hintRange').replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
                                         </span>
                                     </div>
                                     <div className="wc-dual-sliders" style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc' }}>
                                         <div className="wc-slider-row">
-                                            <span className="wc-slider-label">{t.wordCount.min}</span>
+                                            <span className="wc-slider-label">{t('readingConfig.wordCount.min')}</span>
                                             <input type="range" min={1} max={4} step={1} value={wordCountMin} onChange={e => handleMinChange(Number(e.target.value))} />
                                             <span className="wc-val-badge">{wordCountMin}</span>
                                         </div>
                                         <div className="wc-slider-row" style={{ marginTop: 12 }}>
-                                            <span className="wc-slider-label">{t.wordCount.max}</span>
+                                            <span className="wc-slider-label">{t('readingConfig.wordCount.max')}</span>
                                             <input type="range" min={1} max={4} step={1} value={wordCountMax} onChange={e => handleMaxChange(Number(e.target.value))} />
                                             <span className="wc-val-badge">{wordCountMax}</span>
                                         </div>
@@ -514,9 +512,9 @@ export default function WordSelection_page() {
                                 <div className="uc-row-label">
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#ec4899', background: '#fce7f3' }}>🎲</span>
-                                        <span className="row-title">{t.absurdMode.label}</span>
+                                        <span className="row-title">{t('readingConfig.absurdMode.label')}</span>
                                     </div>
-                                    <span className="row-desc" style={{ marginLeft: 40 }}>{t.absurdMode.desc}</span>
+                                    <span className="row-desc" style={{ marginLeft: 40 }}>{t('readingConfig.absurdMode.desc')}</span>
                                 </div>
                                 <div className="uc-row-control">
                                     <label className="toggle-switch-console">
@@ -533,9 +531,9 @@ export default function WordSelection_page() {
                                         <div className="uc-row-label">
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#f43f5e', background: '#ffe4e6' }}>📚</span>
-                                                <span className="row-title">{t.customVocab.label}</span>
+                                                <span className="row-title">{t('readingConfig.customVocab.label')}</span>
                                             </div>
-                                            <span className="row-desc" style={{ marginLeft: 40 }}>{t.customVocab.desc}</span>
+                                            <span className="row-desc" style={{ marginLeft: 40 }}>{t('readingConfig.customVocab.desc')}</span>
                                         </div>
                                         <div className="uc-row-control">
                                             <label className="toggle-switch-console">
@@ -552,7 +550,7 @@ export default function WordSelection_page() {
                                                         {sortPlansByFavorite(plans).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                     </select>
                                                     <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
-                                                        {importingPlan ? tAll.common.planImport.importing : tAll.common.planImport.btn}
+                                                        {importingPlan ? t('common.planImport.importing') : t('common.planImport.btn')}
                                                     </button>
                                                 </div>
                                             )}
@@ -566,7 +564,7 @@ export default function WordSelection_page() {
 
                     <div className="uc-console-footer">
                         <button className="uc-console-start-btn" onClick={handleStart}>
-                            📖 {mode === 'full' ? t.fullTest.startBtn : t.startBtn}
+                            📖 {mode === 'full' ? t('readingConfig.fullTest.startBtn') : t('readingConfig.startBtn')}
                         </button>
                     </div>
                 </div>

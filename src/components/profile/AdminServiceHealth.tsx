@@ -81,8 +81,7 @@ const interp = (tpl: string, vars: Record<string, string | number>) =>
     Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), tpl);
 
 export default function AdminServiceHealth() {
-    const { translations } = useLang();
-    const t = translations.profile.admin.serviceHealth;
+    const { t } = useLang();
 
     const [data, setData] = useState<HealthReport | null>(null);
     const [loading, setLoading] = useState(false);
@@ -95,27 +94,27 @@ export default function AdminServiceHealth() {
             const resp = await apiClient.get<HealthReport>('/admin/service-health');
             setData(resp.data);
         } catch {
-            setError(t.loadFail);
+            setError(t('profile.admin.serviceHealth.loadFail'));
         } finally {
             setLoading(false);
         }
-    }, [t.loadFail]);
+    }, [t]);
 
     const statusLabel = (s: SvcStatus): string =>
-        ({ ok: t.statusOk, degraded: t.statusDegraded, down: t.statusDown, unconfigured: t.statusUnconfigured }[s]);
+        ({ ok: t('profile.admin.serviceHealth.statusOk'), degraded: t('profile.admin.serviceHealth.statusDegraded'), down: t('profile.admin.serviceHealth.statusDown'), unconfigured: t('profile.admin.serviceHealth.statusUnconfigured') }[s]);
     const catLabel = (c: SvcCategory): string =>
-        ({ core: t.catCore, ai: t.catAi, email: t.catEmail }[c]);
+        ({ core: t('profile.admin.serviceHealth.catCore'), ai: t('profile.admin.serviceHealth.catAi'), email: t('profile.admin.serviceHealth.catEmail') }[c]);
     const overallTitle = (o: HealthReport['overall']): string =>
-        ({ ok: t.overallOk, degraded: t.overallDegraded, down: t.overallDown }[o]);
+        ({ ok: t('profile.admin.serviceHealth.overallOk'), degraded: t('profile.admin.serviceHealth.overallDegraded'), down: t('profile.admin.serviceHealth.overallDown') }[o]);
 
     // Backend returns only structured codes; all prose is localized here.
-    const names = t.names as Record<string, string>;
-    const reasons = t.reasons as Record<string, string>;
+    const names = t('profile.admin.serviceHealth.names', { returnObjects: true }) as Record<string, string>;
+    const reasons = t('profile.admin.serviceHealth.reasons', { returnObjects: true }) as Record<string, string>;
     const nameOf = (key: string): string => names[key] ?? key;
     const detailOf = (svc: ServiceItem): string => {
         const tpl = reasons[svc.reason_code];
         const base = tpl ? interp(tpl, svc.reason) : `${svc.reason_code} ${JSON.stringify(svc.reason)}`;
-        return svc.model ? `${base} · ${t.modelLabel}=${svc.model}` : base;
+        return svc.model ? `${base} · ${t('profile.admin.serviceHealth.modelLabel')}=${svc.model}` : base;
     };
 
     return (
@@ -123,14 +122,14 @@ export default function AdminServiceHealth() {
             {/* Header */}
             <div className="ash-header">
                 <div>
-                    <h2 className="ash-heading">{t.heading}</h2>
-                    <p className="ash-desc">{t.description}</p>
+                    <h2 className="ash-heading">{t('profile.admin.serviceHealth.heading')}</h2>
+                    <p className="ash-desc">{t('profile.admin.serviceHealth.description')}</p>
                 </div>
                 <button className="ash-run-btn" onClick={() => void run()} disabled={loading}>
                     {loading
                         ? <RefreshCw size={16} className="ash-spin" />
                         : <Activity size={16} />}
-                    {loading ? t.running : (data ? t.rerunBtn : t.runBtn)}
+                    {loading ? t('profile.admin.serviceHealth.running') : (data ? t('profile.admin.serviceHealth.rerunBtn') : t('profile.admin.serviceHealth.runBtn'))}
                 </button>
             </div>
 
@@ -138,7 +137,7 @@ export default function AdminServiceHealth() {
             <details className="ash-methods" open>
                 <summary className="ash-methods-summary">
                     <FlaskConical size={15} />
-                    {t.methodTitle}
+                    {t('profile.admin.serviceHealth.methodTitle')}
                 </summary>
                 <ul className="ash-methods-list">
                     {METHOD_ORDER.map(mk => {
@@ -146,7 +145,7 @@ export default function AdminServiceHealth() {
                         return (
                             <li className="ash-method-item" key={mk}>
                                 <MIcon size={14} className="ash-method-icon" />
-                                <span>{t.methods[mk]}</span>
+                                <span>{t(`profile.admin.serviceHealth.methods.${mk}`)}</span>
                             </li>
                         );
                     })}
@@ -156,13 +155,13 @@ export default function AdminServiceHealth() {
             {/* Probe disclaimer */}
             <div className="ash-note">
                 <Info size={15} />
-                <span>{t.probeNote}</span>
+                <span>{t('profile.admin.serviceHealth.probeNote')}</span>
             </div>
 
             {error && <div className="ash-error">{error}</div>}
 
             {!data && !error && (
-                <div className="ash-empty">{t.emptyHint}</div>
+                <div className="ash-empty">{t('profile.admin.serviceHealth.emptyHint')}</div>
             )}
 
             {data && (
@@ -176,9 +175,9 @@ export default function AdminServiceHealth() {
                         <div className="ash-overall-text">
                             <span className="ash-overall-title">{overallTitle(data.overall)}</span>
                             <span className="ash-overall-meta">
-                                {interp(t.lastChecked, { time: new Date(data.checked_at).toLocaleString() })}
+                                {interp(t('profile.admin.serviceHealth.lastChecked'), { time: new Date(data.checked_at).toLocaleString() })}
                                 {' · '}
-                                {interp(t.totalMs, { n: data.total_ms })}
+                                {interp(t('profile.admin.serviceHealth.totalMs'), { n: data.total_ms })}
                             </span>
                         </div>
                     </div>
@@ -186,15 +185,15 @@ export default function AdminServiceHealth() {
                     {/* This-run cost (损耗) */}
                     <div className="ash-cost">
                         <Coins size={16} className="ash-cost-icon" />
-                        <span className="ash-cost-title">{t.costTitle}:</span>
+                        <span className="ash-cost-title">{t('profile.admin.serviceHealth.costTitle')}:</span>
                         {data.cost.total_tokens > 0 ? (
                             <>
-                                <span className="ash-cost-val">{interp(t.costTokens, { n: data.cost.total_tokens })}</span>
-                                <span className="ash-cost-sub">{interp(t.costAtEquiv, { n: data.cost.at_equivalent })}</span>
-                                <span className="ash-cost-note">{t.costNote}</span>
+                                <span className="ash-cost-val">{interp(t('profile.admin.serviceHealth.costTokens'), { n: data.cost.total_tokens })}</span>
+                                <span className="ash-cost-sub">{interp(t('profile.admin.serviceHealth.costAtEquiv'), { n: data.cost.at_equivalent })}</span>
+                                <span className="ash-cost-note">{t('profile.admin.serviceHealth.costNote')}</span>
                             </>
                         ) : (
-                            <span className="ash-cost-sub">{t.costZero}</span>
+                            <span className="ash-cost-sub">{t('profile.admin.serviceHealth.costZero')}</span>
                         )}
                     </div>
 
@@ -234,11 +233,11 @@ export default function AdminServiceHealth() {
                                                 <div className="ash-card-body">
                                                     <div className="ash-card-name-row">
                                                         <span className="ash-card-name">{nameOf(svc.key)}</span>
-                                                        {svc.required && <span className="ash-required">{t.requiredTag}</span>}
+                                                        {svc.required && <span className="ash-required">{t('profile.admin.serviceHealth.requiredTag')}</span>}
                                                     </div>
                                                     <span className="ash-card-detail">{detailOf(svc)}</span>
                                                     <span className="ash-card-method">
-                                                        {t.methodLabel}: {t.methods[svc.method_key]}
+                                                        {t('profile.admin.serviceHealth.methodLabel')}: {t(`profile.admin.serviceHealth.methods.${svc.method_key}`)}
                                                     </span>
                                                 </div>
                                                 <div className="ash-card-right">

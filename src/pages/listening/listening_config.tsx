@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import VocabInput from '../../components/VocabInput';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import CustomPromptField from '../../components/common/CustomPromptField';
@@ -82,19 +81,17 @@ export default function ListeningConfig() {
     const [customDescription, setCustomDescription] = useState('');
     const [customPrompt, setCustomPrompt] = useState('');
 
-    const { lang } = useLang();
-    const t = translations[lang].listeningConfig;
-    const tAll = translations[lang];
+    const { t } = useLang();
     const qtMap = useMemo(() => ({
-        article: t.practiceType.article,
-        sentence: t.practiceType.sentence,
-        multipleChoice: t.practiceType.multipleChoice,
-        mapLabelling: t.practiceType.mapLabelling,
-        form: t.practiceType.form,
-        table: t.practiceType.table,
-        flowchart: t.practiceType.flowchart,
-        matching: t.practiceType.matching,
-        shortAnswer: t.practiceType.shortAnswer,
+        article: t('listeningConfig.practiceType.article', { returnObjects: true }) as { title: string; desc: string },
+        sentence: t('listeningConfig.practiceType.sentence', { returnObjects: true }) as { title: string; desc: string },
+        multipleChoice: t('listeningConfig.practiceType.multipleChoice', { returnObjects: true }) as { title: string; desc: string },
+        mapLabelling: t('listeningConfig.practiceType.mapLabelling', { returnObjects: true }) as { title: string; desc: string },
+        form: t('listeningConfig.practiceType.form', { returnObjects: true }) as { title: string; desc: string },
+        table: t('listeningConfig.practiceType.table', { returnObjects: true }) as { title: string; desc: string },
+        flowchart: t('listeningConfig.practiceType.flowchart', { returnObjects: true }) as { title: string; desc: string },
+        matching: t('listeningConfig.practiceType.matching', { returnObjects: true }) as { title: string; desc: string },
+        shortAnswer: t('listeningConfig.practiceType.shortAnswer', { returnObjects: true }) as { title: string; desc: string },
     }), [t]);
 
     useEffect(() => {
@@ -125,7 +122,7 @@ export default function ListeningConfig() {
             const { plan: detail } = await getPlanDetail(importPlanId);
             const todayWords = detail.today_words || [];
             if (todayWords.length === 0) {
-                showToast(tAll.common.planImport.noWords, 'error');
+                showToast(t('common.planImport.noWords'), 'error');
                 return;
             }
             const validWords = todayWords.filter(w => w.zh && w.zh.trim());
@@ -133,12 +130,12 @@ export default function ListeningConfig() {
             const lines = validWords.map(w => `${w.word} - ${w.zh}`).join('\n');
             setVocabInput(lines);
             if (skipped > 0) {
-                showToast(tAll.common.planImport.skipped.replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
+                showToast(t('common.planImport.skipped').replace('{n}', String(validWords.length)).replace('{s}', String(skipped)), 'error');
             } else {
-                showToast(tAll.common.planImport.success.replace('{n}', String(validWords.length)), 'success');
+                showToast(t('common.planImport.success').replace('{n}', String(validWords.length)), 'success');
             }
         } catch {
-            showToast(tAll.common.planImport.failed, 'error');
+            showToast(t('common.planImport.failed'), 'error');
         } finally {
             setImportingPlan(false);
         }
@@ -155,7 +152,7 @@ export default function ListeningConfig() {
 
     const handleStart = () => {
         if (mode === 'single' && useCustomVocab && !vocabInput.trim()) {
-            showToast(t.toast.noVocab, 'error');
+            showToast(t('listeningConfig.toast.noVocab'), 'error');
             return;
         }
         sessionStorage.removeItem('listening_session_cache');
@@ -187,33 +184,32 @@ export default function ListeningConfig() {
     const currentCopy = qtMap[QT_KEY_TO_I18N[practiceType]];
     const showWordCount = mode === 'single' && !NO_WC_TYPES.includes(practiceType);
     const activeSectionKey = QT_TO_SECTION[practiceType];
-    const scenarioListForType = t.scenario.list;
     const scenariosBySection: Record<ListeningSectionKey, [string, string][]> = {
-        s1: ['accommodation','job_enquiry','gym_signup','travel_booking','library_signup','event_booking','restaurant_booking','phone_survey'].map(k => [k, scenarioListForType[k as keyof typeof scenarioListForType]]),
-        s2: ['museum_tour','campus_orientation','park_intro','facility_opening','radio_show','event_announcement'].map(k => [k, scenarioListForType[k as keyof typeof scenarioListForType]]),
-        s3: ['tutorial_discussion','group_project','thesis_meeting','assignment_review','research_planning'].map(k => [k, scenarioListForType[k as keyof typeof scenarioListForType]]),
-        s4: ['history_lecture','science_lecture','social_science_lecture','business_lecture','health_lecture'].map(k => [k, scenarioListForType[k as keyof typeof scenarioListForType]]),
+        s1: ['accommodation','job_enquiry','gym_signup','travel_booking','library_signup','event_booking','restaurant_booking','phone_survey'].map(k => [k, t(`listeningConfig.scenario.list.${k}`)]),
+        s2: ['museum_tour','campus_orientation','park_intro','facility_opening','radio_show','event_announcement'].map(k => [k, t(`listeningConfig.scenario.list.${k}`)]),
+        s3: ['tutorial_discussion','group_project','thesis_meeting','assignment_review','research_planning'].map(k => [k, t(`listeningConfig.scenario.list.${k}`)]),
+        s4: ['history_lecture','science_lecture','social_science_lecture','business_lecture','health_lecture'].map(k => [k, t(`listeningConfig.scenario.list.${k}`)]),
     };
 
     return (
         <Layout
-            pageTitle={t.heading}
-            pageSubtitle={t.subheading}
+            pageTitle={t('listeningConfig.heading')}
+            pageSubtitle={t('listeningConfig.subheading')}
             backUrl='/practice/ai'
-            backText={t.backToAI}
+            backText={t('listeningConfig.backToAI')}
         >
             <div className="uc-console">
                 {/* ── Sidebar ── */}
                 <div className="uc-sidebar">
-                    <div className="uc-sidebar-title" style={{ marginBottom: 8 }}>{t.modeToggle.label}</div>
+                    <div className="uc-sidebar-title" style={{ marginBottom: 8 }}>{t('listeningConfig.modeToggle.label')}</div>
                     <div className="uc-segmented-control" style={{ marginBottom: 20 }}>
-                        <button className={`seg-btn ${mode === 'single' ? 'active' : ''}`} onClick={() => setMode('single')}>{t.modeToggle.single}</button>
-                        <button className={`seg-btn ${mode === 'full' ? 'active' : ''}`} onClick={() => setMode('full')}>{t.modeToggle.full}</button>
+                        <button className={`seg-btn ${mode === 'single' ? 'active' : ''}`} onClick={() => setMode('single')}>{t('listeningConfig.modeToggle.single')}</button>
+                        <button className={`seg-btn ${mode === 'full' ? 'active' : ''}`} onClick={() => setMode('full')}>{t('listeningConfig.modeToggle.full')}</button>
                     </div>
 
                     {mode === 'single' && (
                         <>
-                            <div className="uc-sidebar-title">{t.practiceType.label}</div>
+                            <div className="uc-sidebar-title">{t('listeningConfig.practiceType.label')}</div>
                             <nav className="uc-sidebar-nav">
                                 {(Object.entries(QT_GROUPS) as [GroupKey, ListeningQuestionTypeKey[]][]).map(([g, keys]) => (
                                     <div key={g} className="uc-nav-group">
@@ -224,7 +220,7 @@ export default function ListeningConfig() {
                                             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'transparent', border: 'none', width: '100%', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: 12, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}
                                         >
                                             <span>{openGroup === g ? '▾' : '▸'}</span>
-                                            <span>{t.practiceType.groups[g]}</span>
+                                            <span>{t(`listeningConfig.practiceType.groups.${g}`)}</span>
                                         </button>
                                         {openGroup === g && keys.map(k => (
                                             <button
@@ -254,8 +250,8 @@ export default function ListeningConfig() {
                             </>
                         ) : (
                             <>
-                                <h2>{t.fullTest.title}</h2>
-                                <p>{t.fullTest.desc} · {t.fullTest.summary}</p>
+                                <h2>{t('listeningConfig.fullTest.title')}</h2>
+                                <p>{t('listeningConfig.fullTest.desc')} · {t('listeningConfig.fullTest.summary')}</p>
                             </>
                         )}
                     </div>
@@ -267,17 +263,17 @@ export default function ListeningConfig() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>🏷️</span>
-                                        <span className="row-title">{tAll.common.customQuestion.sectionTitle}</span>
+                                        <span className="row-title">{t('common.customQuestion.sectionTitle')}</span>
                                     </div>
                                     <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
-                                        {tAll.common.customQuestion.sectionDesc}
+                                        {t('common.customQuestion.sectionDesc')}
                                     </span>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
                                     <input
                                         type="text"
                                         maxLength={80}
-                                        placeholder={tAll.common.customQuestion.namePlaceholder}
+                                        placeholder={t('common.customQuestion.namePlaceholder')}
                                         value={customName}
                                         onChange={e => setCustomName(e.target.value)}
                                         style={{
@@ -288,12 +284,12 @@ export default function ListeningConfig() {
                                             color: 'var(--color-text)',
                                             fontSize: 14,
                                         }}
-                                        aria-label={tAll.common.customQuestion.nameLabel}
+                                        aria-label={t('common.customQuestion.nameLabel')}
                                     />
                                     <textarea
                                         maxLength={300}
                                         rows={2}
-                                        placeholder={tAll.common.customQuestion.descPlaceholder}
+                                        placeholder={t('common.customQuestion.descPlaceholder')}
                                         value={customDescription}
                                         onChange={e => setCustomDescription(e.target.value)}
                                         style={{
@@ -306,7 +302,7 @@ export default function ListeningConfig() {
                                             resize: 'vertical',
                                             fontFamily: 'inherit',
                                         }}
-                                        aria-label={tAll.common.customQuestion.descLabel}
+                                        aria-label={t('common.customQuestion.descLabel')}
                                     />
                                 </div>
                             </div>
@@ -322,13 +318,13 @@ export default function ListeningConfig() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#0d9488', background: '#ccfbf1' }}>🎛️</span>
-                                            <span className="row-title">{t.fullTest.scope.label}</span>
+                                            <span className="row-title">{t('listeningConfig.fullTest.scope.label')}</span>
                                         </div>
                                     </div>
                                     <div className="uc-row-control">
                                         <div className="uc-segmented-control">
-                                            <button className={`seg-btn ${fullScope === 'all' ? 'active' : ''}`} onClick={() => setFullScope('all')}>{t.fullTest.scope.all}</button>
-                                            <button className={`seg-btn ${fullScope === 'single' ? 'active' : ''}`} onClick={() => setFullScope('single')}>{t.fullTest.scope.single}</button>
+                                            <button className={`seg-btn ${fullScope === 'all' ? 'active' : ''}`} onClick={() => setFullScope('all')}>{t('listeningConfig.fullTest.scope.all')}</button>
+                                            <button className={`seg-btn ${fullScope === 'single' ? 'active' : ''}`} onClick={() => setFullScope('single')}>{t('listeningConfig.fullTest.scope.single')}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -337,14 +333,14 @@ export default function ListeningConfig() {
                                         <div className="uc-row-label-flex">
                                             <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#8b5cf6', background: '#ede9fe' }}>📑</span>
-                                                <span className="row-title">{t.fullTest.singleSection.label}</span>
+                                                <span className="row-title">{t('listeningConfig.fullTest.singleSection.label')}</span>
                                             </div>
                                         </div>
                                         <div className="uc-row-control">
                                             <select className="console-select" value={sectionNum} onChange={e => setSectionNum(Number(e.target.value) as 1 | 2 | 3 | 4)}>
                                                 {([1, 2, 3, 4] as const).map(n => (
                                                     <option key={n} value={n}>
-                                                        {t.fullTest.singleSection[`s${n}` as 's1' | 's2' | 's3' | 's4']}
+                                                        {t(`listeningConfig.fullTest.singleSection.s${n}`)}
                                                     </option>
                                                 ))}
                                             </select>
@@ -360,7 +356,7 @@ export default function ListeningConfig() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                        <span className="row-title">{tAll.components.aiModel.label}</span>
+                                        <span className="row-title">{t('components.aiModel.label')}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control console-model-selector">
@@ -373,7 +369,7 @@ export default function ListeningConfig() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📊</span>
-                                        <span className="row-title">{t.targetScore}</span>
+                                        <span className="row-title">{t('listeningConfig.targetScore')}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control">
@@ -393,13 +389,13 @@ export default function ListeningConfig() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#10b981', background: '#d1fae5' }}>🏷️</span>
-                                            <span className="row-title">{t.scenario.label}</span>
+                                            <span className="row-title">{t('listeningConfig.scenario.label')}</span>
                                         </div>
-                                        <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t.scenario.desc}</span>
+                                        <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('listeningConfig.scenario.desc')}</span>
                                     </div>
                                     <div className="uc-row-control">
                                         <select className="console-select" value={scenario} onChange={e => setScenario(e.target.value)}>
-                                            <option value="random">{t.scenario.random}</option>
+                                            <option value="random">{t('listeningConfig.scenario.random')}</option>
                                             {scenariosBySection[activeSectionKey].map(([k, name]) => (
                                                 <option key={k} value={k}>{name}</option>
                                             ))}
@@ -411,9 +407,9 @@ export default function ListeningConfig() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#10b981', background: '#d1fae5' }}>🏷️</span>
-                                            <span className="row-title">{t.scenario.label}</span>
+                                            <span className="row-title">{t('listeningConfig.scenario.label')}</span>
                                         </div>
-                                        <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t.scenario.desc}</span>
+                                        <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('listeningConfig.scenario.desc')}</span>
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: fullScope === 'single' ? '1fr' : '1fr 1fr', gap: 12, marginTop: 12 }}>
                                         {(fullScope === 'single'
@@ -424,9 +420,9 @@ export default function ListeningConfig() {
                                             const setter = sk === 's1' ? setScenarioS1 : sk === 's2' ? setScenarioS2 : sk === 's3' ? setScenarioS3 : setScenarioS4;
                                             return (
                                                 <div key={sk}>
-                                                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>{t.scenario.sectionLabels[sk]}</div>
+                                                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>{t(`listeningConfig.scenario.sectionLabels.${sk}`)}</div>
                                                     <select className="console-select" value={val} onChange={e => setter(e.target.value)} style={{ width: '100%' }}>
-                                                        <option value="random">{t.scenario.random}</option>
+                                                        <option value="random">{t('listeningConfig.scenario.random')}</option>
                                                         {scenariosBySection[sk].map(([k, name]) => (
                                                             <option key={k} value={k}>{name}</option>
                                                         ))}
@@ -444,17 +440,17 @@ export default function ListeningConfig() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#6366f1', background: '#eef2ff' }}>🔢</span>
-                                            <span className="row-title">{t.wordCount.label}</span>
+                                            <span className="row-title">{t('listeningConfig.wordCount.label')}</span>
                                         </div>
                                         <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
                                             {wordCountMin === wordCountMax
-                                                ? t.wordCount.hintExact.replace('{n}', String(wordCountMin))
-                                                : t.wordCount.hintRange.replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
+                                                ? t('listeningConfig.wordCount.hintExact').replace('{n}', String(wordCountMin))
+                                                : t('listeningConfig.wordCount.hintRange').replace('{min}', String(wordCountMin)).replace('{max}', String(wordCountMax))}
                                         </span>
                                     </div>
                                     <div className="wc-dual-sliders" style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc' }}>
                                         <div className="wc-slider-row">
-                                            <span className="wc-slider-label">{t.wordCount.min}</span>
+                                            <span className="wc-slider-label">{t('listeningConfig.wordCount.min')}</span>
                                             <div className="wc-slider-track-wrap">
                                                 <input type="range" className="wc-single-range" min={1} max={3} step={1} value={wordCountMin}
                                                     style={{ '--pct': `${((wordCountMin - 1) / 2) * 100}%` } as React.CSSProperties}
@@ -466,7 +462,7 @@ export default function ListeningConfig() {
                                             <span className="wc-val-badge">{wordCountMin}</span>
                                         </div>
                                         <div className="wc-slider-row" style={{ marginTop: 12 }}>
-                                            <span className="wc-slider-label">{t.wordCount.max}</span>
+                                            <span className="wc-slider-label">{t('listeningConfig.wordCount.max')}</span>
                                             <div className="wc-slider-track-wrap">
                                                 <input type="range" className="wc-single-range" min={1} max={3} step={1} value={wordCountMax}
                                                     style={{ '--pct': `${((wordCountMax - 1) / 2) * 100}%` } as React.CSSProperties}
@@ -488,9 +484,9 @@ export default function ListeningConfig() {
                                 <div className="uc-row-label">
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#ec4899', background: '#fce7f3' }}>🎲</span>
-                                        <span className="row-title">{t.absurdMode.label}</span>
+                                        <span className="row-title">{t('listeningConfig.absurdMode.label')}</span>
                                     </div>
-                                    <span className="row-desc" style={{ marginLeft: 40 }}>{t.absurdMode.desc}</span>
+                                    <span className="row-desc" style={{ marginLeft: 40 }}>{t('listeningConfig.absurdMode.desc')}</span>
                                 </div>
                                 <div className="uc-row-control">
                                     <label className="toggle-switch-console">
@@ -506,9 +502,9 @@ export default function ListeningConfig() {
                                         <div className="uc-row-label">
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                                 <span className="uc-row-icon" style={{ color: '#f43f5e', background: '#ffe4e6' }}>📚</span>
-                                                <span className="row-title">{t.customVocab.label}</span>
+                                                <span className="row-title">{t('listeningConfig.customVocab.label')}</span>
                                             </div>
-                                            <span className="row-desc" style={{ marginLeft: 40 }}>{t.customVocab.desc}</span>
+                                            <span className="row-desc" style={{ marginLeft: 40 }}>{t('listeningConfig.customVocab.desc')}</span>
                                         </div>
                                         <div className="uc-row-control">
                                             <label className="toggle-switch-console">
@@ -525,7 +521,7 @@ export default function ListeningConfig() {
                                                         {sortPlansByFavorite(plans).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                     </select>
                                                     <button className="console-import-btn" onClick={handleImportPlan} disabled={importingPlan}>
-                                                        {importingPlan ? tAll.common.planImport.importing : tAll.common.planImport.btn}
+                                                        {importingPlan ? t('common.planImport.importing') : t('common.planImport.btn')}
                                                     </button>
                                                 </div>
                                             )}
@@ -539,7 +535,7 @@ export default function ListeningConfig() {
 
                     <div className="uc-console-footer">
                         <button className="uc-console-start-btn" onClick={handleStart}>
-                            🎧 {mode === 'full' ? t.fullTest.startBtn : t.startBtn}
+                            🎧 {mode === 'full' ? t('listeningConfig.fullTest.startBtn') : t('listeningConfig.startBtn')}
                         </button>
                     </div>
                 </div>

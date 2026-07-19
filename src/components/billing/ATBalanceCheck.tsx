@@ -20,7 +20,7 @@ export default function ATBalanceCheck({
     children
 }: ATBalanceCheckProps) {
     const { user } = useAuth();
-    const { translations: t } = useLang();
+    const { t } = useLang();
     
     // Use memoization instead of effect for cost
     const estimatedCost = useMemo(() => {
@@ -48,8 +48,8 @@ export default function ATBalanceCheck({
                 // AT币不足，显示警告
                 window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
                     detail: {
-                        message: t.billing.needMoreBalance
-                            .replace('{message}', t.billing.insufficientBalance)
+                        message: t('billing.needMoreBalance')
+                            .replace('{message}', t('billing.insufficientBalance'))
                             .replace('{required}', cost.toString())
                             .replace('{current}', (user.atBalance || 0).toString()),
                         estimatedCost: cost,
@@ -68,7 +68,7 @@ export default function ATBalanceCheck({
     }, [service, params, user?.atBalance, checkBalance]); // Added checkBalance to useEffect dependencies
 
     if (isChecking) {
-        return <div>{t.billing.checkingBalance}</div>;
+        return <div>{t('billing.checkingBalance')}</div>;
     }
 
     if (!balanceOk) {
@@ -76,16 +76,16 @@ export default function ATBalanceCheck({
             <div className="at-balance-warning">
                 <div className="warning-header">
                     <span className="warning-icon">⚠️</span>
-                    <span className="warning-title">{t.billing.insufficientBalance}</span>
+                    <span className="warning-title">{t('billing.insufficientBalance')}</span>
                 </div>
                 <div className="warning-content">
                     <p dangerouslySetInnerHTML={{
-                        __html: sanitize(t.billing.estimateCost
+                        __html: sanitize(t('billing.estimateCost')
                             .replace('{service}', service)
                             .replace('{estimatedCost}', estimatedCost.toString())),
                     }} />
                     <p dangerouslySetInnerHTML={{
-                        __html: sanitize(t.billing.currentBalance
+                        __html: sanitize(t('billing.currentBalance')
                             .replace('{balance}', formatATBalance(user?.atBalance).toString())),
                     }} />
                     <div className="warning-actions">
@@ -93,13 +93,13 @@ export default function ATBalanceCheck({
                             className="primary-button"
                             onClick={() => window.location.href = '/profile'}
                         >
-                            {t.billing.goToRecharge}
+                            {t('billing.goToRecharge')}
                         </button>
                         <button
                             className="secondary-button"
                             onClick={onReady}
                         >
-                            {t.billing.tryAnyway}
+                            {t('billing.tryAnyway')}
                         </button>
                     </div>
                 </div>

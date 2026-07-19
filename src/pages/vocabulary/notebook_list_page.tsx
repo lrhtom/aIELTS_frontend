@@ -40,7 +40,7 @@ const DEFAULT_MODAL: ModalState = {
 };
 
 export default function NotebookListPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const navigate = useNavigate();
 
     const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -51,7 +51,7 @@ export default function NotebookListPage() {
     useEffect(() => {
         listNotebooks()
             .then(r => setNotebooks(r.notebooks))
-            .catch(() => showToast(t.vocab.notebooks.msgFail, 'error'))
+            .catch(() => showToast(t('vocab.notebooks.msgFail'), 'error'))
             .finally(() => setLoading(false));
     }, [t]);
 
@@ -74,20 +74,20 @@ export default function NotebookListPage() {
     /* ── 删除笔记本 ── */
     const handleDelete = async (e: React.MouseEvent, nb: Notebook) => {
         e.stopPropagation();
-        if (!(await showConfirm({ message: t.vocab.notebooks.msgDeleteConfirm.replace('{title}', nb.title), danger: true }))) return;
+        if (!(await showConfirm({ message: t('vocab.notebooks.msgDeleteConfirm').replace('{title}', nb.title), danger: true }))) return;
         try {
             await deleteNotebook(nb.id);
             setNotebooks(prev => prev.filter(n => n.id !== nb.id));
-            showToast(t.vocab.notebooks.msgDeleteSuccess, 'success');
+            showToast(t('vocab.notebooks.msgDeleteSuccess'), 'success');
         } catch {
-            showToast(t.vocab.notebooks.msgFail, 'error');
+            showToast(t('vocab.notebooks.msgFail'), 'error');
         }
     };
 
     /* ── 提交弹窗 ── */
     const handleSubmit = async () => {
         if (!modal) return;
-        if (!modal.title.trim()) { showToast(t.vocab.notebooks.msgTitleRequired, 'error'); return; }
+        if (!modal.title.trim()) { showToast(t('vocab.notebooks.msgTitleRequired'), 'error'); return; }
         setSaving(true);
         try {
             if (modal.mode === 'create') {
@@ -98,7 +98,7 @@ export default function NotebookListPage() {
                     is_public:   modal.is_public,
                 });
                 setNotebooks(prev => [notebook, ...prev]);
-                showToast(t.vocab.notebooks.msgCreateSuccess, 'success');
+                showToast(t('vocab.notebooks.msgCreateSuccess'), 'success');
             } else {
                 const { notebook } = await updateNotebook(modal.id!, {
                     title:       modal.title.trim(),
@@ -107,12 +107,12 @@ export default function NotebookListPage() {
                     is_public:   modal.is_public,
                 });
                 setNotebooks(prev => prev.map(n => n.id === notebook.id ? notebook : n));
-                showToast(t.vocab.notebooks.msgSaveSuccess, 'success');
+                showToast(t('vocab.notebooks.msgSaveSuccess'), 'success');
             }
             setModal(null);
         } catch (err: unknown) {
             const e = err as { response?: { data?: { error?: string } } };
-            const msg = e.response?.data?.error || t.vocab.notebooks.msgFail;
+            const msg = e.response?.data?.error || t('vocab.notebooks.msgFail');
             showToast(msg, 'error');
         } finally {
             setSaving(false);
@@ -121,10 +121,10 @@ export default function NotebookListPage() {
 
     return (
         <Layout
-    pageTitle={t.vocab.notebooks.title}
-    pageSubtitle={t.vocab.notebooks.desc}
+    pageTitle={t('vocab.notebooks.title')}
+    pageSubtitle={t('vocab.notebooks.desc')}
     backUrl='/vocabulary'
-    backText={`${t.common.back} ${t.vocab.hub.title}`}
+    backText={`${t('common.back')} ${t('vocab.hub.title')}`}
 >
             <div className="config-page-wrap">
                 {/* 新建按钮 */}
@@ -134,11 +134,11 @@ export default function NotebookListPage() {
                         style={{ width: '100%' }}
                         onClick={openCreate}
                     >
-                        <span className="btn-icon">📓</span> {t.vocab.notebooks.btnCreate}
+                        <span className="btn-icon">📓</span> {t('vocab.notebooks.btnCreate')}
                     </button>
                     {notebooks.length >= 10 && (
                         <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-                            {t.vocab.notebooks.maxLimitHint}
+                            {t('vocab.notebooks.maxLimitHint')}
                         </p>
                     )}
                 </div>
@@ -146,11 +146,11 @@ export default function NotebookListPage() {
                 {/* 笔记本网格 */}
                 <div className="config-card">
                     {loading ? (
-                        <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '20px 0' }}>{t.common.loading}</p>
+                        <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '20px 0' }}>{t('common.loading')}</p>
                     ) : notebooks.length === 0 ? (
                         <div className="nb-empty">
                             <span className="nb-empty-icon">📭</span>
-                            {t.vocab.notebooks.emptyTitle}
+                            {t('vocab.notebooks.emptyTitle')}
                         </div>
                     ) : (
                         <div className="nb-grid">
@@ -169,19 +169,19 @@ export default function NotebookListPage() {
                                         <div className="nb-card-desc">{nb.description}</div>
                                     )}
                                     <div className="nb-card-meta">
-                                        <span className="nb-card-word-count">{t.vocab.notebooks.cardWordCount.replace('{n}', String(nb.word_count))}</span>
-                                        {nb.is_public && <span>{t.vocab.notebooks.cardPublic}</span>}
+                                        <span className="nb-card-word-count">{t('vocab.notebooks.cardWordCount').replace('{n}', String(nb.word_count))}</span>
+                                        {nb.is_public && <span>{t('vocab.notebooks.cardPublic')}</span>}
                                     </div>
 
                                     <div className="nb-card-actions">
                                         <button
                                             className="nb-action-btn"
-                                            title={t.vocab.common.edit}
+                                            title={t('vocab.common.edit')}
                                             onClick={e => openEdit(e, nb)}
                                         >✏️</button>
                                         <button
                                             className="nb-action-btn danger"
-                                            title={t.vocab.common.delete}
+                                            title={t('vocab.common.delete')}
                                             onClick={e => handleDelete(e, nb)}
                                         >🗑️</button>
                                     </div>
@@ -197,14 +197,14 @@ export default function NotebookListPage() {
                 <div className="modal-overlay" onClick={() => !saving && setModal(null)}>
                     <div className="modal-box" onClick={e => e.stopPropagation()}>
                         <div className="modal-title">
-                            {modal.mode === 'create' ? t.vocab.notebooks.modalCreateTitle : t.vocab.notebooks.modalEditTitle}
+                            {modal.mode === 'create' ? t('vocab.notebooks.modalCreateTitle') : t('vocab.notebooks.modalEditTitle')}
                         </div>
 
                         <div>
-                            <div className="modal-label">{t.vocab.notebooks.modalTitleLabel}</div>
+                            <div className="modal-label">{t('vocab.notebooks.modalTitleLabel')}</div>
                             <input
                                 className="modal-input"
-                                placeholder={t.vocab.notebooks.modalTitlePlaceholder}
+                                placeholder={t('vocab.notebooks.modalTitlePlaceholder')}
                                 value={modal.title}
                                 maxLength={100}
                                 autoFocus
@@ -214,10 +214,10 @@ export default function NotebookListPage() {
                         </div>
 
                         <div>
-                            <div className="modal-label">{t.vocab.notebooks.modalDescLabel}</div>
+                            <div className="modal-label">{t('vocab.notebooks.modalDescLabel')}</div>
                             <input
                                 className="modal-input"
-                                placeholder={t.vocab.notebooks.modalDescPlaceholder}
+                                placeholder={t('vocab.notebooks.modalDescPlaceholder')}
                                 value={modal.description}
                                 maxLength={200}
                                 onChange={e => setModal(m => m && ({ ...m, description: e.target.value }))}
@@ -225,7 +225,7 @@ export default function NotebookListPage() {
                         </div>
 
                         <div>
-                            <div className="modal-label">{t.vocab.notebooks.modalColorLabel}</div>
+                            <div className="modal-label">{t('vocab.notebooks.modalColorLabel')}</div>
                             <div className="nb-color-picker">
                                 {COLORS.map(c => (
                                     <div
@@ -240,9 +240,9 @@ export default function NotebookListPage() {
                         </div>
 
                         <div className="modal-actions">
-                            <button className="modal-btn" onClick={() => setModal(null)} disabled={saving}>{t.vocab.notebooks.btnCancel}</button>
+                            <button className="modal-btn" onClick={() => setModal(null)} disabled={saving}>{t('vocab.notebooks.btnCancel')}</button>
                             <button className="modal-btn primary" onClick={handleSubmit} disabled={saving}>
-                                {saving ? t.common.saving : modal.mode === 'create' ? t.vocab.notebooks.btnCreate : t.vocab.notebooks.btnSave}
+                                {saving ? t('common.saving') : modal.mode === 'create' ? t('vocab.notebooks.btnCreate') : t('vocab.notebooks.btnSave')}
                             </button>
                         </div>
                     </div>

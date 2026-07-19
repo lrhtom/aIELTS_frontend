@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useLang } from '../../i18n/LanguageContext';
+import type { Translations } from '../../i18n/translations';
 import { useAuth } from '../../contexts/AuthContext';
 import { getVocabAnalytics, getScheduledWords, type ScheduledBucket, type StateBucket, type PlanBrief } from '../../api/analytics';
-import PracticeAnalyticsPanel from './PracticeAnalyticsPanel';
+import PracticeAnalyticsPanel, { MockAnalyticsPanel } from './PracticeAnalyticsPanel';
 import '../../styles/analytics_page.css';
 
 /* ── Shared chart tooltip (same style as calendar .lc-tooltip) ── */
@@ -44,7 +45,7 @@ function formatDateFromOffset(days: number): string {
     return `${yyyy}-${mm}-${dd}`;
 }
 
-function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planId?: number; onClose: () => void; t: any }) {
+function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planId?: number; onClose: () => void; t: any }) { // eslint-disable-line @typescript-eslint/no-explicit-any
     const [words, setWords] = useState<{ word: string, zh: string }[] | null>(null);
     useEffect(() => {
         getScheduledWords(days, planId).then(setWords).catch(console.error);
@@ -224,6 +225,13 @@ function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planI
     );
 }
 
+// 9 分制 KPI 配色（与 PracticeAnalyticsPanel 的 bandClass 同阈值，五面板统一）
+function paBandClass(b: number): string {
+    if (b >= 7) return 'pa-acc-high';
+    if (b >= 5.5) return 'pa-acc-mid';
+    return 'pa-acc-low';
+}
+
 // 掌握程度分级（与后端 analytics_views.py 的 stability 阈值、图表配色一一对应）
 const MASTERY_LEVELS = [
     { key: 'unlearned', color: '#94a3b8' },
@@ -235,9 +243,9 @@ const MASTERY_LEVELS = [
 ] as const;
 
 export default function UserAnalytics() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
-    const [activeSkill, setActiveSkill] = useState<'vocab' | 'writing' | 'reading' | 'listening' | 'speaking'>('vocab');
+    const [activeSkill, setActiveSkill] = useState<'vocab' | 'writing' | 'reading' | 'listening' | 'speaking' | 'mock'>('vocab');
     const [showMasteryHelp, setShowMasteryHelp] = useState(false);
 
     const [plans, setPlans] = useState<PlanBrief[]>([]);
@@ -343,41 +351,34 @@ export default function UserAnalytics() {
         <div className="analytics-page">
             <div className="analytics-header">
                 <div>
-                    <h1>{t.analytics.title}</h1>
-                    <p>{t.analytics.subtitle}</p>
+                    <h1>{t('analytics.title')}</h1>
+                    <p>{t('analytics.subtitle')}</p>
                 </div>
             </div>
 
             <div className="analytics-tabs">
-                {(['vocab', 'listening', 'speaking', 'reading', 'writing'] as const).map(sk => {
-                    const enabled = sk === 'vocab' || sk === 'writing' || sk === 'reading' || sk === 'listening' || sk === 'speaking';
-                    return (
-                        <button
-                            key={sk}
-                            className={`analytics-tab ${activeSkill === sk ? 'analytics-tab--active' : ''}`}
-                            disabled={!enabled}
-                            title={!enabled ? t.analytics.comingSoon : undefined}
-                            onClick={() => {
-                                if (enabled) setActiveSkill(sk as typeof activeSkill);
-                            }}
-                        >
-                            {String(t.analytics[`${sk}Tab` as keyof typeof t.analytics])}
-                            {!enabled && <span className="analytics-tab-badge">{t.analytics.comingSoon}</span>}
-                        </button>
-                    );
-                })}
+                {(['vocab', 'listening', 'speaking', 'reading', 'writing', 'mock'] as const).map(sk => (
+                    <button
+                        key={sk}
+                        className={`analytics-tab ${activeSkill === sk ? 'analytics-tab--active' : ''}`}
+                        onClick={() => setActiveSkill(sk)}
+                    >
+                        {t(`analytics.${sk}Tab`)}
+                    </button>
+                ))}
             </div>
 
             {activeSkill === 'reading' && <PracticeAnalyticsPanel skill="reading" />}
             {activeSkill === 'listening' && <PracticeAnalyticsPanel skill="listening" />}
-            {activeSkill === 'speaking' && <SpeakingAnalyticsPanel t={t.analytics} />}
+            {activeSkill === 'speaking' && <SpeakingAnalyticsPanel t={t('analytics', { returnObjects: true }) as Translations['analytics']} />}
+            {activeSkill === 'mock' && <MockAnalyticsPanel />}
 
             {activeSkill === 'vocab' && (
                 <>
 
             {/* -- Plan selector -- */}
             <div className="analytics-bar">
-                <label className="analytics-select-label">{t.analytics.selectBook}</label>
+                <label className="analytics-select-label">{t('analytics.selectBook')}</label>
                 <select
                     className="analytics-select"
                     value={selectedPlanId ?? ''}
@@ -385,7 +386,7 @@ export default function UserAnalytics() {
                 >
                     {plans.map(p => (
                         <option key={p.id} value={p.id}>
-                            {p.name} ({p.word_count} {t.analytics.wordsUnit})
+                            {p.name} ({p.word_count} {t('analytics.wordsUnit')})
                         </option>
                     ))}
                 </select>
@@ -395,15 +396,15 @@ export default function UserAnalytics() {
             <div className="analytics-stats">
                 <div className="analytics-stat-card">
                     <span className="analytics-stat-num">{totalWords}</span>
-                    <span className="analytics-stat-label">{t.analytics.totalWords}</span>
+                    <span className="analytics-stat-label">{t('analytics.totalWords')}</span>
                 </div>
                 <div className="analytics-stat-card">
                     <span className="analytics-stat-num">{totalStudied}</span>
-                    <span className="analytics-stat-label">{t.analytics.studiedWords}</span>
+                    <span className="analytics-stat-label">{t('analytics.studiedWords')}</span>
                 </div>
                 <div className="analytics-stat-card">
                     <span className="analytics-stat-num">{studyRate}%</span>
-                    <span className="analytics-stat-label">{t.analytics.studyRate}</span>
+                    <span className="analytics-stat-label">{t('analytics.studyRate')}</span>
                 </div>
             </div>
 
@@ -413,18 +414,18 @@ export default function UserAnalytics() {
                     <div className="analytics-skeleton-chart" />
                 </div>
             ) : scheduledDist.length === 0 && stateDist.length === 0 ? (
-                <div className="analytics-empty">{t.analytics.noData}</div>
+                <div className="analytics-empty">{t('analytics.noData')}</div>
             ) : (
                 <div className="analytics-charts">
                     {forgettingData.length > 1 && (
                         <div className="analytics-chart-card">
-                            <h3 className="analytics-chart-title">{t.analytics.forgettingCurve}</h3>
-                            <ForgettingCurveChart data={forgettingData} t={t.analytics} />
+                            <h3 className="analytics-chart-title">{t('analytics.forgettingCurve')}</h3>
+                            <ForgettingCurveChart data={forgettingData} t={t('analytics', { returnObjects: true }) as Translations['analytics']} />
                         </div>
                     )}
                     <div className="analytics-chart-card">
                         <div className="analytics-chart-header">
-                            <h3 className="analytics-chart-title">{t.analytics.scheduledDist}</h3>
+                            <h3 className="analytics-chart-title">{t('analytics.scheduledDist')}</h3>
                             <div className="analytics-chart-toggle">
                                 <button
                                     className={`analytics-toggle-btn ${chartMode === 'line' ? 'active' : ''}`}
@@ -441,20 +442,20 @@ export default function UserAnalytics() {
                             </div>
                         </div>
                         {chartMode === 'line' ? (
-                            <ScheduledDistLine data={scheduledDist} maxCount={maxSchedCount} t={t.analytics} onDayClick={setModalDays} />
+                            <ScheduledDistLine data={scheduledDist} maxCount={maxSchedCount} t={t('analytics', { returnObjects: true }) as Translations['analytics']} onDayClick={setModalDays} />
                         ) : (
-                            <ScheduledDistBar data={scheduledDist} maxCount={maxSchedCount} t={t.analytics} onDayClick={setModalDays} />
+                            <ScheduledDistBar data={scheduledDist} maxCount={maxSchedCount} t={t('analytics', { returnObjects: true }) as Translations['analytics']} onDayClick={setModalDays} />
                         )}
                     </div>
                     <div className="analytics-chart-card">
                         <div className="analytics-chart-header">
-                            <h3 className="analytics-chart-title">{t.analytics.masteryDist}</h3>
+                            <h3 className="analytics-chart-title">{t('analytics.masteryDist')}</h3>
                             <button
                                 type="button"
                                 className={`analytics-info-btn ${showMasteryHelp ? 'is-active' : ''}`}
-                                aria-label={t.analytics.masteryHelp.ariaLabel}
+                                aria-label={t('analytics.masteryHelp.ariaLabel')}
                                 aria-expanded={showMasteryHelp}
-                                title={t.analytics.masteryHelp.ariaLabel}
+                                title={t('analytics.masteryHelp.ariaLabel')}
                                 onClick={() => setShowMasteryHelp(v => !v)}
                             >
                                 !
@@ -467,29 +468,29 @@ export default function UserAnalytics() {
                                         <li key={lvl.key} className="analytics-mastery-help-item">
                                             <span className="analytics-mastery-swatch" style={{ background: lvl.color }} />
                                             <span className="analytics-mastery-name">
-                                                {t.analytics.masteryHelp.levels[lvl.key].name}
+                                                {t(`analytics.masteryHelp.levels.${lvl.key}.name`)}
                                                 <span className="analytics-mastery-en">{lvl.key}</span>
                                             </span>
-                                            <span className="analytics-mastery-desc">{t.analytics.masteryHelp.levels[lvl.key].desc}</span>
+                                            <span className="analytics-mastery-desc">{t(`analytics.masteryHelp.levels.${lvl.key}.desc`)}</span>
                                         </li>
                                     ))}
                                 </ul>
-                                <p className="analytics-mastery-note">{t.analytics.masteryHelp.note}</p>
+                                <p className="analytics-mastery-note">{t('analytics.masteryHelp.note')}</p>
                             </div>
                         )}
-                        <MasteryBarChart data={stateDist} maxCount={maxStateCount} t={t.analytics.states} />
+                        <MasteryBarChart data={stateDist} maxCount={maxStateCount} t={t('analytics.states', { returnObjects: true }) as Translations['analytics']['states']} />
                     </div>
                 </div>
             )}
 
             {modalDays !== null && (
-                <ScheduledWordsModal days={modalDays} planId={selectedPlanId ?? undefined} onClose={() => setModalDays(null)} t={t.analytics} />
+                <ScheduledWordsModal days={modalDays} planId={selectedPlanId ?? undefined} onClose={() => setModalDays(null)} t={t('analytics', { returnObjects: true }) as Translations['analytics']} />
             )}
             </>
             )}
 
             {activeSkill === 'writing' && (
-                <WritingAnalyticsPanel t={t.analytics} />
+                <WritingAnalyticsPanel t={t('analytics', { returnObjects: true }) as Translations['analytics']} />
             )}
         </div>
     );
@@ -847,7 +848,7 @@ function ForgettingCurveChart({ data, t }: { data: { day: number; words: number 
 /* ── Writing Analytics Components ── */
 import { getWritingAnalytics, type WritingAnalytics, type WritingSkillsAvg } from '../../api/analytics';
 
-function WritingAnalyticsPanel({ t }: { t: any }) {
+function WritingAnalyticsPanel({ t }: { t: any }) { // eslint-disable-line @typescript-eslint/no-explicit-any
     const { user } = useAuth();
     const [data, setData] = useState<WritingAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
@@ -860,23 +861,23 @@ function WritingAnalyticsPanel({ t }: { t: any }) {
     }, []);
 
     if (loading) {
+        return <div className="pa-panel"><div className="pa-loading">{t.practice.loading}</div></div>;
+    }
+
+    const validTask2Trend = data ? data.task2_trend.filter(d => d.overall > 0) : [];
+    const validTask1Trend = data ? data.task1_trend.filter(d => d.overall > 0) : [];
+
+    if (!data || (validTask1Trend.length === 0 && validTask2Trend.length === 0)) {
         return (
-            <div className="analytics-loading">
-                <div className="analytics-skeleton-chart" />
-                <div className="analytics-skeleton-chart" />
+            <div className="pa-panel">
+                <div className="pa-skill-card">
+                    <div className="pa-empty">
+                        <div className="pa-empty-icon">✍️</div>
+                        <div className="pa-empty-title">{t.noData}</div>
+                    </div>
+                </div>
             </div>
         );
-    }
-
-    if (!data || (data.task1_trend.length === 0 && data.task2_trend.length === 0)) {
-        return <div className="analytics-empty">{t.noData}</div>;
-    }
-
-    const validTask2Trend = data.task2_trend.filter(d => d.overall > 0);
-    const validTask1Trend = data.task1_trend.filter(d => d.overall > 0);
-
-    if (validTask1Trend.length === 0 && validTask2Trend.length === 0) {
-        return <div className="analytics-empty">{t.noData}</div>;
     }
 
     // Pick the truly latest record across both tasks by date string (backend formats as 'MM-DD HH:MM' and
@@ -892,47 +893,92 @@ function WritingAnalyticsPanel({ t }: { t: any }) {
         latestScore = lastT2.overall;
     }
 
+    // 平均分 + 最近批改（大小作文合并，新→旧）
+    const allRecords = [
+        ...validTask1Trend.map(r => ({ ...r, taskLabel: t.task1 as string })),
+        ...validTask2Trend.map(r => ({ ...r, taskLabel: t.task2 as string })),
+    ];
+    const avgScore = allRecords.reduce((s, r) => s + r.overall, 0) / allRecords.length;
+    const recent = [...allRecords].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 10);
+    const target = user?.target_writing ? Number(user.target_writing) : null;
+
     return (
-        <div className="analytics-charts">
-            <div className="analytics-stats" style={{ marginBottom: '24px', display: 'flex', gap: '16px' }}>
-                <div className="analytics-stat-card" style={{ flex: 1 }}>
-                    <span className="analytics-stat-num">{data.total_corrections}</span>
-                    <span className="analytics-stat-label">{t.totalCorrections}</span>
+        <div className="pa-panel">
+            <div className="pa-skill-card">
+                <div className="pa-skill-header">
+                    <span className="pa-skill-icon">✍️</span>
+                    <span className="pa-skill-title">{t.writingPanelTitle}</span>
                 </div>
-                <div className="analytics-stat-card" style={{ flex: 1 }}>
-                    <span className="analytics-stat-num">{latestScore !== null ? latestScore.toFixed(1) : '—'}</span>
-                    <span className="analytics-stat-label">{t.latestScore}</span>
-                </div>
-            </div>
 
-            {validTask2Trend.length > 0 && (
-                <div className="analytics-chart-card">
-                    <h3 className="analytics-chart-title">{t.task2Trend}</h3>
-                    <WritingScoreLineChart data={validTask2Trend} color="#f59e0b" t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
+                <div className="pa-kpi-row">
+                    <div className={`pa-kpi-main ${latestScore !== null ? paBandClass(latestScore) : ''}`}>
+                        <div className="pa-kpi-value">{latestScore !== null ? latestScore.toFixed(1) : '—'}</div>
+                        <div className="pa-kpi-label">{t.kpiLatestScore}</div>
+                    </div>
+                    <div className="pa-kpi-sub">
+                        <div><span className="pa-kpi-num">{avgScore.toFixed(1)}</span></div>
+                        <div className="pa-kpi-sublabel">{t.kpiAvgBand}</div>
+                    </div>
+                    <div className="pa-kpi-sub">
+                        <div><span className="pa-kpi-num">{data.total_corrections}</span></div>
+                        <div className="pa-kpi-sublabel">{t.totalCorrections}</div>
+                    </div>
                 </div>
-            )}
 
-            {validTask1Trend.length > 0 && (
-                <div className="analytics-chart-card">
-                    <h3 className="analytics-chart-title">{t.task1Trend}</h3>
-                    <WritingScoreLineChart data={validTask1Trend} color="#3b82f6" t={t} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
-                </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                {validTask2Trend.length > 0 && data.task2_skills_avg && (
-                    <div className="analytics-chart-card" style={{ flex: '1 1 300px' }}>
-                        <h3 className="analytics-chart-title">{t.skillsAvg.task2}</h3>
-                        <WritingSkillsRadarChart skills={data.task2_skills_avg} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
+                {validTask2Trend.length > 0 && (
+                    <div className="pa-section">
+                        <div className="pa-section-title">{t.task2Trend}</div>
+                        <div className="pa-trend-chart">
+                            <WritingScoreLineChart data={validTask2Trend} color="#f59e0b" t={t} targetScore={target} />
+                        </div>
                     </div>
                 )}
-                
-                {validTask1Trend.length > 0 && data.task1_skills_avg && (
-                    <div className="analytics-chart-card" style={{ flex: '1 1 300px' }}>
-                        <h3 className="analytics-chart-title">{t.skillsAvg.task1}</h3>
-                        <WritingSkillsRadarChart skills={data.task1_skills_avg} targetScore={user?.target_writing ? Number(user.target_writing) : null} />
+
+                {validTask1Trend.length > 0 && (
+                    <div className="pa-section">
+                        <div className="pa-section-title">{t.task1Trend}</div>
+                        <div className="pa-trend-chart">
+                            <WritingScoreLineChart data={validTask1Trend} color="#3b82f6" t={t} targetScore={target} />
+                        </div>
                     </div>
                 )}
+
+                <div className="pa-section">
+                    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                        {validTask2Trend.length > 0 && data.task2_skills_avg && (
+                            <div style={{ flex: '1 1 300px' }}>
+                                <div className="pa-section-title">{t.skillsAvg.task2}</div>
+                                <WritingSkillsRadarChart skills={data.task2_skills_avg} targetScore={target} />
+                            </div>
+                        )}
+                        {validTask1Trend.length > 0 && data.task1_skills_avg && (
+                            <div style={{ flex: '1 1 300px' }}>
+                                <div className="pa-section-title">{t.skillsAvg.task1}</div>
+                                <WritingSkillsRadarChart skills={data.task1_skills_avg} targetScore={target} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="pa-section">
+                    <div className="pa-section-title">{t.recentCorrections}</div>
+                    <div className="pa-attempts-list">
+                        {recent.map(r => (
+                            <div key={`${r.taskLabel}-${r.id}`} className="pa-attempt-row">
+                                <span className="pa-attempt-date">{r.date}</span>
+                                <span className="pa-attempt-title">{r.taskLabel}</span>
+                                <span className="pa-attempt-subtype">
+                                    {[r.tr, r.cc, r.lr, r.gra].every(v => v !== null)
+                                        ? `TR${r.tr} CC${r.cc} LR${r.lr} GRA${r.gra}`
+                                        : '—'}
+                                </span>
+                                <span className={`pa-attempt-acc ${paBandClass(r.overall)}`}>
+                                    Band {r.overall.toFixed(1)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -950,7 +996,7 @@ function ChartLegendToggle({ label, color, checked, onChange }: { label: string,
     );
 }
 
-function WritingScoreLineChart({ data, color, t, targetScore }: { data: WritingRecord[]; color: string; t: any; targetScore?: number | null }) {
+function WritingScoreLineChart({ data, color, t, targetScore }: { data: WritingRecord[]; color: string; t: any; targetScore?: number | null }) { // eslint-disable-line @typescript-eslint/no-explicit-any
     const [tip, setTip] = useState<{ x: number; y: number; lines: React.ReactNode[] } | null>(null);
     const hide = useCallback(() => setTip(null), []);
 
@@ -1108,6 +1154,7 @@ function WritingScoreLineChart({ data, color, t, targetScore }: { data: WritingR
                     </text>
                 ))}
             </svg>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {tip && <ChartTooltip x={tip.x} y={tip.y} lines={tip.lines as any} />}
         </>
     );
@@ -1216,8 +1263,7 @@ import { getSpeakingAnalytics, type SpeakingAnalytics, type SpeakingTrendItem } 
 
 function SpeakingAnalyticsPanel({ t }: { t: any }) { // eslint-disable-line @typescript-eslint/no-explicit-any
     const { user } = useAuth();
-    const { translations: tAll } = useLang();
-    const sm = tAll.speakingConfig.summary;
+    const { t: tRoot } = useLang();
     const [data, setData] = useState<SpeakingAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -1229,61 +1275,93 @@ function SpeakingAnalyticsPanel({ t }: { t: any }) { // eslint-disable-line @typ
     }, []);
 
     if (loading) {
-        return (
-            <div className="analytics-loading">
-                <div className="analytics-skeleton-chart" />
-                <div className="analytics-skeleton-chart" />
-            </div>
-        );
+        return <div className="pa-panel"><div className="pa-loading">{t.practice.loading}</div></div>;
     }
 
     // 数据源 = AI 题库里已生成总结报告的口语会话（聊到一半没出报告的不计入）
     if (!data || data.trend.length === 0) {
-        return <div className="analytics-empty">{t.noData}</div>;
+        return (
+            <div className="pa-panel">
+                <div className="pa-skill-card">
+                    <div className="pa-empty">
+                        <div className="pa-empty-icon">🗣️</div>
+                        <div className="pa-empty-title">{t.noData}</div>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     const trend = data.trend;
     const latest = trend[trend.length - 1];
     const avgOverall = trend.reduce((a, r) => a + r.overall, 0) / trend.length;
     const target = user?.target_speaking ? Number(user.target_speaking) : null;
+    const recentSessions = [...trend].reverse().slice(0, 10);
 
     // 雷达图只用 7 个核心维度（所有模式共有）；ARE/coherence/depth 属模式专有，不进雷达
     const RADAR_DIMS: { key: string; label: string }[] = [
-        { key: 'accuracy',      label: sm.metricAccuracy },
-        { key: 'pronunciation', label: sm.metricPronunciation },
-        { key: 'fluency',       label: sm.metricFluency },
-        { key: 'completeness',  label: sm.metricCompleteness },
-        { key: 'grammar',       label: sm.metricGrammar },
-        { key: 'vocab',         label: sm.metricVocab },
-        { key: 'relevance',     label: sm.metricRelevance },
+        { key: 'accuracy',      label: tRoot('speakingConfig.summary.metricAccuracy') },
+        { key: 'pronunciation', label: tRoot('speakingConfig.summary.metricPronunciation') },
+        { key: 'fluency',       label: tRoot('speakingConfig.summary.metricFluency') },
+        { key: 'completeness',  label: tRoot('speakingConfig.summary.metricCompleteness') },
+        { key: 'grammar',       label: tRoot('speakingConfig.summary.metricGrammar') },
+        { key: 'vocab',         label: tRoot('speakingConfig.summary.metricVocab') },
+        { key: 'relevance',     label: tRoot('speakingConfig.summary.metricRelevance') },
     ];
     const radarData = RADAR_DIMS.map(d => ({ label: d.label, score: data.skills_avg[d.key] ?? 0 }));
 
     return (
-        <div className="analytics-charts">
-            <div className="analytics-stats" style={{ marginBottom: '24px', display: 'flex', gap: '16px' }}>
-                <div className="analytics-stat-card" style={{ flex: 1 }}>
-                    <span className="analytics-stat-num">{data.total_sessions}</span>
-                    <span className="analytics-stat-label">{t.speakingSessions}</span>
+        <div className="pa-panel">
+            <div className="pa-skill-card">
+                <div className="pa-skill-header">
+                    <span className="pa-skill-icon">🗣️</span>
+                    <span className="pa-skill-title">{t.speakingPanelTitle}</span>
                 </div>
-                <div className="analytics-stat-card" style={{ flex: 1 }}>
-                    <span className="analytics-stat-num">{latest ? latest.overall.toFixed(1) : '—'}</span>
-                    <span className="analytics-stat-label">{t.latestScore}</span>
-                </div>
-                <div className="analytics-stat-card" style={{ flex: 1 }}>
-                    <span className="analytics-stat-num">{avgOverall.toFixed(1)}</span>
-                    <span className="analytics-stat-label">{t.avgScore}</span>
-                </div>
-            </div>
 
-            <div className="analytics-chart-card">
-                <h3 className="analytics-chart-title">{t.speakingTrend}</h3>
-                <SpeakingScoreLineChart data={trend} color="#14b8a6" t={t} targetScore={target} />
-            </div>
+                <div className="pa-kpi-row">
+                    <div className={`pa-kpi-main ${latest ? paBandClass(latest.overall) : ''}`}>
+                        <div className="pa-kpi-value">{latest ? latest.overall.toFixed(1) : '—'}</div>
+                        <div className="pa-kpi-label">{t.latestScore}</div>
+                    </div>
+                    <div className="pa-kpi-sub">
+                        <div><span className="pa-kpi-num">{avgOverall.toFixed(1)}</span></div>
+                        <div className="pa-kpi-sublabel">{t.avgScore}</div>
+                    </div>
+                    <div className="pa-kpi-sub">
+                        <div><span className="pa-kpi-num">{data.total_sessions}</span></div>
+                        <div className="pa-kpi-sublabel">{t.speakingSessions}</div>
+                    </div>
+                </div>
 
-            <div className="analytics-chart-card" style={{ maxWidth: '560px' }}>
-                <h3 className="analytics-chart-title">{t.speakingRadar}</h3>
-                <SpeakingSkillsRadarChart data={radarData} targetScore={target} />
+                <div className="pa-section">
+                    <div className="pa-section-title">{t.speakingTrend}</div>
+                    <div className="pa-trend-chart">
+                        <SpeakingScoreLineChart data={trend} color="#14b8a6" t={t} targetScore={target} />
+                    </div>
+                </div>
+
+                <div className="pa-section">
+                    <div className="pa-section-title">{t.speakingRadar}</div>
+                    <div style={{ maxWidth: '560px' }}>
+                        <SpeakingSkillsRadarChart data={radarData} targetScore={target} />
+                    </div>
+                </div>
+
+                <div className="pa-section">
+                    <div className="pa-section-title">{t.recentSessions}</div>
+                    <div className="pa-attempts-list">
+                        {recentSessions.map(s => (
+                            <div key={s.id} className="pa-attempt-row">
+                                <span className="pa-attempt-date">{s.date}</span>
+                                <span className="pa-attempt-title">{s.mode}</span>
+                                <span className="pa-attempt-subtype" />
+                                <span className={`pa-attempt-acc ${paBandClass(s.overall)}`}>
+                                    Band {s.overall.toFixed(1)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -1394,6 +1472,7 @@ function SpeakingScoreLineChart({ data, color, t, targetScore }: { data: Speakin
                     </text>
                 ))}
             </svg>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {tip && <ChartTooltip x={tip.x} y={tip.y} lines={tip.lines as any} />}
         </>
     );

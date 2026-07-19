@@ -156,7 +156,7 @@ export default function SpeakingChatPageWrapper() {
 function SpeakingChatPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const state = location.state as {
         vocabInput?: string,
         mode?: SpeakingMode,
@@ -317,7 +317,7 @@ function SpeakingChatPage() {
             if (left <= 0) {
                 if (reactionTimerRef.current) { clearInterval(reactionTimerRef.current); reactionTimerRef.current = null; }
                 setReactionLeft(null);
-                showToast(t.mock.examMode.speakingReactionTimeout, 'info');
+                showToast(t('mock.examMode.speakingReactionTimeout'), 'info');
                 handleSend('(No response)');
             }
         }, 1000);
@@ -403,7 +403,7 @@ function SpeakingChatPage() {
                     setStatusSync(ua.finished === true ? 'finished' : 'idle');
                 } catch {
                     if (!isUnmounted) {
-                        showToast(t.speakingChat.errLoadSession, 'error');
+                        showToast(t('speakingChat.errLoadSession'), 'error');
                         navigate('/practice/ai/bank?skill=speaking', { replace: true });
                     }
                 }
@@ -707,7 +707,7 @@ function SpeakingChatPage() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const SR = getSRConstructor() as any;
             if (!SR) {
-                setRecError(t.speakingChat.errBrowserNoSpeech);
+                setRecError(t('speakingChat.errBrowserNoSpeech'));
                 setStatusSync('idle');
                 setIsMicUnusable(true);
                 setShowTextInput(true);
@@ -765,7 +765,7 @@ function SpeakingChatPage() {
                         if (text) {
                             handleSend(text, blob.size > 1000 ? blob : undefined);
                         } else {
-                            setRecError(t.speakingChat.errNoSpeech);
+                            setRecError(t('speakingChat.errNoSpeech'));
                             setStatusSync('idle');
                         }
                     });
@@ -776,7 +776,7 @@ function SpeakingChatPage() {
                     if (text) {
                         handleSend(text);
                     } else {
-                        setRecError(t.speakingChat.errNoSpeech);
+                        setRecError(t('speakingChat.errNoSpeech'));
                         setStatusSync('idle');
                     }
                 }
@@ -791,15 +791,15 @@ function SpeakingChatPage() {
                 stopAudioVisualizer();
                 stopRecTimer();
                 if (e.error === 'no-speech') {
-                    setRecError(t.speakingChat.errNoDetectSpeech);
+                    setRecError(t('speakingChat.errNoDetectSpeech'));
                 } else if (e.error === 'network') {
-                    setRecError(t.speakingChat.errNetworkNeeded);
+                    setRecError(t('speakingChat.errNetworkNeeded'));
                 } else if (e.error === 'not-allowed') {
-                    setRecError(t.speakingChat.errMicDenied);
+                    setRecError(t('speakingChat.errMicDenied'));
                     setIsMicUnusable(true);
                     setShowTextInput(true);
                 } else {
-                    setRecError(t.speakingChat.errUnknown.replace('{msg}', String(e.error)));
+                    setRecError(t('speakingChat.errUnknown').replace('{msg}', String(e.error)));
                     setIsMicUnusable(true);
                     setShowTextInput(true);
                 }
@@ -845,15 +845,15 @@ function SpeakingChatPage() {
                 const err = e as DOMException | Error;
                 const name = (err as DOMException).name || '';
                 if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-                    setRecError(t.speakingChat.errMicDeniedLong);
+                    setRecError(t('speakingChat.errMicDeniedLong'));
                 } else if (name === 'NotFoundError') {
-                    setRecError(t.speakingChat.errMicNotFound);
+                    setRecError(t('speakingChat.errMicNotFound'));
                 } else if (name === 'NotReadableError') {
-                    setRecError(t.speakingChat.errMicBusy);
+                    setRecError(t('speakingChat.errMicBusy'));
                 } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    setRecError(t.speakingChat.errMicUnsupported);
+                    setRecError(t('speakingChat.errMicUnsupported'));
                 } else {
-                    setRecError(t.speakingChat.errMicStartFail);
+                    setRecError(t('speakingChat.errMicStartFail'));
                 }
                 setIsMicUnusable(true);
                 setShowTextInput(true);
@@ -960,7 +960,7 @@ function SpeakingChatPage() {
             if (isExamMode && !currentExamItem) {
                 pendingRef.current = false;
                 setStatusSync('idle');
-                setChatHistory(h => [...h, { role: 'system', content: t.speakingChat.sysMissingQuestion }]);
+                setChatHistory(h => [...h, { role: 'system', content: t('speakingChat.sysMissingQuestion') }]);
                 return;
             }
             if (activeMode === 'scenario') {
@@ -1132,18 +1132,18 @@ function SpeakingChatPage() {
                 if (isContinue === 0) {
                     if (isFullTestMode) {
                         if (fullTestPhase === 'part3' && currentQuestionIndex + 1 >= activeExamQuestions.length) {
-                            newHistory.push({ role: 'system', content: t.speakingChat.sysFullTestDone });
+                            newHistory.push({ role: 'system', content: t('speakingChat.sysFullTestDone') });
                         }
                     } else if (isExamMode) {
                         const effectiveMode = isFullTestMode ? fullTestPhase : activeMode;
                         const partLabel = effectiveMode === 'part1' ? 'Part 1' : effectiveMode === 'part2' ? 'Part 2' : 'Part 3';
                         if (effectiveMode === 'part2') {
-                            newHistory.push({ role: 'system', content: t.speakingChat.sysPart2Done });
+                            newHistory.push({ role: 'system', content: t('speakingChat.sysPart2Done') });
                         } else {
-                            newHistory.push({ role: 'system', content: t.speakingChat.sysPartDone.replace('{label}', partLabel) });
+                            newHistory.push({ role: 'system', content: t('speakingChat.sysPartDone').replace('{label}', partLabel) });
                         }
                     } else {
-                        newHistory.push({ role: 'system', content: t.speakingChat.sysPracticeDone });
+                        newHistory.push({ role: 'system', content: t('speakingChat.sysPracticeDone') });
                     }
                 }
                 return newHistory;
@@ -1158,11 +1158,11 @@ function SpeakingChatPage() {
         } catch (error: unknown) {
             pendingRef.current = false;
 
-            if (typeof error === 'object' && error !== null && ('name' in error && (error as { name: string }).name === 'ATBalanceError' || 'message' in error && (error as { message: string }).message === t.speakingChat.errATInsufficient)) {
-                showToast((error as { message: string }).message, 'error', t.speakingChat.errATInsufficientTitle);
-                setChatHistory(h => [...h, { role: 'system', content: t.speakingChat.errATInsufficientBody }]);
+            if (typeof error === 'object' && error !== null && ('name' in error && (error as { name: string }).name === 'ATBalanceError' || 'message' in error && (error as { message: string }).message === t('speakingChat.errATInsufficient'))) {
+                showToast((error as { message: string }).message, 'error', t('speakingChat.errATInsufficientTitle'));
+                setChatHistory(h => [...h, { role: 'system', content: t('speakingChat.errATInsufficientBody') }]);
             } else {
-                setChatHistory(h => [...h, { role: 'system', content: t.speakingChat.errAIFail }]);
+                setChatHistory(h => [...h, { role: 'system', content: t('speakingChat.errAIFail') }]);
             }
             setStatusSync('idle');
         }
@@ -1188,22 +1188,22 @@ function SpeakingChatPage() {
 
     // ── UI helpers ─────────────────────────────────────────────────────────
     const STATUS_LABEL: Record<Status, string> = {
-        loading: t.speakingChat.statusLoading,
-        mic_loading: t.speakingChat.statusMicLoading,
-        idle: t.speakingChat.statusIdle,
-        listening: t.speakingChat.statusListening,
-        processing: t.speakingChat.statusProcessing,
-        speaking: t.speakingChat.statusSpeaking,
-        finished: t.speakingChat.statusFinished,
+        loading: t('speakingChat.statusLoading'),
+        mic_loading: t('speakingChat.statusMicLoading'),
+        idle: t('speakingChat.statusIdle'),
+        listening: t('speakingChat.statusListening'),
+        processing: t('speakingChat.statusProcessing'),
+        speaking: t('speakingChat.statusSpeaking'),
+        finished: t('speakingChat.statusFinished'),
     };
     const MIC_LABEL: Record<Status, string> = {
-        loading: t.speakingChat.hintLoading,
-        mic_loading: t.speakingChat.micLoadingLabel,
-        idle: t.speakingChat.idleLabel,
-        listening: t.speakingChat.listeningLabel,
-        processing: t.speakingChat.processingLabel,
-        speaking: t.speakingChat.speakingLabel,
-        finished: t.speakingChat.finishedLabel,
+        loading: t('speakingChat.hintLoading'),
+        mic_loading: t('speakingChat.micLoadingLabel'),
+        idle: t('speakingChat.idleLabel'),
+        listening: t('speakingChat.listeningLabel'),
+        processing: t('speakingChat.processingLabel'),
+        speaking: t('speakingChat.speakingLabel'),
+        finished: t('speakingChat.finishedLabel'),
     };
     const formatTime = (s: number) =>
         `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -1234,7 +1234,7 @@ function SpeakingChatPage() {
                 : await ATInterceptor.bankGeneratePart3(activeExamQuestions[0]?.topic || '');
             const nextQuestions = (res.data?.questions ?? []) as ExamQuestion[];
             if (!nextQuestions.length) {
-                throw new Error(t.speakingChat.errFetchPartFail.replace('{label}', nextPhase === 'part2' ? 'Part 2' : 'Part 3'));
+                throw new Error(t('speakingChat.errFetchPartFail').replace('{label}', nextPhase === 'part2' ? 'Part 2' : 'Part 3'));
             }
 
             const first = nextQuestions[0];
@@ -1250,7 +1250,7 @@ function SpeakingChatPage() {
             
             setChatHistory(h => [
                 ...h,
-                { role: 'system', content: t.speakingChat.sysEnterPart.replace('{n}', String(partNum)) },
+                { role: 'system', content: t('speakingChat.sysEnterPart').replace('{n}', String(partNum)) },
                 { role: 'assistant', content: transitionMsg }
             ]);
             contextRef.current = [...contextRef.current, { role: 'assistant', content: transitionMsg }];
@@ -1258,9 +1258,9 @@ function SpeakingChatPage() {
             // Play TTS for the transition message
             playTTS(transitionMsg, false);
         } catch (error: unknown) {
-            const msg = (error as { message?: string })?.message || t.speakingChat.errLoadNextPartFail;
+            const msg = (error as { message?: string })?.message || t('speakingChat.errLoadNextPartFail');
             showToast(msg, 'error');
-            setChatHistory(h => [...h, { role: 'system', content: t.speakingChat.sysWarn.replace('{msg}', msg) }]);
+            setChatHistory(h => [...h, { role: 'system', content: t('speakingChat.sysWarn').replace('{msg}', msg) }]);
             setStatusSync('finished');
         } finally {
             setLoadingNextPart(false);
@@ -1276,7 +1276,7 @@ function SpeakingChatPage() {
             const res = await ATInterceptor.bankGeneratePart3(activeExamQuestions[0]?.topic || '');
             const nextQuestions = (res.data?.questions ?? []) as ExamQuestion[];
             if (!nextQuestions.length) {
-                throw new Error(t.speakingChat.errPart3Fetch);
+                throw new Error(t('speakingChat.errPart3Fetch'));
             }
 
             const first = nextQuestions[0];
@@ -1289,9 +1289,9 @@ function SpeakingChatPage() {
             setChatHistory(h => [...h, { role: 'assistant', content: part3Welcome }]);
             contextRef.current = [...contextRef.current, { role: 'assistant', content: part3Welcome }];
             setStatusSync('idle');
-            showToast(t.speakingChat.toastPart3Enter, 'success');
+            showToast(t('speakingChat.toastPart3Enter'), 'success');
         } catch (error: unknown) {
-            const msg = (error as { message?: string })?.message || t.speakingChat.toastPart3Fail;
+            const msg = (error as { message?: string })?.message || t('speakingChat.toastPart3Fail');
             showToast(msg, 'error');
             setStatusSync('finished');
         } finally {
@@ -1304,7 +1304,7 @@ function SpeakingChatPage() {
             {/* 全套模拟：5 秒反应倒计时（Part 2 备考期不出现） */}
             {reactionLeft !== null && (
                 <div className="mock-reaction-badge">
-                    ⏱ {t.mock.examMode.speakingReaction.replace('{s}', String(reactionLeft))}
+                    ⏱ {t('mock.examMode.speakingReaction').replace('{s}', String(reactionLeft))}
                 </div>
             )}
             {/* 背景噪音环境音：静音/外放开关（仅场景模式开启 noise 时出现）*/}
@@ -1313,31 +1313,31 @@ function SpeakingChatPage() {
                     type="button"
                     className="sc-ambience-toggle"
                     onClick={() => setAmbienceMuted(m => !m)}
-                    title={ambienceMuted ? t.speakingChat.ambienceUnmute : t.speakingChat.ambienceMute}
+                    title={ambienceMuted ? t('speakingChat.ambienceUnmute') : t('speakingChat.ambienceMute')}
                 >
                     <span>{ambienceMuted ? '🔇' : '🔊'}</span>
-                    {t.speakingChat.ambienceLabel}
+                    {t('speakingChat.ambienceLabel')}
                 </button>
             )}
             {/* ── Sidebar: Word Basket & Ai Settings ── */}
             <aside className="sc-sidebar">
                 <div className="sc-sidebar-header">
-                    <button className="sc-back-btn" onClick={() => { if (mockId) { mockConfirmExit(); } else { navigate('/practice/ai/bank?skill=speaking'); } }}>{mockId ? t.mock.examMode.backToHub : t.speakingChat.backBtn}</button>
-                    <h3>{t.speakingChat.vocabHeading}</h3>
+                    <button className="sc-back-btn" onClick={() => { if (mockId) { mockConfirmExit(); } else { navigate('/practice/ai/bank?skill=speaking'); } }}>{mockId ? t('mock.examMode.backToHub') : t('speakingChat.backBtn')}</button>
+                    <h3>{t('speakingChat.vocabHeading')}</h3>
                 </div>
 
                 <div style={{ padding: '0 1rem 1rem 1rem', borderBottom: '1px solid var(--color-border)', marginBottom: '1rem' }}>
                     <div className="control-group">
-                        <AiModelSelector label={t.components.aiModel.label} description="" />
+                        <AiModelSelector label={t('components.aiModel.label')} description="" />
                     </div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: 'var(--color-text-secondary)', marginTop: '1rem' }}>
                         <input type="checkbox" checked={showTimer} onChange={e => setShowTimer(e.target.checked)} />
-                        {t.speakingChat.showTimer}
+                        {t('speakingChat.showTimer')}
                     </label>
                 </div>
 
                 <div className="sc-word-list">
-                    {words.length === 0 && <p className="sc-no-words">{t.speakingChat.noWords}</p>}
+                    {words.length === 0 && <p className="sc-no-words">{t('speakingChat.noWords')}</p>}
                     {words.map((w, i) => (
                         <div key={i} className={`sc-word-item${w.count > 0 ? ' used' : ''}`}>
                             <div className="sc-word-text">
@@ -1370,7 +1370,7 @@ function SpeakingChatPage() {
                                                 return next;
                                             })}
                                         >
-                                            {expandedMsgs.has(i) ? t.speakingChat.hideText : t.speakingChat.showText}
+                                            {expandedMsgs.has(i) ? t('speakingChat.hideText') : t('speakingChat.showText')}
                                         </button>
                                         {expandedMsgs.has(i) && (
                                             <MarkdownBubble content={msg.content} />
@@ -1386,46 +1386,46 @@ function SpeakingChatPage() {
                             {msg.scores && (
                                 <details className="sc-score-panel">
                                     <summary>
-                                        {t.speakingChat.viewMultiScore}
+                                        {t('speakingChat.viewMultiScore')}
                                     </summary>
                                     <div className="sc-score-details">
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">{t.speakingChat.scoreAccuracy}</span>
+                                            <span className="sc-score-label">{t('speakingChat.scoreAccuracy')}</span>
                                             <span className="sc-score-value">{msg.scores.accuracy != null ? (Math.round(msg.scores.accuracy * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">{t.speakingChat.scorePronunciation}</span>
+                                            <span className="sc-score-label">{t('speakingChat.scorePronunciation')}</span>
                                             <span className="sc-score-value">{msg.scores.pronunciation != null ? (Math.round(msg.scores.pronunciation * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">{t.speakingChat.scoreFluency}</span>
+                                            <span className="sc-score-label">{t('speakingChat.scoreFluency')}</span>
                                             <span className="sc-score-value">{msg.scores.fluency != null ? (Math.round(msg.scores.fluency * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">{t.speakingChat.scoreCompleteness}</span>
+                                            <span className="sc-score-label">{t('speakingChat.scoreCompleteness')}</span>
                                             <span className="sc-score-value">{msg.scores.completeness != null ? (Math.round(msg.scores.completeness * 9 / 100 * 2) / 2).toFixed(1) : '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-divider" />
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">{t.speakingChat.scoreGrammar}</span>
+                                            <span className="sc-score-label">{t('speakingChat.scoreGrammar')}</span>
                                             <span className="sc-score-value">{msg.scores.grammar ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">{t.speakingChat.scoreRelevance}</span>
+                                            <span className="sc-score-label">{t('speakingChat.scoreRelevance')}</span>
                                             <span className="sc-score-value">{msg.scores.relevance ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         <div className="sc-score-item">
-                                            <span className="sc-score-label">{t.speakingChat.scoreVocab}</span>
+                                            <span className="sc-score-label">{t('speakingChat.scoreVocab')}</span>
                                             <span className="sc-score-value">{msg.scores.vocab ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                         </div>
                                         {(msg.scores.coherence !== undefined || msg.scores.depth !== undefined) && (
                                             <>
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label">{t.speakingChat.scoreCoherence}</span>
+                                                    <span className="sc-score-label">{t('speakingChat.scoreCoherence')}</span>
                                                     <span className="sc-score-value">{msg.scores.coherence ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label">{t.speakingChat.scoreDepth}</span>
+                                                    <span className="sc-score-label">{t('speakingChat.scoreDepth')}</span>
                                                     <span className="sc-score-value">{msg.scores.depth ?? '--'} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 {msg.scores.feedback && (
@@ -1439,15 +1439,15 @@ function SpeakingChatPage() {
                                             <>
                                                 <div className="sc-score-divider" />
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label" title={t.speakingChat.areAnswerTitle}>{t.speakingChat.areAnswer}</span>
+                                                    <span className="sc-score-label" title={t('speakingChat.areAnswerTitle')}>{t('speakingChat.areAnswer')}</span>
                                                     <span className="sc-score-value">{msg.scores.are_a} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label" title={t.speakingChat.areReasonTitle}>{t.speakingChat.areReason}</span>
+                                                    <span className="sc-score-label" title={t('speakingChat.areReasonTitle')}>{t('speakingChat.areReason')}</span>
                                                     <span className="sc-score-value">{msg.scores.are_r} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label" title={t.speakingChat.areExampleTitle}>{t.speakingChat.areExample}</span>
+                                                    <span className="sc-score-label" title={t('speakingChat.areExampleTitle')}>{t('speakingChat.areExample')}</span>
                                                     <span className="sc-score-value">{msg.scores.are_e} <span style={{ fontSize: '11px', color: '#9ca3af' }}>/ 9.0</span></span>
                                                 </div>
                                                 {msg.scores.are_feedback && (
@@ -1461,14 +1461,14 @@ function SpeakingChatPage() {
                                             <>
                                                 <div className="sc-score-divider" />
                                                 <div className="sc-score-item">
-                                                    <span className="sc-score-label">{t.speakingChat.durationChars}</span>
+                                                    <span className="sc-score-label">{t('speakingChat.durationChars')}</span>
                                                     <span className="sc-score-value" style={{ fontSize: '12px' }}>
                                                         {msg.scores.duration}s | {msg.scores.word_count} words
                                                     </span>
                                                 </div>
                                                 {msg.scores.weighted_total_score !== undefined && (
                                                     <div className="sc-score-item" style={{ marginTop: '6px', backgroundColor: '#ecfeff', padding: '6px', borderRadius: '4px' }}>
-                                                        <span className="sc-score-label" style={{ color: '#0891b2', fontWeight: 600 }}>{t.speakingChat.weightedAvg}</span>
+                                                        <span className="sc-score-label" style={{ color: '#0891b2', fontWeight: 600 }}>{t('speakingChat.weightedAvg')}</span>
                                                         <span className="sc-score-value" style={{ color: '#0891b2', fontWeight: 600 }}>
                                                             {msg.scores.weighted_total_score.toFixed(1)} <span style={{ fontSize: '11px', color: '#67e8f9' }}>/ 9.0</span>
                                                         </span>
@@ -1485,7 +1485,7 @@ function SpeakingChatPage() {
                                             <>
                                                 <div className="sc-score-divider" />
                                                 <div className="sc-corrected-block">
-                                                    <span className="sc-corrected-label">{t.speakingChat.correctedLabel}</span>
+                                                    <span className="sc-corrected-label">{t('speakingChat.correctedLabel')}</span>
                                                     <p className="sc-corrected-text">{msg.correctedText}</p>
                                                 </div>
                                             </>
@@ -1540,13 +1540,13 @@ function SpeakingChatPage() {
                         <div className="sc-transcript-hint">
                             {recError
                                 ? <span className="sc-rec-error">⚠️ {recError}</span>
-                                : status === 'idle' ? t.speakingChat.hintIdle
-                                    : status === 'mic_loading' ? t.speakingChat.hintMicLoading
-                                        : status === 'listening' ? t.speakingChat.hintListening
-                                            : status === 'processing' ? t.speakingChat.hintProcessing
-                                                : status === 'speaking' ? t.speakingChat.hintSpeaking
-                                                    : status === 'finished' ? t.speakingChat.hintFinished
-                                                        : t.speakingChat.hintLoading}
+                                : status === 'idle' ? t('speakingChat.hintIdle')
+                                    : status === 'mic_loading' ? t('speakingChat.hintMicLoading')
+                                        : status === 'listening' ? t('speakingChat.hintListening')
+                                            : status === 'processing' ? t('speakingChat.hintProcessing')
+                                                : status === 'speaking' ? t('speakingChat.hintSpeaking')
+                                                    : status === 'finished' ? t('speakingChat.hintFinished')
+                                                        : t('speakingChat.hintLoading')}
                         </div>
                     </div>
 
@@ -1554,10 +1554,10 @@ function SpeakingChatPage() {
                         {prepTimeLeft > 0 && (
                             <div className="sc-prep-timer" style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                                    {t.speakingChat.prepTimeLabel.replace('{n}', String(prepTimeLeft))}
+                                    {t('speakingChat.prepTimeLabel').replace('{n}', String(prepTimeLeft))}
                                 </div>
                                 <button className="sc-skip-btn" onClick={() => setPrepTimeLeft(0)} style={{ padding: '6px 16px', borderRadius: '20px', border: '1px solid var(--color-border)', background: 'transparent', cursor: 'pointer', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                    {t.speakingChat.skipPrep}
+                                    {t('speakingChat.skipPrep')}
                                 </button>
                             </div>
                         )}
@@ -1568,7 +1568,7 @@ function SpeakingChatPage() {
                                 {showPart3ContinuePrompt ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
                                         <div style={{ fontSize: '14px', color: '#374151', textAlign: 'center' }}>
-                                            {t.speakingChat.part2Ended}
+                                            {t('speakingChat.part2Ended')}
                                         </div>
                                         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
                                             <button
@@ -1576,13 +1576,13 @@ function SpeakingChatPage() {
                                                 onClick={handleContinueToPart3}
                                                 disabled={loadingPart3}
                                             >
-                                                {loadingPart3 ? t.speakingChat.preparingPart3 : t.speakingChat.yesContinuePart3}
+                                                {loadingPart3 ? t('speakingChat.preparingPart3') : t('speakingChat.yesContinuePart3')}
                                             </button>
                                             <button
                                                 className="sc-summary-btn"
                                                 onClick={handleGoSummary}
                                             >
-                                                {t.speakingChat.noViewSummary}
+                                                {t('speakingChat.noViewSummary')}
                                             </button>
                                         </div>
                                     </div>
@@ -1591,7 +1591,7 @@ function SpeakingChatPage() {
                                         className="sc-summary-btn"
                                         onClick={handleGoSummary}
                                     >
-                                        {t.speakingConfig.scenarioSummary.viewReport}
+                                        {t('speakingConfig.scenarioSummary.viewReport')}
                                     </button>
                                 )}
                             </div>
@@ -1614,9 +1614,9 @@ function SpeakingChatPage() {
                                     <button 
                                         className="sc-back-btn" 
                                         onClick={() => setShowTextInput(true)}
-                                        title={t.speakingChat.useKeyboardTitle}
+                                        title={t('speakingChat.useKeyboardTitle')}
                                     >
-                                        {t.speakingChat.useKeyboardBtn}
+                                        {t('speakingChat.useKeyboardBtn')}
                                     </button>
                                 ) : (
                                     <div className="sc-manual-input" style={{ width: '100%', maxWidth: '400px' }}>
@@ -1625,7 +1625,7 @@ function SpeakingChatPage() {
                                             type="text"
                                             value={textInput}
                                             onChange={e => setTextInput(e.target.value)}
-                                            placeholder={t.speakingChat.replyPlaceholder}
+                                            placeholder={t('speakingChat.replyPlaceholder')}
                                             disabled={isDisabled}
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter' && textInput.trim() && !isDisabled) {
@@ -1644,7 +1644,7 @@ function SpeakingChatPage() {
                                             }}
                                             disabled={!textInput.trim() || isDisabled}
                                         >
-                                            {t.speakingChat.sendBtn}
+                                            {t('speakingChat.sendBtn')}
                                         </button>
                                     </div>
                                 )}

@@ -103,7 +103,7 @@ function ListeningPage() {
     const customPrompt: string = typeof state?.customPrompt === 'string' ? state.customPrompt.trim() : '';
     const navigate = useNavigate();
     const onReturnHome = () => navigate(mockId ? `/mock/${mockId}` : (bankId ? '/practice/ai/bank' : '/'));
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [absurdMode] = useState<boolean>(Boolean(state?.absurdMode));
 
     const [st, setSt] = useState(createListeningState);
@@ -368,7 +368,7 @@ function ListeningPage() {
             if (isFull) {
                 const fullContent = content as FullListeningData;
                 if (!Array.isArray(fullContent.sections) || fullContent.sections.length === 0) {
-                    showToast(t.listeningDetails.toastContentMissing, 'error');
+                    showToast(t('listeningDetails.toastContentMissing'), 'error');
                     navigate('/practice/ai/bank');
                     return;
                 }
@@ -397,7 +397,7 @@ function ListeningPage() {
             }
             const singleContent = content as { passage?: string; questions?: unknown };
             if (!singleContent.passage || !Array.isArray(singleContent.questions)) {
-                showToast(t.listeningDetails.toastContentMissing, 'error');
+                showToast(t('listeningDetails.toastContentMissing'), 'error');
                 navigate('/practice/ai/bank');
                 return;
             }
@@ -426,7 +426,7 @@ function ListeningPage() {
             setAudioLoading(false);
         } catch (err: unknown) {
             console.error('Bank load error:', err);
-            showToast(t.aiBank.loadFail, 'error');
+            showToast(t('aiBank.loadFail'), 'error');
             navigate('/practice/ai/bank');
         } finally {
             set('isLoading', false);
@@ -492,13 +492,13 @@ function ListeningPage() {
 
             sessionStorage.removeItem(CACHE_KEY);
             const justId = parsedData.aiQuestionId ?? null;
-            showToast(t.aiBank.toastGeneratedSaved, 'success');
+            showToast(t('aiBank.toastGeneratedSaved'), 'success');
             navigate(justId ? `/practice/ai/bank?just=${justId}` : '/practice/ai/bank', { replace: true });
             return;
         } catch (err: unknown) {
             console.error("API Error:", err);
             const error = err as { message?: string, status?: number };
-            showToast(error.message || t.common.error, 'error', error.status);
+            showToast(error.message || t('common.error'), 'error', error.status);
             onReturnHome();
         } finally {
             set('isLoading', false);
@@ -520,7 +520,7 @@ function ListeningPage() {
         }
         const answeredQuestions = Object.values(userAnswersRef.current).filter(v => String(v).trim().length > 0).length;
         if (!forced && answeredQuestions < totalQuestions) {
-            if (!(await showConfirm(t.readingDetails.submitConfirm))) return;
+            if (!(await showConfirm(t('readingDetails.submitConfirm')))) return;
         }
         // 停止 TTS
         if (audioRef.current) {
@@ -547,11 +547,11 @@ function ListeningPage() {
                 await submitAIQuestion(bankId, { ...userAnswersRef.current }, { correct, total, band });
             } catch (err) {
                 console.error('mock submit failed:', err);
-                showToast(t.listeningDetails.toastSaveFail, 'error');
+                showToast(t('listeningDetails.toastSaveFail'), 'error');
                 if (!forced) return; // 手动交卷失败留在页面重试；超时强制交卷继续离场
             }
             if (MOCK_DRAFT_KEY) localStorage.removeItem(MOCK_DRAFT_KEY);
-            showToast(t.mock.examMode.submittedToHub, 'success');
+            showToast(t('mock.examMode.submittedToHub'), 'success');
             navigate(`/mock/${mockId}`, { replace: true });
             return;
         }
@@ -559,7 +559,7 @@ function ListeningPage() {
         if (bankId) {
             submitAIQuestion(bankId, { ...userAnswersRef.current }).catch(err => {
                 console.error('submit to bank failed:', err);
-                showToast(t.listeningDetails.toastSaveFail, 'error');
+                showToast(t('listeningDetails.toastSaveFail'), 'error');
             });
         }
         set('step', 3);
@@ -584,7 +584,7 @@ function ListeningPage() {
             console.error("Audio playback error:", err);
             setTtsSpeaking(false);
             setTtsStarted(false);
-            showToast(t.listeningDetails.audioError, 'error');
+            showToast(t('listeningDetails.audioError'), 'error');
         }
     };
 
@@ -702,7 +702,7 @@ function ListeningPage() {
             <div className="reading-container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <div className="loader">
-                        🧠 {t.listeningDetails.writingPassage}
+                        🧠 {t('listeningDetails.writingPassage')}
                     </div>
                 </div>
             </div>
@@ -714,7 +714,7 @@ function ListeningPage() {
             <div className="reading-container">
                 <div className="page" style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <div className="loader">
-                        🔊 {t.listeningDetails.generatingAudio}
+                        🔊 {t('listeningDetails.generatingAudio')}
                     </div>
                 </div>
             </div>
@@ -840,7 +840,7 @@ function ListeningPage() {
                     {missing.length > 0 && (
                         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <p className="section-instructions" style={{ fontStyle: 'italic', opacity: 0.85 }}>
-                                {t.components.questionRenderer.answerRemaining}
+                                {t('components.questionRenderer.answerRemaining')}
                             </p>
                             {missing.map(q => (
                                 <div key={q.id} className="rd-blank-wrap" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1013,7 +1013,7 @@ function ListeningPage() {
                         )}
                     </div>
                     <div className="map-options-panel">
-                        <h3 style={{ margin: '0 0 12px 0' }}>{t.listeningDetails.mapInstructions}</h3>
+                        <h3 style={{ margin: '0 0 12px 0' }}>{t('listeningDetails.mapInstructions')}</h3>
                         {(() => {
                             const letters: string[] = [];
                             const titles: Record<string, string> = {};
@@ -1059,27 +1059,27 @@ function ListeningPage() {
                         part="listening"
                         onExpire={() => submitQuiz(true)}
                         onRejected={(msg) => {
-                            showToast(t.mock.examMode.startRejected.replace('{msg}', msg), 'error');
+                            showToast(t('mock.examMode.startRejected').replace('{msg}', msg), 'error');
                             navigate(`/mock/${mockId}`, { replace: true });
                         }}
                     />
                 )}
                 <div id="floatUnderlineBtn" ref={floatBtnRef} onMouseDown={(e) => e.preventDefault()} onClick={executeUnderline}>
-                    <u>U</u> {t.readingDetails.underline}
+                    <u>U</u> {t('readingDetails.underline')}
                 </div>
                 <div className="page listening-page">
                     <div className="toolbar-area">
                         <div className="toolbar-left-group">
                             {!ttsStarted ? (
                                 <button className="toolbar-btn toolbar-btn-primary" onClick={startTTS}>
-                                    <span className="btn-icon">🔊</span> {t.listeningDetails.startAudio}
+                                    <span className="btn-icon">🔊</span> {t('listeningDetails.startAudio')}
                                 </button>
                             ) : (
                                 <button
                                     className={`aielts-player-play ${ttsSpeaking ? 'is-playing' : 'is-paused'}`}
                                     onClick={togglePlayPause}
-                                    title={ttsSpeaking ? t.listeningDetails.player.pause : t.listeningDetails.player.play}
-                                    aria-label={ttsSpeaking ? t.listeningDetails.player.pause : t.listeningDetails.player.play}
+                                    title={ttsSpeaking ? t('listeningDetails.player.pause') : t('listeningDetails.player.play')}
+                                    aria-label={ttsSpeaking ? t('listeningDetails.player.pause') : t('listeningDetails.player.play')}
                                 >
                                     {ttsSpeaking ? '⏸' : '▶'}
                                 </button>
@@ -1090,8 +1090,8 @@ function ListeningPage() {
                                     <button
                                         className="aielts-player-skip"
                                         onClick={() => skipSeconds(-5)}
-                                        title={t.listeningDetails.player.back5}
-                                        aria-label={t.listeningDetails.player.back5}
+                                        title={t('listeningDetails.player.back5')}
+                                        aria-label={t('listeningDetails.player.back5')}
                                     >⏪</button>
                                     <div
                                         className="aielts-player-progress"
@@ -1108,14 +1108,14 @@ function ListeningPage() {
                                             value={playbackTime}
                                             onChange={(e) => handleSeek(Number(e.target.value))}
                                             className="aielts-player-range"
-                                            aria-label={t.listeningDetails.player.progress}
+                                            aria-label={t('listeningDetails.player.progress')}
                                         />
                                     </div>
                                     <button
                                         className="aielts-player-skip"
                                         onClick={() => skipSeconds(5)}
-                                        title={t.listeningDetails.player.fwd5}
-                                        aria-label={t.listeningDetails.player.fwd5}
+                                        title={t('listeningDetails.player.fwd5')}
+                                        aria-label={t('listeningDetails.player.fwd5')}
                                     >⏩</button>
                                     <span className="aielts-player-time">
                                         {formatAudioTime(playbackTime)} / {formatAudioTime(audioDuration)}
@@ -1124,7 +1124,7 @@ function ListeningPage() {
                                         value={playbackRate}
                                         onChange={(e) => handleRateChange(Number(e.target.value))}
                                         className="aielts-player-rate"
-                                        title={t.listeningDetails.player.speed}
+                                        title={t('listeningDetails.player.speed')}
                                     >
                                         <option value={0.75}>0.75×</option>
                                         <option value={1}>1×</option>
@@ -1145,13 +1145,13 @@ function ListeningPage() {
                                 <span className="timer-digit">{formatElapsed(st.elapsedSeconds).s}<span className="timer-unit">s</span></span>
                             </span>
                             <span className="toolbar-badge mode-badge">
-                                {isMapMode ? `🗺️ ${t.listeningDetails.typeMap}` : isArticleMode ? `📄 ${t.listeningDetails.typeArticle}` : isMultipleChoiceMode ? `🎯 ${t.listeningDetails.typeMC}` : `✏️ ${t.listeningDetails.typeSentence}`}
+                                {isMapMode ? `🗺️ ${t('listeningDetails.typeMap')}` : isArticleMode ? `📄 ${t('listeningDetails.typeArticle')}` : isMultipleChoiceMode ? `🎯 ${t('listeningDetails.typeMC')}` : `✏️ ${t('listeningDetails.typeSentence')}`}
                             </span>
                             {!isMultipleChoiceMode && !isMapMode && (
                                 <span className="toolbar-badge limit-badge">
-                                    ✍️ {t.listeningDetails.wordLimit} {wordCountMax === wordCountMin
-                                        ? `${wordCountMax} ${t.listeningDetails.wordUnit}`
-                                        : `${wordCountMin}–${wordCountMax} ${t.listeningDetails.wordUnit}`}
+                                    ✍️ {t('listeningDetails.wordLimit')} {wordCountMax === wordCountMin
+                                        ? `${wordCountMax} ${t('listeningDetails.wordUnit')}`
+                                        : `${wordCountMin}–${wordCountMax} ${t('listeningDetails.wordUnit')}`}
                                 </span>
                             )}
                         </div>
@@ -1160,10 +1160,10 @@ function ListeningPage() {
                                 <button
                                     className="toolbar-btn toolbar-btn-outline"
                                     onClick={toggleControlsHidden}
-                                    title={controlsHidden ? t.listeningDetails.player.showControls : t.listeningDetails.player.hideControls}
+                                    title={controlsHidden ? t('listeningDetails.player.showControls') : t('listeningDetails.player.hideControls')}
                                 >
                                     <span className="btn-icon">{controlsHidden ? '👁' : '🙈'}</span>
-                                    {controlsHidden ? t.listeningDetails.player.showBtn : t.listeningDetails.player.hideBtn}
+                                    {controlsHidden ? t('listeningDetails.player.showBtn') : t('listeningDetails.player.hideBtn')}
                                 </button>
                             )}
                         </div>
@@ -1319,7 +1319,7 @@ function ListeningPage() {
                             st.listeningData.type === 'sentence' ? renderSentenceMode() :
                             // 未知题型（AI drift / 老题库记录）：给出明确提示而不是静默空白
                             <div className="section-instructions">
-                                {t.components.questionRenderer.unsupportedType.replace('{t}', String(st.listeningData.type))}
+                                {t('components.questionRenderer.unsupportedType').replace('{t}', String(st.listeningData.type))}
                             </div>)}
 
                     </div>
@@ -1336,14 +1336,14 @@ function ListeningPage() {
                                 await mockConfirmExit();
                                 return;
                             }
-                            if (await showConfirm(t.listeningDetails.exitConfirm)) {
+                            if (await showConfirm(t('listeningDetails.exitConfirm'))) {
                                 if (audioRef.current) audioRef.current.pause();
                                 onReturnHome();
                             }
                         }}
-                        submitLabel={t.readingDetails.submitBtn}
-                        exitLabel={t.listeningDetails.exitBtn}
-                        navLabels={t.listeningDetails.questionNav}
+                        submitLabel={t('readingDetails.submitBtn')}
+                        exitLabel={t('listeningDetails.exitBtn')}
+                        navLabels={(t('listeningDetails.questionNav', { returnObjects: true }) as { jumpTo: string; progress: string; barLabel: string })}
                         overviewParts={navOverviewParts}
                         onPartSelect={i => {
                             const data = st.listeningData;
@@ -1397,7 +1397,7 @@ function ListeningPage() {
                 {/* Results Header */}
                 <div className="results-header">
                     <div className="results-header-left">
-                        <h1>{t.results.analysis}</h1>
+                        <h1>{t('results.analysis')}</h1>
                     </div>
                     <div className="results-header-right">
                         <div className="score-card">
@@ -1405,19 +1405,19 @@ function ListeningPage() {
                             <div className="score-pct">{pct}%</div>
                         </div>
                         {band !== null && (
-                            <div className="score-card score-band-card" title={t.results.estimatedBand}>
-                                <div className="score-band-label">{t.results.estimatedBand}</div>
+                            <div className="score-card score-band-card" title={t('results.estimatedBand')}>
+                                <div className="score-band-label">{t('results.estimatedBand')}</div>
                                 <div className="score-number">{formatBand(band)}<span className="score-total">/9</span></div>
                             </div>
                         )}
                         <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
-                            <span className="btn-icon">{st.isPassageOpen ? '✕' : '📖'}</span> {st.isPassageOpen ? t.results.hidePassage : t.results.showPassage}
+                            <span className="btn-icon">{st.isPassageOpen ? '✕' : '📖'}</span> {st.isPassageOpen ? t('results.hidePassage') : t('results.showPassage')}
                         </button>
                         {bankId && !mockId && (
                             // mock 子题一次定档，不允许重做
-                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t.aiBank.redoBtn}</button>
+                            <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t('aiBank.redoBtn')}</button>
                         )}
-                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{mockId ? '🎯' : bankId ? '📚' : '🏠'}</span> {mockId ? t.mock.examMode.backToHub : bankId ? t.aiBank.backToBank : t.common.home}</button>
+                        <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{mockId ? '🎯' : bankId ? '📚' : '🏠'}</span> {mockId ? t('mock.examMode.backToHub') : bankId ? t('aiBank.backToBank') : t('common.home')}</button>
                     </div>
                 </div>
 
@@ -1425,7 +1425,7 @@ function ListeningPage() {
                 <div className="results-layout" id="listeningResultsLayout">
                     {/* Passage Sidebar */}
                     <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="listeningPassageSidebar">
-                        <h3>{t.results.originalPassage}</h3>
+                        <h3>{t('results.originalPassage')}</h3>
                         <h4 dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(st.listeningData.title)) }}></h4>
                         <div className="passage-text">
                             {passageParagraphs.map((p, idx) => (
@@ -1434,7 +1434,7 @@ function ListeningPage() {
                         </div>
                         {st.vocabList.length > 0 && (
                             <div className="result-vocab-list" style={{ marginTop: '24px' }}>
-                                <h3>📖 {t.results.targetVocab}</h3>
+                                <h3>📖 {t('results.targetVocab')}</h3>
                                 <div className="vocab-chips">
                                     {st.vocabList.map((v, i) => (
                                         <span key={i} className="vocab-chip">
@@ -1482,14 +1482,14 @@ function ListeningPage() {
                                             </div>
                                         ))}
                                         <p style={{ marginTop: '12px' }}>
-                                            {t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t.results.correctAnswer}: <strong>{q.answer}</strong>
+                                            {t('results.yourAnswer')}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {t('results.correctAnswer')}: <strong>{q.answer}</strong>
                                         </p>
                                         <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                            {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
+                                            {isCorrect ? `✓ ${t('results.statusCorrect')}` : `✗ ${t('results.statusIncorrect')}`}
                                         </p>
                                         {q.explanation && (
                                             <div className="explanation">
-                                                <strong>{t.results.explanation}:</strong> {q.explanation}
+                                                <strong>{t('results.explanation')}:</strong> {q.explanation}
                                             </div>
                                         )}
                                     </div>
@@ -1504,14 +1504,14 @@ function ListeningPage() {
                                     <div key={q.id} className="result-block">
                                         <div className="question-text">📍 Location {q.id}</div>
                                         <p>
-                                            {t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userOptText || 'None'}</strong> | {t.results.correctAnswer}: <strong>{correctOptText}</strong>
+                                            {t('results.yourAnswer')}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userOptText || 'None'}</strong> | {t('results.correctAnswer')}: <strong>{correctOptText}</strong>
                                         </p>
                                         <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                            {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
+                                            {isCorrect ? `✓ ${t('results.statusCorrect')}` : `✗ ${t('results.statusIncorrect')}`}
                                         </p>
                                         {q.explanation && (
                                             <div className="explanation">
-                                                <strong>{t.results.explanation}:</strong> {q.explanation}
+                                                <strong>{t('results.explanation')}:</strong> {q.explanation}
                                             </div>
                                         )}
                                     </div>
@@ -1525,14 +1525,14 @@ function ListeningPage() {
                                         {q.sectionNum !== undefined && <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[Section {q.sectionNum}]</span>}
                                     </div>
                                     <p>
-                                        {t.results.yourAnswer}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {hasTextAnswers ? t.results.acceptableAnswers : t.results.correctAnswer}: <strong>{hasTextAnswers ? (q.answers as unknown[]).map(a => (a == null ? '' : String(a))).join(' / ') : (q.answer || '—')}</strong>
+                                        {t('results.yourAnswer')}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userAns}</strong> | {hasTextAnswers ? t('results.acceptableAnswers') : t('results.correctAnswer')}: <strong>{hasTextAnswers ? (q.answers as unknown[]).map(a => (a == null ? '' : String(a))).join(' / ') : (q.answer || '—')}</strong>
                                     </p>
                                     <p className={isCorrect ? 'status-correct' : 'status-incorrect'}>
-                                        {isCorrect ? `✓ ${t.results.statusCorrect}` : `✗ ${t.results.statusIncorrect}`}
+                                        {isCorrect ? `✓ ${t('results.statusCorrect')}` : `✗ ${t('results.statusIncorrect')}`}
                                     </p>
                                     {q.explanation && (
                                         <div className="explanation">
-                                            <strong>{t.results.explanation}:</strong> {q.explanation}
+                                            <strong>{t('results.explanation')}:</strong> {q.explanation}
                                         </div>
                                     )}
                                 </div>

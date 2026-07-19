@@ -54,60 +54,60 @@ function WordFormPanel({
     submitting:     boolean;
     existingWords?: Set<string>;
 }) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [form, setForm] = useState<WordForm>({ ...EMPTY_FORM, ...initial });
     const set = <K extends keyof WordForm>(k: K) => (v: WordForm[K]) => setForm(f => ({ ...f, [k]: v }));
 
-    const isDuplicate = submitLabel === t.vocab.notebookDetail.btnAdd && !!existingWords && form.word.trim() !== ''
+    const isDuplicate = submitLabel === t('vocab.notebookDetail.btnAdd') && !!existingWords && form.word.trim() !== ''
         && existingWords.has(form.word.trim().toLowerCase());
 
     return (
         <div className="word-form">
-            <div className="word-form-title">{submitLabel === t.vocab.notebookDetail.btnAdd ? t.vocab.notebookDetail.modalAddTitle : t.vocab.notebookDetail.modalEditTitle}</div>
+            <div className="word-form-title">{submitLabel === t('vocab.notebookDetail.btnAdd') ? t('vocab.notebookDetail.modalAddTitle') : t('vocab.notebookDetail.modalEditTitle')}</div>
 
             <div className="wf-row">
                 <div className="wf-field">
-                    <div className="wf-label">{t.vocab.notebookDetail.wordLabel}</div>
+                    <div className="wf-label">{t('vocab.notebookDetail.wordLabel')}</div>
                     <div style={{ position: 'relative' }}>
                         <input
                             className={`wf-input${isDuplicate ? ' wf-input-duplicate' : ''}`}
-                            placeholder={t.vocab.notebookDetail.wordPlaceholder}
+                            placeholder={t('vocab.notebookDetail.wordPlaceholder')}
                             value={form.word}
-                            disabled={submitLabel !== t.vocab.notebookDetail.btnAdd}
+                            disabled={submitLabel !== t('vocab.notebookDetail.btnAdd')}
                             onChange={e => set('word')(e.target.value.trim())}
                         />
                         {isDuplicate && (
-                            <span className="wf-duplicate-hint">{t.vocab.notebookDetail.msgDuplicate}</span>
+                            <span className="wf-duplicate-hint">{t('vocab.notebookDetail.msgDuplicate')}</span>
                         )}
                     </div>
                 </div>
                 <div className="wf-field">
-                    <div className="wf-label">{t.vocab.notebookDetail.zhLabel}</div>
+                    <div className="wf-label">{t('vocab.notebookDetail.zhLabel')}</div>
                     <input
                         className="wf-input"
-                        placeholder={t.vocab.notebookDetail.zhPlaceholder}
+                        placeholder={t('vocab.notebookDetail.zhPlaceholder')}
                         value={form.custom_zh}
                         onChange={e => set('custom_zh')(e.target.value)}
                     />
                 </div>
             </div>
 
-            {submitLabel === t.vocab.notebookDetail.btnAdd && (
+            {submitLabel === t('vocab.notebookDetail.btnAdd') && (
                 <div className="wf-row">
                     <div className="wf-field">
-                        <div className="wf-label">{t.vocab.notebookDetail.phoneticLabel}</div>
+                        <div className="wf-label">{t('vocab.notebookDetail.phoneticLabel')}</div>
                         <input
                             className="wf-input"
-                            placeholder={t.vocab.notebookDetail.phoneticPlaceholder}
+                            placeholder={t('vocab.notebookDetail.phoneticPlaceholder')}
                             value={form.phonetic}
                             onChange={e => set('phonetic')(e.target.value)}
                         />
                     </div>
                     <div className="wf-field">
-                        <div className="wf-label">{t.vocab.notebookDetail.grammarLabel}</div>
+                        <div className="wf-label">{t('vocab.notebookDetail.grammarLabel')}</div>
                         <input
                             className="wf-input"
-                            placeholder={t.vocab.notebookDetail.grammarPlaceholder}
+                            placeholder={t('vocab.notebookDetail.grammarPlaceholder')}
                             value={form.grammar}
                             onChange={e => set('grammar')(e.target.value)}
                         />
@@ -116,18 +116,18 @@ function WordFormPanel({
             )}
 
             <div className="wf-field">
-                <div className="wf-label">{t.vocab.notebookDetail.tagLabel}</div>
+                <div className="wf-label">{t('vocab.notebookDetail.tagLabel')}</div>
                 <TagInput
                     tags={form.tags}
                     tagInput={form.tagInput}
                     onChange={set('tagInput')}
                     onTagsChange={set('tags')}
                 />
-                <div className="wf-hint">{t.vocab.notebookDetail.tagHint}</div>
+                <div className="wf-hint">{t('vocab.notebookDetail.tagHint')}</div>
             </div>
 
             <div className="wf-field">
-                <div className="wf-label">{t.vocab.notebookDetail.masteryLabel}</div>
+                <div className="wf-label">{t('vocab.notebookDetail.masteryLabel')}</div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     {[0, 1, 2, 3, 4, 5].map(n => (
                         <span
@@ -144,16 +144,16 @@ function WordFormPanel({
                         </span>
                     ))}
                     <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginLeft: '4px' }}>
-                        {form.mastery_level === 0 ? t.vocab.notebookDetail.masteryUnrated : t.vocab.notebookDetail.masteryRating.replace('{n}', String(form.mastery_level))}
+                        {form.mastery_level === 0 ? t('vocab.notebookDetail.masteryUnrated') : t('vocab.notebookDetail.masteryRating').replace('{n}', String(form.mastery_level))}
                     </span>
                 </div>
             </div>
 
             <div className="wf-field">
-                <div className="wf-label">{t.vocab.notebookDetail.notesLabel}</div>
+                <div className="wf-label">{t('vocab.notebookDetail.notesLabel')}</div>
                 <textarea
                     className="wf-input"
-                    placeholder={t.vocab.notebookDetail.notesPlaceholder}
+                    placeholder={t('vocab.notebookDetail.notesPlaceholder')}
                     value={form.notes}
                     rows={2}
                     style={{ resize: 'vertical', minHeight: '60px' }}
@@ -162,13 +162,13 @@ function WordFormPanel({
             </div>
 
             <div className="wf-actions">
-                <button className="wf-btn" onClick={onCancel} disabled={submitting}>{t.vocab.notebookDetail.btnCancel}</button>
+                <button className="wf-btn" onClick={onCancel} disabled={submitting}>{t('vocab.notebookDetail.btnCancel')}</button>
                 <button
                     className="wf-btn primary"
                     onClick={() => onSubmit(form)}
                     disabled={submitting || !form.word.trim() || isDuplicate}
                 >
-                    {submitting ? t.common.saving : submitLabel}
+                    {submitting ? t('common.saving') : submitLabel}
                 </button>
             </div>
         </div>
@@ -178,7 +178,7 @@ function WordFormPanel({
 /* ── 主页面 ───────────────────────────────────────────────────────────────── */
 
 export default function NotebookDetailPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const { id }   = useParams<{ id: string }>();
     const nbId     = Number(id);
     const navigate = useNavigate();
@@ -190,7 +190,7 @@ export default function NotebookDetailPage() {
     const [showAddForm,   setShowAddForm]   = useState(false);
     const [editId,        setEditId]        = useState<number | null>(null);
     const [submitting,    setSubmitting]    = useState(false);
-    const [nbTitle,       setNbTitle]       = useState(t.vocab.notebookDetail.titleDefault);
+    const [nbTitle,       setNbTitle]       = useState(t('vocab.notebookDetail.titleDefault'));
     const [expandedExamples, setExpandedExamples] = useState<Set<number>>(new Set());
 
     /* ── 词书导入相关 state ─────────────────────────────────────────────── */
@@ -251,9 +251,9 @@ export default function NotebookDetailPage() {
             getNotebook(nbId).then(r => setNbTitle(r.notebook.title)),
             listWords(nbId).then(r => setAllEntries(r.entries)),
         ])
-            .catch(() => { showToast(t.common.error, 'error'); })
+            .catch(() => { showToast(t('common.error'), 'error'); })
             .finally(() => setLoading(false));
-    }, [nbId, navigate, t.common.error]);
+    }, [nbId, navigate, t]);
 
     /* 切换 tag 过滤 */
     const handleTagFilter = (tag: string) => {
@@ -300,12 +300,12 @@ export default function NotebookDetailPage() {
     const handleBookPageJump = () => {
         const rawValue = bookPageJumpInput.trim();
         if (!rawValue) {
-            showToast(t.vocab.pagination.errEnterPage, 'error');
+            showToast(t('vocab.pagination.errEnterPage'), 'error');
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            showToast(t.vocab.pagination.errPageRange.replace('{n}', String(bookTotalPages)), 'error');
+            showToast(t('vocab.pagination.errPageRange').replace('{n}', String(bookTotalPages)), 'error');
             return;
         }
         setBookPage(Math.min(bookTotalPages, Math.max(1, parsed)));
@@ -333,13 +333,13 @@ export default function NotebookDetailPage() {
             const { entries_added } = await bulkImportWords(nbId, payload);
             const skipped = expectedTotal !== undefined ? Math.max(0, expectedTotal - entries_added) : 0;
             const msg = skipped > 0
-                ? t.vocab.notebookDetail.msgImportSuccessSkip.replace('{added}', String(entries_added)).replace('{skipped}', String(skipped))
-                : t.vocab.notebookDetail.msgImportSuccess.replace('{added}', String(entries_added));
+                ? t('vocab.notebookDetail.msgImportSuccessSkip').replace('{added}', String(entries_added)).replace('{skipped}', String(skipped))
+                : t('vocab.notebookDetail.msgImportSuccess').replace('{added}', String(entries_added));
             showToast(msg, 'success');
             const r = await listWords(nbId);
             setAllEntries(r.entries);
         } catch {
-            showToast(t.vocab.notebookDetail.msgImportFail, 'error');
+            showToast(t('vocab.notebookDetail.msgImportFail'), 'error');
         } finally {
             setImportBusy(false);
         }
@@ -349,7 +349,7 @@ export default function NotebookDetailPage() {
     const handleAdd = async (form: WordForm) => {
         if (!form.word.trim()) return;
         const word = form.word.trim().toLowerCase();
-        if (allWords.has(word)) { showToast(t.vocab.notebookDetail.msgDuplicateInNotebook, 'error'); return; }
+        if (allWords.has(word)) { showToast(t('vocab.notebookDetail.msgDuplicateInNotebook'), 'error'); return; }
         setSubmitting(true);
         try {
             const { entry } = await addWord(nbId, {
@@ -362,12 +362,12 @@ export default function NotebookDetailPage() {
             });
             setAllEntries(prev => [entry, ...prev]);
             setShowAddForm(false);
-            showToast(t.vocab.notebookDetail.msgWordAdded.replace('{word}', entry.word), 'success');
+            showToast(t('vocab.notebookDetail.msgWordAdded').replace('{word}', entry.word), 'success');
         } catch (err: unknown) {
             const e = err as { response?: { data?: { error?: string }; status?: number } };
-            const msg = e.response?.data?.error || t.vocab.notebookDetail.msgAddFail;
+            const msg = e.response?.data?.error || t('vocab.notebookDetail.msgAddFail');
             if (e.response?.status === 409) {
-                showToast(t.vocab.notebookDetail.msgDuplicateInNotebook, 'error');
+                showToast(t('vocab.notebookDetail.msgDuplicateInNotebook'), 'error');
             } else {
                 showToast(msg, 'error');
             }
@@ -388,9 +388,9 @@ export default function NotebookDetailPage() {
             });
             setAllEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
             setEditId(null);
-            showToast(t.vocab.notebookDetail.msgSaveSuccess, 'success');
+            showToast(t('vocab.notebookDetail.msgSaveSuccess'), 'success');
         } catch {
-            showToast(t.vocab.notebookDetail.msgSaveFail, 'error');
+            showToast(t('vocab.notebookDetail.msgSaveFail'), 'error');
         } finally {
             setSubmitting(false);
         }
@@ -398,19 +398,19 @@ export default function NotebookDetailPage() {
 
     /* 删除单词 */
     const handleRemove = async (entry: NotebookEntry) => {
-        if (!(await showConfirm({ message: t.vocab.notebooks.msgDeleteConfirm.replace('{title}', entry.word), danger: true }))) return;
+        if (!(await showConfirm({ message: t('vocab.notebooks.msgDeleteConfirm').replace('{title}', entry.word), danger: true }))) return;
         try {
             await removeWord(nbId, entry.id);
             setAllEntries(prev => prev.filter(e => e.id !== entry.id));
-            showToast(t.vocab.notebooks.msgDeleteSuccess, 'success');
+            showToast(t('vocab.notebooks.msgDeleteSuccess'), 'success');
         } catch {
-            showToast(t.vocab.notebooks.msgFail, 'error');
+            showToast(t('vocab.notebooks.msgFail'), 'error');
         }
     };
 
     /* 掌握度星星（显示用） */
     const renderStars = (level: number) => (
-        <span className="mastery-stars" title={t.vocab.notebookDetail.masteryTitle.replace('{level}', String(level))}>
+        <span className="mastery-stars" title={t('vocab.notebookDetail.masteryTitle').replace('{level}', String(level))}>
             {[1, 2, 3, 4, 5].map(n => (
                 <span key={n} style={{ color: n <= level ? '#f59e0b' : 'var(--color-border)' }}>
                     {n <= level ? '★' : '☆'}
@@ -422,9 +422,9 @@ export default function NotebookDetailPage() {
     return (
         <Layout
     pageTitle={nbTitle}
-    pageSubtitle={t.vocab.notebookDetail.pageSubtitle}
+    pageSubtitle={t('vocab.notebookDetail.pageSubtitle')}
     backUrl='/vocabulary/notebook'
-    backText={t.vocab.notebookDetail.backText}
+    backText={t('vocab.notebookDetail.backText')}
 >
             <div className="config-page-wrap">
                 {/* 搜索栏 */}
@@ -432,7 +432,7 @@ export default function NotebookDetailPage() {
                     <div className="nb-search-bar">
                         <input
                             className="nb-search-input"
-                            placeholder={t.vocab.notebookDetail.searchPlaceholder}
+                            placeholder={t('vocab.notebookDetail.searchPlaceholder')}
                             value={searchQ}
                             onChange={e => handleSearch(e.target.value)}
                         />
@@ -441,7 +441,7 @@ export default function NotebookDetailPage() {
                             style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
                             onClick={() => { setShowAddForm(a => !a); setEditId(null); }}
                         >
-                            {showAddForm ? t.vocab.notebookDetail.btnCollapse : t.vocab.notebookDetail.btnAddWord}
+                            {showAddForm ? t('vocab.notebookDetail.btnCollapse') : t('vocab.notebookDetail.btnAddWord')}
                         </button>
                     </div>
 
@@ -463,7 +463,7 @@ export default function NotebookDetailPage() {
                                     style={{ cursor: 'pointer', opacity: 0.7 }}
                                     onClick={() => setSelectedTag('')}
                                 >
-                                    {t.vocab.notebookDetail.clearFilter}
+                                    {t('vocab.notebookDetail.clearFilter')}
                                 </span>
                             )}
                         </div>
@@ -477,20 +477,20 @@ export default function NotebookDetailPage() {
                                     className={`lp-add-tab${addTab === 'manual' ? ' active' : ''}`}
                                     onClick={() => setAddTab('manual')}
                                 >
-                                    {t.vocab.notebookDetail.tabManual}
+                                    {t('vocab.notebookDetail.tabManual')}
                                 </button>
                                 <button
                                     className={`lp-add-tab${addTab === 'book' ? ' active' : ''}`}
                                     onClick={() => setAddTab('book')}
                                 >
-                                    {t.vocab.notebookDetail.tabBook}
+                                    {t('vocab.notebookDetail.tabBook')}
                                 </button>
                             </div>
 
                             {addTab === 'manual' && (
                                 <WordFormPanel
                                     initial={{ ...EMPTY_FORM }}
-                                    submitLabel={t.vocab.notebookDetail.btnAdd}
+                                    submitLabel={t('vocab.notebookDetail.btnAdd')}
                                     onSubmit={handleAdd}
                                     onCancel={() => setShowAddForm(false)}
                                     submitting={submitting}
@@ -511,10 +511,10 @@ export default function NotebookDetailPage() {
                                                 setBookPage(1);
                                             }}
                                         >
-                                            <option value="">{t.vocab.notebookDetail.bookSelect}</option>
+                                            <option value="">{t('vocab.notebookDetail.bookSelect')}</option>
                                             {books.map(b => (
                                                 <option key={b.id} value={b.id}>
-                                                    {t.vocab.notebookDetail.bookNameCount.replace('{name}', b.name).replace('{n}', String(b.word_count))}
+                                                    {t('vocab.notebookDetail.bookNameCount').replace('{name}', b.name).replace('{n}', String(b.word_count))}
                                                 </option>
                                             ))}
                                         </select>
@@ -530,7 +530,7 @@ export default function NotebookDetailPage() {
                                                         style={{ fontSize: 12 }}
                                                         onClick={() => { setBookSubMode(m); setSelectedIds(new Set()); setBookPage(1); }}
                                                     >
-                                                        {m === 'all' ? t.vocab.notebookDetail.bookModeAll : m === 'range' ? t.vocab.notebookDetail.bookModeRange : t.vocab.notebookDetail.bookModeSelect}
+                                                        {m === 'all' ? t('vocab.notebookDetail.bookModeAll') : m === 'range' ? t('vocab.notebookDetail.bookModeRange') : t('vocab.notebookDetail.bookModeSelect')}
                                                     </button>
                                                 ))}
                                             </div>
@@ -545,14 +545,14 @@ export default function NotebookDetailPage() {
                                                             books.find(b => b.id === bookId)?.word_count,
                                                         )}
                                                     >
-                                                        {importBusy ? t.common.saving : t.vocab.notebookDetail.bookModeAll}
+                                                        {importBusy ? t('common.saving') : t('vocab.notebookDetail.bookModeAll')}
                                                     </button>
                                                 </div>
                                             )}
 
                                             {bookSubMode === 'range' && (
                                                 <div className="lp-add-row">
-                                                    <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>{t.vocab.notebookDetail.bookRangeIdx}</span>
+                                                    <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>{t('vocab.notebookDetail.bookRangeIdx')}</span>
                                                     <input type="number" min={1} value={rangeStart} onChange={e => setRangeStart(Number(e.target.value))} style={{ maxWidth: 80 }} />
                                                     <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>~</span>
                                                     <input type="number" min={1} value={rangeEnd} onChange={e => setRangeEnd(Number(e.target.value))} style={{ maxWidth: 80 }} />
@@ -564,7 +564,7 @@ export default function NotebookDetailPage() {
                                                             Math.max(0, rangeEnd - rangeStart + 1),
                                                         )}
                                                     >
-                                                        {importBusy ? t.common.saving : t.vocab.notebookDetail.bookModeRange}
+                                                        {importBusy ? t('common.saving') : t('vocab.notebookDetail.bookModeRange')}
                                                     </button>
                                                 </div>
                                             )}
@@ -574,7 +574,7 @@ export default function NotebookDetailPage() {
                                                     <div className="lp-add-row">
                                                         <input
                                                             type="text"
-                                                            placeholder={t.vocab.notebookDetail.searchPlaceholder}
+                                                            placeholder={t('vocab.notebookDetail.searchPlaceholder')}
                                                             value={bookQ}
                                                             onChange={e => { setBookQ(e.target.value); setBookPage(1); }}
                                                         />
@@ -589,7 +589,7 @@ export default function NotebookDetailPage() {
                                                                 setSelectedIds(new Set());
                                                             }}
                                                         >
-                                                            {importBusy ? t.common.saving : t.vocab.notebookDetail.bookImportSelected.replace('{n}', String(selectedIds.size))}
+                                                            {importBusy ? t('common.saving') : t('vocab.notebookDetail.bookImportSelected').replace('{n}', String(selectedIds.size))}
                                                         </button>
                                                     </div>
                                                     <div className="lp-book-browser">
@@ -611,11 +611,11 @@ export default function NotebookDetailPage() {
                                                     </div>
                                                     {bookTotal > BOOK_PAGE_SIZE && (
                                                         <div className="lp-book-pager">
-                                                            <button disabled={bookPage <= 1} onClick={() => setBookPage(p => Math.max(1, p - 1))}>{t.vocab.notebookDetail.bookPrevPage}</button>
+                                                            <button disabled={bookPage <= 1} onClick={() => setBookPage(p => Math.max(1, p - 1))}>{t('vocab.notebookDetail.bookPrevPage')}</button>
                                                             <span>{bookPage} / {bookTotalPages}</span>
-                                                            <button disabled={bookPage >= bookTotalPages} onClick={() => setBookPage(p => Math.min(bookTotalPages, p + 1))}>{t.vocab.notebookDetail.bookNextPage}</button>
+                                                            <button disabled={bookPage >= bookTotalPages} onClick={() => setBookPage(p => Math.min(bookTotalPages, p + 1))}>{t('vocab.notebookDetail.bookNextPage')}</button>
                                                             <div className="lp-page-jump">
-                                                                <span>{t.vocab.pagination.jumpTo}</span>
+                                                                <span>{t('vocab.pagination.jumpTo')}</span>
                                                                 <input
                                                                     type="text"
                                                                     inputMode="numeric"
@@ -627,8 +627,8 @@ export default function NotebookDetailPage() {
                                                                         }
                                                                     }}
                                                                     onKeyDown={e => { if (e.key === 'Enter') handleBookPageJump(); }}
-                                                                    placeholder={t.vocab.pagination.pagePlaceholder}
-                                                                    aria-label={t.vocab.pagination.jumpAria}
+                                                                    placeholder={t('vocab.pagination.pagePlaceholder')}
+                                                                    aria-label={t('vocab.pagination.jumpAria')}
                                                                 />
                                                                 <button
                                                                     type="button"
@@ -653,11 +653,11 @@ export default function NotebookDetailPage() {
                 {/* 单词列表 */}
                 <div className="config-card" style={{ padding: 0, overflow: 'hidden' }}>
                     {loading ? (
-                        <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '30px' }}>{t.common.loading}</p>
+                        <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '30px' }}>{t('common.loading')}</p>
                     ) : entries.length === 0 ? (
                         <div className="nb-empty">
                             <span className="nb-empty-icon">📝</span>
-                            {selectedTag || searchQ ? t.vocab.notebookDetail.emptySearch : t.vocab.notebookDetail.emptyList}
+                            {selectedTag || searchQ ? t('vocab.notebookDetail.emptySearch') : t('vocab.notebookDetail.emptyList')}
                         </div>
                     ) : (
                         <div className="word-list">
@@ -673,7 +673,7 @@ export default function NotebookDetailPage() {
                                                 mastery_level: entry.mastery_level,
                                                 tagInput:      '',
                                             }}
-                                            submitLabel={t.vocab.notebookDetail.btnSave}
+                                            submitLabel={t('vocab.notebookDetail.btnSave')}
                                             onSubmit={form => handleEdit(entry, form)}
                                             onCancel={() => setEditId(null)}
                                             submitting={submitting}
@@ -704,14 +704,14 @@ export default function NotebookDetailPage() {
                                         <div className="wi-actions">
                                             <button
                                                 className="nb-action-btn"
-                                                title={t.vocab.notebookDetail.editTitle}
+                                                title={t('vocab.notebookDetail.editTitle')}
                                                 onClick={() => { setEditId(entry.id); setShowAddForm(false); }}
                                             >
                                                 ✏️
                                             </button>
                                             <button
                                                 className="nb-action-btn danger"
-                                                title={t.vocab.notebookDetail.removeTitle}
+                                                title={t('vocab.notebookDetail.removeTitle')}
                                                 onClick={() => handleRemove(entry)}
                                             >
                                                 🗑️
@@ -748,7 +748,7 @@ export default function NotebookDetailPage() {
                                                             });
                                                         }}
                                                     >
-                                                        {expandedExamples.has(entry.id) ? t.vocab.notebookDetail.collapseExamples : t.vocab.notebookDetail.viewExamples.replace('{n}', String(entry.examples.length))}
+                                                        {expandedExamples.has(entry.id) ? t('vocab.notebookDetail.collapseExamples') : t('vocab.notebookDetail.viewExamples').replace('{n}', String(entry.examples.length))}
                                                     </button>
                                                 )}
                                             </div>
@@ -773,8 +773,8 @@ export default function NotebookDetailPage() {
                 {/* 底部统计 */}
                 {!loading && (
                     <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '12px' }}>
-                    {t.vocab.notebookDetail.wordCount.replace('{n}', String(allEntries.length))}
-                        {entries.length !== allEntries.length && t.vocab.notebookDetail.filteredCount.replace('{n}', String(entries.length))}
+                    {t('vocab.notebookDetail.wordCount').replace('{n}', String(allEntries.length))}
+                        {entries.length !== allEntries.length && t('vocab.notebookDetail.filteredCount').replace('{n}', String(entries.length))}
                     </p>
                 )}
             </div>

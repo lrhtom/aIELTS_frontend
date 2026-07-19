@@ -20,7 +20,7 @@ interface Props {
 }
 
 export default function TodayStudiedSection({ plan }: Props) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [expanded, setExpanded] = useState(false);
     const todayTotal = getPlanTodayTarget(plan);
     const pct = todayTotal > 0
@@ -37,7 +37,7 @@ export default function TodayStudiedSection({ plan }: Props) {
             >
                 <div className="lp-today-title">
                     <span className="lp-today-icon"><ClipboardList size={16} /></span>
-                    <HighlightText text={t.vocab.details.todayTitle} studied={plan.studied_today} total={todayTotal} />
+                    <HighlightText text={t('vocab.details.todayTitle')} studied={plan.studied_today} total={todayTotal} />
                     <span className="lp-today-pct">{pct}%</span>
                 </div>
                 <span className={`lp-today-toggle ${expanded ? 'open' : ''}`}>
@@ -50,7 +50,7 @@ export default function TodayStudiedSection({ plan }: Props) {
                 aria-valuenow={pct}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-label={t.vocab.common.todayStudiedProgressAria}
+                aria-label={t('vocab.common.todayStudiedProgressAria')}
             >
                 <div className="lp-today-progress-fill" style={{ width: `${pct}%` }} />
             </div>

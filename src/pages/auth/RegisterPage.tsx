@@ -25,7 +25,7 @@ const RegisterPage: React.FC = () => {
 
     const navigate = useNavigate();
     const { login, user, isLoading } = useAuth();
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
     useEffect(() => {
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -61,7 +61,7 @@ const RegisterPage: React.FC = () => {
     const handleSendCode = async () => {
         const { username, email } = formData;
         if (!username.trim() || !email.trim()) {
-            setError(t.auth.errorEmailRequired);
+            setError(t('auth.errorEmailRequired'));
             return;
         }
 
@@ -71,15 +71,15 @@ const RegisterPage: React.FC = () => {
 
         try {
             await authApi.sendVerificationCode(email.trim(), username.trim());
-            setInfo(t.auth.codeSent);
+            setInfo(t('auth.codeSent'));
             startCooldown();
         } catch (err) {
             const apiError = err as ApiError;
             const msg = apiError.message || '';
             if (msg.includes('REGISTER_TAKEN')) {
-                setError(t.auth.errorRegisterTaken);
+                setError(t('auth.errorRegisterTaken'));
             } else {
-                setError(t.auth.errorGeneral);
+                setError(t('auth.errorGeneral'));
             }
         } finally {
             setSendingCode(false);
@@ -92,13 +92,13 @@ const RegisterPage: React.FC = () => {
         setInfo('');
 
         if (formData.password !== formData.confirmPassword) {
-            setError(t.auth.errorPasswordMismatch);
+            setError(t('auth.errorPasswordMismatch'));
             return;
         }
 
         // Verification code is only required when the user chose to provide an email.
         if (emailProvided && !formData.verificationCode.trim()) {
-            setError(t.auth.errorCodeInvalid);
+            setError(t('auth.errorCodeInvalid'));
             return;
         }
 
@@ -133,11 +133,11 @@ const RegisterPage: React.FC = () => {
             const apiError = err as ApiError;
             const msg = apiError.message || '';
             if (msg.includes('REGISTER_TAKEN')) {
-                setError(t.auth.errorRegisterTaken);
+                setError(t('auth.errorRegisterTaken'));
             } else if (msg.includes('INVALID_CODE') || msg.includes('VERIFICATION_CODE_REQUIRED')) {
-                setError(t.auth.errorCodeInvalid);
+                setError(t('auth.errorCodeInvalid'));
             } else {
-                setError(msg || t.auth.errorGeneral);
+                setError(msg || t('auth.errorGeneral'));
             }
         } finally {
             setLoading(false);
@@ -145,17 +145,17 @@ const RegisterPage: React.FC = () => {
     };
 
     const sendBtnLabel = sendingCode
-        ? t.auth.sendingCode
+        ? t('auth.sendingCode')
         : cooldown > 0
-            ? t.auth.resendCode.replace('{n}', String(cooldown))
-            : t.auth.sendCode;
+            ? t('auth.resendCode').replace('{n}', String(cooldown))
+            : t('auth.sendCode');
 
     return (
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
-                    <h1>{t.auth.registerTitle}</h1>
-                    <p>{t.auth.registerSubtitle}</p>
+                    <h1>{t('auth.registerTitle')}</h1>
+                    <p>{t('auth.registerSubtitle')}</p>
                 </div>
 
                 <form className="auth-form" onSubmit={handleSubmit}>
@@ -163,7 +163,7 @@ const RegisterPage: React.FC = () => {
                     {info && <div className="auth-info">{info}</div>}
 
                     <div className="form-group">
-                        <label htmlFor="username">{t.auth.username}</label>
+                        <label htmlFor="username">{t('auth.username')}</label>
                         <input
                             type="text"
                             id="username"
@@ -171,14 +171,14 @@ const RegisterPage: React.FC = () => {
                             value={formData.username}
                             onChange={handleChange}
                             required
-                            placeholder={t.auth.username}
+                            placeholder={t('auth.username')}
                             disabled={loading}
                         />
                     </div>
 
                     <div className="form-group">
                         <label htmlFor="email">
-                            {t.auth.email} <span style={{ opacity: 0.6, fontWeight: 'normal' }}>({t.common.optional})</span>
+                            {t('auth.email')} <span style={{ opacity: 0.6, fontWeight: 'normal' }}>({t('common.optional')})</span>
                         </label>
                         <div className="code-input-group">
                             <input
@@ -187,7 +187,7 @@ const RegisterPage: React.FC = () => {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                placeholder={t.auth.email}
+                                placeholder={t('auth.email')}
                                 disabled={loading}
                             />
                             <button
@@ -203,7 +203,7 @@ const RegisterPage: React.FC = () => {
 
                     {emailProvided && (
                         <div className="form-group">
-                            <label htmlFor="verificationCode">{t.auth.verificationCode}</label>
+                            <label htmlFor="verificationCode">{t('auth.verificationCode')}</label>
                             <input
                                 type="text"
                                 id="verificationCode"
@@ -211,7 +211,7 @@ const RegisterPage: React.FC = () => {
                                 value={formData.verificationCode}
                                 onChange={handleChange}
                                 required
-                                placeholder={t.auth.codePlaceholder}
+                                placeholder={t('auth.codePlaceholder')}
                                 maxLength={6}
                                 disabled={loading}
                             />
@@ -219,7 +219,7 @@ const RegisterPage: React.FC = () => {
                     )}
 
                     <div className="form-group">
-                        <label htmlFor="password">{t.auth.password}</label>
+                        <label htmlFor="password">{t('auth.password')}</label>
                         <input
                             type="password"
                             id="password"
@@ -227,14 +227,14 @@ const RegisterPage: React.FC = () => {
                             value={formData.password}
                             onChange={handleChange}
                             required
-                            placeholder={t.auth.password}
+                            placeholder={t('auth.password')}
                             minLength={6}
                             disabled={loading}
                         />
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="confirmPassword">{t.auth.confirmPassword}</label>
+                        <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
                         <input
                             type="password"
                             id="confirmPassword"
@@ -242,7 +242,7 @@ const RegisterPage: React.FC = () => {
                             value={formData.confirmPassword}
                             onChange={handleChange}
                             required
-                            placeholder={t.auth.confirmPassword}
+                            placeholder={t('auth.confirmPassword')}
                             minLength={6}
                             disabled={loading}
                         />
@@ -253,15 +253,15 @@ const RegisterPage: React.FC = () => {
                         className={`auth-submit-btn ${loading ? 'loading' : ''}`}
                         disabled={loading}
                     >
-                        {loading ? t.auth.registering : t.auth.registerBtn}
+                        {loading ? t('auth.registering') : t('auth.registerBtn')}
                     </button>
 
                     <div className="auth-footer">
                         <p>
-                            {t.auth.hasAccount}{' '}
-                            <Link to="/login">{t.auth.toLogin}</Link>
+                            {t('auth.hasAccount')}{' '}
+                            <Link to="/login">{t('auth.toLogin')}</Link>
                         </p>
-                        <Link to="/" className="back-home">{t.auth.backToHome}</Link>
+                        <Link to="/" className="back-home">{t('auth.backToHome')}</Link>
                     </div>
                 </form>
             </div>

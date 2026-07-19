@@ -3,15 +3,15 @@ import Layout from '../../components/layout/Layout';
 import { useLang } from '../../i18n/LanguageContext';
 
 export default function AiTeachersHubPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const navigate = useNavigate();
 
     return (
         <Layout
-            pageTitle={t.writingHub?.teachersHub?.pageTitle || 'AI Writing Teachers'}
-            pageSubtitle={t.writingHub?.teachersHub?.pageSubtitle || 'Choose your AI writing tutoring mode'}
+            pageTitle={t('writingHub.teachersHub.pageTitle') || 'AI Writing Teachers'}
+            pageSubtitle={t('writingHub.teachersHub.pageSubtitle') || 'Choose your AI writing tutoring mode'}
             backUrl="/writing"
-            backText={t.writingHub?.backToPractice || 'Back'}
+            backText={t('writingHub.backToPractice') || 'Back'}
         >
             <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
                 <div style={{
@@ -45,9 +45,9 @@ export default function AiTeachersHubPage() {
                         onClick={() => navigate('/writing/correction')}
                     >
                         <span style={{ fontSize: '24px' }}>📝</span>
-                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub.correction.title}</div>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t('writingHub.correction.title')}</div>
                         <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                            {t.writingHub.correction.desc}
+                            {t('writingHub.correction.desc')}
                         </div>
                     </button>
 
@@ -76,9 +76,9 @@ export default function AiTeachersHubPage() {
                         onClick={() => navigate('/writing/task1-ai-teacher')}
                     >
                         <span style={{ fontSize: '24px' }}>📈</span>
-                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub?.teachersHub?.task1Title || 'Task 1 AI Teacher'}</div>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t('writingHub.teachersHub.task1Title') || 'Task 1 AI Teacher'}</div>
                         <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                            {t.writingHub?.teachersHub?.task1Desc || 'Smart chart trend extraction and data comparison guidance'}
+                            {t('writingHub.teachersHub.task1Desc') || 'Smart chart trend extraction and data comparison guidance'}
                         </div>
                     </button>
 
@@ -107,9 +107,9 @@ export default function AiTeachersHubPage() {
                         onClick={() => navigate('/writing/ai-teacher')}
                     >
                         <span style={{ fontSize: '24px' }}>👨‍🏫</span>
-                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub?.teachersHub?.task2Title || 'Task 2 AI Teacher'}</div>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t('writingHub.teachersHub.task2Title') || 'Task 2 AI Teacher'}</div>
                         <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                            {t.writingHub?.teachersHub?.task2Desc || 'Rapid decoding and paragraph-level deep guidance'}
+                            {t('writingHub.teachersHub.task2Desc') || 'Rapid decoding and paragraph-level deep guidance'}
                         </div>
                     </button>
 
@@ -137,9 +137,9 @@ export default function AiTeachersHubPage() {
                         onClick={() => navigate('/writing/ai-teachers/records')}
                     >
                         <span style={{ fontSize: '24px' }}>📂</span>
-                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t.writingHub?.teachersHub?.recordsTitle || 'Service Records'}</div>
+                        <div style={{ fontSize: '18px', fontWeight: '600' }}>{t('writingHub.teachersHub.recordsTitle') || 'Service Records'}</div>
                         <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
-                            {t.writingHub?.teachersHub?.recordsDesc || 'Review past corrections and AI lessons'}
+                            {t('writingHub.teachersHub.recordsDesc') || 'Review past corrections and AI lessons'}
                         </div>
                     </button>
                 </div>

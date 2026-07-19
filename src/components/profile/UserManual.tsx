@@ -8,7 +8,7 @@ import type { ManualSection } from '../../data/manualData';
  * Featuring real-time search, breadcrumbs, and a fully collapsible sidebar (Total Hide Mode).
  */
 const UserManual: React.FC = () => {
-    const { lang, translations: t } = useLang();
+    const { lang, t } = useLang();
     const data = manualData[lang];
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -72,13 +72,13 @@ const UserManual: React.FC = () => {
         <div className="manual-container optimized">
             <div className="manual-header">
                 <div className="manual-header-left">
-                    <h2>{t.auth.manualTitle}</h2>
+                    <h2>{t('auth.manualTitle')}</h2>
                 </div>
                 <div className="manual-search-wrapper">
                     <span className="search-icon">🔍</span>
                     <input
                         type="text"
-                        placeholder={t.auth.manualSearch}
+                        placeholder={t('auth.manualSearch')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="manual-search-input"
@@ -123,7 +123,7 @@ const UserManual: React.FC = () => {
                                 ))
                             ) : (
                                 <div className="manual-nav-empty">
-                                    {t.auth.manualEmpty}
+                                    {t('auth.manualEmpty')}
                                 </div>
                             )}
                         </nav>
@@ -134,7 +134,7 @@ const UserManual: React.FC = () => {
                 <button
                     className={`manual-toggle-handle ${isSidebarClosed ? 'closed' : ''}`}
                     onClick={() => setIsSidebarClosed(!isSidebarClosed)}
-                    title={isSidebarClosed ? t.auth.manualExpandSidebar : t.auth.manualCollapseSidebar}
+                    title={isSidebarClosed ? t('auth.manualExpandSidebar') : t('auth.manualCollapseSidebar')}
                 >
                     <svg
                         viewBox="0 0 24 24"
@@ -174,8 +174,8 @@ const UserManual: React.FC = () => {
                     ) : (
                         <div className="manual-empty-state fade-in">
                             <div className="empty-icon">📖</div>
-                            <h3>{t.auth.manualTitle}</h3>
-                            <p>{t.auth.manualSearch}</p>
+                            <h3>{t('auth.manualTitle')}</h3>
+                            <p>{t('auth.manualSearch')}</p>
                         </div>
                     )}
                 </main>

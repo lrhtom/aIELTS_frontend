@@ -11,8 +11,7 @@ interface UserBackpackProps {
 interface ItemMeta { name: string; icon: string; desc: string; use: string; }
 
 export default function UserBackpack({ onBack }: UserBackpackProps) {
-    const { lang, translations: t } = useLang();
-    const bp = t.profile.backpack;
+    const { lang, t } = useLang();
 
     const [items, setItems] = useState<BackpackItem[]>([]);
     const [status, setStatus] = useState<CheckinStatusResponse | null>(null);
@@ -69,13 +68,13 @@ export default function UserBackpack({ onBack }: UserBackpackProps) {
         try {
             const res = await checkinApi.makeup(date);
             if (res.ok) {
-                showToast(res.message || bp.makeup.success, 'success');
+                showToast(res.message || t('profile.backpack.makeup.success'), 'success');
                 await load();
             } else {
-                showToast(res.message || bp.makeup.noCard, 'error');
+                showToast(res.message || t('profile.backpack.makeup.noCard'), 'error');
             }
         } catch (e) {
-            showToast((e as { message?: string })?.message || bp.makeup.noCard, 'error');
+            showToast((e as { message?: string })?.message || t('profile.backpack.makeup.noCard'), 'error');
         } finally {
             setBusyDate(null);
         }
@@ -88,24 +87,24 @@ export default function UserBackpack({ onBack }: UserBackpackProps) {
         <div className="user-backpack">
             <div className="backpack-header">
                 <button className="back-button" onClick={onBack}>
-                    ← {t.profile.menu.home}
+                    ← {t('profile.menu.home')}
                 </button>
-                <h2>🎒 {t.profile.menu.backpack}</h2>
+                <h2>🎒 {t('profile.menu.backpack')}</h2>
             </div>
 
             <div className="backpack-content">
                 {loading ? (
-                    <div className="empty-backpack"><p>{bp.loading}</p></div>
+                    <div className="empty-backpack"><p>{t('profile.backpack.loading')}</p></div>
                 ) : !hasItems ? (
                     <div className="empty-backpack">
                         <div className="empty-icon">📂</div>
-                        <p>{bp.empty}</p>
-                        <p className="empty-hint">{bp.emptyHint}</p>
+                        <p>{t('profile.backpack.empty')}</p>
+                        <p className="empty-hint">{t('profile.backpack.emptyHint')}</p>
                     </div>
                 ) : (
                     <div className="bp-grid">
                         {items.filter(i => i.quantity > 0).map(item => {
-                            const metaMap = bp.items as Record<string, ItemMeta>;
+                            const metaMap = t('profile.backpack.items', { returnObjects: true }) as Record<string, ItemMeta>;
                             const meta = metaMap[item.item_type];
                             const name = meta?.name ?? item.item_type;
                             const icon = meta?.icon ?? '📦';
@@ -137,10 +136,10 @@ export default function UserBackpack({ onBack }: UserBackpackProps) {
 
                 {makeupOpen && makeupCards > 0 && (
                     <div className="bp-makeup-panel">
-                        <div className="bp-makeup-title">{bp.makeup.title}</div>
-                        <div className="bp-makeup-hint">{bp.makeup.hint.replace('{bonus}', '1,000')}</div>
+                        <div className="bp-makeup-title">{t('profile.backpack.makeup.title')}</div>
+                        <div className="bp-makeup-hint">{t('profile.backpack.makeup.hint').replace('{bonus}', '1,000')}</div>
                         {missedDays.length === 0 ? (
-                            <div className="bp-makeup-empty">{bp.makeup.noGap.replace('{n}', String(windowN))}</div>
+                            <div className="bp-makeup-empty">{t('profile.backpack.makeup.noGap').replace('{n}', String(windowN))}</div>
                         ) : (
                             <div className="bp-makeup-days">
                                 {missedDays.map(day => (

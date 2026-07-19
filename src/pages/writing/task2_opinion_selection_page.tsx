@@ -3,25 +3,23 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import AiModelSelector from '../../components/common/AiModelSelector';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import { clearTask2Session } from '../../utils/writing_session';
 import '../../styles/practice_page.css';
 
 export default function Task2OpinionSelectionPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { t } = useLang();
     const selectedTopicCategory = (searchParams.get('topic') || 'all').trim().toLowerCase() || 'all';
     const topicQuery = `topic=${encodeURIComponent(selectedTopicCategory)}`;
 
     const [selectedType, setSelectedType] = useState<string | null>(null);
 
     const taskTypes = [
-        { id: 'opinion_agree', nameZh: t.task2OpinionSelection.types.agree.title, nameEn: t.task2OpinionSelection.types.agree.nameEn, icon: '⚖️', desc: t.task2OpinionSelection.types.agree.desc },
-        { id: 'opinion_discuss', nameZh: t.task2OpinionSelection.types.discuss.title, nameEn: t.task2OpinionSelection.types.discuss.nameEn, icon: '🗣️', desc: t.task2OpinionSelection.types.discuss.desc },
-        { id: 'opinion_advantages', nameZh: t.task2OpinionSelection.types.advantages.title, nameEn: t.task2OpinionSelection.types.advantages.nameEn, icon: '📈', desc: t.task2OpinionSelection.types.advantages.desc },
-        { id: 'opinion_random', nameZh: t.task2OpinionSelection.types.random.title, nameEn: t.task2OpinionSelection.types.random.nameEn, icon: '🎲', desc: t.task2OpinionSelection.types.random.desc },
+        { id: 'opinion_agree', nameZh: t('task2OpinionSelection.types.agree.title'), nameEn: t('task2OpinionSelection.types.agree.nameEn'), icon: '⚖️', desc: t('task2OpinionSelection.types.agree.desc') },
+        { id: 'opinion_discuss', nameZh: t('task2OpinionSelection.types.discuss.title'), nameEn: t('task2OpinionSelection.types.discuss.nameEn'), icon: '🗣️', desc: t('task2OpinionSelection.types.discuss.desc') },
+        { id: 'opinion_advantages', nameZh: t('task2OpinionSelection.types.advantages.title'), nameEn: t('task2OpinionSelection.types.advantages.nameEn'), icon: '📈', desc: t('task2OpinionSelection.types.advantages.desc') },
+        { id: 'opinion_random', nameZh: t('task2OpinionSelection.types.random.title'), nameEn: t('task2OpinionSelection.types.random.nameEn'), icon: '🎲', desc: t('task2OpinionSelection.types.random.desc') },
     ];
 
     const handleStart = () => {
@@ -44,9 +42,9 @@ export default function Task2OpinionSelectionPage() {
     return (
         <Layout
             backUrl={`/writing/task2?${topicQuery}`}
-            backText={t.task2OpinionSelection.backToTask2Selection}
-            pageTitle={t.task2OpinionSelection.heading}
-            pageSubtitle={t.task2OpinionSelection.subheading}
+            backText={t('task2OpinionSelection.backToTask2Selection')}
+            pageTitle={t('task2OpinionSelection.heading')}
+            pageSubtitle={t('task2OpinionSelection.subheading')}
             headerRight={<AiModelSelector variant="minimal" />}
         >
             <div className="practice-container">
@@ -81,7 +79,7 @@ export default function Task2OpinionSelectionPage() {
                             disabled={!selectedType}
                             style={{ padding: '15px 40px', fontSize: '1.2rem', borderRadius: '12px', opacity: selectedType ? 1 : 0.5 }}
                         >
-                            {t.task2OpinionSelection.startBtn}
+                            {t('task2OpinionSelection.startBtn')}
                         </button>
                     </div>
                 </div>

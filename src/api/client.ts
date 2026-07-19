@@ -100,7 +100,7 @@ apiClient.interceptors.response.use(
             }));
         }
         if (error.response?.status === 402) {
-            const errorMessage = error.response?.data?.message || currentT().billing.insufficientBalance;
+            const errorMessage = error.response?.data?.message || currentT()('billing.insufficientBalance');
             console.error('AT币余额不足:', errorMessage);
             window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
                 detail: {
@@ -251,7 +251,7 @@ export async function fetchStream(path: string, options: RequestOptions = {}): P
     if (response.status === 402) {
         // Parse failure must not swallow the deliberate 402 throw below — only
         // the .json() call is guarded, so err.status survives to the caller.
-        let errorMessage = currentT().billing.insufficientBalance;
+        let errorMessage = currentT()('billing.insufficientBalance');
         let requiredBalance: number | undefined;
         let currentBalance: number | undefined;
         try {
@@ -269,7 +269,7 @@ export async function fetchStream(path: string, options: RequestOptions = {}): P
     }
 
     if (!response.ok) {
-        let msg = currentT().billing.requestFailed;
+        let msg = currentT()('billing.requestFailed');
         try {
             const data = await response.json();
             msg = data.error || data.message || msg;

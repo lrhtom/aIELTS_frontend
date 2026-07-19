@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { showConfirm } from '../common/ConfirmService';
 import { forfeitMockPart, type MockExamPart } from '../../api/mock';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 
 interface MockGuardOptions {
     mockId: number;
@@ -21,8 +20,7 @@ interface MockGuardOptions {
 /** 防退出守卫。返回 confirmExit —— 页面自己的返回/退出按钮应调用它。 */
 export function useMockExamGuard({ mockId, part, active, mode = 'strict' }: MockGuardOptions) {
     const navigate = useNavigate();
-    const { lang } = useLang();
-    const t = translations[lang].mock.examMode;
+    const { t } = useLang();
     const activeRef = useRef(active);
     useEffect(() => { activeRef.current = active; }, [active]);
     // forfeit 进行中/已发出：popstate 重入时不再弹第二次确认
@@ -46,10 +44,10 @@ export function useMockExamGuard({ mockId, part, active, mode = 'strict' }: Mock
             return true;
         }
         const ok = await showConfirm({
-            title: t.exitConfirmTitle,
-            message: t.exitConfirmBody,
-            confirmText: t.exitConfirmOk,
-            cancelText: t.exitConfirmCancel,
+            title: t('mock.examMode.exitConfirmTitle'),
+            message: t('mock.examMode.exitConfirmBody'),
+            confirmText: t('mock.examMode.exitConfirmOk'),
+            cancelText: t('mock.examMode.exitConfirmCancel'),
             danger: true,
         });
         if (ok) await doForfeit();

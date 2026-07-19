@@ -21,7 +21,7 @@ interface PaginatedResponse {
 }
 
 export default function AdminFeedback() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
@@ -36,11 +36,11 @@ export default function AdminFeedback() {
             setTotalCount(response.data.count);
         } catch (error) {
             console.error('Failed to fetch feedbacks:', error);
-            toast.error(t.common.error);
+            toast.error(t('common.error'));
         } finally {
             setIsLoading(false);
         }
-    }, [t.common.error]);
+    }, [t]);
 
     useEffect(() => {
         fetchFeedbacks(currentPage);
@@ -52,19 +52,19 @@ export default function AdminFeedback() {
             setFeedbacks(prev => prev.map(item =>
                 item.id === id ? { ...item, is_resolved: !currentStatus } : item
             ));
-            toast.success(t.common.saved);
+            toast.success(t('common.saved'));
         } catch (error) {
             console.error('Failed to update status:', error);
-            toast.error(t.common.error);
+            toast.error(t('common.error'));
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!(await showConfirm({ message: t.profile.account.confirmDelete, danger: true }))) return;
+        if (!(await showConfirm({ message: t('profile.account.confirmDelete'), danger: true }))) return;
 
         try {
             await apiClient.delete(`/admin/feedback/${id}/delete`);
-            toast.success(t.common.saved);
+            toast.success(t('common.saved'));
             // If it's the last item on the page and not the first page, go back
             if (feedbacks.length === 1 && currentPage > 1) {
                 setCurrentPage(prev => prev - 1);
@@ -73,7 +73,7 @@ export default function AdminFeedback() {
             }
         } catch (error) {
             console.error('Failed to delete feedback:', error);
-            toast.error(t.common.error);
+            toast.error(t('common.error'));
         }
     };
 
@@ -82,12 +82,12 @@ export default function AdminFeedback() {
     const handleJumpToPage = () => {
         const rawValue = jumpPageInput.trim();
         if (!rawValue) {
-            toast.error(t.profile.admin.users.toastEnterPage);
+            toast.error(t('profile.admin.users.toastEnterPage'));
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            toast.error(t.profile.admin.users.toastInvalidPage.replace('{n}', String(totalPages)));
+            toast.error(t('profile.admin.users.toastInvalidPage').replace('{n}', String(totalPages)));
             return;
         }
         setCurrentPage(Math.min(totalPages, Math.max(1, parsed)));
@@ -138,7 +138,7 @@ export default function AdminFeedback() {
                     &raquo;
                 </button>
                 <div className="page-jump">
-                    <span>{t.profile.admin.pagination.jumpTo}</span>
+                    <span>{t('profile.admin.pagination.jumpTo')}</span>
                     <input
                         type="text"
                         inputMode="numeric"
@@ -150,8 +150,8 @@ export default function AdminFeedback() {
                             }
                         }}
                         onKeyDown={e => { if (e.key === 'Enter') handleJumpToPage(); }}
-                        placeholder={t.profile.admin.pagination.pagePlaceholder}
-                        aria-label={t.profile.admin.pagination.jumpTo}
+                        placeholder={t('profile.admin.pagination.pagePlaceholder')}
+                        aria-label={t('profile.admin.pagination.jumpTo')}
                     />
                     <button
                         className="page-btn page-jump-btn"
@@ -159,7 +159,7 @@ export default function AdminFeedback() {
                         onClick={handleJumpToPage}
                         disabled={!jumpPageInput.trim()}
                     >
-                        {t.profile.admin.pagination.goBtn}
+                        {t('profile.admin.pagination.goBtn')}
                     </button>
                 </div>
             </div>
@@ -169,16 +169,16 @@ export default function AdminFeedback() {
     return (
         <div className="admin-feedback">
             <div className="admin-header">
-                <h2>⚙️ {t.profile.admin.feedback.title}</h2>
+                <h2>⚙️ {t('profile.admin.feedback.title')}</h2>
                 <div className="admin-stats">
-                    {t.profile.admin.feedback.total.replace('{count}', totalCount.toString())}
+                    {t('profile.admin.feedback.total').replace('{count}', totalCount.toString())}
                 </div>
             </div>
 
             {isLoading ? (
-                <div className="loading-state">{t.common.loading}</div>
+                <div className="loading-state">{t('common.loading')}</div>
             ) : feedbacks.length === 0 ? (
-                <div className="empty-state">{t.profile.admin.feedback.noData}</div>
+                <div className="empty-state">{t('profile.admin.feedback.noData')}</div>
             ) : (
                 <div className="feedback-list">
                     {feedbacks.map(item => (
@@ -186,7 +186,7 @@ export default function AdminFeedback() {
                             <div className="card-main">
                                 <div className="card-header">
                                     <span className={`status-badge ${item.is_resolved ? 'done' : 'pending'}`}>
-                                        {item.is_resolved ? t.profile.admin.feedback.resolved : t.profile.admin.feedback.unresolved}
+                                        {item.is_resolved ? t('profile.admin.feedback.resolved') : t('profile.admin.feedback.unresolved')}
                                     </span>
                                     <h3 className="card-title">{item.title}</h3>
                                     <span className="card-user">@{item.username}</span>
@@ -203,10 +203,10 @@ export default function AdminFeedback() {
                                         checked={item.is_resolved}
                                         onChange={() => handleToggleResolve(item.id, item.is_resolved)}
                                     />
-                                    <span>{t.profile.admin.feedback.resolve}</span>
+                                    <span>{t('profile.admin.feedback.resolve')}</span>
                                 </label>
                                 <button className="delete-btn" onClick={() => handleDelete(item.id)}>
-                                    {t.profile.admin.feedback.delete}
+                                    {t('profile.admin.feedback.delete')}
                                 </button>
                             </div>
                         </div>

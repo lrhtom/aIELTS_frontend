@@ -8,7 +8,6 @@ import { showToast } from '../../components/common/Toast';
 import { api } from '../../api/client';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import { sanitize } from '../../utils/safe_html';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import '../../styles/practice_page.css';
@@ -30,8 +29,7 @@ const TASK1_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const TASK1_IMAGE_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
 
 export default function WritingCorrectionPage() {
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { t, lang } = useLang();
 
     const [text, setText] = useState('');
     const [promptText, setPromptText] = useState('');
@@ -86,7 +84,7 @@ export default function WritingCorrectionPage() {
                     }
                 })
                 .catch(() => {
-                    showToast(t.writingCorrection.loadRecordFail, 'error');
+                    showToast(t('writingCorrection.loadRecordFail'), 'error');
                 });
         }
     }, []); // Only run once on mount since recordId is now state
@@ -111,10 +109,10 @@ export default function WritingCorrectionPage() {
             }
         }).catch(err => {
             console.error('Bank correction load failed:', err);
-            showToast(t.writingCorrection.loadBankFail, 'error');
+            showToast(t('writingCorrection.loadBankFail'), 'error');
             navigate('/practice/ai/bank');
         });
-    }, [bankIdFromUrl, lang, navigate]);
+    }, [bankIdFromUrl, t, navigate]);
 
     // Auto-evaluate flow: practice page → correction page with prefilled essay
     useEffect(() => {
@@ -173,11 +171,11 @@ export default function WritingCorrectionPage() {
 
     const handleTask1ImageFile = async (file: File) => {
         if (!TASK1_IMAGE_ALLOWED_TYPES.has((file.type || '').toLowerCase())) {
-            showToast(t.writingCorrection.task1ImageInvalidType, 'error');
+            showToast(t('writingCorrection.task1ImageInvalidType'), 'error');
             return;
         }
         if (file.size > TASK1_IMAGE_MAX_SIZE) {
-            showToast(t.writingCorrection.task1ImageTooLarge, 'error');
+            showToast(t('writingCorrection.task1ImageTooLarge'), 'error');
             return;
         }
 
@@ -186,7 +184,7 @@ export default function WritingCorrectionPage() {
             setTask1ImageDataUrl(dataUrl);
             setTask1ImageName(file.name || 'task1-image');
         } catch {
-            showToast(t.writingCorrection.task1ImageReadFail, 'error');
+            showToast(t('writingCorrection.task1ImageReadFail'), 'error');
         }
     };
 
@@ -216,7 +214,7 @@ export default function WritingCorrectionPage() {
         overrideTask1ImageDataUrl: string | null = null,
     ) => {
         if (!essayText.trim()) {
-            showToast(t.writingCorrection.toastEmpty, 'error');
+            showToast(t('writingCorrection.toastEmpty'), 'error');
             return;
         }
         setIsEvaluating(true);
@@ -240,12 +238,12 @@ export default function WritingCorrectionPage() {
             });
             setResult(res);
             setIsSaved(true);
-            showToast(t.writingCorrection.toastSuccess, 'success');
+            showToast(t('writingCorrection.toastSuccess'), 'success');
 
             if (currentBankId) {
                 submitAIQuestion(currentBankId, essayText, res).catch(err => {
                     console.error('Bank submit failed:', err);
-                    showToast(t.writingCorrection.saveBankFail, 'error');
+                    showToast(t('writingCorrection.saveBankFail'), 'error');
                 });
                 return;
             }
@@ -256,7 +254,7 @@ export default function WritingCorrectionPage() {
                     method: 'POST',
                     body: {
                         service_type: 'correction',
-                        title: promptStr ? (promptStr.slice(0, 30) + '...') : t.writingCorrection.untitledFallback,
+                        title: promptStr ? (promptStr.slice(0, 30) + '...') : t('writingCorrection.untitledFallback'),
                         content: {
                             result: res,
                             text: essayText,
@@ -275,7 +273,7 @@ export default function WritingCorrectionPage() {
         } catch (err: unknown) {
             console.error('Submit writing correction error:', err);
             const error = err as { message?: string; title?: string };
-            showToast(error.message || t.writingCorrection.toastFail, 'error', error.title || t.writingCorrection.toastErrorTitle);
+            showToast(error.message || t('writingCorrection.toastFail'), 'error', error.title || t('writingCorrection.toastErrorTitle'));
         } finally {
             setIsEvaluating(false);
         }
@@ -296,10 +294,10 @@ export default function WritingCorrectionPage() {
     };
 
     const scores = result ? [
-        { label: taskType === 'task1' ? t.writingCorrection.taTask1 : t.writingCorrection.taTr, val: result.Task_Response },
-        { label: t.writingCorrection.ccLabelZh, val: result.Coherence_Cohesion },
-        { label: t.writingCorrection.lrLabelZh, val: result.Lexical_Resource },
-        { label: t.writingCorrection.graLabelZh, val: result.Grammatical_Range },
+        { label: taskType === 'task1' ? t('writingCorrection.taTask1') : t('writingCorrection.taTr'), val: result.Task_Response },
+        { label: t('writingCorrection.ccLabelZh'), val: result.Coherence_Cohesion },
+        { label: t('writingCorrection.lrLabelZh'), val: result.Lexical_Resource },
+        { label: t('writingCorrection.graLabelZh'), val: result.Grammatical_Range },
     ] : [];
 
 
@@ -431,9 +429,9 @@ export default function WritingCorrectionPage() {
 
     return (
         <Layout
-            pageTitle={t.writingCorrection.title}
+            pageTitle={t('writingCorrection.title')}
             backUrl={mockId ? `/mock/${mockId}` : (bankId ? '/practice/ai/bank' : (recordId ? "/writing/ai-teachers/records" : "/writing"))}
-            backText={mockId ? t.mock.examMode.backToHub : (bankId ? t.writingCorrection.backAiBank : (recordId ? t.writingCorrection.backRecords : t.writingCorrection.backToHall))}
+            backText={mockId ? t('mock.examMode.backToHub') : (bankId ? t('writingCorrection.backAiBank') : (recordId ? t('writingCorrection.backRecords') : t('writingCorrection.backToHall')))}
             onBack={mockId ? () => navigate(`/mock/${mockId}`) : (bankId ? () => navigate('/practice/ai/bank') : handleBack)}
             headerRight={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -444,7 +442,7 @@ export default function WritingCorrectionPage() {
                             onClick={handleRedoFromBank}
                             style={{ padding: '6px 14px', fontSize: '0.85rem' }}
                         >
-                            🔁 {t.writingCorrection.redoBtn}
+                            🔁 {t('writingCorrection.redoBtn')}
                         </button>
                     )}
                     {!recordId && !bankId && <AiModelSelector variant="minimal" onModelChange={(nextProvider) => setProvider(nextProvider)} />}
@@ -459,13 +457,13 @@ export default function WritingCorrectionPage() {
                             {/* 1. Left: Essay with Annotations */}
                             <div className="wc-essay-panel">
                                 <div className="wc-panel-header">
-                                    <div className="wc-panel-title">✍️ {t.writingCorrection.annotatedEssayTitle}</div>
+                                    <div className="wc-panel-title">✍️ {t('writingCorrection.annotatedEssayTitle')}</div>
                                 </div>
                                 
                                 {/* Essay Prompt Placeholder */}
                                 <div style={{ padding: '24px 32px 0 32px', color: '#475569', fontSize: '0.95rem', fontStyle: 'italic', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
-                                    <div style={{ fontWeight: 600, marginBottom: '8px', color: '#334155' }}>📝 {t.writingCorrection.promptSectionTitle}</div>
-                                    {promptText || t.writingCorrection.noPromptMessage}
+                                    <div style={{ fontWeight: 600, marginBottom: '8px', color: '#334155' }}>📝 {t('writingCorrection.promptSectionTitle')}</div>
+                                    {promptText || t('writingCorrection.noPromptMessage')}
                                 </div>
 
                                 <div className="wc-essay-content" onClick={handleEssayClick}>
@@ -477,18 +475,18 @@ export default function WritingCorrectionPage() {
                             <div className="wc-corrections-panel">
                                 <div className="wc-tabs">
                                     {result.Sentence_Corrections && result.Sentence_Corrections.length > 0 && (
-                                        <button type="button" className={`wc-tab-btn${activeTab === 'sentence' ? ' active' : ''}`} onClick={() => setActiveTab('sentence')}>{t.writingCorrection.tabSentence}</button>
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'sentence' ? ' active' : ''}`} onClick={() => setActiveTab('sentence')}>{t('writingCorrection.tabSentence')}</button>
                                     )}
                                     {result.Vocabulary_Upgrades && result.Vocabulary_Upgrades.length > 0 && (
-                                        <button type="button" className={`wc-tab-btn${activeTab === 'vocab' ? ' active' : ''}`} onClick={() => setActiveTab('vocab')}>{t.writingCorrection.tabVocab}</button>
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'vocab' ? ' active' : ''}`} onClick={() => setActiveTab('vocab')}>{t('writingCorrection.tabVocab')}</button>
                                     )}
                                     {result.Revised_Essay && (
-                                        <button type="button" className={`wc-tab-btn${activeTab === 'improved' ? ' active' : ''}`} onClick={() => setActiveTab('improved')}>{t.writingCorrection.tabImproved}</button>
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'improved' ? ' active' : ''}`} onClick={() => setActiveTab('improved')}>{t('writingCorrection.tabImproved')}</button>
                                     )}
                                     {result.Model_Essay && (
-                                        <button type="button" className={`wc-tab-btn${activeTab === 'model' ? ' active' : ''}`} onClick={() => setActiveTab('model')}>{t.writingCorrection.tabModel}</button>
+                                        <button type="button" className={`wc-tab-btn${activeTab === 'model' ? ' active' : ''}`} onClick={() => setActiveTab('model')}>{t('writingCorrection.tabModel')}</button>
                                     )}
-                                    <button type="button" className={`wc-tab-btn${activeTab === 'stats' ? ' active' : ''}`} onClick={() => setActiveTab('stats')}>{t.writingCorrection.tabStats}</button>
+                                    <button type="button" className={`wc-tab-btn${activeTab === 'stats' ? ' active' : ''}`} onClick={() => setActiveTab('stats')}>{t('writingCorrection.tabStats')}</button>
                                 </div>
 
                                 <div className="wc-corrections-content">
@@ -527,13 +525,13 @@ export default function WritingCorrectionPage() {
                                                 <div key={idx} id={`corr-${corr.original}`} className={`wc-correction-card ${corr.severity === 'suggestion' ? 'severity-suggestion' : 'severity-warning'}`}>
                                                     <div style={{ marginBottom: '8px' }}>
                                                         <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#fee2e2', color: '#ef4444', fontWeight: 600, marginRight: '8px' }}>
-                                                            {t.writingCorrection.origLabel}
+                                                            {t('writingCorrection.origLabel')}
                                                         </span>
                                                         <span style={{ textDecoration: 'line-through', color: 'var(--color-text-dim)' }}>{corr.original}</span>
                                                     </div>
                                                     <div style={{ marginBottom: '12px' }}>
                                                         <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#d1fae5', color: '#10b981', fontWeight: 600, marginRight: '8px' }}>
-                                                            {t.writingCorrection.improvedLabel}
+                                                            {t('writingCorrection.improvedLabel')}
                                                         </span>
                                                         <span style={{ color: 'var(--color-text)', fontWeight: 500 }}>{corr.improved}</span>
                                                     </div>
@@ -567,7 +565,7 @@ export default function WritingCorrectionPage() {
                                         <div className="wc-correction-card">
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                                 <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
-                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{t.writingCorrection.transEnBtn}</button>
+                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{t('writingCorrection.transEnBtn')}</button>
                                                     <button type="button" className={`wc-trans-btn${transMode === 'zh' ? ' active' : ''}`} onClick={async () => {
                                                         setTransMode('zh');
                                                         if (!translatedTexts['improved']) {
@@ -582,13 +580,13 @@ export default function WritingCorrectionPage() {
                                                             }
                                                         }
                                                     }}>
-                                                        {t.writingCorrection.transZhBtn}
+                                                        {t('writingCorrection.transZhBtn')}
                                                     </button>
                                                 </div>
                                             </div>
                                             <div style={{ lineHeight: 1.8, fontSize: '1.05rem', color: '#334155' }}>
                                                 {isTranslating && transMode === 'zh' ? (
-                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{t.writingCorrection.transLoading}</div>
+                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{t('writingCorrection.transLoading')}</div>
                                                 ) : (
                                                     (transMode === 'en' ? result.Revised_Essay : (translatedTexts['improved'] || '')).split(/\n\n+/).map((para, idx) => (
                                                         <p key={idx} style={{ marginBottom: '16px' }}>{para.trim()}</p>
@@ -602,7 +600,7 @@ export default function WritingCorrectionPage() {
                                         <div className="wc-correction-card">
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                                 <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
-                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{t.writingCorrection.transEnBtn}</button>
+                                                    <button type="button" className={`wc-trans-btn${transMode === 'en' ? ' active' : ''}`} onClick={() => setTransMode('en')}>{t('writingCorrection.transEnBtn')}</button>
                                                     <button type="button" className={`wc-trans-btn${transMode === 'zh' ? ' active' : ''}`} onClick={async () => {
                                                         setTransMode('zh');
                                                         if (!translatedTexts['model']) {
@@ -617,13 +615,13 @@ export default function WritingCorrectionPage() {
                                                             }
                                                         }
                                                     }}>
-                                                        {t.writingCorrection.transZhBtn}
+                                                        {t('writingCorrection.transZhBtn')}
                                                     </button>
                                                 </div>
                                             </div>
                                             <div style={{ lineHeight: 1.8, fontSize: '1.05rem', color: '#334155' }}>
                                                 {isTranslating && transMode === 'zh' ? (
-                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{t.writingCorrection.transLoading}</div>
+                                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>{t('writingCorrection.transLoading')}</div>
                                                 ) : (
                                                     (transMode === 'en' ? result.Model_Essay : (translatedTexts['model'] || '')).split(/\n\n+/).map((para, idx) => (
                                                         <p key={idx} style={{ marginBottom: '16px' }}>{para.trim()}</p>
@@ -640,8 +638,8 @@ export default function WritingCorrectionPage() {
                                 <div className="wc-score-header-box">
                                     <div className="wc-score-overall-flex">
                                         <div>
-                                            <div className="wc-score-overall-text">{t.writingCorrection.overallBand}</div>
-                                            <div className="wc-score-overall-sub">{t.writingCorrection.overallBandSubtitle}</div>
+                                            <div className="wc-score-overall-text">{t('writingCorrection.overallBand')}</div>
+                                            <div className="wc-score-overall-sub">{t('writingCorrection.overallBandSubtitle')}</div>
                                         </div>
                                         <div className="wc-score-overall-val">{result.Overall_Band.toFixed(1)}</div>
                                     </div>
@@ -661,7 +659,7 @@ export default function WritingCorrectionPage() {
                                 <div style={{ padding: '20px', borderTop: '1px solid #f1f5f9' }}>
                                     <div className="wc-overall-feedback">
                                         <h3 style={{ marginBottom: '16px', fontSize: '1.05rem', color: '#1e293b', fontWeight: 700 }}>
-                                            {t.writingCorrection.comprehensiveEval}
+                                            {t('writingCorrection.comprehensiveEval')}
                                         </h3>
                                         
                                         {/* Strengths */}
@@ -669,7 +667,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#15803d', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }}></div>
-                                                    {t.writingCorrection.strengths}
+                                                    {t('writingCorrection.strengths')}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Feedback_Strengths.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -682,7 +680,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#b45309', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></div>
-                                                    {t.writingCorrection.areasForImprovement}
+                                                    {t('writingCorrection.areasForImprovement')}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Feedback_Improvements.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -695,7 +693,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#1d4ed8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6' }}></div>
-                                                    {t.writingCorrection.actionableStrategies}
+                                                    {t('writingCorrection.actionableStrategies')}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Actionable_Advice.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -708,7 +706,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#6d28d9', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#8b5cf6' }}></div>
-                                                    {t.writingCorrection.specificTasks}
+                                                    {t('writingCorrection.specificTasks')}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Feedback_Tasks.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -721,7 +719,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#0f766e', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#14b8a6' }}></div>
-                                                    {t.writingCorrection.pathToImprovement}
+                                                    {t('writingCorrection.pathToImprovement')}
                                                 </div>
                                                 <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', color: '#475569', fontSize: '0.95rem' }}>
                                                     {result.Feedback_Path.map((item, idx) => <li key={idx} style={{ lineHeight: 1.5 }}>{item}</li>)}
@@ -734,7 +732,7 @@ export default function WritingCorrectionPage() {
                                             <div style={{ marginBottom: '20px' }}>
                                                 <div style={{ fontWeight: 600, color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#94a3b8' }}></div>
-                                                    {t.writingCorrection.examinerFeedbackTab}
+                                                    {t('writingCorrection.examinerFeedbackTab')}
                                                 </div>
                                                 <div style={{ paddingLeft: '14px', borderLeft: '2px solid #f1f5f9', marginLeft: '3px' }}>
                                                     {(result.Feedback || result.feedback || '').split('\n').map((line, idx) => (
@@ -747,10 +745,10 @@ export default function WritingCorrectionPage() {
                                         {/* Accordions for Detailed Criteria */}
                                         <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                             {[
-                                                { key: 'TR', label: taskType === 'task1' ? t.writingCorrection.trFeedbackLabelTask1 : t.writingCorrection.trFeedbackLabelTask2, content: result.Feedback_TR },
-                                                { key: 'CC', label: t.writingCorrection.ccFeedbackLabel, content: result.Feedback_CC },
-                                                { key: 'LR', label: t.writingCorrection.lrFeedbackLabel, content: result.Feedback_LR },
-                                                { key: 'GRA', label: t.writingCorrection.graFeedbackLabel, content: result.Feedback_GRA }
+                                                { key: 'TR', label: taskType === 'task1' ? t('writingCorrection.trFeedbackLabelTask1') : t('writingCorrection.trFeedbackLabelTask2'), content: result.Feedback_TR },
+                                                { key: 'CC', label: t('writingCorrection.ccFeedbackLabel'), content: result.Feedback_CC },
+                                                { key: 'LR', label: t('writingCorrection.lrFeedbackLabel'), content: result.Feedback_LR },
+                                                { key: 'GRA', label: t('writingCorrection.graFeedbackLabel'), content: result.Feedback_GRA }
                                             ].map(crit => crit.content ? (
                                                 <div key={crit.key} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                                                     <button 
@@ -788,26 +786,26 @@ export default function WritingCorrectionPage() {
                                 onClick={() => { setTaskType('task1'); setResult(null); }}
                                 disabled={isEvaluating}
                             >
-                                {t.writingCorrection.task1Btn}
+                                {t('writingCorrection.task1Btn')}
                             </button>
                             <button
                                 className={`wc-type-btn${taskType === 'task2' ? ' active' : ''}`}
                                 onClick={() => { setTaskType('task2'); setResult(null); }}
                                 disabled={isEvaluating}
                             >
-                                {t.writingCorrection.task2Btn}
+                                {t('writingCorrection.task2Btn')}
                             </button>
                         </div>
 
                         {/* Prompt (optional) */}
                         <div className="wc-section">
                             <label className="wc-section-label">
-                                {t.writingCorrection.promptLabel}
-                                <span className="wc-optional-tag">{t.writingCorrection.optionalTag}</span>
+                                {t('writingCorrection.promptLabel')}
+                                <span className="wc-optional-tag">{t('writingCorrection.optionalTag')}</span>
                             </label>
                             <textarea
                                 className="wc-textarea wc-textarea--prompt"
-                                placeholder={t.writingCorrection.promptPlaceholder}
+                                placeholder={t('writingCorrection.promptPlaceholder')}
                                 value={promptText}
                                 onChange={(e) => setPromptText(e.target.value)}
                                 disabled={isEvaluating}
@@ -818,8 +816,8 @@ export default function WritingCorrectionPage() {
                         {taskType === 'task1' && (
                             <div className="wc-section">
                                 <div className="wc-section-head">
-                                    <label className="wc-section-label">{t.writingCorrection.task1ImageLabel}</label>
-                                    <span className="wc-optional-tag">{t.writingCorrection.optionalTag}</span>
+                                    <label className="wc-section-label">{t('writingCorrection.task1ImageLabel')}</label>
+                                    <span className="wc-optional-tag">{t('writingCorrection.optionalTag')}</span>
                                 </div>
 
                                 {showTask1ImageUpload ? (
@@ -850,8 +848,8 @@ export default function WritingCorrectionPage() {
                                             }}
                                             onDrop={handleTask1ImageDrop}
                                         >
-                                            <div className="wc-task1-image-drop-title">{t.writingCorrection.task1ImageDropHint}</div>
-                                            <div className="wc-task1-image-drop-subtitle">{t.writingCorrection.task1ImageHint}</div>
+                                            <div className="wc-task1-image-drop-title">{t('writingCorrection.task1ImageDropHint')}</div>
+                                            <div className="wc-task1-image-drop-subtitle">{t('writingCorrection.task1ImageHint')}</div>
                                             <div className="wc-task1-image-actions">
                                                 <button
                                                     type="button"
@@ -859,7 +857,7 @@ export default function WritingCorrectionPage() {
                                                     onClick={() => task1ImageInputRef.current?.click()}
                                                     disabled={isEvaluating}
                                                 >
-                                                    {task1ImageDataUrl ? t.writingCorrection.task1ImageReplaceBtn : t.writingCorrection.task1ImageSelectBtn}
+                                                    {task1ImageDataUrl ? t('writingCorrection.task1ImageReplaceBtn') : t('writingCorrection.task1ImageSelectBtn')}
                                                 </button>
                                                 {task1ImageDataUrl && (
                                                     <button
@@ -871,7 +869,7 @@ export default function WritingCorrectionPage() {
                                                         }}
                                                         disabled={isEvaluating}
                                                     >
-                                                        {t.writingCorrection.task1ImageRemoveBtn}
+                                                        {t('writingCorrection.task1ImageRemoveBtn')}
                                                     </button>
                                                 )}
                                             </div>
@@ -881,7 +879,7 @@ export default function WritingCorrectionPage() {
                                             <div className="wc-task1-image-preview-wrap">
                                                 <img
                                                     src={task1ImageDataUrl}
-                                                    alt={t.writingCorrection.task1ImagePreviewAlt}
+                                                    alt={t('writingCorrection.task1ImagePreviewAlt')}
                                                     className="wc-task1-image-preview"
                                                 />
                                                 <div className="wc-task1-image-name">{task1ImageName}</div>
@@ -890,7 +888,7 @@ export default function WritingCorrectionPage() {
                                     </>
                                 ) : (
                                     <div className="wc-task1-image-vision-hint">
-                                        {t.writingCorrection.task1ImageVisionOnlyHint}
+                                        {t('writingCorrection.task1ImageVisionOnlyHint')}
                                     </div>
                                 )}
                             </div>
@@ -905,14 +903,14 @@ export default function WritingCorrectionPage() {
                             {/* Essay */}
                             <div className="wc-section" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                 <div className="wc-section-head">
-                                    <label className="wc-section-label">{t.writingCorrection.yourEssay}</label>
+                                    <label className="wc-section-label">{t('writingCorrection.yourEssay')}</label>
                                     <span className="wc-word-count">
-                                        {t.writingCorrection.wordCount}<strong>{wordCount}</strong> / {minWords}+
+                                        {t('writingCorrection.wordCount')}<strong>{wordCount}</strong> / {minWords}+
                                     </span>
                                 </div>
                                 <textarea
                                     className="wc-textarea wc-textarea--essay"
-                                    placeholder={t.writingCorrection.placeholder}
+                                    placeholder={t('writingCorrection.placeholder')}
                                     value={text}
                                     onChange={(e) => setText(e.target.value)}
                                     disabled={isEvaluating}
@@ -934,7 +932,7 @@ export default function WritingCorrectionPage() {
                                 onClick={handleEvaluate}
                                 disabled={isEvaluating}
                             >
-                                {isEvaluating ? t.writingCorrection.evaluatingBtn : t.writingCorrection.evaluateBtn}
+                                {isEvaluating ? t('writingCorrection.evaluatingBtn') : t('writingCorrection.evaluateBtn')}
                             </button>
                         </div>
 
@@ -942,8 +940,8 @@ export default function WritingCorrectionPage() {
                         {isEvaluating && (
                             <div className="wc-result-placeholder" style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderRadius: 0, height: '100%', minHeight: '100%' }}>
                                 <div className="wc-ai-pulsing-core">AI</div>
-                                <h3>{t.writingCorrection.evaluatingHeading}</h3>
-                                <p style={{ color: '#475569', fontWeight: 500 }}>{t.writingCorrection.evaluatingSubMsg}</p>
+                                <h3>{t('writingCorrection.evaluatingHeading')}</h3>
+                                <p style={{ color: '#475569', fontWeight: 500 }}>{t('writingCorrection.evaluatingSubMsg')}</p>
                             </div>
                         )}
                     </div>

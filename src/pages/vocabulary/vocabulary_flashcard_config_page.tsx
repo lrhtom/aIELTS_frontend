@@ -49,7 +49,7 @@ function sortCards(cards: VocabCard[]): VocabCard[] {
 
 /* ── 组件 ─────────────────────────────────────────────────────────────────── */
 export default function VocabularyFlashcardConfigPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const navigate = useNavigate();
 
     const [vocabInput, setVocabInput] = useState('');
@@ -72,7 +72,7 @@ export default function VocabularyFlashcardConfigPage() {
     const handleSync = async () => {
         const entries = parseVocabInput(vocabInput);
         if (entries.length === 0) {
-            showToast(t.vocab.flashcardConfig.toastEmptyInput, 'error');
+            showToast(t('vocab.flashcardConfig.toastEmptyInput'), 'error');
             return;
         }
         setSyncing(true);
@@ -81,7 +81,7 @@ export default function VocabularyFlashcardConfigPage() {
             setAllCards(result.cards);
             setStats(result.stats);
         } catch {
-            showToast(t.vocab.flashcardConfig.toastSyncFail, 'error');
+            showToast(t('vocab.flashcardConfig.toastSyncFail'), 'error');
         } finally {
             setSyncing(false);
         }
@@ -90,7 +90,7 @@ export default function VocabularyFlashcardConfigPage() {
     /* 开始背诵 */
     const handleStart = () => {
         if (!allCards) {
-            showToast(t.vocab.flashcardConfig.toastNoSync, 'error');
+            showToast(t('vocab.flashcardConfig.toastNoSync'), 'error');
             return;
         }
         const now = new Date();
@@ -99,7 +99,7 @@ export default function VocabularyFlashcardConfigPage() {
             : allCards;
 
         if (filtered.length === 0) {
-            showToast(t.vocab.flashcardConfig.toastAllDone, 'success');
+            showToast(t('vocab.flashcardConfig.toastAllDone'), 'success');
             return;
         }
         navigate('/vocabulary/flashcard/doing', { state: { cards: sortCards(filtered) } });
@@ -112,14 +112,14 @@ export default function VocabularyFlashcardConfigPage() {
 
     return (
         <Layout
-    pageTitle={t.vocab.flashcardConfig.pageTitle}
-    pageSubtitle={t.vocab.flashcardConfig.pageSubtitle}
+    pageTitle={t('vocab.flashcardConfig.pageTitle')}
+    pageSubtitle={t('vocab.flashcardConfig.pageSubtitle')}
     backUrl='/vocabulary'
-    backText={t.vocab.flashcardConfig.backText}
+    backText={t('vocab.flashcardConfig.backText')}
 >
             <div className="config-page-wrap reading-config">
                 <div className="config-card">
-                    <h3>{t.vocab.flashcardConfig.targetWordsHeading}</h3>
+                    <h3>{t('vocab.flashcardConfig.targetWordsHeading')}</h3>
                     <VocabInput value={vocabInput} onChange={handleVocabChange} />
                     <div style={{ marginTop: '16px' }}>
                         <button
@@ -128,20 +128,20 @@ export default function VocabularyFlashcardConfigPage() {
                             onClick={handleSync}
                             disabled={syncing}
                         >
-                            {syncing ? t.vocab.flashcardConfig.syncingBtn : t.vocab.flashcardConfig.syncBtn}
+                            {syncing ? t('vocab.flashcardConfig.syncingBtn') : t('vocab.flashcardConfig.syncBtn')}
                         </button>
                     </div>
 
                     {stats && (
                         <div className="fc-stats-row">
                             <span className="fc-stat-badge badge-due">
-                                {t.vocab.flashcardConfig.todayDueBadge.replace('{n}', String(reviewCount))}
+                                {t('vocab.flashcardConfig.todayDueBadge').replace('{n}', String(reviewCount))}
                             </span>
                             <span className="fc-stat-badge badge-new">
-                                {t.vocab.flashcardConfig.newBadge.replace('{n}', String(stats.new))}
+                                {t('vocab.flashcardConfig.newBadge').replace('{n}', String(stats.new))}
                             </span>
                             <span className="fc-stat-badge badge-total">
-                                {t.vocab.flashcardConfig.totalBadge.replace('{n}', String(stats.total))}
+                                {t('vocab.flashcardConfig.totalBadge').replace('{n}', String(stats.total))}
                             </span>
                         </div>
                     )}
@@ -150,9 +150,9 @@ export default function VocabularyFlashcardConfigPage() {
                 <div className="config-card">
                     <div className="toggle-row">
                         <div>
-                            <div className="label-text">{t.vocab.flashcardConfig.showTodayOnlyLabel}</div>
+                            <div className="label-text">{t('vocab.flashcardConfig.showTodayOnlyLabel')}</div>
                             <div className="label-desc">
-                                {t.vocab.flashcardConfig.showTodayOnlyDesc}
+                                {t('vocab.flashcardConfig.showTodayOnlyDesc')}
                             </div>
                         </div>
                         <label className="toggle-switch">
@@ -173,11 +173,11 @@ export default function VocabularyFlashcardConfigPage() {
                         onClick={handleStart}
                         disabled={!allCards}
                     >
-                        {t.vocab.flashcardConfig.startBtn}
+                        {t('vocab.flashcardConfig.startBtn')}
                     </button>
                     {!allCards && (
                         <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-                            {t.vocab.flashcardConfig.syncFirstHint}
+                            {t('vocab.flashcardConfig.syncFirstHint')}
                         </p>
                     )}
                 </div>

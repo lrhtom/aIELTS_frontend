@@ -37,7 +37,7 @@ type PaginatedResponse = {
 };
 
 export default function AdminUserManagement() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const { user: currentUser } = useAuth();
     const [users, setUsers] = useState<UserRow[]>([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -68,11 +68,11 @@ export default function AdminUserManagement() {
             setTotalCount(response.data.count);
         } catch (error) {
             console.error('Failed to fetch users:', error);
-            toast.error(t.profile.admin.users.toastLoadFail);
+            toast.error(t('profile.admin.users.toastLoadFail'));
         } finally {
             setIsLoading(false);
         }
-    }, [t.profile.admin.users.toastLoadFail]);
+    }, [t]);
 
     useEffect(() => {
         fetchUsers(currentPage);
@@ -80,7 +80,7 @@ export default function AdminUserManagement() {
 
     const handleToggleBan = async (user: UserRow) => {
         if (user.is_staff || user.is_superuser) {
-            toast.error(t.profile.admin.users.toastAdminNoBan);
+            toast.error(t('profile.admin.users.toastAdminNoBan'));
             return;
         }
 
@@ -89,24 +89,24 @@ export default function AdminUserManagement() {
             setUsers((prev) => prev.map((item) =>
                 item.id === user.id ? { ...item, is_banned: !item.is_banned } : item
             ));
-            toast.success(user.is_banned ? t.profile.admin.users.toastUnbanSuccess : t.profile.admin.users.toastBanSuccess);
+            toast.success(user.is_banned ? t('profile.admin.users.toastUnbanSuccess') : t('profile.admin.users.toastBanSuccess'));
         } catch (error: unknown) {
             console.error('Failed to toggle ban:', error);
-            toast.error(t.profile.admin.users.toastOpFail);
+            toast.error(t('profile.admin.users.toastOpFail'));
         }
     };
 
     const handleDelete = async (user: UserRow) => {
         if (user.is_staff || user.is_superuser) {
-            toast.error(t.profile.admin.users.toastAdminNoDelete);
+            toast.error(t('profile.admin.users.toastAdminNoDelete'));
             return;
         }
 
-        if (!(await showConfirm({ message: t.profile.admin.users.toastDeleteConfirm.replace('{name}', user.username), danger: true }))) return;
+        if (!(await showConfirm({ message: t('profile.admin.users.toastDeleteConfirm').replace('{name}', user.username), danger: true }))) return;
 
         try {
             await apiClient.delete(`/admin/users/${user.id}/delete`);
-            toast.success(t.profile.admin.users.toastDeleteSuccess);
+            toast.success(t('profile.admin.users.toastDeleteSuccess'));
             if (users.length === 1 && currentPage > 1) {
                 setCurrentPage((p) => p - 1);
             } else {
@@ -114,24 +114,24 @@ export default function AdminUserManagement() {
             }
         } catch (error) {
             console.error('Failed to delete user:', error);
-            toast.error(t.profile.admin.users.toastDeleteFail);
+            toast.error(t('profile.admin.users.toastDeleteFail'));
         }
     };
 
     const handleTogglePromote = async (user: UserRow) => {
         if (user.is_superuser) {
-            toast.error(t.profile.admin.users.toastSuperuserNoModify);
+            toast.error(t('profile.admin.users.toastSuperuserNoModify'));
             return;
         }
         if (currentUser && String(currentUser.id) === String(user.id)) {
-            toast.error(t.profile.admin.users.toastSelfNoModify);
+            toast.error(t('profile.admin.users.toastSelfNoModify'));
             return;
         }
 
         const willPromote = !user.is_staff;
         const confirmMsg = (willPromote
-            ? t.profile.admin.users.toastPromoteConfirm
-            : t.profile.admin.users.toastDemoteConfirm
+            ? t('profile.admin.users.toastPromoteConfirm')
+            : t('profile.admin.users.toastDemoteConfirm')
         ).replace('{name}', user.username);
         if (!(await showConfirm(confirmMsg))) return;
 
@@ -141,84 +141,84 @@ export default function AdminUserManagement() {
                 item.id === user.id ? { ...item, is_staff: resp.data.is_staff } : item
             ));
             toast.success(willPromote
-                ? t.profile.admin.users.toastPromoteSuccess
-                : t.profile.admin.users.toastDemoteSuccess);
+                ? t('profile.admin.users.toastPromoteSuccess')
+                : t('profile.admin.users.toastDemoteSuccess'));
         } catch (error: unknown) {
             console.error('Failed to toggle admin:', error);
             const e = error as { response?: { data?: { error?: string } } };
             const errCode = e.response?.data?.error;
             if (errCode === 'CANNOT_MODIFY_SUPERUSER') {
-                toast.error(t.profile.admin.users.toastSuperuserNoModify);
+                toast.error(t('profile.admin.users.toastSuperuserNoModify'));
             } else if (errCode === 'CANNOT_MODIFY_SELF') {
-                toast.error(t.profile.admin.users.toastSelfNoModify);
+                toast.error(t('profile.admin.users.toastSelfNoModify'));
             } else {
-                toast.error(t.profile.admin.users.toastPromoteFail);
+                toast.error(t('profile.admin.users.toastPromoteFail'));
             }
         }
     };
 
     const handleBanIP = async (user: UserRow) => {
         if (!user.lastIp) {
-            toast.error(t.profile.admin.users.toastNoIpRecord);
+            toast.error(t('profile.admin.users.toastNoIpRecord'));
             return;
         }
         if (user.isIpBanned) {
-            toast(t.profile.admin.users.toastIpAlreadyBanned, { icon: 'ℹ️' });
+            toast(t('profile.admin.users.toastIpAlreadyBanned'), { icon: 'ℹ️' });
             setShowBannedIPs(true);
             return;
         }
         const reason = window.prompt(
-            t.profile.admin.users.banIpPromptMsg.replace('{ip}', user.lastIp),
-            t.profile.admin.users.banIpReasonDefault.replace('{name}', user.username),
+            t('profile.admin.users.banIpPromptMsg').replace('{ip}', user.lastIp),
+            t('profile.admin.users.banIpReasonDefault').replace('{name}', user.username),
         );
         if (reason === null) return;
         try {
             await apiClient.post(`/admin/users/${user.id}/ban-ip`, { reason });
-            toast.success(t.profile.admin.users.toastIpBanSuccess.replace('{ip}', user.lastIp));
+            toast.success(t('profile.admin.users.toastIpBanSuccess').replace('{ip}', user.lastIp));
             setUsers(prev => prev.map(item => item.id === user.id ? { ...item, isIpBanned: true } : item));
             refreshBannedIPs();
         } catch (error) {
             console.error('Ban IP failed:', error);
-            toast.error(t.profile.admin.users.toastIpBanFail);
+            toast.error(t('profile.admin.users.toastIpBanFail'));
         }
     };
 
     const handleUnbanIP = async (row: BannedIP) => {
-        if (!(await showConfirm(t.profile.admin.users.unbanIpConfirm.replace('{ip}', row.ip_address)))) return;
+        if (!(await showConfirm(t('profile.admin.users.unbanIpConfirm').replace('{ip}', row.ip_address)))) return;
         try {
             await apiClient.delete(`/admin/banned-ips/${row.id}`);
-            toast.success(t.profile.admin.users.toastIpUnbanSuccess);
+            toast.success(t('profile.admin.users.toastIpUnbanSuccess'));
             setBannedIPs(prev => prev.filter(x => x.id !== row.id));
             setUsers(prev => prev.map(u => u.lastIp === row.ip_address ? { ...u, isIpBanned: false } : u));
         } catch (error) {
             console.error('Unban IP failed:', error);
-            toast.error(t.profile.admin.users.toastIpUnbanFail);
+            toast.error(t('profile.admin.users.toastIpUnbanFail'));
         }
     };
 
     const handleAddBannedIP = async () => {
-        const ip = window.prompt(t.profile.admin.users.banIpInputPrompt, '');
+        const ip = window.prompt(t('profile.admin.users.banIpInputPrompt'), '');
         if (!ip) return;
         const trimmed = ip.trim();
         if (!trimmed) return;
-        const reason = window.prompt(t.profile.admin.users.banIpReasonPrompt, '') || '';
+        const reason = window.prompt(t('profile.admin.users.banIpReasonPrompt'), '') || '';
         try {
             await apiClient.post('/admin/banned-ips', { ip_address: trimmed, reason });
-            toast.success(t.profile.admin.users.toastIpBanSuccess.replace('{ip}', trimmed));
+            toast.success(t('profile.admin.users.toastIpBanSuccess').replace('{ip}', trimmed));
             refreshBannedIPs();
             setUsers(prev => prev.map(u => u.lastIp === trimmed ? { ...u, isIpBanned: true } : u));
         } catch (error: unknown) {
             console.error('Add banned IP failed:', error);
             const err = error as { response?: { data?: { error?: string } } };
             const code = err.response?.data?.error;
-            if (code === 'INVALID_IP') toast.error(t.profile.admin.users.toastInvalidIp);
-            else toast.error(t.profile.admin.users.toastIpBanFail);
+            if (code === 'INVALID_IP') toast.error(t('profile.admin.users.toastInvalidIp'));
+            else toast.error(t('profile.admin.users.toastIpBanFail'));
         }
     };
 
     const handleAdjustAT = async (user: UserRow) => {
         const input = window.prompt(
-            t.profile.admin.users.adjustAtPrompt
+            t('profile.admin.users.adjustAtPrompt')
                 .replace('{name}', user.username)
                 .replace('{balance}', user.atBalance.toLocaleString()),
             ''
@@ -227,7 +227,7 @@ export default function AdminUserManagement() {
 
         const amount = parseInt(input.trim(), 10);
         if (isNaN(amount) || amount === 0) {
-            toast.error(t.profile.admin.users.toastInvalidAmount);
+            toast.error(t('profile.admin.users.toastInvalidAmount'));
             return;
         }
 
@@ -240,13 +240,13 @@ export default function AdminUserManagement() {
                 item.id === user.id ? { ...item, atBalance: resp.data.at_balance } : item
             ));
             const deltaStr = (resp.data.delta > 0 ? '+' : '') + resp.data.delta.toLocaleString();
-            toast.success(t.profile.admin.users.toastAdjustSuccess
+            toast.success(t('profile.admin.users.toastAdjustSuccess')
                 .replace('{delta}', deltaStr)
                 .replace('{balance}', resp.data.at_balance.toLocaleString()));
         } catch (error: unknown) {
             console.error('Failed to adjust AT:', error);
             const e = error as { response?: { data?: { error?: string } } };
-            toast.error(e.response?.data?.error || t.profile.admin.users.toastAdjustFail);
+            toast.error(e.response?.data?.error || t('profile.admin.users.toastAdjustFail'));
         }
     };
 
@@ -257,12 +257,12 @@ export default function AdminUserManagement() {
     const handleJumpToPage = () => {
         const rawValue = jumpPageInput.trim();
         if (!rawValue) {
-            toast.error(t.profile.admin.users.toastEnterPage);
+            toast.error(t('profile.admin.users.toastEnterPage'));
             return;
         }
         const parsed = Number(rawValue);
         if (!Number.isInteger(parsed)) {
-            toast.error(t.profile.admin.users.toastInvalidPage.replace('{n}', String(totalPages)));
+            toast.error(t('profile.admin.users.toastInvalidPage').replace('{n}', String(totalPages)));
             return;
         }
         setCurrentPage(Math.min(totalPages, Math.max(1, parsed)));
@@ -290,7 +290,7 @@ export default function AdminUserManagement() {
     }, [users, keyword, roleFilter]);
 
     const formatDateTime = (dateStr: string | null) => {
-        if (!dateStr) return t.profile.admin.users.neverLogin;
+        if (!dateStr) return t('profile.admin.users.neverLogin');
         return new Date(dateStr).toLocaleString();
     };
 
@@ -329,7 +329,7 @@ export default function AdminUserManagement() {
                     &raquo;
                 </button>
                 <div className="admin-users-page-jump">
-                    <span>{t.profile.admin.pagination.jumpTo}</span>
+                    <span>{t('profile.admin.pagination.jumpTo')}</span>
                     <input
                         type="text"
                         inputMode="numeric"
@@ -341,8 +341,8 @@ export default function AdminUserManagement() {
                             }
                         }}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleJumpToPage(); }}
-                        placeholder={t.profile.admin.pagination.pagePlaceholder}
-                        aria-label={t.profile.admin.pagination.jumpTo}
+                        placeholder={t('profile.admin.pagination.pagePlaceholder')}
+                        aria-label={t('profile.admin.pagination.jumpTo')}
                     />
                     <button
                         className="admin-users-page-btn admin-users-page-jump-btn"
@@ -350,7 +350,7 @@ export default function AdminUserManagement() {
                         onClick={handleJumpToPage}
                         disabled={!jumpPageInput.trim()}
                     >
-                        {t.profile.admin.pagination.goBtn}
+                        {t('profile.admin.pagination.goBtn')}
                     </button>
                 </div>
             </div>
@@ -361,17 +361,17 @@ export default function AdminUserManagement() {
         <div className="admin-users">
             <div className="admin-users-header">
                 <div className="admin-users-title-block">
-                    <h2>{t.profile.admin.users.title}</h2>
-                    <p>{t.profile.admin.users.subtitle}</p>
+                    <h2>{t('profile.admin.users.title')}</h2>
+                    <p>{t('profile.admin.users.subtitle')}</p>
                 </div>
                 <div className="admin-users-stats">
-                    <span className="admin-users-stat-pill">{t.profile.admin.users.totalUsers.replace('{n}', String(totalCount))}</span>
-                    <span className="admin-users-stat-pill">{t.profile.admin.users.pageUsers.replace('{n}', String(users.length))}</span>
-                    <span className="admin-users-stat-pill">{t.profile.admin.users.filtered.replace('{n}', String(filteredUsers.length))}</span>
-                    <span className="admin-users-stat-pill">{t.profile.admin.users.pageAdmins.replace('{n}', String(pageAdminCount))}</span>
-                    <span className="admin-users-stat-pill">{t.profile.admin.users.pageBanned.replace('{n}', String(pageBannedCount))}</span>
+                    <span className="admin-users-stat-pill">{t('profile.admin.users.totalUsers').replace('{n}', String(totalCount))}</span>
+                    <span className="admin-users-stat-pill">{t('profile.admin.users.pageUsers').replace('{n}', String(users.length))}</span>
+                    <span className="admin-users-stat-pill">{t('profile.admin.users.filtered').replace('{n}', String(filteredUsers.length))}</span>
+                    <span className="admin-users-stat-pill">{t('profile.admin.users.pageAdmins').replace('{n}', String(pageAdminCount))}</span>
+                    <span className="admin-users-stat-pill">{t('profile.admin.users.pageBanned').replace('{n}', String(pageBannedCount))}</span>
                     <button type="button" className="admin-users-stat-pill admin-users-stat-btn" onClick={() => setShowBannedIPs(v => !v)}>
-                        {t.profile.admin.users.bannedIpsCount.replace('{n}', String(bannedIPs.length))} {showBannedIPs ? '▲' : '▼'}
+                        {t('profile.admin.users.bannedIpsCount').replace('{n}', String(bannedIPs.length))} {showBannedIPs ? '▲' : '▼'}
                     </button>
                 </div>
             </div>
@@ -379,13 +379,13 @@ export default function AdminUserManagement() {
             {showBannedIPs && (
                 <div className="admin-banned-ips-panel">
                     <div className="admin-banned-ips-header">
-                        <h3>{t.profile.admin.users.bannedIpsListTitle}</h3>
+                        <h3>{t('profile.admin.users.bannedIpsListTitle')}</h3>
                         <button type="button" className="admin-users-btn ip-add-btn" onClick={handleAddBannedIP}>
-                            {t.profile.admin.users.btnAddBanIp}
+                            {t('profile.admin.users.btnAddBanIp')}
                         </button>
                     </div>
                     {bannedIPs.length === 0 ? (
-                        <div className="admin-banned-ips-empty">{t.profile.admin.users.bannedIpsEmpty}</div>
+                        <div className="admin-banned-ips-empty">{t('profile.admin.users.bannedIpsEmpty')}</div>
                     ) : (
                         <div className="admin-banned-ips-list">
                             {bannedIPs.map(row => (
@@ -395,11 +395,11 @@ export default function AdminUserManagement() {
                                         {row.reason && <span className="admin-banned-ips-reason">{row.reason}</span>}
                                     </div>
                                     <div className="admin-banned-ips-meta">
-                                        {row.banned_by && <span>{t.profile.admin.users.labelBannedBy.replace('{name}', row.banned_by)}</span>}
+                                        {row.banned_by && <span>{t('profile.admin.users.labelBannedBy').replace('{name}', row.banned_by)}</span>}
                                         {row.banned_at && <span>{formatDateTime(row.banned_at)}</span>}
                                     </div>
                                     <button type="button" className="admin-users-btn ip-unban-btn" onClick={() => handleUnbanIP(row)}>
-                                        {t.profile.admin.users.btnUnbanIp}
+                                        {t('profile.admin.users.btnUnbanIp')}
                                     </button>
                                 </div>
                             ))}
@@ -414,7 +414,7 @@ export default function AdminUserManagement() {
                     <input
                         type="text"
                         className="admin-users-search"
-                        placeholder={t.profile.admin.users.searchPlaceholder}
+                        placeholder={t('profile.admin.users.searchPlaceholder')}
                         value={keyword}
                         onChange={(e) => setKeyword(e.target.value)}
                     />
@@ -425,20 +425,20 @@ export default function AdminUserManagement() {
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value as 'all' | 'normal' | 'admin' | 'banned')}
                     >
-                        <option value="all">{t.profile.admin.users.filterAll}</option>
-                        <option value="normal">{t.profile.admin.users.filterNormal}</option>
-                        <option value="admin">{t.profile.admin.users.filterAdmin}</option>
-                        <option value="banned">{t.profile.admin.users.filterBanned}</option>
+                        <option value="all">{t('profile.admin.users.filterAll')}</option>
+                        <option value="normal">{t('profile.admin.users.filterNormal')}</option>
+                        <option value="admin">{t('profile.admin.users.filterAdmin')}</option>
+                        <option value="banned">{t('profile.admin.users.filterBanned')}</option>
                     </select>
                 </div>
             </div>
 
             {isLoading ? (
-                <div className="admin-users-state">{t.profile.admin.users.loading}</div>
+                <div className="admin-users-state">{t('profile.admin.users.loading')}</div>
             ) : users.length === 0 ? (
-                <div className="admin-users-state">{t.profile.admin.users.empty}</div>
+                <div className="admin-users-state">{t('profile.admin.users.empty')}</div>
             ) : filteredUsers.length === 0 ? (
-                <div className="admin-users-state">{t.profile.admin.users.noMatch}</div>
+                <div className="admin-users-state">{t('profile.admin.users.noMatch')}</div>
             ) : (
                 <div className="admin-users-list">
                     {filteredUsers.map((user) => {
@@ -453,33 +453,33 @@ export default function AdminUserManagement() {
 
                                     <div className="admin-users-badges">
                                         <span className={`admin-users-badge ${user.is_banned ? 'is-banned' : 'is-normal'}`}>
-                                            {user.is_banned ? t.profile.admin.users.badgeBanned : t.profile.admin.users.badgeNormal}
+                                            {user.is_banned ? t('profile.admin.users.badgeBanned') : t('profile.admin.users.badgeNormal')}
                                         </span>
-                                        {isAdmin && <span className="admin-users-badge is-admin">{t.profile.admin.users.badgeAdmin}</span>}
-                                        {user.is_email_verified && <span className="admin-users-badge is-verified">{t.profile.admin.users.badgeEmailVerified}</span>}
+                                        {isAdmin && <span className="admin-users-badge is-admin">{t('profile.admin.users.badgeAdmin')}</span>}
+                                        {user.is_email_verified && <span className="admin-users-badge is-verified">{t('profile.admin.users.badgeEmailVerified')}</span>}
                                     </div>
 
                                     <div className="admin-users-grid">
                                         <div className="admin-users-item">
-                                            <span className="admin-users-label">{t.profile.admin.users.labelEmail}</span>
-                                            <span className="admin-users-value">{user.email || t.profile.admin.users.labelNotProvided}</span>
+                                            <span className="admin-users-label">{t('profile.admin.users.labelEmail')}</span>
+                                            <span className="admin-users-value">{user.email || t('profile.admin.users.labelNotProvided')}</span>
                                         </div>
                                         <div className="admin-users-item">
-                                            <span className="admin-users-label">{t.profile.admin.users.labelAtBalance}</span>
+                                            <span className="admin-users-label">{t('profile.admin.users.labelAtBalance')}</span>
                                             <span className="admin-users-value">{user.atBalance}</span>
                                         </div>
                                         <div className="admin-users-item">
-                                            <span className="admin-users-label">{t.profile.admin.users.labelRegistered}</span>
+                                            <span className="admin-users-label">{t('profile.admin.users.labelRegistered')}</span>
                                             <span className="admin-users-value">{formatDateTime(user.date_joined)}</span>
                                         </div>
                                         <div className="admin-users-item">
-                                            <span className="admin-users-label">{t.profile.admin.users.labelLastLogin}</span>
+                                            <span className="admin-users-label">{t('profile.admin.users.labelLastLogin')}</span>
                                             <span className="admin-users-value">{formatDateTime(user.last_login)}</span>
                                         </div>
                                         <div className="admin-users-item admin-users-item-ip">
                                             <span className="admin-users-label">
-                                                {t.profile.admin.users.labelLastIp}
-                                                {user.isIpBanned && <span className="admin-users-ip-badge">{t.profile.admin.users.ipBadgeBanned}</span>}
+                                                {t('profile.admin.users.labelLastIp')}
+                                                {user.isIpBanned && <span className="admin-users-ip-badge">{t('profile.admin.users.ipBadgeBanned')}</span>}
                                             </span>
                                             <span className="admin-users-value">{user.lastIp || '—'}</span>
                                         </div>
@@ -492,7 +492,7 @@ export default function AdminUserManagement() {
                                         onClick={() => handleToggleBan(user)}
                                         disabled={isAdmin}
                                     >
-                                        {user.is_banned ? t.profile.admin.users.btnUnban : t.profile.admin.users.btnBan}
+                                        {user.is_banned ? t('profile.admin.users.btnUnban') : t('profile.admin.users.btnBan')}
                                     </button>
                                     <button
                                         className={`admin-users-btn ${user.isIpBanned ? 'ip-banned-btn' : 'ip-ban-btn'}`}
@@ -500,31 +500,31 @@ export default function AdminUserManagement() {
                                         disabled={isAdmin || !user.lastIp}
                                         title={user.lastIp
                                             ? (user.isIpBanned
-                                                ? t.profile.admin.users.titleIpAlreadyBanned
-                                                : t.profile.admin.users.titleBanThisIp.replace('{ip}', user.lastIp))
-                                            : t.profile.admin.users.titleNoIpRecord}
+                                                ? t('profile.admin.users.titleIpAlreadyBanned')
+                                                : t('profile.admin.users.titleBanThisIp').replace('{ip}', user.lastIp))
+                                            : t('profile.admin.users.titleNoIpRecord')}
                                     >
-                                        {user.isIpBanned ? t.profile.admin.users.btnIpAlreadyBanned : t.profile.admin.users.btnBanThisIp}
+                                        {user.isIpBanned ? t('profile.admin.users.btnIpAlreadyBanned') : t('profile.admin.users.btnBanThisIp')}
                                     </button>
                                     <button
                                         className={`admin-users-btn ${user.is_staff ? 'demote-btn' : 'promote-btn'}`}
                                         onClick={() => handleTogglePromote(user)}
                                         disabled={user.is_superuser || (!!currentUser && String(currentUser.id) === String(user.id))}
                                     >
-                                        {user.is_staff ? t.profile.admin.users.btnDemote : t.profile.admin.users.btnPromote}
+                                        {user.is_staff ? t('profile.admin.users.btnDemote') : t('profile.admin.users.btnPromote')}
                                     </button>
                                     <button
                                         className="admin-users-btn adjust-btn"
                                         onClick={() => handleAdjustAT(user)}
                                     >
-                                        {t.profile.admin.users.btnAdjustAt}
+                                        {t('profile.admin.users.btnAdjustAt')}
                                     </button>
                                     <button
                                         className="admin-users-btn delete-btn"
                                         onClick={() => handleDelete(user)}
                                         disabled={isAdmin}
                                     >
-                                        {t.profile.admin.users.btnDelete}
+                                        {t('profile.admin.users.btnDelete')}
                                     </button>
                                 </div>
                             </div>

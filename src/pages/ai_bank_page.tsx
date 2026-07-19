@@ -5,7 +5,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { listAIQuestions, deleteAIQuestion, toggleFavoriteAIQuestion, type AIQuestionSkill, type AIQuestionSummary } from '../api/ai_question';
 import { showToast } from '../components/common/Toast';
 import { useLang } from '../i18n/LanguageContext';
-import { translations } from '../i18n/translations';
 import '../styles/ai_bank.css';
 
 function resolveAnswerRoute(item: AIQuestionSummary): string {
@@ -50,19 +49,16 @@ function formatDate(value: string | null): string {
 
 export default function AIBankPage() {
     const navigate = useNavigate();
-    const { lang } = useLang();
-    const t = translations[lang].aiBank;
+    const { t } = useLang();
     const [searchParams] = useSearchParams();
     const justId = searchParams.get('just');
 
-    const tMock = translations[lang].mock.bank;
-
     const SKILL_TABS: { key: AIQuestionSkill; label: string; emoji: string }[] = [
-        { key: 'listening', label: t.tabs.listening, emoji: '🎧' },
-        { key: 'reading',   label: t.tabs.reading,   emoji: '📖' },
-        { key: 'writing',   label: t.tabs.writing,   emoji: '✍️' },
-        { key: 'speaking',  label: t.tabs.speaking,  emoji: '🗣️' },
-        { key: 'mock',      label: tMock.tab,        emoji: '🎯' },
+        { key: 'listening', label: t('aiBank.tabs.listening'), emoji: '🎧' },
+        { key: 'reading',   label: t('aiBank.tabs.reading'),   emoji: '📖' },
+        { key: 'writing',   label: t('aiBank.tabs.writing'),   emoji: '✍️' },
+        { key: 'speaking',  label: t('aiBank.tabs.speaking'),  emoji: '🗣️' },
+        { key: 'mock',      label: t('mock.bank.tab'),         emoji: '🎯' },
     ];
 
     const isSkillKey = (v: string | null): v is AIQuestionSkill =>
@@ -96,7 +92,7 @@ export default function AIBankPage() {
                     pollId = setTimeout(fetchOnce, 3000);
                 }
             } catch {
-                if (!cancelled) showToast(t.loadFail, 'error');
+                if (!cancelled) showToast(t('aiBank.loadFail'), 'error');
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -108,7 +104,7 @@ export default function AIBankPage() {
             cancelled = true;
             if (pollId) clearTimeout(pollId);
         };
-    }, [activeSkill, t.loadFail]);
+    }, [activeSkill, t]);
 
     const sortedItems = useMemo(() => {
         const favTime = (it: AIQuestionSummary) => (it.favoritedAt ? Date.parse(it.favoritedAt) : 0);
@@ -134,11 +130,11 @@ export default function AIBankPage() {
             return;
         }
         if (item.status === 'generating') {
-            showToast(t.toastStillGenerating, 'info');
+            showToast(t('aiBank.toastStillGenerating'), 'info');
             return;
         }
         if (item.status === 'failed') {
-            showToast(item.errorMessage || t.toastGenerationFailed, 'error');
+            showToast(item.errorMessage || t('aiBank.toastGenerationFailed'), 'error');
             return;
         }
         navigate(resolveAnswerRoute(item));
@@ -146,14 +142,14 @@ export default function AIBankPage() {
 
     const handleDelete = async (e: React.MouseEvent, item: AIQuestionSummary) => {
         e.stopPropagation();
-        const title = item.title || t.untitled;
-        if (!(await showConfirm({ message: t.deleteConfirm.replace('{title}', title), danger: true }))) return;
+        const title = item.title || t('aiBank.untitled');
+        if (!(await showConfirm({ message: t('aiBank.deleteConfirm').replace('{title}', title), danger: true }))) return;
         try {
             await deleteAIQuestion(item.id);
             setItems(prev => prev.filter(it => it.id !== item.id));
-            showToast(t.deleteSuccess, 'success');
+            showToast(t('aiBank.deleteSuccess'), 'success');
         } catch {
-            showToast(t.deleteFail, 'error');
+            showToast(t('aiBank.deleteFail'), 'error');
         }
     };
 
@@ -174,16 +170,16 @@ export default function AIBankPage() {
             setItems(prev => prev.map(it => it.id === item.id
                 ? { ...it, isFavorite: item.isFavorite, favoritedAt: item.favoritedAt }
                 : it));
-            showToast(t.favoriteFail, 'error');
+            showToast(t('aiBank.favoriteFail'), 'error');
         }
     };
 
     return (
         <Layout
             backUrl="/practice/ai"
-            backText={t.backToAI}
-            pageTitle={t.pageTitle}
-            pageSubtitle={t.pageSubtitle}
+            backText={t('aiBank.backToAI')}
+            pageTitle={t('aiBank.pageTitle')}
+            pageSubtitle={t('aiBank.pageSubtitle')}
         >
             <div className="ai-bank-wrap" style={{ paddingTop: '16px' }}>
                 <div className="ai-bank-tabs" role="tablist">
@@ -206,11 +202,11 @@ export default function AIBankPage() {
                 </div>
 
                 {loading ? (
-                    <div className="ai-bank-empty">{t.loading}</div>
+                    <div className="ai-bank-empty">{t('aiBank.loading')}</div>
                 ) : sortedItems.length === 0 ? (
                     <div className="ai-bank-empty">
-                        <div className="ai-bank-empty-title">{t.emptyTitle.replace('{label}', SKILL_TABS.find(tab => tab.key === activeSkill)?.label || '')}</div>
-                        <div className="ai-bank-empty-hint">{t.emptyHint}</div>
+                        <div className="ai-bank-empty-title">{t('aiBank.emptyTitle').replace('{label}', SKILL_TABS.find(tab => tab.key === activeSkill)?.label || '')}</div>
+                        <div className="ai-bank-empty-hint">{t('aiBank.emptyHint')}</div>
                     </div>
                 ) : (
                     <div className="ai-bank-grid">
@@ -228,14 +224,14 @@ export default function AIBankPage() {
                                 ? Object.values(item.mock.slots).filter(s => s === 'ready').length
                                 : 0;
                             const statusLabel = isGenerating
-                                ? (isMock ? `⏳ ${tMock.slotStatus.replace('{ready}', String(mockReadyCount)).replace('{total}', '4')}` : t.statusGenerating)
+                                ? (isMock ? `⏳ ${t('mock.bank.slotStatus').replace('{ready}', String(mockReadyCount)).replace('{total}', '4')}` : t('aiBank.statusGenerating'))
                                 : isFailed
-                                    ? t.statusFailed
+                                    ? t('aiBank.statusFailed')
                                     : (answeredFlag
                                         ? (isMock && item.mock?.overall != null
-                                            ? tMock.reportDone.replace('{overall}', item.mock.overall.toFixed(1))
-                                            : (!isSpeaking && !isMock && isRedone(item) ? t.statusRedone : t.statusAnswered))
-                                        : ((isSpeaking || isMock) ? t.statusInProgress : t.statusPending));
+                                            ? t('mock.bank.reportDone').replace('{overall}', item.mock.overall.toFixed(1))
+                                            : (!isSpeaking && !isMock && isRedone(item) ? t('aiBank.statusRedone') : t('aiBank.statusAnswered')))
+                                        : ((isSpeaking || isMock) ? t('aiBank.statusInProgress') : t('aiBank.statusPending')));
                             const statusClass = isGenerating
                                 ? 'generating'
                                 : isFailed
@@ -259,7 +255,7 @@ export default function AIBankPage() {
                                         </span>
                                         {item.subtype && <span className="ai-bank-subtype">{item.subtype}</span>}
                                     </div>
-                                    <div className="ai-bank-card-title">{item.title || t.unnamedFallback}</div>
+                                    <div className="ai-bank-card-title">{item.title || t('aiBank.unnamedFallback')}</div>
                                     {item.description && (
                                         <div className="ai-bank-card-description">{item.description}</div>
                                     )}
@@ -267,17 +263,17 @@ export default function AIBankPage() {
                                         <div className="ai-bank-card-error">{item.errorMessage}</div>
                                     )}
                                     <div className="ai-bank-card-meta">
-                                        <span>{t.generatedAt.replace('{time}', formatDate(item.createdAt))}</span>
-                                        {item.lastAttemptAt && <span>{t.lastAttemptAt.replace('{time}', formatDate(item.lastAttemptAt))}</span>}
+                                        <span>{t('aiBank.generatedAt').replace('{time}', formatDate(item.createdAt))}</span>
+                                        {item.lastAttemptAt && <span>{t('aiBank.lastAttemptAt').replace('{time}', formatDate(item.lastAttemptAt))}</span>}
                                     </div>
                                     <div className="ai-bank-card-actions">
                                         <button
                                             type="button"
                                             className={`ai-bank-card-favorite ${item.isFavorite ? 'is-on' : ''}`}
                                             onClick={(e) => handleToggleFavorite(e, item)}
-                                            aria-label={item.isFavorite ? t.unfavoriteAriaLabel : t.favoriteAriaLabel}
+                                            aria-label={item.isFavorite ? t('aiBank.unfavoriteAriaLabel') : t('aiBank.favoriteAriaLabel')}
                                             aria-pressed={item.isFavorite}
-                                            title={item.isFavorite ? t.unfavoriteAriaLabel : t.favoriteAriaLabel}
+                                            title={item.isFavorite ? t('aiBank.unfavoriteAriaLabel') : t('aiBank.favoriteAriaLabel')}
                                         >
                                             {item.isFavorite ? '★' : '☆'}
                                         </button>
@@ -285,9 +281,9 @@ export default function AIBankPage() {
                                             type="button"
                                             className="ai-bank-card-delete"
                                             onClick={(e) => handleDelete(e, item)}
-                                            aria-label={t.deleteAriaLabel}
+                                            aria-label={t('aiBank.deleteAriaLabel')}
                                         >
-                                            <span>{t.deleteBtn}</span>
+                                            <span>{t('aiBank.deleteBtn')}</span>
                                         </button>
                                     </div>
                                 </div>

@@ -27,7 +27,7 @@ export class ATInterceptor {
             // needMoreBalance: '{message} (需要{required} AT，当前{current} AT)'.
             window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
                 detail: {
-                    message: currentT().billing.estimatedShort,
+                    message: currentT()('billing.estimatedShort'),
                     requiredBalance: estimatedCost,
                     currentBalance: balance.atBalance
                 }

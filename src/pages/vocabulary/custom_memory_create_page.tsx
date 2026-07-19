@@ -14,7 +14,7 @@ interface CreateLocationState {
 }
 
 export default function CustomMemoryCreatePage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const location = useLocation();
     const navigate = useNavigate();
     const [targetDeckId, setTargetDeckId] = useState<number | null>(null);
@@ -88,15 +88,15 @@ export default function CustomMemoryCreatePage() {
         const normalizedTitle = title.trim();
         const text = submitText;
         if (!normalizedTitle) {
-            showToast(t.vocab.customMemory.toastNameEmpty, 'error');
+            showToast(t('vocab.customMemory.toastNameEmpty'), 'error');
             return;
         }
         if (!Number.isInteger(dailyCount) || dailyCount < 1 || dailyCount > 200) {
-            showToast(t.vocab.customMemory.toastDailyRange, 'error');
+            showToast(t('vocab.customMemory.toastDailyRange'), 'error');
             return;
         }
         if (!text) {
-            showToast(t.vocab.customMemory.toastTextEmpty, 'error');
+            showToast(t('vocab.customMemory.toastTextEmpty'), 'error');
             return;
         }
 
@@ -104,14 +104,14 @@ export default function CustomMemoryCreatePage() {
         try {
             if (targetDeckId !== null) {
                 const { cards_added } = await appendCustomDeck(targetDeckId, text);
-                showToast(t.vocab.customMemory.toastAddSuccess.replace('{n}', String(cards_added)), 'success');
+                showToast(t('vocab.customMemory.toastAddSuccess').replace('{n}', String(cards_added)), 'success');
                 navigate('/vocabulary/plans', { replace: true });
                 return;
             }
 
             const { deck, cards } = await createCustomDeck(normalizedTitle, text, dailyCount);
             if (!cards.length) {
-                showToast(t.vocab.customMemory.toastAllDone, 'success');
+                showToast(t('vocab.customMemory.toastAllDone'), 'success');
                 return;
             }
             navigate('/vocabulary/custom-cards/study', {
@@ -123,7 +123,7 @@ export default function CustomMemoryCreatePage() {
                 },
             });
         } catch (e: unknown) {
-            const msg = (e as any)?.response?.data?.error || t.vocab.customMemory.toastCreateFail; // eslint-disable-line @typescript-eslint/no-explicit-any
+            const msg = (e as any)?.response?.data?.error || t('vocab.customMemory.toastCreateFail'); // eslint-disable-line @typescript-eslint/no-explicit-any
             showToast(msg, 'error');
         } finally {
             setCreating(false);
@@ -132,27 +132,27 @@ export default function CustomMemoryCreatePage() {
 
     return (
         <Layout
-    pageTitle={targetDeckId !== null ? t.vocab.customMemory.addPageTitle : t.vocab.customMemory.defaultTitle}
-    pageSubtitle={targetDeckId !== null ? t.vocab.customMemory.addPageSubtitle : t.vocab.customMemory.createPageSubtitle}
+    pageTitle={targetDeckId !== null ? t('vocab.customMemory.addPageTitle') : t('vocab.customMemory.defaultTitle')}
+    pageSubtitle={targetDeckId !== null ? t('vocab.customMemory.addPageSubtitle') : t('vocab.customMemory.createPageSubtitle')}
     backUrl='/vocabulary/plans'
-    backText={t.vocab.customMemory.backToVocab}
+    backText={t('vocab.customMemory.backToVocab')}
 >
             <div className="config-page-wrap cm-create-wrap">
                 <div className="config-card">
-                    <h3>{t.vocab.customMemory.planNameHeading}</h3>
+                    <h3>{t('vocab.customMemory.planNameHeading')}</h3>
                     <input
                         className="cm-input"
                         type="text"
                         value={title}
                         maxLength={100}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder={t.vocab.customMemory.planNamePlaceholder}
+                        placeholder={t('vocab.customMemory.planNamePlaceholder')}
                         disabled={targetDeckId !== null}
                     />
                 </div>
 
                 <div className="config-card">
-                    <h3>{t.vocab.customMemory.dailyCountHeading}</h3>
+                    <h3>{t('vocab.customMemory.dailyCountHeading')}</h3>
                     <input
                         className="cm-input"
                         type="number"
@@ -165,43 +165,43 @@ export default function CustomMemoryCreatePage() {
                 </div>
 
                 <div className="config-card">
-                    <h3>{t.vocab.customMemory.inputTextHeading}</h3>
+                    <h3>{t('vocab.customMemory.inputTextHeading')}</h3>
                     <label className="cm-check-row">
                         <input
                             type="checkbox"
                             checked={batchByLine}
                             onChange={(e) => setBatchByLine(e.target.checked)}
                         />
-                        <span>{t.vocab.customMemory.autoBatchHint}</span>
+                        <span>{t('vocab.customMemory.autoBatchHint')}</span>
                     </label>
                     <div className="cm-dual-grid">
                         <div>
-                            <div className="cm-field-title">{t.vocab.customMemory.frontLabel}</div>
+                            <div className="cm-field-title">{t('vocab.customMemory.frontLabel')}</div>
                             <textarea
                                 className="cm-textarea cm-textarea-short"
                                 value={frontText}
                                 onChange={(e) => setFrontText(e.target.value)}
                                 placeholder={batchByLine
                                     ? [
-                                        t.vocab.customMemory.frontMultiHint,
-                                        t.vocab.customMemory.frontExamples,
+                                        t('vocab.customMemory.frontMultiHint'),
+                                        t('vocab.customMemory.frontExamples'),
                                     ].join('\n')
-                                    : t.vocab.customMemory.frontSingleHint}
+                                    : t('vocab.customMemory.frontSingleHint')}
                             />
                         </div>
 
                         <div>
-                            <div className="cm-field-title">{t.vocab.customMemory.backLabel}</div>
+                            <div className="cm-field-title">{t('vocab.customMemory.backLabel')}</div>
                             <textarea
                                 className="cm-textarea cm-textarea-short"
                                 value={backText}
                                 onChange={(e) => setBackText(e.target.value)}
                                 placeholder={batchByLine
                                     ? [
-                                        t.vocab.customMemory.backMultiHint,
-                                        t.vocab.customMemory.backExamples,
+                                        t('vocab.customMemory.backMultiHint'),
+                                        t('vocab.customMemory.backExamples'),
                                     ].join('\n')
-                                    : t.vocab.customMemory.backSingleHint}
+                                    : t('vocab.customMemory.backSingleHint')}
                             />
                         </div>
                     </div>
@@ -214,7 +214,7 @@ export default function CustomMemoryCreatePage() {
                         tabIndex={-1}
                     />
                     <p className="cm-hint">
-                        {t.vocab.customMemory.estimatePreamble.replace('{n}', String(estimatedCount))}
+                        {t('vocab.customMemory.estimatePreamble').replace('{n}', String(estimatedCount))}
                     </p>
                 </div>
 
@@ -226,8 +226,8 @@ export default function CustomMemoryCreatePage() {
                         onClick={handleCreate}
                     >
                         {targetDeckId !== null
-                            ? (creating ? t.vocab.customMemory.addingBtn : t.vocab.customMemory.addToDeckBtn)
-                            : (creating ? t.vocab.customMemory.creatingBtn : t.vocab.customMemory.startBtn)}
+                            ? (creating ? t('vocab.customMemory.addingBtn') : t('vocab.customMemory.addToDeckBtn'))
+                            : (creating ? t('vocab.customMemory.creatingBtn') : t('vocab.customMemory.startBtn'))}
                     </button>
                 </div>
             </div>

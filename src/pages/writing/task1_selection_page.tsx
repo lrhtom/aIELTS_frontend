@@ -5,15 +5,13 @@ import AiModelSelector from '../../components/common/AiModelSelector';
 import CustomPromptField from '../../components/common/CustomPromptField';
 import { showToast } from '../../components/common/Toast';
 import { useLang } from '../../i18n/LanguageContext';
-import { translations } from '../../i18n/translations';
 import '../../styles/practice_page.css';
 
 const CHART_POOL = ['line', 'pie', 'bar', 'horizontal', 'table', 'mixed'] as const;
 
 export default function Task1SelectionPage() {
     const navigate = useNavigate();
-    const { lang } = useLang();
-    const t = translations[lang];
+    const { t, lang } = useLang();
 
     const [selectedType, setSelectedType] = useState<string>('chart');
     const [selectedChart, setSelectedChart] = useState<string>('line');
@@ -22,20 +20,20 @@ export default function Task1SelectionPage() {
     const [customPrompt, setCustomPrompt] = useState('');
 
     const taskTypes = [
-        { id: 'chart', nameZh: t.task1Selection.types.chart.title, nameEn: t.task1Selection.types.chart.nameEn, icon: '📈', desc: t.task1Selection.types.chart.desc, isBeta: false },
-        { id: 'map', nameZh: t.task1Selection.types.map.title, nameEn: t.task1Selection.types.map.nameEn, icon: '🗺️', desc: t.task1Selection.types.map.desc, isBeta: true },
-        { id: 'flowchart', nameZh: t.task1Selection.types.flowchart.title, nameEn: t.task1Selection.types.flowchart.nameEn, icon: '⚙️', desc: t.task1Selection.types.flowchart.desc, isBeta: true },
-        { id: 'random', nameZh: t.task1Selection.types.random.title, nameEn: t.task1Selection.types.random.nameEn, icon: '🎲', desc: t.task1Selection.types.random.desc, isBeta: false },
+        { id: 'chart', nameZh: t('task1Selection.types.chart.title'), nameEn: t('task1Selection.types.chart.nameEn'), icon: '📈', desc: t('task1Selection.types.chart.desc'), isBeta: false },
+        { id: 'map', nameZh: t('task1Selection.types.map.title'), nameEn: t('task1Selection.types.map.nameEn'), icon: '🗺️', desc: t('task1Selection.types.map.desc'), isBeta: true },
+        { id: 'flowchart', nameZh: t('task1Selection.types.flowchart.title'), nameEn: t('task1Selection.types.flowchart.nameEn'), icon: '⚙️', desc: t('task1Selection.types.flowchart.desc'), isBeta: true },
+        { id: 'random', nameZh: t('task1Selection.types.random.title'), nameEn: t('task1Selection.types.random.nameEn'), icon: '🎲', desc: t('task1Selection.types.random.desc'), isBeta: false },
     ];
 
     const chartTypes = [
-        { id: 'line', icon: '📈', nameZh: t.chartSelection.types.line.title, nameEn: t.chartSelection.types.line.nameEn },
-        { id: 'pie', icon: '🥧', nameZh: t.chartSelection.types.pie.title, nameEn: t.chartSelection.types.pie.nameEn },
-        { id: 'bar', icon: '📊', nameZh: t.chartSelection.types.bar.title, nameEn: t.chartSelection.types.bar.nameEn },
-        { id: 'horizontal', icon: '🛶', nameZh: t.chartSelection.types.horizontal.title, nameEn: t.chartSelection.types.horizontal.nameEn },
-        { id: 'table', icon: '🧮', nameZh: t.chartSelection.types.table.title, nameEn: t.chartSelection.types.table.nameEn },
-        { id: 'mixed', icon: '🔀', nameZh: t.chartSelection.types.mixed.title, nameEn: t.chartSelection.types.mixed.nameEn },
-        { id: 'random', icon: '🎲', nameZh: t.chartSelection.types.random.title, nameEn: t.chartSelection.types.random.nameEn },
+        { id: 'line', icon: '📈', nameZh: t('chartSelection.types.line.title'), nameEn: t('chartSelection.types.line.nameEn') },
+        { id: 'pie', icon: '🥧', nameZh: t('chartSelection.types.pie.title'), nameEn: t('chartSelection.types.pie.nameEn') },
+        { id: 'bar', icon: '📊', nameZh: t('chartSelection.types.bar.title'), nameEn: t('chartSelection.types.bar.nameEn') },
+        { id: 'horizontal', icon: '🛶', nameZh: t('chartSelection.types.horizontal.title'), nameEn: t('chartSelection.types.horizontal.nameEn') },
+        { id: 'table', icon: '🧮', nameZh: t('chartSelection.types.table.title'), nameEn: t('chartSelection.types.table.nameEn') },
+        { id: 'mixed', icon: '🔀', nameZh: t('chartSelection.types.mixed.title'), nameEn: t('chartSelection.types.mixed.nameEn') },
+        { id: 'random', icon: '🎲', nameZh: t('chartSelection.types.random.title'), nameEn: t('chartSelection.types.random.nameEn') },
     ];
 
     const selected = taskTypes.find(x => x.id === selectedType) ?? taskTypes[0];
@@ -82,19 +80,19 @@ export default function Task1SelectionPage() {
             return;
         }
 
-        showToast(`${t.task1Selection.comingSoon}${selected.nameZh} (${selected.nameEn})`, 'info');
+        showToast(`${t('task1Selection.comingSoon')}${selected.nameZh} (${selected.nameEn})`, 'info');
     };
 
     return (
         <Layout
             backUrl="/writing"
-            backText={t.task1Selection.backToWriting}
-            pageTitle={t.task1Selection.heading}
-            pageSubtitle={t.task1Selection.subheading}
+            backText={t('task1Selection.backToWriting')}
+            pageTitle={t('task1Selection.heading')}
+            pageSubtitle={t('task1Selection.subheading')}
         >
             <div className="uc-console">
                 <div className="uc-sidebar">
-                    <div className="uc-sidebar-title">{t.task1Selection.heading}</div>
+                    <div className="uc-sidebar-title">{t('task1Selection.heading')}</div>
                     <nav className="uc-sidebar-nav">
                         {taskTypes.map(typeItem => (
                             <button
@@ -115,7 +113,7 @@ export default function Task1SelectionPage() {
                                             borderRadius: 999,
                                             background: '#fef3c7',
                                             color: '#b45309',
-                                        }}>{t.task1Selection.beta}</span>
+                                        }}>{t('task1Selection.beta')}</span>
                                     )}
                                 </span>
                             </button>
@@ -135,7 +133,7 @@ export default function Task1SelectionPage() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#f59e0b', background: '#fef3c7' }}>🤖</span>
-                                        <span className="row-title">{t.components.aiModel.label}</span>
+                                        <span className="row-title">{t('components.aiModel.label')}</span>
                                     </div>
                                 </div>
                                 <div className="uc-row-control console-model-selector">
@@ -149,30 +147,30 @@ export default function Task1SelectionPage() {
                                 <div className="uc-row-label-flex">
                                     <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>🏷️</span>
-                                        <span className="row-title">{t.common.customQuestion.sectionTitle}</span>
+                                        <span className="row-title">{t('common.customQuestion.sectionTitle')}</span>
                                     </div>
                                     <span className="row-desc" style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
-                                        {t.common.customQuestion.sectionDesc}
+                                        {t('common.customQuestion.sectionDesc')}
                                     </span>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
                                     <input
                                         type="text"
                                         maxLength={80}
-                                        placeholder={t.common.customQuestion.namePlaceholder}
+                                        placeholder={t('common.customQuestion.namePlaceholder')}
                                         value={customName}
                                         onChange={e => setCustomName(e.target.value)}
                                         style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 14 }}
-                                        aria-label={t.common.customQuestion.nameLabel}
+                                        aria-label={t('common.customQuestion.nameLabel')}
                                     />
                                     <textarea
                                         maxLength={300}
                                         rows={2}
-                                        placeholder={t.common.customQuestion.descPlaceholder}
+                                        placeholder={t('common.customQuestion.descPlaceholder')}
                                         value={customDescription}
                                         onChange={e => setCustomDescription(e.target.value)}
                                         style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 14, resize: 'vertical', fontFamily: 'inherit' }}
-                                        aria-label={t.common.customQuestion.descLabel}
+                                        aria-label={t('common.customQuestion.descLabel')}
                                     />
                                 </div>
                             </div>
@@ -191,9 +189,9 @@ export default function Task1SelectionPage() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#7c3aed', background: '#ede9fe' }}>🗺️</span>
-                                            <span className="row-title">{t.task1Selection.mapMode.heading}</span>
+                                            <span className="row-title">{t('task1Selection.mapMode.heading')}</span>
                                         </div>
-                                        <span className="row-desc">{t.task1Selection.mapMode.subheading}</span>
+                                        <span className="row-desc">{t('task1Selection.mapMode.subheading')}</span>
                                     </div>
                                     <div style={{
                                         marginTop: 8,
@@ -213,11 +211,11 @@ export default function Task1SelectionPage() {
                                                 borderRadius: 999,
                                                 background: '#fef3c7',
                                                 color: '#b45309',
-                                            }}>{t.task1Selection.mapMode.raster.badge}</span>
-                                            <span style={{ fontWeight: 600 }}>{t.task1Selection.mapMode.raster.title}</span>
+                                            }}>{t('task1Selection.mapMode.raster.badge')}</span>
+                                            <span style={{ fontWeight: 600 }}>{t('task1Selection.mapMode.raster.title')}</span>
                                         </div>
                                         <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
-                                            {t.task1Selection.mapMode.raster.summary}
+                                            {t('task1Selection.mapMode.raster.summary')}
                                         </div>
                                         <ul style={{
                                             margin: '4px 0 0 0',
@@ -226,7 +224,7 @@ export default function Task1SelectionPage() {
                                             color: 'var(--color-text-secondary)',
                                             lineHeight: 1.6,
                                         }}>
-                                            {t.task1Selection.mapMode.raster.bullets.map((b, i) => <li key={i}>{b}</li>)}
+                                            {(t('task1Selection.mapMode.raster.bullets', { returnObjects: true }) as string[]).map((b, i) => <li key={i}>{b}</li>)}
                                         </ul>
                                         <div style={{
                                             marginTop: 6,
@@ -234,7 +232,7 @@ export default function Task1SelectionPage() {
                                             fontWeight: 600,
                                             color: 'var(--color-primary)',
                                         }}>
-                                            💰 {t.task1Selection.mapMode.raster.cost}
+                                            💰 {t('task1Selection.mapMode.raster.cost')}
                                         </div>
                                     </div>
                                 </div>
@@ -247,13 +245,13 @@ export default function Task1SelectionPage() {
                                     <div className="uc-row-label-flex">
                                         <div className="uc-row-label" style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <span className="uc-row-icon" style={{ color: '#0ea5e9', background: '#e0f2fe' }}>📊</span>
-                                            <span className="row-title">{t.chartSelection.heading}</span>
+                                            <span className="row-title">{t('chartSelection.heading')}</span>
                                         </div>
-                                        <span className="row-desc">{t.chartSelection.subheading}</span>
+                                        <span className="row-desc">{t('chartSelection.subheading')}</span>
                                     </div>
                                     <div
                                         role="radiogroup"
-                                        aria-label={t.chartSelection.heading}
+                                        aria-label={t('chartSelection.heading')}
                                         style={{
                                             display: 'grid',
                                             gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
@@ -285,7 +283,7 @@ export default function Task1SelectionPage() {
 
                     <div className="uc-console-footer">
                         <button className="uc-console-start-btn" onClick={handleStart}>
-                            {selected.icon} {t.task1Selection.startBtn}
+                            {selected.icon} {t('task1Selection.startBtn')}
                         </button>
                     </div>
                 </div>

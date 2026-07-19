@@ -22,7 +22,7 @@ export default function ConfirmDialog({
     onConfirm,
     onCancel,
 }: ConfirmDialogProps) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const overlayRef = useRef<HTMLDivElement>(null);
     const confirmBtnRef = useRef<HTMLButtonElement>(null);
     const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -90,7 +90,7 @@ export default function ConfirmDialog({
                         className="secondary-button"
                         onClick={handleClose}
                     >
-                        {cancelLabel ?? t.common.cancel}
+                        {cancelLabel ?? t('common.cancel')}
                     </button>
                     <button
                         ref={confirmBtnRef}
@@ -98,7 +98,7 @@ export default function ConfirmDialog({
                         className={`primary-button ${variant === 'danger' ? 'confirm-dialog-danger' : ''}`}
                         onClick={() => { onConfirm(); }}
                     >
-                        {confirmLabel ?? t.common.confirm}
+                        {confirmLabel ?? t('common.confirm')}
                     </button>
                 </div>
             </div>

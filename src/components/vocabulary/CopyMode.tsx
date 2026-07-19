@@ -59,7 +59,7 @@ export default function CopyMode({
     onPeekEnd,
     formatDueDate,
 }: Props) {
-    const { translations: t } = useLang();
+    const { t } = useLang();
 
     // ── 闪烁模式状态 ──
     const [blinkEnabled, setBlinkEnabled] = useState(() => {
@@ -196,7 +196,7 @@ export default function CopyMode({
                         <button
                             className="fc-speak-btn"
                             onClick={(e) => { e.stopPropagation(); speak(currentCard.word); }}
-                            title={t.vocab.common.speak}
+                            title={t('vocab.common.speak')}
                             style={{
                                 padding: '6px 12px',
                                 fontSize: '16px',
@@ -216,11 +216,11 @@ export default function CopyMode({
                         )}
                         <div className="fc-copy-meaning">{currentCard.zh}</div>
                         <div className="fc-copy-remaining">
-                            {t.vocab.copyMode.requiredCountLabel.replace('{n}', String(requiredCount))}
+                            {t('vocab.copyMode.requiredCountLabel').replace('{n}', String(requiredCount))}
                         </div>
                         {completionDueHint && (
                             <div className="fc-completion-hint fc-completion-hint--in-card" role="status" aria-live="polite">
-                                <span className="fc-completion-hint__label">{t.vocab.common.nextStudy}</span>
+                                <span className="fc-completion-hint__label">{t('vocab.common.nextStudy')}</span>
                                 <span className="fc-completion-hint__word">{completionDueHint.word}</span>
                                 <span className="fc-completion-hint__date">{formatDueDate(completionDueHint.dueAt)}</span>
                             </div>
@@ -231,7 +231,7 @@ export default function CopyMode({
                     <button
                         className="fc-eye-btn"
                         onClick={onToggleHidden}
-                        title={copyWordHidden ? t.vocab.copyMode.showWord : t.vocab.copyMode.hideWord}
+                        title={copyWordHidden ? t('vocab.copyMode.showWord') : t('vocab.copyMode.hideWord')}
                         style={{
                             padding: '6px 14px',
                             fontSize: '14px',
@@ -242,7 +242,7 @@ export default function CopyMode({
                             transition: 'all 0.2s'
                         }}
                     >
-                        {copyWordHidden ? t.vocab.copyMode.showBtn : t.vocab.copyMode.hideBtn}
+                        {copyWordHidden ? t('vocab.copyMode.showBtn') : t('vocab.copyMode.hideBtn')}
                     </button>
                     {!copyWordVisible && (
                         <button
@@ -252,7 +252,7 @@ export default function CopyMode({
                             onMouseLeave={onPeekEnd}
                             onTouchStart={onPeekStart}
                             onTouchEnd={onPeekEnd}
-                            title={t.vocab.copyMode.peekTitle}
+                            title={t('vocab.copyMode.peekTitle')}
                             style={{
                                 padding: '6px 14px',
                                 fontSize: '14px',
@@ -265,7 +265,7 @@ export default function CopyMode({
                                 WebkitUserSelect: 'none'
                             }}
                         >
-                            {t.vocab.copyMode.peekBtn}
+                            {t('vocab.copyMode.peekBtn')}
                         </button>
                     )}
                     <button
@@ -274,7 +274,7 @@ export default function CopyMode({
                             setBlinkEnabled(next);
                             if (!next) setShowBlinkConfig(false);
                         }}
-                        title={blinkEnabled ? t.vocab.copyMode.blinkOff : t.vocab.copyMode.blinkOn}
+                        title={blinkEnabled ? t('vocab.copyMode.blinkOff') : t('vocab.copyMode.blinkOn')}
                         style={{
                             padding: '6px 14px',
                             fontSize: '14px',
@@ -287,12 +287,12 @@ export default function CopyMode({
                             fontWeight: blinkEnabled ? 500 : undefined,
                         }}
                     >
-                        {blinkEnabled ? t.vocab.copyMode.blinkOnBtn : t.vocab.copyMode.blinkBtn}
+                        {blinkEnabled ? t('vocab.copyMode.blinkOnBtn') : t('vocab.copyMode.blinkBtn')}
                     </button>
                     {blinkEnabled && (
                         <button
                             onClick={() => setShowBlinkConfig(c => !c)}
-                            title={t.vocab.copyMode.blinkSettingsTitle}
+                            title={t('vocab.copyMode.blinkSettingsTitle')}
                             style={{
                                 padding: '6px 10px',
                                 fontSize: '14px',
@@ -321,7 +321,7 @@ export default function CopyMode({
                         fontSize: '13px',
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <label style={{ minWidth: '90px', fontWeight: 500, color: '#92400e' }}>{t.vocab.copyMode.hideIntervalLabel}</label>
+                            <label style={{ minWidth: '90px', fontWeight: 500, color: '#92400e' }}>{t('vocab.copyMode.hideIntervalLabel')}</label>
                             <input
                                 type="number"
                                 min="1"
@@ -340,10 +340,10 @@ export default function CopyMode({
                                     fontSize: '13px',
                                 }}
                             />
-                            <span style={{ color: '#78716c' }}>{t.vocab.copyMode.secondsUnit}</span>
+                            <span style={{ color: '#78716c' }}>{t('vocab.copyMode.secondsUnit')}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <label style={{ minWidth: '90px', fontWeight: 500, color: '#92400e' }}>{t.vocab.copyMode.showDurationLabel}</label>
+                            <label style={{ minWidth: '90px', fontWeight: 500, color: '#92400e' }}>{t('vocab.copyMode.showDurationLabel')}</label>
                             <input
                                 type="number"
                                 min="0.5"
@@ -363,10 +363,10 @@ export default function CopyMode({
                                     fontSize: '13px',
                                 }}
                             />
-                            <span style={{ color: '#78716c' }}>{t.vocab.copyMode.secondsUnit}</span>
+                            <span style={{ color: '#78716c' }}>{t('vocab.copyMode.secondsUnit')}</span>
                         </div>
                         <div style={{ color: '#a8a29e', fontSize: '12px', marginTop: '2px' }}>
-                            {t.vocab.copyMode.blinkHint.replace('{hide}', String(blinkHideSeconds)).replace('{show}', String(blinkShowSeconds))}
+                            {t('vocab.copyMode.blinkHint').replace('{hide}', String(blinkHideSeconds)).replace('{show}', String(blinkShowSeconds))}
                         </div>
                     </div>
                 )}
@@ -379,12 +379,12 @@ export default function CopyMode({
                         color: blinkFlashing ? '#f59e0b' : '#a8a29e',
                         transition: 'color 0.3s',
                     }}>
-                        {blinkFlashing ? t.vocab.copyMode.blinkShowing : t.vocab.copyMode.blinkNext.replace('{n}', String(blinkHideSeconds))}
+                        {blinkFlashing ? t('vocab.copyMode.blinkShowing') : t('vocab.copyMode.blinkNext').replace('{n}', String(blinkHideSeconds))}
                     </div>
                 )}
                 {!copySubmitted && (
                     <div className="fc-copy-days-control" style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                        <label style={{ minWidth: '110px', fontSize: '14px', fontWeight: '500', color: '#333' }}>{t.vocab.copyMode.reviewDaysLabel}</label>
+                        <label style={{ minWidth: '110px', fontSize: '14px', fontWeight: '500', color: '#333' }}>{t('vocab.copyMode.reviewDaysLabel')}</label>
                         <input
                             type="number"
                             min="0"
@@ -403,7 +403,7 @@ export default function CopyMode({
                                 textAlign: 'center',
                             }}
                         />
-                        <span style={{ color: '#999', fontSize: '14px' }}>{t.vocab.copyMode.daysUnit}</span>
+                        <span style={{ color: '#999', fontSize: '14px' }}>{t('vocab.copyMode.daysUnit')}</span>
                     </div>
                 )}
             </div>
@@ -594,14 +594,14 @@ export default function CopyMode({
                             || !isCountMet
                         }
                     >
-                        {t.vocab.copyMode.submitBtn}
+                        {t('vocab.copyMode.submitBtn')}
                     </button>
                 </div>
 
                 {!copySubmitted && (
                     <div className="fc-copy-hint" style={{ marginTop: 8 }}>
-                        <div style={{ fontWeight: 500, color: isCountMet ? '#059669' : '#d97706', marginBottom: 4 }}>{t.vocab.copyMode.realtimeProgress.replace('{n}', String(validCount)).replace('{total}', String(requiredCount))}</div>
-                        {t.vocab.copyMode.copyInstructions}
+                        <div style={{ fontWeight: 500, color: isCountMet ? '#059669' : '#d97706', marginBottom: 4 }}>{t('vocab.copyMode.realtimeProgress').replace('{n}', String(validCount)).replace('{total}', String(requiredCount))}</div>
+                        {t('vocab.copyMode.copyInstructions')}
                     </div>
                 )}
 
@@ -609,15 +609,15 @@ export default function CopyMode({
                     <div className="fc-write-result correct">
                         <span>
                             {copyPendingAction?.completed
-                                ? t.vocab.copyMode.copyDone.replace('{date}', formatDueDate(copyPendingAction?.dueAt ?? '')).replace('{days}', String(copyReviewDaysTemp[currentCardIdx] ?? copyReviewDays))
-                                : t.vocab.copyMode.copySuccess}
+                                ? t('vocab.copyMode.copyDone').replace('{date}', formatDueDate(copyPendingAction?.dueAt ?? '')).replace('{days}', String(copyReviewDaysTemp[currentCardIdx] ?? copyReviewDays))
+                                : t('vocab.copyMode.copySuccess')}
                         </span>
                         <button
                             className="fc-write-next"
                             onClick={onCopyNext}
                             disabled={submitting}
                         >
-                            {t.vocab.next} →
+                            {t('vocab.next')} →
                         </button>
                     </div>
                 )}

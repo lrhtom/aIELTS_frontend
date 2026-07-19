@@ -85,7 +85,7 @@ function tooltipPos(rect: Rect | null, ttH: number): React.CSSProperties {
  * 跨页面 spotlight 导览：自动跳转路由 → 等目标元素出现 → 高亮 + 气泡讲解。
  */
 export default function TourGuide() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const navigate = useNavigate();
     const location = useLocation();
     const [stepIndex, setStepIndex] = useState<number | null>(null);
@@ -225,7 +225,7 @@ export default function TourGuide() {
 
     if (!active || !step) return null;
 
-    const stepText = t.tour.steps[step.id];
+    const stepText = t(`tour.steps.${step.id}`, { returnObjects: true }) as Translations['tour']['steps'][TourStepId];
     const total = TOUR_STEPS.length;
     const spot = rect ? {
         top: rect.top - SPOT_PAD,
@@ -249,23 +249,23 @@ export default function TourGuide() {
                     <div className="tour-progress-fill" style={{ width: `${((stepIndex + 1) / total) * 100}%` }} />
                 </div>
                 <span className="tour-count">
-                    {t.tour.progress.replace('{current}', String(stepIndex + 1)).replace('{total}', String(total))}
+                    {t('tour.progress').replace('{current}', String(stepIndex + 1)).replace('{total}', String(total))}
                 </span>
                 <h3 className="tour-title">{stepText.title}</h3>
                 <p className="tour-desc">{stepText.desc}</p>
-                {searching && <p className="tour-waiting">{t.tour.waiting}</p>}
+                {searching && <p className="tour-waiting">{t('tour.waiting')}</p>}
                 <div className="tour-actions">
                     <button type="button" className="tour-btn-skip" onClick={() => stop(true)}>
-                        {t.tour.skip}
+                        {t('tour.skip')}
                     </button>
                     <div className="tour-actions-main">
                         {stepIndex > 0 && (
                             <button type="button" className="tour-btn-prev" onClick={prev}>
-                                {t.tour.prev}
+                                {t('tour.prev')}
                             </button>
                         )}
                         <button type="button" className="tour-btn-next" ref={nextBtnRef} onClick={next}>
-                            {isLast ? t.tour.finish : t.tour.next}
+                            {isLast ? t('tour.finish') : t('tour.next')}
                         </button>
                     </div>
                 </div>

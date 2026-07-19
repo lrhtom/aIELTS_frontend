@@ -8,31 +8,31 @@ import '../../styles/practice_page.css';
 import '../../styles/vocabulary_notebook.css';
 
 export default function VocabBookListPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const [books, setBooks] = useState<VocabBook[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         listVocabBooks()
             .then(r => setBooks(r.books))
-            .catch(() => showToast(t.vocab.common.loadBooksFail, 'error'))
+            .catch(() => showToast(t('vocab.common.loadBooksFail'), 'error'))
             .finally(() => setLoading(false));
     }, []);
 
     return (
         <Layout
-    pageTitle={t.vocab.books.title}
-    pageSubtitle={t.vocab.books.desc}
+    pageTitle={t('vocab.books.title')}
+    pageSubtitle={t('vocab.books.desc')}
     backUrl='/vocabulary'
-    backText={`${t.common.back} ${t.vocab.hub.title}`}
+    backText={`${t('common.back')} ${t('vocab.hub.title')}`}
 >
             <div className="config-page-wrap">
                 {loading ? (
-                    <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '40px' }}>{t.common.loading}</p>
+                    <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '40px' }}>{t('common.loading')}</p>
                 ) : books.length === 0 ? (
                     <div className="nb-empty">
                         <span className="nb-empty-icon">📚</span>
-                        {t.vocab.books.emptyTitle}
+                        {t('vocab.books.emptyTitle')}
                     </div>
                 ) : (
                     <div className="nb-grid">
@@ -49,7 +49,7 @@ export default function VocabBookListPage() {
                                     <div className="nb-card-desc">{book.description}</div>
                                 )}
                                 <div className="nb-card-meta">
-                                    <span className="nb-card-word-count">{t.vocab.notebooks.cardWordCount.replace('{n}', book.word_count.toString())}</span>
+                                    <span className="nb-card-word-count">{t('vocab.notebooks.cardWordCount').replace('{n}', book.word_count.toString())}</span>
                                 </div>
                             </Link>
                         ))}

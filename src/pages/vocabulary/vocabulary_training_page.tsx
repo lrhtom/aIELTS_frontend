@@ -8,16 +8,16 @@ import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
 
 export default function VocabularyTrainingPage() {
-    const { translations: t } = useLang();
+    const { t } = useLang();
     const navigate = useNavigate();
     const [vocabInput, setVocabInput] = useState('');
     const [mode, setMode] = useState<VocabMode>('mcq');
     const [shuffleWordOrder, setShuffleWordOrder] = useState(true);
 
     const MODE_OPTIONS: Array<{ id: VocabMode; icon: string; title: string; desc: string }> = [
-        { id: 'mcq', icon: '🧩', title: t.vocab.trainingConfig.modeChoice.title, desc: t.vocab.trainingConfig.modeChoice.desc },
-        { id: 'dictation', icon: '🎧', title: t.vocab.trainingConfig.modeDictation.title, desc: t.vocab.trainingConfig.modeDictation.desc },
-        { id: 'complete', icon: '✏️', title: t.vocab.trainingConfig.modeComplete.title, desc: t.vocab.trainingConfig.modeComplete.desc },
+        { id: 'mcq', icon: '🧩', title: t('vocab.trainingConfig.modeChoice.title'), desc: t('vocab.trainingConfig.modeChoice.desc') },
+        { id: 'dictation', icon: '🎧', title: t('vocab.trainingConfig.modeDictation.title'), desc: t('vocab.trainingConfig.modeDictation.desc') },
+        { id: 'complete', icon: '✏️', title: t('vocab.trainingConfig.modeComplete.title'), desc: t('vocab.trainingConfig.modeComplete.desc') },
     ];
 
     const handleVocabChange = (val: string) => {
@@ -27,7 +27,7 @@ export default function VocabularyTrainingPage() {
     const handleStart = () => {
         const validVocabInput = vocabInput.trim();
         if (!validVocabInput) {
-            showToast(t.vocab.trainingConfig.toastEmpty, 'error');
+            showToast(t('vocab.trainingConfig.toastEmpty'), 'error');
             return;
         }
 
@@ -43,14 +43,14 @@ export default function VocabularyTrainingPage() {
 
     return (
         <Layout
-    pageTitle={t.vocab.trainingConfig.pageTitle}
-    pageSubtitle={t.vocab.trainingConfig.pageSubtitle}
+    pageTitle={t('vocab.trainingConfig.pageTitle')}
+    pageSubtitle={t('vocab.trainingConfig.pageSubtitle')}
     backUrl='/vocabulary'
-    backText={t.vocab.trainingConfig.backText}
+    backText={t('vocab.trainingConfig.backText')}
 >
             <div className="config-page-wrap reading-config">
                 <div className="config-card">
-                    <h3>{t.vocab.trainingConfig.targetWordsHeading}</h3>
+                    <h3>{t('vocab.trainingConfig.targetWordsHeading')}</h3>
                     <VocabInput
                         value={vocabInput}
                         onChange={handleVocabChange}
@@ -58,7 +58,7 @@ export default function VocabularyTrainingPage() {
                 </div>
 
                 <div className="config-card">
-                    <h3>{t.vocab.trainingConfig.modeChoiceHeading}</h3>
+                    <h3>{t('vocab.trainingConfig.modeChoiceHeading')}</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                         {MODE_OPTIONS.map((m) => (
                             <button
@@ -90,8 +90,8 @@ export default function VocabularyTrainingPage() {
                 <div className="config-card">
                     <div className="toggle-row">
                         <div>
-                            <div className="label-text">{t.vocab.trainingConfig.shuffleLabel}</div>
-                            <div className="label-desc">{t.vocab.trainingConfig.shuffleDesc}</div>
+                            <div className="label-text">{t('vocab.trainingConfig.shuffleLabel')}</div>
+                            <div className="label-desc">{t('vocab.trainingConfig.shuffleDesc')}</div>
                         </div>
                         <label className="toggle-switch">
                             <input
@@ -106,7 +106,7 @@ export default function VocabularyTrainingPage() {
 
                 <div className="config-card">
                     <button className="skill-btn reading" style={{ width: '100%' }} onClick={handleStart}>
-                        {t.vocab.trainingConfig.startBtn}
+                        {t('vocab.trainingConfig.startBtn')}
                     </button>
                 </div>
             </div>
