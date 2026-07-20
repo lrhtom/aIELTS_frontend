@@ -311,9 +311,10 @@
 
 .bento-card {
     position: relative;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    /* 去掉 backdrop-filter: blur(20px)：同屏 7 张卡的实时背景模糊每帧重算，
+       与常驻助手球的无限 box-shadow 重绘叠加会造成本页持续卡顿。改用更实的
+       半透明底色，视觉几乎无差别但零逐帧模糊开销。 */
+    background: rgba(255, 255, 255, 0.82);
     border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 24px;
     padding: 32px 28px;

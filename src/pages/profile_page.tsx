@@ -8,7 +8,10 @@ import UserSettings from '../components/profile/UserSettings';
 import UserGoals from '../components/profile/UserGoals';
 import UserBackpack from '../components/profile/UserBackpack';
 import UserFeedback from '../components/profile/UserFeedback';
+import UserSurvey from '../components/profile/UserSurvey';
 import AdminFeedback from '../components/profile/AdminFeedback';
+import AdminSurvey from '../components/profile/AdminSurvey';
+import AdminAnalytics from '../components/profile/AdminAnalytics';
 import AdminUserManagement from '../components/profile/AdminUserManagement';
 import AdminAIUsage from '../components/profile/AdminAIUsage';
 import AdminCodeStats from '../components/profile/AdminCodeStats';
@@ -32,6 +35,9 @@ import {
   ShieldOff,
   Users,
   ClipboardList,
+  ClipboardCheck,
+  PieChart,
+  TrendingUp,
   ChevronDown,
   ArrowLeft,
   Coins,
@@ -43,7 +49,7 @@ import {
 } from 'lucide-react';
 import '../styles/profile_page.css';
 
-type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' | 'feedback' | 'background' | 'admin_feedback' | 'admin_users' | 'admin_routes' | 'admin_ai_usage' | 'admin_code_stats' | 'admin_service_health' | 'manual';
+type Tab = 'home' | 'analytics' | 'finance' | 'goals' | 'settings' | 'backpack' | 'feedback' | 'survey' | 'background' | 'admin_feedback' | 'admin_survey' | 'admin_analytics' | 'admin_users' | 'admin_routes' | 'admin_ai_usage' | 'admin_code_stats' | 'admin_service_health' | 'manual';
 
 /** Shown when a non-admin tries to access an admin tab via DevTools state manipulation */
 function AccessDenied() {
@@ -82,10 +88,13 @@ export default function ProfilePage() {
             case 'settings': return <UserSettings />;
             case 'backpack': return <UserBackpack onBack={() => setActiveTab('home')} />;
             case 'feedback': return <UserFeedback />;
+            case 'survey': return <UserSurvey />;
             case 'background': return <UserBackground />;
             case 'manual': return <UserManual />;
             // ── Admin-only tabs: double-checked here even if sidebar is hidden ──
             case 'admin_feedback': return isAdmin ? <AdminFeedback /> : <AccessDenied />;
+            case 'admin_survey': return isAdmin ? <AdminSurvey /> : <AccessDenied />;
+            case 'admin_analytics': return isAdmin ? <AdminAnalytics /> : <AccessDenied />;
             case 'admin_users':   return isAdmin ? <AdminUserManagement /> : <AccessDenied />;
             case 'admin_routes':  return isAdmin ? <RouteVisualization /> : <AccessDenied />;
             case 'admin_ai_usage': return isAdmin ? <AdminAIUsage /> : <AccessDenied />;
@@ -106,6 +115,7 @@ export default function ProfilePage() {
         { tab: 'backpack', Icon: Backpack, label: t('profile.menu.backpack') },
         { tab: 'settings', Icon: Settings, label: t('profile.menu.settings') },
         { tab: 'feedback', Icon: MessageSquareText, label: t('profile.feedback.title') },
+        { tab: 'survey', Icon: ClipboardCheck, label: t('profile.survey.title') },
     ];
 
     return (
@@ -202,6 +212,20 @@ export default function ProfilePage() {
                                         >
                                             <ClipboardList size={16} className="menu-item-icon" />
                                             <span className="menu-item-text">{t('profile.admin.feedback.title')}</span>
+                                        </button>
+                                        <button
+                                            className={`profile-menu-item profile-sub-item ${activeTab === 'admin_survey' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('admin_survey')}
+                                        >
+                                            <PieChart size={16} className="menu-item-icon" />
+                                            <span className="menu-item-text">{t('profile.admin.survey.title')}</span>
+                                        </button>
+                                        <button
+                                            className={`profile-menu-item profile-sub-item ${activeTab === 'admin_analytics' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('admin_analytics')}
+                                        >
+                                            <TrendingUp size={16} className="menu-item-icon" />
+                                            <span className="menu-item-text">{t('profile.admin.analytics.title')}</span>
                                         </button>
                                         <button
                                             className={`profile-menu-item profile-sub-item ${activeTab === 'admin_routes' ? 'active' : ''}`}

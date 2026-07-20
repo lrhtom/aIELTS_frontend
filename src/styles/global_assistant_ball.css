@@ -50,13 +50,13 @@
   transition: none;
 }
 
-@keyframes assistantBallGlow {
-  0%, 100% {
-    box-shadow: 0 8px 28px rgba(15, 118, 110, 0.32), 0 0 0 0 rgba(13, 148, 136, 0.4);
-  }
-  50% {
-    box-shadow: 0 8px 32px rgba(15, 118, 110, 0.42), 0 0 0 8px rgba(13, 148, 136, 0);
-  }
+/* 卡顿修复（全站）：脉冲光晕改用 transform+opacity（GPU 合成，零重绘）。
+   原实现逐帧动画 box-shadow —— 而助手球是 position:fixed 全站常驻，box-shadow
+   属于「触发重绘」的属性，等于每帧重绘一个覆盖全站的固定层，导致整站持续掉帧。
+   现在光环挪到 ::after 伪元素上，只动 transform/opacity，浏览器可纯合成层处理。 */
+@keyframes assistantBallPing {
+  0% { transform: scale(1); opacity: 0.55; }
+  70%, 100% { transform: scale(1.45); opacity: 0; }
 }
 
 @keyframes assistantBallFloat {
@@ -86,7 +86,24 @@
   user-select: none;
   touch-action: none;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
-  animation: assistantBallGlow 3s ease-in-out infinite;
+  position: relative;
+}
+/* 脉冲光环：合成层动画（scale + opacity），从球背后向外扩散淡出，取代旧的
+   box-shadow ping。z-index:-1 让其位于球体下方，扩散时从边缘露出。 */
+.assistant-ball::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(13, 148, 136, 0.5);
+  animation: assistantBallPing 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+/* 悬停时暂停脉冲（与旧版 hover 停止光晕一致）。 */
+.assistant-ball:hover::after {
+  animation-play-state: paused;
+  opacity: 0;
 }
 .assistant-ball:hover {
   transform: scale(1.1);

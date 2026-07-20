@@ -97,6 +97,12 @@ export const manualData: ManualData = {
                     title: '个人资料',
                     content: '右侧展示您的用户名、邮箱、注册时间和最近登录时间。所有信息与账户绑定，修改用户名后自动更新。',
                     keywords: ['资料', '信息', '邮箱', '注册']
+                },
+                {
+                    id: 'survey',
+                    title: '用户问卷调查',
+                    content: '在个人主页左侧菜单点击"问卷调查"即可填写平台反馈问卷，分三部分：A 基本信息（备考时长、目标分数，可选）、B 平台评价（8 项 1–5 分打分，必填，1 = 非常不同意，5 = 非常同意）、C 开放问题（最有用之处、改进建议、其他评论，可选）。提交后可随时再次填写，你的反馈会直接帮助我们改进平台。',
+                    keywords: ['问卷', '调查', '反馈', '评价', '打分', 'survey', 'questionnaire']
                 }
             ]
         },
@@ -244,8 +250,8 @@ export const manualData: ManualData = {
                 {
                     id: 'admin',
                     title: '管理员功能',
-                    content: '管理员账户在个人主页可访问"管理后台"。包括：用户管理（搜索、筛选、封禁/解封、删除、调整 AT 余额）和反馈管理（查看、标记已解决、删除反馈）。仅限 staff/superuser 权限账户使用。',
-                    keywords: ['管理员', '后台', '封禁', '用户', 'admin']
+                    content: '管理员账户在个人主页可访问"管理后台"。包括：用户管理（搜索、筛选、封禁/解封、删除、调整 AT 余额）、反馈管理（查看、标记已解决、删除反馈）、问卷管理（查看用户问卷、Part B 各项平均分与 Part A 人群分布、删除单条问卷）和学情分析（全站听说读写与综合数据统计，或下钻到单个用户查看其四科 + 综合的详细成绩）。仅限 staff/superuser 权限账户使用。',
+                    keywords: ['管理员', '后台', '封禁', '用户', '问卷', '学情', '分析', 'admin', 'analytics']
                 }
             ]
         }
@@ -329,6 +335,12 @@ export const manualData: ManualData = {
                     title: 'Personal Info',
                     content: 'The right column shows your username, email, registration date, and last login time. All information is linked to your account and updates automatically.',
                     keywords: ['info', 'profile', 'email', 'registration']
+                },
+                {
+                    id: 'survey',
+                    title: 'User Questionnaire',
+                    content: 'Click "Questionnaire" in the left menu of your profile to fill out the platform feedback survey. It has three parts: A — Demographics (preparation time, target band; optional), B — Platform Evaluation (8 statements rated 1–5, required, where 1 = Strongly Disagree and 5 = Strongly Agree), and C — Open-Ended questions (most useful feature, suggestions, other comments; optional). You can submit again at any time; your feedback directly helps us improve the platform.',
+                    keywords: ['survey', 'questionnaire', 'feedback', 'rating', 'evaluation']
                 }
             ]
         },
@@ -470,8 +482,8 @@ export const manualData: ManualData = {
                 {
                     id: 'admin',
                     title: 'Admin Panel',
-                    content: 'Staff and superuser accounts can access the Admin Panel from the Profile page. Features include: User Management (search, filter, ban/unban, delete, adjust AT balance) and Feedback Management (view, mark resolved, delete).',
-                    keywords: ['admin', 'panel', 'ban', 'users', 'management']
+                    content: 'Staff and superuser accounts can access the Admin Panel from the Profile page. Features include: User Management (search, filter, ban/unban, delete, adjust AT balance), Feedback Management (view, mark resolved, delete), Questionnaire Management (view responses, per-item Part B averages and Part A demographic distribution, delete individual responses), and Analytics (site-wide listening/speaking/reading/writing and overall statistics, or drill down into a single user to view their four-skill + overall scores).',
+                    keywords: ['admin', 'panel', 'ban', 'users', 'management', 'survey', 'questionnaire', 'analytics', 'statistics']
                 }
             ]
         }
