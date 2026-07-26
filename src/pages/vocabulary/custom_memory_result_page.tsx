@@ -45,9 +45,12 @@ export default function CustomMemoryResultPage() {
     const [ready, setReady] = useState(false);
     const [restarting, setRestarting] = useState(false);
 
+    // 同 study 页：冷启动没有成绩数据时渲染落地页，不静默跳走
+    const [noSession, setNoSession] = useState(false);
+
     useEffect(() => {
         if (!state?.deckId || !Array.isArray(state.results)) {
-            navigate('/vocabulary/custom-cards', { replace: true });
+            setNoSession(true);
             return;
         }
         setDeckId(state.deckId);
@@ -93,6 +96,25 @@ export default function CustomMemoryResultPage() {
             setRestarting(false);
         }
     };
+
+    if (noSession) {
+        return (
+            <Layout>
+                <div className="config-page-wrap cm-result-wrap">
+                    <div className="rp-noconfig">
+                        <div className="rp-noconfig-icon" aria-hidden="true">🗂️</div>
+                        <h2 className="rp-noconfig-title">{t('vocab.customMemory.noResultTitle')}</h2>
+                        <p className="rp-noconfig-desc">{t('vocab.customMemory.noResultDesc')}</p>
+                        <div className="rp-noconfig-actions">
+                            <button className="rp-noconfig-primary" onClick={() => navigate('/vocabulary/custom-cards')}>
+                                {t('vocab.customMemory.noSessionGoDecks')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
 
     if (!ready) {
         return (

@@ -1,6 +1,11 @@
 // 中文文案（类型真源）— en 侧以 typeof 引用本文件。
 
 export const speakingChat = {
+  // 直接打开/刷新 /speaking/chat 但没有进行中的会话时的落地文案
+  noSessionTitle: '当前没有进行中的口语练习',
+  noSessionDesc: '口语练习需要从配置页开始。直接打开这个网址不会自动开启会话；你也可以从题库打开一次已保存的练习。',
+  noSessionGoConfig: '去开始口语练习',
+  noSessionGoBank: '从题库打开',
   errBrowserNoSpeech: '浏览器不支持语音识别，请使用 Chrome 浏览器或 Edge',
   errNoSpeech: '未能识别到语音，请大声重试',
   errNoDetectSpeech: '没有检测到语音，请重试',

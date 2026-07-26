@@ -109,6 +109,12 @@ export const customMemory = {
     easy: '容易',
   },
   defaultTitle: '自定义记忆卡',
+  // 直接打开/刷新自定义卡片学习页或结果页但没有会话时的落地文案
+  noSessionTitle: '当前没有进行中的学习',
+  noSessionDesc: '自定义记忆卡的学习需要从卡组列表里点开始。直接打开这个网址不会自动开始。',
+  noResultTitle: '没有可显示的成绩',
+  noResultDesc: '成绩页只在一次学习结束后出现。直接打开这个网址看不到数据，请先完成一轮学习。',
+  noSessionGoDecks: '回到卡组列表',
   addPageTitle: '添加自定义记忆卡',
   addPageSubtitle: '当前为添加模式：将把卡片追加到已有卡组。',
   createPageSubtitle: '输入文本后自动生成记忆卡，复习调度使用和背单词一致的 FSRS 算法。',

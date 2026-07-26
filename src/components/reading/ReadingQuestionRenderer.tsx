@@ -594,6 +594,8 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
         }
         return init;
     });
+    // 点选放置模式下当前选中的 heading（null = 未选）
+    const [pickedHeading, setPickedHeading] = useState<string | null>(null);
 
     const bankKeys = Object.keys(bank);
     const usedHeadings = new Set(Object.values(placements));
@@ -625,6 +627,25 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
         const next = { ...placements };
         delete next[qid];
         commit(next, [qid]);
+    };
+
+    // ── 点选放置（拖拽的等价路径）──
+    // 纯 DnD 在窄侧栏/触屏上几乎不可用，且"点了没反应"会被当成选中失效的 bug。
+    // 交互：点 pool 里的 heading 选中 → 点某个段落槽位放入；再点已选中的 chip 取消。
+    const pickHeading = (roman: string) => {
+        if (reviewMode) return;
+        setPickedHeading(prev => (prev === roman ? null : roman));
+    };
+
+    const slotClick = (qid: number) => {
+        if (reviewMode) return;
+        if (pickedHeading) {
+            placeOnSlot(qid, pickedHeading);
+            setPickedHeading(null);
+        } else if (placements[qid]) {
+            // 未选中任何 heading 时点已填槽位 → 取回到 pool，方便改答案
+            clearSlot(qid);
+        }
     };
 
     // ── DnD wiring ──
@@ -663,7 +684,14 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
                 onDragOver={allowDrop}
                 onDrop={dropOnPool}
             >
-                <div className="mh-pool-title">Headings pool — drag onto paragraphs</div>
+                <div className="mh-pool-title">
+                    Headings pool — drag onto paragraphs
+                    {pickedHeading && (
+                        <span className="mh-pick-hint">
+                            {t('components.questionRenderer.pickHeadingHint').replace('{n}', pickedHeading)}
+                        </span>
+                    )}
+                </div>
                 <div className="mh-chip-row">
                     {poolHeadings.length === 0 && (
                         <span className="mh-pool-empty">(all headings placed)</span>
@@ -671,9 +699,16 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
                     {poolHeadings.map(roman => (
                         <div
                             key={roman}
-                            className="mh-chip"
+                            className={`mh-chip${pickedHeading === roman ? ' is-picked' : ''}`}
                             draggable={!reviewMode}
                             onDragStart={e => onDragStart(e, roman, null)}
+                            onClick={() => pickHeading(roman)}
+                            role="button"
+                            tabIndex={reviewMode ? -1 : 0}
+                            aria-pressed={pickedHeading === roman}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickHeading(roman); }
+                            }}
                         >
                             <span className="mh-chip-roman">{roman}</span>
                             <span className="mh-chip-text">{bank[roman]}</span>
@@ -694,9 +729,15 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
                                 {q.id}. Paragraph <strong>{q.paragraph || '?'}</strong>
                             </div>
                             <div
-                                className={`mh-slot-zone ${placed ? 'filled' : 'empty'} ${reviewMode ? (isCorrect ? 'review-ok' : 'review-ng') : ''}`}
+                                className={`mh-slot-zone ${placed ? 'filled' : 'empty'} ${pickedHeading && !reviewMode ? 'is-droppable' : ''} ${reviewMode ? (isCorrect ? 'review-ok' : 'review-ng') : ''}`}
                                 onDragOver={allowDrop}
                                 onDrop={e => dropOnSlot(e, q.id)}
+                                onClick={() => slotClick(q.id)}
+                                role={reviewMode ? undefined : 'button'}
+                                tabIndex={reviewMode ? -1 : 0}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); slotClick(q.id); }
+                                }}
                             >
                                 {placed ? (
                                     <div
@@ -710,7 +751,7 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
                                             <button
                                                 type="button"
                                                 className="mh-chip-remove"
-                                                onClick={() => clearSlot(q.id)}
+                                                onClick={e => { e.stopPropagation(); clearSlot(q.id); }}
                                                 aria-label={t('components.questionRenderer.removeHeading')}
                                             >×</button>
                                         )}

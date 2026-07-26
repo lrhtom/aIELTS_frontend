@@ -53,7 +53,10 @@ export default function Task1AiTeacherGenPage() {
         }
         setSubmitting(true);
         sessionStorage.removeItem('task1AiTeacherLesson');
-        navigate('/writing/task1-ai-teacher/lesson', { state: { topic: trimmed, image: imageBase64 } });
+        // 题目同时写进 query（图片太大只能留在 state），保证刷新后至少还认得题目
+        navigate(`/writing/task1-ai-teacher/lesson?topic=${encodeURIComponent(trimmed)}`, {
+            state: { topic: trimmed, image: imageBase64 },
+        });
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {

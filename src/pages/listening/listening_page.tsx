@@ -106,6 +106,8 @@ function ListeningPage() {
     const { t } = useLang();
     const [absurdMode] = useState<boolean>(Boolean(state?.absurdMode));
 
+    // 冷启动无配置 → 渲染落地页，不发起付费生成（详见 reading_page 同名注释）
+    const [noConfig, setNoConfig] = useState(false);
     const [st, setSt] = useState(createListeningState);
     const set = <K extends keyof typeof st>(k: K, v: typeof st[K]) =>
         setSt(s => ({ ...s, [k]: v }));
@@ -320,6 +322,12 @@ function ListeningPage() {
             } catch {
                 sessionStorage.removeItem(CACHE_KEY);
             }
+        }
+
+        // 没有配置就不生成：state 为空说明不是从配置页进来的（同 reading_page 注释）
+        if (!state) {
+            setNoConfig(true);
+            return;
         }
 
         setSt(createListeningState());
@@ -695,6 +703,27 @@ function ListeningPage() {
             document.removeEventListener('mouseup', onMouseUp);
         };
     }, [st.step, st.isPassageOpen]);
+
+    // 无配置落地页：冷启动进来不生成，给出口而不是静默扣费
+    if (noConfig) {
+        return (
+            <div className="reading-container">
+                <div className="page rp-noconfig">
+                    <div className="rp-noconfig-icon" aria-hidden="true">🎧</div>
+                    <h2 className="rp-noconfig-title">{t('listeningDetails.noConfigTitle')}</h2>
+                    <p className="rp-noconfig-desc">{t('listeningDetails.noConfigDesc')}</p>
+                    <div className="rp-noconfig-actions">
+                        <button className="rp-noconfig-primary" onClick={() => navigate('/practice/ai/listening')}>
+                            {t('listeningDetails.noConfigGoConfig')}
+                        </button>
+                        <button className="rp-noconfig-secondary" onClick={() => navigate('/practice/ai/bank?skill=listening')}>
+                            {t('listeningDetails.noConfigGoBank')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // Loading — two distinct phases
     if (st.isLoading) {

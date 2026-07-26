@@ -199,11 +199,16 @@ function SpeakingChatPage() {
     const isExamMode = activeMode === 'part1' || activeMode === 'part2' || activeMode === 'part3' || isFullTestMode;
 
     // ── 路由守卫：防止刷新或直接跳转进来（带 bankId 的恢复入口放行）─────────
+    // 不做静默 navigate —— 那在用户看来就是"闪退"，自动化工具也测不到本页。
+    // 改为置位 noSession，渲染一个带出口的落地页。
+    //
+    // 用 useState 惰性初始化而不是 effect：初始化流程（建会话行等）也在 effect 里，
+    // 同一次 commit 里所有 effect 都会跑，靠 effect 置位挡不住它们 —— 必须在渲染阶段
+    // 就把结论定下来，让下面的 effect 能第一行 return。冻结在挂载时也避免了卸载清理
+    // 把 isChatAllowed 置 false 后本值被反转。
+    const [noSession] = useState(() => !speakingStore.isChatAllowed && !resumeId);
     useEffect(() => {
-        if (!speakingStore.isChatAllowed && !resumeId) {
-            navigate('/speaking', { replace: true });
-            return;
-        }
+        if (noSession) return;
 
         return () => {
             // component unmount
@@ -329,6 +334,10 @@ function SpeakingChatPage() {
 
     // ── Init: play welcome then unlock mic ─────────────────────────────────
     useEffect(() => {
+        // 无会话（冷启动/刷新进来）：什么都不做，交给落地页渲染。
+        // 尤其不能往下走 —— 下面会建一条 speaking 会话行，冷启动跑一次就多一条脏数据。
+        if (noSession) return;
+
         // 重置所有状态到初始值，防止从其他页面返回时残留旧数据
         setStatusSync('loading');
         setChatHistory([]);
@@ -1298,6 +1307,27 @@ function SpeakingChatPage() {
             setLoadingPart3(false);
         }
     };
+
+    // 冷启动/刷新进来没有会话：渲染落地页而不是跳走
+    if (noSession) {
+        return (
+            <div className="sc-root">
+                <div className="rp-noconfig">
+                    <div className="rp-noconfig-icon" aria-hidden="true">🎤</div>
+                    <h2 className="rp-noconfig-title">{t('speakingChat.noSessionTitle')}</h2>
+                    <p className="rp-noconfig-desc">{t('speakingChat.noSessionDesc')}</p>
+                    <div className="rp-noconfig-actions">
+                        <button className="rp-noconfig-primary" onClick={() => navigate('/speaking')}>
+                            {t('speakingChat.noSessionGoConfig')}
+                        </button>
+                        <button className="rp-noconfig-secondary" onClick={() => navigate('/practice/ai/bank?skill=speaking')}>
+                            {t('speakingChat.noSessionGoBank')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="sc-root">

@@ -29,7 +29,8 @@ export default function AiTeacherGenPage() {
         }
         setSubmitting(true);
         sessionStorage.removeItem('aiTeacherLesson');
-        navigate('/writing/ai-teacher/lesson', {
+        // 题目同时写进 query：location.state 刷新即丢，带上它讲解页才刷得动
+        navigate(`/writing/ai-teacher/lesson?topic=${encodeURIComponent(trimmed)}`, {
             state: {
                 topic: trimmed,
                 viewpointEnabled: advancedOpen,

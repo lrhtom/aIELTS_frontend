@@ -125,23 +125,35 @@ export default function Task1AiTeacherLessonPage() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const [topic, setTopic] = useState<string>(() => {
-        const s = sessionStorage.getItem(SESSION_KEY);
-        if (s) return JSON.parse(s).topic;
-        return (location.state as { topic?: string } | null)?.topic || '';
-    });
+    // 同 Task 2 讲解页：location.state 冷启动时是空的，按
+    // state → 查询参数 → sessionStorage 三级回退，保证 URL 可刷新可收藏。
+    const query = new URLSearchParams(location.search);
+    const cachedSession = (() => {
+        try {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
+    })();
+
+    const [topic, setTopic] = useState<string>(
+        () => (location.state as { topic?: string } | null)?.topic
+            || query.get('topic')
+            || cachedSession?.topic
+            || '',
+    );
     const [imageBase64] = useState<string | null>(() => {
         return (location.state as { image?: string } | null)?.image || null;
     });
-    const recordId = (location.state as { record_id?: number } | null)?.record_id;
+    const recordId = (location.state as { record_id?: number } | null)?.record_id
+        ?? (query.get('record') ? Number(query.get('record')) : undefined);
 
     const [data, setData] = useState<Task1LessonData | null>(() => {
         if (recordId) return null;
-        const s = sessionStorage.getItem(SESSION_KEY);
-        return s ? JSON.parse(s).data : null;
+        return cachedSession?.data ?? null;
     });
 
-    const [state, setState] = useState<'loading' | 'ready' | 'error'>(() => {
+    // 'empty' = 冷启动进来但没有题目/记录，渲染落地页而不是静默跳转（见 Task 2 讲解页注释）
+    const [state, setState] = useState<'loading' | 'ready' | 'error' | 'empty'>(() => {
         if (recordId) return 'loading';
         return data ? 'ready' : 'loading';
     });
@@ -283,12 +295,12 @@ export default function Task1AiTeacherLessonPage() {
     useEffect(() => {
         if (!data) {
             if (!topic && !recordId) {
-                navigate('/writing/ai-teachers', { replace: true });
+                setState('empty');
                 return;
             }
             fetchLesson();
         }
-    }, [data, topic, navigate, fetchLesson]);
+    }, [data, topic, recordId, fetchLesson]);
 
     const goPrev = () => setCurrentSection(s => Math.max(0, s - 1));
     const goNext = () => setCurrentSection(s => Math.min(totalSections - 1, s + 1));
@@ -836,6 +848,31 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
                 <div className="at-error-wrap">
                     <div className="at-error-msg">{errorMsg}</div>
                     <button className="at-error-retry" onClick={fetchLesson}>Retry</button>
+                </div>
+            </Layout>
+        );
+    }
+
+    // 冷启动且无题目：给一个真实落地页 + 明确出口，不做静默跳转
+    if (state === 'empty') {
+        return (
+            <Layout
+                pageTitle={t('writingAiTeacher.task1.pageTitle')}
+                backUrl="/writing/ai-teachers"
+                backText={t('writingAiTeacher.lesson.backText')}
+            >
+                <div className="at-empty-wrap">
+                    <div className="at-empty-icon" aria-hidden="true">🎓</div>
+                    <h2 className="at-empty-title">{t('writingAiTeacher.emptyTitle')}</h2>
+                    <p className="at-empty-desc">{t('writingAiTeacher.emptyDesc')}</p>
+                    <div className="at-empty-actions">
+                        <button className="at-empty-primary" onClick={() => navigate('/writing/task1-ai-teacher')}>
+                            {t('writingAiTeacher.emptyGoGenerate')}
+                        </button>
+                        <button className="at-empty-secondary" onClick={() => navigate('/writing/ai-teachers/records')}>
+                            {t('writingAiTeacher.emptyGoRecords')}
+                        </button>
+                    </div>
                 </div>
             </Layout>
         );

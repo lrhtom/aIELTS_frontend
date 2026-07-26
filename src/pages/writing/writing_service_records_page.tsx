@@ -92,7 +92,11 @@ export default function WritingServiceRecordsPage() {
         };
         const targetRoute = routeMap[record.service_type];
         if (targetRoute) {
-            navigate(targetRoute, { state: { record_id: record.id } });
+            // 讲解页带上 ?record=<id>，这样刷新/收藏这条记录仍然打得开
+            const isLesson = targetRoute.endsWith('/lesson');
+            navigate(isLesson ? `${targetRoute}?record=${record.id}` : targetRoute, {
+                state: { record_id: record.id },
+            });
         } else {
             showToast(t('writingHub.records.viewerNotSupported') || 'Viewer not supported for this type', 'info');
         }

@@ -457,15 +457,32 @@ function SingleLangBadBox({ en, zh, label }: { en: string; zh: string; label: st
 
 const SESSION_KEY = 'aiTeacherLesson';
 
-type PageState = 'loading' | 'error' | 'ready';
+// 'empty' = 冷启动进来但没有任何题目/记录可显示。
+// 这种情况必须渲染一个真实页面，不能默默 navigate 走 —— 否则用户刷新就"闪退"，
+// Lighthouse 之类的工具也会因为立即重定向而测不到这个页面。
+type PageState = 'loading' | 'error' | 'ready' | 'empty';
 
 export default function AiTeacherLessonPage() {
     const { t, lang } = useLang();
     const location = useLocation();
     const navigate = useNavigate();
 
-    const [topic, setTopic] = useState(() => (location.state as any)?.topic || '');
-    const recordId = (location.state as any)?.record_id;
+    // location.state 只活在内存里：直接输网址、刷新、或被 Lighthouse 这类工具冷启动时
+    // 一律是空的。所以按 state → 查询参数 → sessionStorage 三级回退取参数，
+    // 保证这个 URL 可刷新、可收藏、可被审计工具打开。
+    const query = new URLSearchParams(location.search);
+    const cachedSession = (() => {
+        try {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
+    })();
+
+    const [topic, setTopic] = useState(
+        () => (location.state as any)?.topic || query.get('topic') || cachedSession?.topic || '',
+    );
+    const recordId = (location.state as any)?.record_id
+        ?? (query.get('record') ? Number(query.get('record')) : undefined);
 
     // 提取高级偏好设置
     const [viewpointEnabled] = useState(() => (location.state as any)?.viewpointEnabled || false);
@@ -474,22 +491,14 @@ export default function AiTeacherLessonPage() {
 
     const [state, setState] = useState<PageState>(() => {
         if (recordId) return 'loading';
-        try {
-            const raw = sessionStorage.getItem(SESSION_KEY);
-            if (!raw) return 'loading';
-            const cached = JSON.parse(raw);
-            return cached.topic === topic ? 'ready' : 'loading';
-        } catch { return 'loading'; }
+        return cachedSession && cachedSession.topic === topic ? 'ready' : 'loading';
     });
 
     const [data, setData] = useState<LessonData | null>(() => {
         if (recordId) return null;
+        if (!cachedSession || cachedSession.topic !== topic) return null;
         try {
-            const raw = sessionStorage.getItem(SESSION_KEY);
-            if (!raw) return null;
-            const cached = JSON.parse(raw);
-            if (cached.topic !== topic) return null;
-            return normalize(cached.data);
+            return normalize(cachedSession.data);
         } catch { return null; }
     });
 
@@ -639,12 +648,12 @@ export default function AiTeacherLessonPage() {
     useEffect(() => {
         if (!data) {
             if (!topic && !recordId) {
-                navigate('/writing/ai-teacher', { replace: true });
+                setState('empty');
                 return;
             }
             fetchLesson();
         }
-    }, [data, topic, navigate, fetchLesson]);
+    }, [data, topic, recordId, fetchLesson]);
 
     const sectionNames = t('writingAiTeacher.sectionNames', { returnObjects: true }) as string[];
     const totalSections = sectionNames.length;
@@ -1321,6 +1330,36 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
                     <button className="at-error-retry" onClick={fetchLesson}>
                         Retry
                     </button>
+                </div>
+            </Layout>
+        );
+    }
+
+    // 冷启动且无题目：给一个真实落地页 + 明确出口，不做静默跳转
+    if (state === 'empty') {
+        return (
+            <Layout
+                pageTitle={t('writingAiTeacher.lessonTitle')}
+                backUrl="/writing/ai-teacher"
+            >
+                <div className="at-empty-wrap">
+                    <div className="at-empty-icon" aria-hidden="true">🎓</div>
+                    <h2 className="at-empty-title">{t('writingAiTeacher.emptyTitle')}</h2>
+                    <p className="at-empty-desc">{t('writingAiTeacher.emptyDesc')}</p>
+                    <div className="at-empty-actions">
+                        <button
+                            className="at-empty-primary"
+                            onClick={() => navigate('/writing/ai-teacher')}
+                        >
+                            {t('writingAiTeacher.emptyGoGenerate')}
+                        </button>
+                        <button
+                            className="at-empty-secondary"
+                            onClick={() => navigate('/writing/ai-teachers/records')}
+                        >
+                            {t('writingAiTeacher.emptyGoRecords')}
+                        </button>
+                    </div>
                 </div>
             </Layout>
         );

@@ -157,6 +157,11 @@ export const listeningDetails = {
   audioError: '播放音频出错',
   noQuestions: 'AI 未能生成题目，请重试',
   writingPassage: 'AI 正在为您编写雅思听力原文...',
+  // 直接打开/刷新 /listening 但没有出题配置时的落地文案
+  noConfigTitle: '还没有可做的听力题',
+  noConfigDesc: '听力练习需要先在配置页选好词汇、难度和场景再生成。直接打开这个网址不会自动出题，以免误消耗 AT。',
+  noConfigGoConfig: '去配置并生成',
+  noConfigGoBank: '从题库选一套',
   wordUnit: '个词',
   typeMap: '地图标注',
   selectOption: '请选择',

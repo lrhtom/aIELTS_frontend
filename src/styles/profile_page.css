@@ -208,7 +208,10 @@
 }
 
 .profile-accordion-body.open {
-    max-height: 300px;
+    /* 管理菜单已有 8 个子项（~327px），300px 会把末项 Service Health 裁掉；
+       放宽到 600px 容纳当前全部并留出后续增项的余量。侧栏本身 overflow-y:auto，
+       手风琴偏高也只会让侧栏滚动，不撑破布局。 */
+    max-height: 600px;
     opacity: 1;
 }
 

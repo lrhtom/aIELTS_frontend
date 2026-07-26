@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { flushSync } from 'react-dom';
+import html2canvas from 'html2canvas';
 import { showConfirm } from '../common/ConfirmService';
 import { useLang } from '../../i18n/LanguageContext';
 import { apiClient } from '../../api/client';
@@ -61,6 +63,55 @@ export default function AdminSurvey() {
     const [totalCount, setTotalCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
+
+    // PNG 导出（复用 speaking_summary 的 html2canvas 写法：截图 → 下载 + 复制剪贴板）
+    const questionsRef = useRef<HTMLDivElement>(null);
+    const statsRef = useRef<HTMLDivElement>(null);
+    // 单份作答的离屏截图源；导出哪一份就先把它渲染进去
+    const respondentRef = useRef<HTMLDivElement>(null);
+    const [printItem, setPrintItem] = useState<SurveyItem | null>(null);
+    // 'q' 题目 / 'r' 汇总 / `c${id}` 某一份作答
+    const [exporting, setExporting] = useState<string | null>(null);
+
+    const exportPng = useCallback(async (node: HTMLElement | null, filename: string, kind: string) => {
+        if (!node || exporting) return;
+        setExporting(kind);
+        try {
+            const canvas = await html2canvas(node, {
+                backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#ffffff',
+                scale: 2,
+                useCORS: true,
+            });
+            const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            try {
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            } catch { /* 部分浏览器不支持写图片剪贴板，静默忽略 */ }
+            toast.success(t('common.saved'));
+        } catch (e) {
+            console.error('Export PNG failed', e);
+            toast.error(t('common.error'));
+        } finally {
+            setExporting(null);
+        }
+    }, [exporting, t]);
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    // 下载某位用户的作答报告：先同步渲染离屏节点，再截图
+    const exportRespondent = useCallback(async (item: SurveyItem) => {
+        if (exporting) return;
+        flushSync(() => setPrintItem(item));
+        const day = item.created_at.slice(0, 10);
+        await exportPng(respondentRef.current, `survey-${item.username}-${day}.png`, `c${item.id}`);
+        setPrintItem(null);
+    }, [exporting, exportPng]);
 
     const fetchStats = useCallback(async () => {
         try {
@@ -196,12 +247,118 @@ export default function AdminSurvey() {
         <div className="admin-survey">
             <div className="admin-header">
                 <h2>{t('profile.admin.survey.heading')}</h2>
-                <div className="admin-stats-badge">
-                    {t('profile.admin.survey.total').replace('{count}', String(stats?.total ?? totalCount))}
+                <div className="admin-header-right">
+                    <div className="admin-stats-badge">
+                        {t('profile.admin.survey.total').replace('{count}', String(stats?.total ?? totalCount))}
+                    </div>
+                    <button
+                        type="button"
+                        className="survey-export-btn"
+                        disabled={exporting !== null}
+                        onClick={() => exportPng(questionsRef.current, `survey-questions-${today}.png`, 'q')}
+                    >
+                        {exporting === 'q' ? t('profile.admin.survey.exporting') : t('profile.admin.survey.exportQuestions')}
+                    </button>
+                    <button
+                        type="button"
+                        className="survey-export-btn"
+                        disabled={exporting !== null || !stats}
+                        onClick={() => exportPng(statsRef.current, `survey-results-${today}.png`, 'r')}
+                    >
+                        {exporting === 'r' ? t('profile.admin.survey.exporting') : t('profile.admin.survey.exportResults')}
+                    </button>
                 </div>
             </div>
 
-            {renderStats()}
+            <div ref={statsRef}>
+                {renderStats()}
+            </div>
+
+            {/* 离屏可打印问卷（导出题目 PNG 的截图源，按 Appendix B 排版） */}
+            <div className="survey-print-offscreen" aria-hidden="true">
+                <div ref={questionsRef} className="survey-print">
+                    <h1 className="sp-title">{t('profile.survey.heading')}</h1>
+                    <p className="sp-intro">{t('profile.survey.intro')}</p>
+
+                    <h2 className="sp-section">{t('profile.survey.partADemographics')}</h2>
+                    <div className="sp-q">{t('profile.survey.q1Label')}</div>
+                    <div className="sp-opts">
+                        {PREP_OPTIONS.map(opt => (
+                            <span className="sp-opt" key={opt}>☐ {t(`profile.survey.prepDuration.${opt}`)}</span>
+                        ))}
+                    </div>
+                    <div className="sp-q">{t('profile.survey.q2Label')}</div>
+                    <div className="sp-opts">
+                        {BAND_OPTIONS.map(opt => (
+                            <span className="sp-opt" key={opt}>☐ {t(`profile.survey.targetBand.${opt}`)}</span>
+                        ))}
+                    </div>
+
+                    <h2 className="sp-section">{t('profile.survey.partBEvaluation')}</h2>
+                    <p className="sp-hint">{t('profile.survey.ratingHint')}</p>
+                    {RATING_FIELDS.map(({ field, key }) => (
+                        <div className="sp-rating" key={field}>
+                            <span className="sp-rating-q">{t(`profile.survey.b.${key}`)}</span>
+                            <span className="sp-scale">1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;4&nbsp;&nbsp;5</span>
+                        </div>
+                    ))}
+
+                    <h2 className="sp-section">{t('profile.survey.partCOpen')}</h2>
+                    <div className="sp-q">{t('profile.survey.c.mostUseful')}</div>
+                    <div className="sp-line" />
+                    <div className="sp-q">{t('profile.survey.c.improvements')}</div>
+                    <div className="sp-line" />
+                    <div className="sp-q">{t('profile.survey.c.otherComments')}</div>
+                    <div className="sp-line" />
+                </div>
+
+                {/* 单份作答报告（点卡片下载按钮时才有内容） */}
+                <div ref={respondentRef} className="survey-print">
+                    {printItem && (
+                        <>
+                            <h1 className="sp-title">{t('profile.admin.survey.reportTitle')}</h1>
+                            <p className="sp-intro">
+                                @{printItem.username} · {new Date(printItem.created_at).toLocaleString()}
+                            </p>
+
+                            <h2 className="sp-section">{t('profile.survey.partADemographics')}</h2>
+                            <div className="sp-a-row">
+                                <span className="sp-a-q">{t('profile.survey.q1Label')}</span>
+                                <span className="sp-a-v">
+                                    {printItem.prep_duration
+                                        ? t(`profile.survey.prepDuration.${printItem.prep_duration}`)
+                                        : t('profile.survey.notAnswered')}
+                                </span>
+                            </div>
+                            <div className="sp-a-row">
+                                <span className="sp-a-q">{t('profile.survey.q2Label')}</span>
+                                <span className="sp-a-v">
+                                    {printItem.target_band
+                                        ? t(`profile.survey.targetBand.${printItem.target_band}`)
+                                        : t('profile.survey.notAnswered')}
+                                </span>
+                            </div>
+
+                            <h2 className="sp-section">{t('profile.survey.partBEvaluation')}</h2>
+                            <p className="sp-hint">{t('profile.survey.ratingHint')}</p>
+                            {RATING_FIELDS.map(({ field, key }) => (
+                                <div className="sp-rating" key={field}>
+                                    <span className="sp-rating-q">{t(`profile.survey.b.${key}`)}</span>
+                                    <span className="sp-answer-val">{printItem[field] || '—'}</span>
+                                </div>
+                            ))}
+
+                            <h2 className="sp-section">{t('profile.survey.partCOpen')}</h2>
+                            <div className="sp-q">{t('profile.survey.c.mostUseful')}</div>
+                            <div className="sp-a-text">{printItem.most_useful || t('profile.survey.notAnswered')}</div>
+                            <div className="sp-q">{t('profile.survey.c.improvements')}</div>
+                            <div className="sp-a-text">{printItem.improvements || t('profile.survey.notAnswered')}</div>
+                            <div className="sp-q">{t('profile.survey.c.otherComments')}</div>
+                            <div className="sp-a-text">{printItem.other_comments || t('profile.survey.notAnswered')}</div>
+                        </>
+                    )}
+                </div>
+            </div>
 
             {isLoading ? (
                 <div className="loading-state">{t('common.loading')}</div>
@@ -215,6 +372,17 @@ export default function AdminSurvey() {
                                 <span className="survey-card-user">@{item.username}</span>
                                 <span className="survey-card-demo">{demographics(item)}</span>
                                 <span className="survey-card-date">{new Date(item.created_at).toLocaleString()}</span>
+                                <button
+                                    type="button"
+                                    className="download-btn"
+                                    disabled={exporting !== null}
+                                    title={t('profile.admin.survey.downloadReport')}
+                                    onClick={() => exportRespondent(item)}
+                                >
+                                    {exporting === `c${item.id}`
+                                        ? t('profile.admin.survey.exporting')
+                                        : `↓ ${t('profile.admin.survey.downloadReport')}`}
+                                </button>
                                 <button className="delete-btn" onClick={() => handleDelete(item.id)}>
                                     {t('profile.admin.survey.delete')}
                                 </button>
@@ -276,6 +444,12 @@ export default function AdminSurvey() {
                     font-size: 1.25rem;
                     color: var(--color-text);
                 }
+                .admin-header-right {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
                 .admin-stats-badge {
                     color: var(--color-text-secondary);
                     font-size: 0.85rem;
@@ -283,6 +457,144 @@ export default function AdminSurvey() {
                     padding: 4px 12px;
                     border-radius: 20px;
                     border: 1px solid var(--color-border);
+                }
+                .survey-export-btn {
+                    padding: 6px 14px;
+                    font-size: 0.82rem;
+                    font-weight: 600;
+                    background: var(--color-primary);
+                    color: #fff;
+                    border: 1px solid var(--color-primary);
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.18s ease;
+                    white-space: nowrap;
+                }
+                .survey-export-btn:hover:not(:disabled) {
+                    background: var(--color-primary-hover);
+                    border-color: var(--color-primary-hover);
+                }
+                .survey-export-btn:disabled {
+                    opacity: 0.55;
+                    cursor: not-allowed;
+                }
+                /* 离屏可打印问卷：定位到视口外，仅作 html2canvas 截图源 */
+                .survey-print-offscreen {
+                    position: fixed;
+                    left: -10000px;
+                    top: 0;
+                    pointer-events: none;
+                }
+                .survey-print {
+                    width: 720px;
+                    box-sizing: border-box;
+                    padding: 40px 44px;
+                    background: #ffffff;
+                    color: #1a1a1a;
+                    font-size: 15px;
+                    line-height: 1.6;
+                    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+                }
+                .survey-print .sp-title {
+                    margin: 0 0 6px;
+                    font-size: 22px;
+                    font-weight: 800;
+                    color: #0d9488;
+                }
+                .survey-print .sp-intro {
+                    margin: 0 0 20px;
+                    color: #555;
+                    font-size: 13.5px;
+                }
+                .survey-print .sp-section {
+                    margin: 22px 0 12px;
+                    padding-bottom: 6px;
+                    border-bottom: 2px solid #0d9488;
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: #0d9488;
+                }
+                .survey-print .sp-hint {
+                    margin: 0 0 14px;
+                    font-size: 12.5px;
+                    color: #777;
+                    font-style: italic;
+                }
+                .survey-print .sp-q {
+                    margin: 12px 0 6px;
+                    font-weight: 600;
+                    color: #1a1a1a;
+                }
+                .survey-print .sp-opts {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px 22px;
+                    margin-bottom: 6px;
+                }
+                .survey-print .sp-opt {
+                    font-size: 14px;
+                    color: #333;
+                }
+                .survey-print .sp-rating {
+                    display: flex;
+                    /* 不能用 baseline：带 padding 的色块会被抬高，html2canvas 再按基线
+                       画数字，两头一凑数字就跑到框外。改成 center + 固定行高。 */
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 18px;
+                    padding: 7px 0;
+                    border-bottom: 1px dashed #e0e0e0;
+                }
+                .survey-print .sp-rating-q {
+                    color: #1a1a1a;
+                }
+                .survey-print .sp-scale {
+                    flex-shrink: 0;
+                    font-variant-numeric: tabular-nums;
+                    letter-spacing: 1px;
+                    color: #0d9488;
+                    font-weight: 700;
+                }
+                .survey-print .sp-line {
+                    height: 0;
+                    border-bottom: 1px solid #cfcfcf;
+                    margin: 4px 0 10px;
+                }
+                /* 单份作答报告专用 */
+                .survey-print .sp-answer-val {
+                    flex-shrink: 0;
+                    width: 30px;
+                    height: 26px;
+                    /* line-height 比 height 小 4px 是实测校准值：html2canvas 画文字
+                       比浏览器低约 2px，26/26 会把数字压到框底。26/22 实测居中。 */
+                    line-height: 22px;
+                    padding: 0;
+                    text-align: center;
+                    font-weight: 800;
+                    font-size: 15px;
+                    color: #fff;
+                    background: #0d9488;
+                    border-radius: 6px;
+                }
+                .survey-print .sp-a-row {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 18px;
+                    padding: 7px 0;
+                    border-bottom: 1px dashed #e0e0e0;
+                }
+                .survey-print .sp-a-q { color: #1a1a1a; }
+                .survey-print .sp-a-v { flex-shrink: 0; font-weight: 700; color: #0d9488; }
+                .survey-print .sp-a-text {
+                    margin: 0 0 8px;
+                    padding: 8px 12px;
+                    background: #f5f5f5;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    color: #333;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                    min-height: 18px;
                 }
                 .survey-stats {
                     display: grid;
@@ -398,6 +710,28 @@ export default function AdminSurvey() {
                     font-size: 0.78rem;
                     color: var(--color-text-secondary);
                     margin-left: auto;
+                }
+                .download-btn {
+                    padding: 5px 12px;
+                    font-size: 0.82rem;
+                    font-weight: 600;
+                    background: rgba(13, 148, 136, 0.1);
+                    color: var(--color-primary);
+                    border: 1px solid rgba(13, 148, 136, 0.28);
+                    border-radius: 6px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    white-space: nowrap;
+                    font-family: inherit;
+                }
+                .download-btn:hover:not(:disabled) {
+                    background: var(--color-primary);
+                    color: #fff;
+                    border-color: var(--color-primary);
+                }
+                .download-btn:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
                 }
                 .delete-btn {
                     padding: 5px 12px;

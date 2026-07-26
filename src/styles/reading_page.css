@@ -1340,6 +1340,30 @@ input[type="text"].rd-blank-input:disabled {
     font-style: italic;
 }
 
+/* ── 点选放置模式（拖拽的等价路径，触屏/窄栏可用）── */
+.mh-chip { cursor: pointer; }
+.mh-chip.is-picked {
+    border-color: var(--color-primary);
+    background: rgba(13, 148, 136, 0.12);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.18);
+}
+/* 选中 heading 后，所有槽位提示可点击落位 */
+.mh-slot-zone.is-droppable {
+    cursor: pointer;
+    border-color: var(--color-primary);
+    background: rgba(13, 148, 136, 0.06);
+}
+.mh-slot-zone.is-droppable:hover {
+    background: rgba(13, 148, 136, 0.12);
+}
+.mh-pick-hint {
+    margin-left: 10px;
+    font-weight: 600;
+    color: var(--color-primary);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
 /* Review mode paint */
 .mh-slot-zone.review-ok {
     background: rgba(16, 185, 129, 0.08);
@@ -1565,4 +1589,72 @@ input[type="text"].rd-blank-input:disabled {
     .pbb-actions { padding: 6px 10px; }
     .pbb-pill { min-width: 28px; height: 28px; font-size: 13px; }
     .pbb-part.collapsed { display: none; } /* 窄屏收起态信息由细进度条承担 */
+}
+
+/* ── 无配置落地页（冷启动进 /reading /listening 时，替代原来的自动付费生成）── */
+.rp-noconfig {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 3rem 1.5rem;
+}
+
+.rp-noconfig-icon {
+    font-size: 3.5rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+}
+
+.rp-noconfig-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.rp-noconfig-desc {
+    margin: 0 0 1.75rem;
+    max-width: 460px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.rp-noconfig-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.rp-noconfig-primary,
+.rp-noconfig-secondary {
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.18s ease;
+}
+
+.rp-noconfig-primary {
+    background: var(--color-primary);
+    color: #fff;
+    border: 1px solid var(--color-primary);
+}
+
+.rp-noconfig-primary:hover {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+}
+
+.rp-noconfig-secondary {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+}
+
+.rp-noconfig-secondary:hover {
+    background: rgba(13, 148, 136, 0.08);
 }

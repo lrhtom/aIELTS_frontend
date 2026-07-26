@@ -155,6 +155,11 @@ export const readingDetails = {
   showTargets: '显示目标词',
   submitConfirm: '您还有未完成的题目，确定要交卷吗？',
   writingPassage: 'AI 正在为您编写雅思阅读文章...',
+  // 直接打开/刷新 /reading 但没有出题配置时的落地文案
+  noConfigTitle: '还没有可做的阅读题',
+  noConfigDesc: '阅读练习需要先在配置页选好词汇、难度和题型再生成。直接打开这个网址不会自动出题，以免误消耗 AT。',
+  noConfigGoConfig: '去配置并生成',
+  noConfigGoBank: '从题库选一套',
   searchPlaceholder: '🔍 搜索单词或释义...',
   underline: '下划线',
   submitBtn: '提交答案',

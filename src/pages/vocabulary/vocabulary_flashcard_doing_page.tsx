@@ -193,6 +193,11 @@ export default function VocabularyFlashcardDoingPage() {
     // ── Page-local state (configuration, init flags, transient menu state) ──
     const [step, setStep] = useState<Step>('doing');
     const [initialized, setInitialized] = useState(false);
+    // 冷启动（直接输网址 / 刷新 / 被 Lighthouse 这类工具打开）时 location.state 是空的，
+    // 没有卡片可背。此时渲染一个说明页而不是静默 navigate 走 —— 静默跳转在用户看来
+    // 就是"闪退"，审计工具也会因为立即重定向而测不到本页。
+    // 注意：这里不恢复会话，"刷新不保留进度"是刻意设计（见 initSession 前的清缓存逻辑）。
+    const [noSession, setNoSession] = useState(false);
     const [planId, setPlanId] = useState<number | null>(null);
     const [planName, setPlanName] = useState('');
     const [planDailyCount, setPlanDailyCount] = useState(0);
@@ -334,8 +339,9 @@ export default function VocabularyFlashcardDoingPage() {
         );
 
         if (!state?.cards?.length) {
-            const fallback = state?.planId ? `/vocabulary/plans/${state.planId}` : '/vocabulary/plans';
-            navigate(fallback, { replace: true });
+            // 没有卡片：给一个可停留的说明页，出口按钮指回计划页
+            if (state?.planId) setPlanId(state.planId);
+            setNoSession(true);
             return;
         }
 
@@ -1042,6 +1048,33 @@ export default function VocabularyFlashcardDoingPage() {
             void syncLearningTimerOnExit(true);
         }, [syncLearningTimerOnExit]),
     });
+
+    /* ── 无会话：冷启动/刷新进来没有卡片，渲染说明页而不是跳走 ── */
+    if (noSession) {
+        const backTo = planId ? `/vocabulary/plans/${planId}` : '/vocabulary/plans';
+        return (
+            <Layout
+                pageTitle={t('vocab.studyTitle')}
+                backUrl={backTo}
+                backText={t('common.back')}
+            >
+                <div className="config-page-wrap fc-nosession">
+                    <div className="fc-nosession-icon" aria-hidden="true">🃏</div>
+                    <h2 className="fc-nosession-title">{t('vocab.noSessionTitle')}</h2>
+                    <p className="fc-nosession-desc">{t('vocab.noSessionDesc')}</p>
+                    <div className="fc-nosession-actions">
+                        <button
+                            type="button"
+                            className="fc-nosession-primary"
+                            onClick={() => navigate(backTo)}
+                        >
+                            {planId ? t('vocab.noSessionGoPlan') : t('vocab.noSessionGoPlans')}
+                        </button>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
 
     /* ── 加载中 ── */
     if (!initialized || (!currentCard && step === 'doing')) {

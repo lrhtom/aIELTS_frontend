@@ -11,6 +11,10 @@ export const writingAiTeacher: typeof zh.writingAiTeacher = {
     'Enter your IELTS Task 2 topic here, e.g.: Some people think that governments should spend more money on public services rather than on the arts. To what extent do you agree or disagree?',
   genBtn: 'Generate Lesson',
   lessonTitle: 'AI IELTS Teacher Lesson',
+  emptyTitle: 'No lesson to show yet',
+  emptyDesc: 'A lesson has to be generated from a task prompt first. Generate a new one, or open a saved lesson from your history.',
+  emptyGoGenerate: 'Generate a lesson',
+  emptyGoRecords: 'View history',
   sectionNames: [
     'Question Analysis',
     'Essay Structure',

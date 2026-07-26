@@ -53,6 +53,11 @@ function Reading_page() {
     const customDescription: string = typeof state?.customDescription === 'string' ? state.customDescription.trim() : '';
     const customPrompt: string = typeof state?.customPrompt === 'string' ? state.customPrompt.trim() : '';
 
+    // 冷启动（直接输网址/刷新/书签/自动化工具）时 location.state 是空的。
+    // 以前这种情况会直接走 generateReading() —— 用默认参数发起一次**付费** AI 生成，
+    // 用户刷新一次就静默扣掉几千 AT。现在改成渲染落地页，引导回配置页。
+    const [noConfig, setNoConfig] = useState(false);
+
     // 用单一 useState 替代 reactive store
     const [st, setSt] = useState(createReadingState);
     const set = <K extends keyof typeof st>(k: K, v: typeof st[K]) =>
@@ -111,6 +116,12 @@ function Reading_page() {
             } catch {
                 sessionStorage.removeItem(CACHE_KEY);
             }
+        }
+
+        // 没有配置就不生成：state 为空说明不是从配置页进来的
+        if (!state) {
+            setNoConfig(true);
+            return;
         }
 
         setSt(createReadingState());
@@ -630,6 +641,27 @@ function Reading_page() {
         );
         // answerVersion in deps to force re-render on answer change
     }, [st.quizData, st.fullData, activePassageData, getAnswer, setAnswer, answerVersion]);
+
+    // 无配置落地页：冷启动进来不生成，给出口而不是静默扣费
+    if (noConfig) {
+        return (
+            <div className="reading-container">
+                <div className="page rp-noconfig">
+                    <div className="rp-noconfig-icon" aria-hidden="true">📖</div>
+                    <h2 className="rp-noconfig-title">{t('readingDetails.noConfigTitle')}</h2>
+                    <p className="rp-noconfig-desc">{t('readingDetails.noConfigDesc')}</p>
+                    <div className="rp-noconfig-actions">
+                        <button className="rp-noconfig-primary" onClick={() => navigate('/practice/ai/reading')}>
+                            {t('readingDetails.noConfigGoConfig')}
+                        </button>
+                        <button className="rp-noconfig-secondary" onClick={() => navigate('/practice/ai/bank?skill=reading')}>
+                            {t('readingDetails.noConfigGoBank')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // Loading State
     if (st.isLoading) {

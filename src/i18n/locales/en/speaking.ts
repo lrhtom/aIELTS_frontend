@@ -2,6 +2,10 @@
 import type * as zh from '../zh/speaking';
 
 export const speakingChat: typeof zh.speakingChat = {
+  noSessionTitle: 'No speaking session in progress',
+  noSessionDesc: 'A speaking session has to be started from the setup page. Opening this URL directly will not start one; you can also reopen a saved session from the bank.',
+  noSessionGoConfig: 'Start a speaking session',
+  noSessionGoBank: 'Open from the bank',
   errBrowserNoSpeech: 'Your browser does not support speech recognition. Please use Chrome or Edge.',
   errNoSpeech: 'No speech detected. Please try again louder.',
   errNoDetectSpeech: 'No speech detected. Please try again.',

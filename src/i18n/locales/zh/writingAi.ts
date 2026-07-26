@@ -9,6 +9,11 @@ export const writingAiTeacher = {
     '在此输入雅思大作文题目，例如：Some people think that governments should spend more money on public services rather than on the arts. To what extent do you agree or disagree?',
   genBtn: '生成讲解',
   lessonTitle: 'AI 作文精讲',
+  // 直接打开/刷新讲解页但没有题目时的落地文案
+  emptyTitle: '还没有可显示的讲解',
+  emptyDesc: '讲解内容需要先输入题目生成。你可以新生成一份，或从历史记录里打开之前保存的讲解。',
+  emptyGoGenerate: '去生成讲解',
+  emptyGoRecords: '查看历史记录',
   sectionNames: ['审题分析', '文章结构', '起始段', '写作观点', '结尾段', '作文模板', '逻辑树', '总体作文'],
   loading: 'AI 正在全力为您生成雅思作文深度讲解...',
   loadingSteps: [
