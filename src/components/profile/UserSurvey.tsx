@@ -216,13 +216,16 @@ export default function UserSurvey() {
                     </div>
                 ))}
 
+                {/* Part C is free text, so the printed form needs a box big
+                    enough to actually write an answer in — a single rule left
+                    respondents one line and no visible space. */}
                 <h2 className="sp-section">{t('profile.survey.partCOpen')}</h2>
                 <div className="sp-q">{t('profile.survey.c.mostUseful')}</div>
-                <div className="sp-line" />
+                <div className="sp-answer-box" />
                 <div className="sp-q">{t('profile.survey.c.improvements')}</div>
-                <div className="sp-line" />
+                <div className="sp-answer-box" />
                 <div className="sp-q">{t('profile.survey.c.otherComments')}</div>
-                <div className="sp-line" />
+                <div className="sp-answer-box" />
             </div>
 
             <div ref={answersRef} className="survey-print">
@@ -752,7 +755,22 @@ const surveyStyles = `
         background: #0d9488;
         border-radius: 6px;
     }
-    .survey-print .sp-line { height: 0; border-bottom: 1px solid #cfcfcf; margin: 4px 0 10px; }
+    /* Writable box for the open-ended answers on the printed form. Ruled inside
+       so a handwritten answer stays on the line, and tall enough for a couple of
+       sentences — the old single rule gave respondents nowhere to write. */
+    .survey-print .sp-answer-box {
+        height: 76px;
+        margin: 6px 0 16px;
+        border: 1px solid #cfcfcf;
+        border-radius: 4px;
+        background-image: repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent 24px,
+            #ededed 24px,
+            #ededed 25px
+        );
+    }
     .survey-print .sp-a-row {
         display: flex;
         justify-content: space-between;

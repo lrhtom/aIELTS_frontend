@@ -294,9 +294,13 @@ export default function LearningPlanDetailPage() {
         localStorage.setItem(`lp_article_review_days_${planId}`, String(articleReviewDays));
     }, [planId, articleReviewDays]);
 
-    // Reset pagination when search or entries change
+    // Searching produces a different result set, so page 1 is where the user
+    // expects to land. The word list merely changing size is NOT that case:
+    // this used to also reset on `entries.length`, so deleting a word from
+    // page 5 threw the user back to page 1 and they had to page all the way
+    // back to carry on tidying up. Staying put is handled by the clamp next to
+    // `totalPages` below, which only pulls back when the page stops existing.
     useEffect(() => { setPage(1); }, [search]);
-    useEffect(() => { setPage(1); }, [entries.length]);
 
     // ── Plan meta save ─────────────────────────────────────────────────────
     const saveName = useCallback(async () => {
@@ -711,6 +715,15 @@ export default function LearningPlanDetailPage() {
     const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
     const safePage = Math.min(page, totalPages);
     const paged = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+    // Deleting the last word on the last page shrinks the list out from under
+    // the current page. `safePage` already keeps the RENDER in range, but the
+    // stored `page` would stay stale and the prev/next buttons and the jump box
+    // would then disagree with what is on screen. Sync the state to the clamp —
+    // and only to the clamp, so deleting from page 5 leaves you on page 5.
+    useEffect(() => {
+        setPage(p => Math.min(p, totalPages));
+    }, [totalPages]);
 
     // Dedup: set of all words already in plan
     const existingWords = useMemo(() => new Set(entries.map(e => e.word)), [entries]);

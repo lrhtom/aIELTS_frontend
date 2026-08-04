@@ -303,13 +303,16 @@ export default function AdminSurvey() {
                         </div>
                     ))}
 
+                    {/* Part C is free text: the printed form needs a writable
+                        box, not a single rule. Kept identical to UserSurvey so
+                        both exports produce the same paper form. */}
                     <h2 className="sp-section">{t('profile.survey.partCOpen')}</h2>
                     <div className="sp-q">{t('profile.survey.c.mostUseful')}</div>
-                    <div className="sp-line" />
+                    <div className="sp-answer-box" />
                     <div className="sp-q">{t('profile.survey.c.improvements')}</div>
-                    <div className="sp-line" />
+                    <div className="sp-answer-box" />
                     <div className="sp-q">{t('profile.survey.c.otherComments')}</div>
-                    <div className="sp-line" />
+                    <div className="sp-answer-box" />
                 </div>
 
                 {/* A single response report (only populated when the card's download button is clicked) */}
@@ -555,12 +558,24 @@ export default function AdminSurvey() {
                     color: #0d9488;
                     font-weight: 700;
                 }
-                .survey-print .sp-line {
-                    height: 0;
-                    border-bottom: 1px solid #cfcfcf;
-                    margin: 4px 0 10px;
+                /* Writable box for the open-ended answers on the printed form.
+                   Ruled inside so handwriting stays on the line, and tall enough
+                   for a couple of sentences. Must stay in step with the same
+                   rule in UserSurvey — both render the identical paper form. */
+                .survey-print .sp-answer-box {
+                    height: 76px;
+                    margin: 6px 0 16px;
+                    border: 1px solid #cfcfcf;
+                    border-radius: 4px;
+                    background-image: repeating-linear-gradient(
+                        to bottom,
+                        transparent 0,
+                        transparent 24px,
+                        #ededed 24px,
+                        #ededed 25px
+                    );
                 }
-                /* 单份作答报告专用 */
+                /* Single response report only */
                 .survey-print .sp-answer-val {
                     flex-shrink: 0;
                     width: 30px;

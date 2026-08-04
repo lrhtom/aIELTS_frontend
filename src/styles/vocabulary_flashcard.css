@@ -93,7 +93,7 @@
 .fc-scene {
     perspective: 1200px;
     width: 100%;
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin: 0 auto 24px;
     cursor: pointer;
     user-select: none;
@@ -397,7 +397,7 @@
     justify-content: center;
     flex-wrap: wrap;
     margin-bottom: 12px;
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin-left: auto;
     margin-right: auto;
 }
@@ -916,7 +916,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin: 0 auto 20px;
 }
 
@@ -947,7 +947,7 @@
 .fc-choice-opt:disabled { cursor: not-allowed; }
 
 .fc-choice-actions {
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin: 0 auto 16px;
     display: flex;
     justify-content: center;
@@ -1015,7 +1015,7 @@
 
 /* -- Multiple choice, step 1: know it / do not know ------------------------ */
 .fc-choice-reveal-actions {
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin: 0 auto 20px;
     display: flex;
     justify-content: center;
@@ -1127,7 +1127,7 @@
 
 /* ── Write mode ──────────────────────────────────────────────────────────── */
 .fc-write-area {
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin: 0 auto 20px;
     display: flex;
     flex-direction: column;
@@ -1383,7 +1383,7 @@
 
 .choice-quiz-card {
     width: 100%;
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin: 0 auto 24px;
     background: rgba(255, 255, 255, 0.72);
     backdrop-filter: blur(10px);
@@ -1482,7 +1482,7 @@
 
 /* -- Reveal actions (know it / do not know) -------------------------------- */
 .choice-reveal-actions {
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin: 0 auto 20px;
     display: flex;
     justify-content: center;
@@ -1537,7 +1537,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin: 0 auto 20px;
 }
 
@@ -1693,7 +1693,7 @@
 
 /* ── Feedback bar ─────────────────────────────────────────────────────────── */
 .choice-feedback-bar {
-    max-width: 680px;
+    max-width: var(--fc-col-width, 714px);
     margin: 0 auto 16px;
     min-height: 44px;
 }
@@ -1818,7 +1818,14 @@
 }
 
 /* ── Doing page overrides ───────────────────────────────────────────────── */
-.config-page-wrap.fc-doing-page { max-width: 680px; }
+/* Width of the whole study column. The card, the rating row, the choice grid
+   and the write area all read this, so they stay aligned with one another —
+   resizing the middle block is a one-value change here, not eleven.
+   714px = the original 680px widened by 5%. */
+.config-page-wrap.fc-doing-page {
+    --fc-col-width: 714px;
+    max-width: var(--fc-col-width);
+}
 .fc-doing-page .practice-header { margin-bottom: 16px; }
 .fc-doing-page .practice-header h1 { margin-bottom: 4px; }
 
