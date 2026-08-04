@@ -1,9 +1,9 @@
 /**
- * PracticeAnalyticsPanel — Reading / Listening 全套卷成绩统计（9 分制）.
+ * PracticeAnalyticsPanel - reading / listening full-paper results (9-band scale).
  *
- * 2026-07-17 起统计口径：只统计完整 40 题全套卷（含全套模拟的子卷），
- * 后端返回 correct/total，前端用官方换算表 (utils/ielts_band.ts) 转 band。
- * 另导出 MockAnalyticsPanel：全套模拟成绩单（overall + 四科 band）趋势。
+ * Since 2026-07-17 the scope is: complete 40-question papers only (including the children of a full mock).
+ * The backend returns correct/total and the frontend converts to a band with the official table (utils/ielts_band.ts).
+ * Also exports MockAnalyticsPanel: the trend of full mock score reports (overall + the four skill bands).
  * Data source: GET /analytics/practice.
  */
 import { useEffect, useMemo, useState, useCallback } from 'react';
@@ -35,12 +35,12 @@ function bandClass(b: number): string {
     return 'pa-acc-low';
 }
 
-/* ── Band trend line chart（y 轴 9 分制）──────────────────────── */
+/* -- Band trend line chart (9-band y axis) --------------------- */
 interface TrendPoint {
     idx: number;              // 0-based sequence
     band: number;             // 0..9
     date: string | null;
-    tipExtra?: string[];      // tooltip 附加行
+    tipExtra?: string[];      // extra tooltip line
 }
 
 function BandTrendChart({ points, color, targetBand }: { points: TrendPoint[]; color: string; targetBand?: number | null }) {
@@ -57,7 +57,7 @@ function BandTrendChart({ points, color, targetBand }: { points: TrendPoint[]; c
     const graphW = W - padL - padR;
     const graphH = H - padT - padB;
 
-    // 自适应下限：常见 5-9 区间不被压扁，低分数据（或低目标分）也不出图外（与写作趋势图同策略）
+    // Adaptive floor: the common 5-9 range is not squashed, and low scores (or a low target) stay on the chart (the same policy as the writing trend chart)
     const maxBand = 9;
     const minBand = useMemo(() => {
         let lo = 4;
@@ -130,7 +130,7 @@ function BandTrendChart({ points, color, targetBand }: { points: TrendPoint[]; c
                         </g>
                     );
                 })}
-                {/* 目标分虚线（与写作/口语趋势图一致） */}
+                {/* target score dashed line (matching the writing and speaking trend charts) */}
                 {typeof targetBand === 'number' && targetBand >= minBand && targetBand <= maxBand && (
                     <g>
                         <line x1={padL} y1={getY(targetBand)} x2={W - padR} y2={getY(targetBand)} stroke="var(--color-primary)" strokeWidth="1.5" strokeDasharray="5 5" />
@@ -205,7 +205,7 @@ function BandTrendChart({ points, color, targetBand }: { points: TrendPoint[]; c
     );
 }
 
-/* ── 单科（听/读）全套卷成绩卡 ─────────────────────────────── */
+/* -- Single-skill (listening/reading) full-paper results card -- */
 interface BandAttempt {
     attempt: PracticeAttempt;
     band: number;
@@ -219,7 +219,7 @@ function SkillCard({ skill, data, label }: { skill: Skill; data: PracticeAnalyti
     const targetRaw = skill === 'reading' ? user?.target_reading : user?.target_listening;
     const targetBand = targetRaw != null && Number(targetRaw) > 0 ? Number(targetRaw) : null;
 
-    // 只有 total>=38 的全套卷才有官方 band（后端已按 subtype='full' 过滤，这里再兜底）
+    // Only papers with total >= 38 have an official band (the backend already filters on subtype='full'; this is a second guard)
     const bandAttempts: BandAttempt[] = useMemo(() => {
         const out: BandAttempt[] = [];
         for (const a of stats.recent) {
@@ -336,7 +336,7 @@ export default function PracticeAnalyticsPanel({ skill }: Props) {
     const [err, setErr] = useState<string | null>(null);
 
     useEffect(() => {
-        // loading 初值即 true，effect 只负责取数
+        // loading starts as true, so the effect only has to fetch
         getPracticeAnalytics()
             .then(setData)
             .catch(e => setErr(e?.message || 'failed'))
@@ -358,7 +358,7 @@ export default function PracticeAnalyticsPanel({ skill }: Props) {
     );
 }
 
-/* ── 全套模拟总分统计面板（成绩单 overall + 四科 band 趋势）───── */
+/* -- Full mock overall panel (score report overall + four skill band trends) -- */
 const MOCK_PART_ORDER = ['listening', 'reading', 'writing', 'speaking'] as const;
 const MOCK_PART_ICONS: Record<string, string> = { listening: '🎧', reading: '📖', writing: '✍️', speaking: '🗣️' };
 
@@ -368,11 +368,11 @@ export function MockAnalyticsPanel() {
     const [data, setData] = useState<PracticeAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState<string | null>(null);
-    // 总分目标 = 用户设置的 overall 目标分
+    // the overall target = the user's configured overall target score
     const targetOverall = user?.target_score != null && Number(user.target_score) > 0 ? Number(user.target_score) : null;
 
     useEffect(() => {
-        // loading 初值即 true，effect 只负责取数
+        // loading starts as true, so the effect only has to fetch
         getPracticeAnalytics()
             .then(setData)
             .catch(e => setErr(e?.message || 'failed'))
@@ -381,7 +381,7 @@ export function MockAnalyticsPanel() {
 
     const reports: MockReportItem[] = useMemo(() => data?.mock?.reports ?? [], [data]);
 
-    // 新→旧 反转成时间轴
+    // reverse newest-first into a timeline
     const trendPoints: TrendPoint[] = useMemo(() => {
         const reversed = [...reports].reverse();
         return reversed.map((r, idx) => ({

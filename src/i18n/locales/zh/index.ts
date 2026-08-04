@@ -1,4 +1,4 @@
-// 中文语言包装配 — 类型真源（Translations = typeof zh）。
+// Chinese language pack assembly - the type source of truth (Translations = typeof zh).
 import * as core from './core';
 import * as auth from './auth';
 import * as home from './home';

@@ -56,7 +56,7 @@ export default function CustomMemoryStudyPage() {
     const [results, setResults] = useState<CustomStudyResult[]>([]);
     const [ready, setReady] = useState(false);
 
-    // 冷启动/刷新进来没有卡片：渲染落地页而不是静默跳走（静默跳转 = 用户眼里的"闪退"）
+    // Same as the study page: with no score data on a cold start, render a landing page rather than navigating away silently
     const [noSession, setNoSession] = useState(false);
 
     useEffect(() => {

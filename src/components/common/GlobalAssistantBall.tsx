@@ -50,7 +50,7 @@ async function readSseStream(
             return;
         }
 
-        // 业务回调错误需要向外抛出，避免被当作 JSON 解析错误吞掉。
+        // Errors from the business callback must propagate, or they get swallowed as JSON parse errors.
         onMessage(parsed);
     };
 
@@ -313,16 +313,16 @@ function detectSpeechLangFromText(text: string, fallbackLang: string) {
     return mapLangToSpeechLang(fallbackLang);
 }
 
-/** 判断译文是否为「单个英文单词」（可含连字符/撇号），用于决定是否展示近义词。 */
+/** Whether the translation is a **single English word** (hyphens and apostrophes allowed), which decides whether to show synonyms. */
 function isSingleEnglishWord(text: string) {
     return /^[A-Za-z][A-Za-z'-]*$/.test(text.trim());
 }
 
 /**
- * 拉取英文近义表达（Datamuse，免 key、支持 CORS）。
- * - rel_syn：严格近义词（多为单词），优先展示；
- * - ml（means-like）：意思相近的表达，会包含「多单词短语」。
- * 两者合并去重，因此单词译文也能给出多词短语。任何失败都静默降级为空数组。
+ * Fetch English near-synonyms (Datamuse: no key required, CORS-friendly).
+ * - rel_syn: strict synonyms (mostly single words), shown first;
+ * - ml (means-like): similar in meaning, and includes **multi-word phrases**.
+ * The two are merged and deduplicated, so even a single-word translation can yield multi-word phrases. Any failure degrades silently to an empty array.
  */
 async function fetchEnglishSynonyms(word: string): Promise<string[]> {
     const query = encodeURIComponent(word.trim());
@@ -344,7 +344,7 @@ async function fetchEnglishSynonyms(word: string): Promise<string[]> {
     };
 
     try {
-        // rel_syn 在前（更贴近），ml 在后（补充多词短语）。
+        // rel_syn first (closer in meaning), ml after (adding multi-word phrases).
         const groups = await Promise.all(endpoints.map(fetchOne));
         const lower = word.trim().toLowerCase();
         const seen = new Set<string>();
@@ -555,13 +555,13 @@ function isAgentQuery(input: string) {
     }
 
     const keywords = [
-        // 浏览器/代码分析
+        // browser / code analysis
         '点击', 'click', 'selector', '选择器', 'playwright', 'dom', '页面元素',
         '浏览器 agent', 'browser agent', '自动化', '填入', '按钮',
         '当前页面', '页面内容', '分析页面', '分析网页', '当前网页', '网页内容', '看看页面',
         '前端代码', '前端代码dom', '前端目录', '源码', '代码结构',
         '读取代码', '代码', '代码目录', 'react', '查看文件', '实现任务', '多轮任务',
-        // 数据查询 / Agent 工具意图
+        // data query / agent tool intent
         '分析我的', '学习情况', '学习数据', '学习统计', '学习进度',
         '我的数据', '我的计划', '我的笔记', '我的词汇',
         '查看计划', '查看笔记', '查看统计', '查看数据',
@@ -1154,8 +1154,8 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
             setSynonyms([]);
             showToast(t('assistant.translate.toastSuccess'), 'success');
 
-            // 译文为单个英文单词时，后台拉取近义词，帮助扩充同义表达。
-            // 不阻塞主流程；用请求序号防止旧结果覆盖新结果。
+            // When the translation is a single English word, fetch synonyms in the background to widen the range of expressions.
+            // Non-blocking; a request sequence number stops a stale result overwriting a newer one.
             const reqId = ++synonymReqRef.current;
             if (toLang === 'en' && isSingleEnglishWord(decoded)) {
                 void fetchEnglishSynonyms(decoded).then(syns => {
@@ -1173,8 +1173,8 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
     }, [inputText, sourceLang, targetLang]);
 
     /**
-     * 把语音识别到的文本插入到「原文」文本框的光标位置，而不是永远追加到末尾。
-     * 未聚焦时以文本框最后的光标位置为准；插入后把光标移到新内容之后。
+     * Insert recognised speech at the cursor position in the source text box, rather than always appending to the end.
+     * When the box is not focused, use its last known cursor position; after inserting, move the cursor past the new content.
      */
     const insertSourceTextAtCursor = useCallback((text: string) => {
         const addition = text.trim();
@@ -1199,7 +1199,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
 
         setInputText(`${before}${insertion}${after}`);
 
-        // 等 React 写回受控值后，把光标恢复到插入内容之后。
+        // once React has written the controlled value back, restore the cursor to just after the inserted content.
         requestAnimationFrame(() => {
             const node = sourceTextareaRef.current;
             if (!node) {
@@ -1248,8 +1248,8 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                 return;
             }
 
-            // continuous 模式下 results 是累积的，只取本次事件新增的 final 结果，
-            // 否则会把之前已识别的内容重复插入。
+            // In continuous mode results accumulate, so take only the final results new to this event,
+            // otherwise previously recognised content is inserted again.
             const startIndex = typeof event.resultIndex === 'number' ? event.resultIndex : 0;
             let addition = '';
             for (let i = startIndex; i < results.length; i += 1) {
@@ -1336,10 +1336,10 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
 
         const detectedLang = detectSpeechLangFromText(trimmed, lang);
         if (detectedLang.startsWith('en')) {
-            // 英文走有道词典高质量发音
+            // English uses Youdao's high-quality pronunciation
             speakWord(trimmed);
         } else {
-            // 中文/其他语言保持浏览器原生
+            // Chinese and other languages stay on the browser's native voice
             speakTextUtil(trimmed, detectedLang);
         }
     }, []);
@@ -1584,7 +1584,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                         await readSseStream(response, (data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
                             const serverRequestId = String(data?.mcp?.request_id || '').trim();
                             if (serverRequestId && serverRequestId !== mcpRequestId) {
-                                // 多用户并发防护：仅消费当前请求 ID 对应的 SSE 事件。
+                                // Concurrency guard: only consume the SSE events belonging to the current request ID.
                                 return;
                             }
 
@@ -1719,7 +1719,7 @@ const [shortcutTitleInput, setShortcutTitleInput] = useState('');
                     ui_lang: lang,
                     dom_context: domContext,
                     agent_profile: agentProfile,
-                    // system_prompt 由后端通过 skills.py 的 assistant_build_system_prompt 构建
+                    // system_prompt is built by the backend through skills.py's assistant_build_system_prompt
                 }
             });
 

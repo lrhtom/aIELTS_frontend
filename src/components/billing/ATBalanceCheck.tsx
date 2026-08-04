@@ -34,7 +34,7 @@ export default function ATBalanceCheck({
     const [balanceOk, setBalanceOk] = useState<boolean>(false);
 
     const checkBalance = useCallback(() => {
-        // 计算预估AT币消耗
+        // estimate the AT cost
         let cost = 0;
         try {
             cost = calculateCost(service, params);
@@ -45,7 +45,7 @@ export default function ATBalanceCheck({
             setBalanceOk(ok);
 
             if (!ok) {
-                // AT币不足，显示警告
+                // not enough AT, show the warning
                 window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
                     detail: {
                         message: t('billing.needMoreBalance')
@@ -107,6 +107,6 @@ export default function ATBalanceCheck({
         );
     }
 
-    // 余额充足，显示children
+    // enough balance, render children
     return children || null;
 }

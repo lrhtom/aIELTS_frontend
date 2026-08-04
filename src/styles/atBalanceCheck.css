@@ -1,4 +1,4 @@
-/* AT币余额检查组件样式 */
+/* AT balance check component styling */
 .at-balance-warning {
     background: var(--color-surface);
     border: 1px solid var(--color-border);

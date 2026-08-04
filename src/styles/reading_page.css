@@ -146,7 +146,7 @@
     transform: translateY(-1px);
 }
 
-/* 防焦虑：数字默认模糊，鼠标悬停才显示详细耗时（阅读/听力工具栏共用） */
+/* Anxiety guard: the number is blurred by default and only shows the exact elapsed time on hover (shared by the reading and listening toolbars) */
 .reading-timer .timer-digit {
     filter: blur(4.5px);
     opacity: 0.55;
@@ -224,7 +224,7 @@
     white-space: normal;
 }
 
-/* Word 式两端对齐：文章正文 + 做题区题目文本 */
+/* Word-style justification: passage body plus the question text in the answering area */
 .main-content,
 #questionsForm {
     text-align: justify;
@@ -503,10 +503,38 @@
     border: 1px solid #e2e8f0;
 }
 
+/* The header's right side splits into two groups: score metrics (raw / 9-band) and action buttons, divided by a vertical rule.
+   It used to be 5 elements laid out flat, mixing things you read with things you click, so the eye had to scan each one. */
 .results-header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.results-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 16px;
+    border-left: 1px solid #e2e8f0;
+}
+
+/* Uniform button size, so switching between Chinese and English does not leave a ragged row */
+.results-actions .toolbar-btn {
+    padding: 8px 14px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .results-actions {
+        padding-left: 0;
+        border-left: none;
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
 }
 
 .score-card {
@@ -543,7 +571,7 @@
     border-radius: 6px;
 }
 
-/* 全套卷的 9 分制换算徽章（full 模式） */
+/* The 9-band conversion badge for a full paper (full mode) */
 .score-band-card {
     border-color: #0d9488;
     background: rgba(13, 148, 136, 0.08);
@@ -583,18 +611,33 @@
     overflow: hidden;
 }
 
+/* On the results page the passage pane is on the **right** (2026-07-27 redesign: answers left, passage right),
+   so the divider is drawn on the left edge, not the right. */
 .passage-sidebar {
     width: 0;
     padding: 0;
     background: #fefefe;
-    border-right: 1px solid #ecf0f1;
+    border-left: 1px solid #ecf0f1;
     overflow-y: auto;
+    flex-shrink: 0;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
     white-space: nowrap;
 }
 
+/* The listening results page also wants answers left, passage right. Reading achieved that by reordering the JSX;
+   the listening results block runs 200+ lines with many branches (separate rendering for MCQ / map / gap-fill), so moving
+   the DOM is not worth the risk. Flip the visual order with flex order here and leave the DOM alone.
+   Scoped to the listening container only, so reading is unaffected. */
+#listeningResultsLayout .results-content { order: 0; }
+#listeningResultsLayout .resizer { order: 1; }
+#listeningResultsLayout .passage-sidebar { order: 2; }
+
+/* The passage/section switcher is folded into the bottom bar (.practice-bottom-bar, the same code as the answering page),
+   and the old .results-part-tab* styles went with it. See the pbb-* section at the end of this file. */
+
+/* Results page splits 50/50: answers and passage matter equally, and checking one against the other needs full sentences on both sides */
 .passage-sidebar.open {
-    width: 400px;
+    width: 50%;
     padding: 25px 24px;
     white-space: normal;
 }
@@ -643,11 +686,13 @@
     padding-bottom: 60px;
 }
 
+/* Square corners, not rounded: a result card is a dense checklist, and square edges read more like an exam paper and
+   keep the correct/incorrect colour bar on the left flush with the card edge (rounding would clip the ends off the bar). */
 .result-block {
     background: white;
     padding: 25px;
     margin-bottom: 25px;
-    border-radius: 10px;
+    border-radius: 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     border-left: 5px solid transparent;
     transition: transform 0.2s ease;
@@ -655,6 +700,35 @@
 
 .result-block:hover {
     transform: translateY(-2px);
+}
+
+/* The sentence containing the answer in the passage - underlined only, no colour change and no background,
+   so it does not fight with the .highlight target-word styling. */
+.passage-text mark.answer-sentence,
+.main-content mark.answer-sentence {
+    background: transparent;
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+}
+
+/* The small question number at the end of a sentence (Q3 / Q3, 4). Pulled out with no-underline,
+   otherwise the sentence underline runs straight through it and it looks like part of the sentence. */
+.answer-qno {
+    display: inline-block;
+    margin-left: 3px;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.5;
+    vertical-align: super;
+    color: #fff;
+    background: var(--color-primary);
+    border-radius: 3px;
+    text-decoration: none;
+    white-space: nowrap;
 }
 
 .result-block:has(.status-correct) {
@@ -728,7 +802,7 @@
 
 /* pulse keyframes defined in index.css */
 
-/* ─── 响应式 ──────────────────────────────────────────────────────────── */
+/* --- Responsive ------------------------------------------------------ */
 
 @media (max-width: 768px) {
     .reading-layout {
@@ -757,6 +831,9 @@
         max-height: 300px;
         padding: 16px 20px;
         white-space: normal;
+        /* On a narrow screen the panes stack vertically (answers above, passage below), so the divider is drawn horizontally */
+        border-left: none;
+        border-top: 1px solid #ecf0f1;
     }
 
     .toolbar-area {
@@ -1043,8 +1120,8 @@
     color: var(--color-primary);
     font-size: 13px;
 }
-/* 用 input[type="text"] 提高特异性 — 否则 index.css 的全局
-   input[type="text"]{padding:12px 16px; font-size:15px} 会压过本规则，把填空框撑得过高 */
+/* input[type="text"] raises the specificity - otherwise index.css's global
+   input[type="text"]{padding:12px 16px; font-size:15px} beats this rule and inflates the gap-fill box */
 input[type="text"].rd-blank-input {
     padding: 3px 8px;
     font-size: 13px;
@@ -1192,8 +1269,8 @@ input[type="text"].rd-blank-input:disabled {
     font-style: italic;
 }
 .mh-chip-row {
-    /* 候选 heading 竖排单列：一行一个、自上而下按序排列（用户指定），
-       长短语整行完整可读。 */
+    /* Candidate headings stack in a single column: one per line, top to bottom in order (as specified by the user),
+       so a long phrase stays fully readable on its own line. */
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
@@ -1217,8 +1294,8 @@ input[type="text"].rd-blank-input:disabled {
     transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s;
     max-width: 100%;
 }
-/* 仅 pool 里的 chip 撑满网格单元 + 圆角矩形（多行文字）；slot 里已放置的
-   chip 不受影响，保持内容宽度的胶囊样式。 */
+/* Only the chips in the pool fill the grid cell and get rounded rectangles (multi-line text); chips already
+   placed in a slot are unaffected and keep the content-width pill shape. */
 .mh-chip-row .mh-chip {
     width: 100%;
     box-sizing: border-box;
@@ -1340,14 +1417,14 @@ input[type="text"].rd-blank-input:disabled {
     font-style: italic;
 }
 
-/* ── 点选放置模式（拖拽的等价路径，触屏/窄栏可用）── */
+/* -- Click-to-place mode (the equivalent of dragging, for touch screens and narrow panes) -- */
 .mh-chip { cursor: pointer; }
 .mh-chip.is-picked {
     border-color: var(--color-primary);
     background: rgba(13, 148, 136, 0.12);
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.18);
 }
-/* 选中 heading 后，所有槽位提示可点击落位 */
+/* once a heading is selected, every slot signals that it is a click target */
 .mh-slot-zone.is-droppable {
     cursor: pointer;
     border-color: var(--color-primary);
@@ -1385,8 +1462,8 @@ input[type="text"].rd-blank-input:disabled {
     }
 }
 /* ═══════════════════════════════════════════════════════
-   Practice Bottom Bar — 底部考试导航条（阅读/听力共用）
-   题号胶囊 + 收起 Part 标签 + 分段总进度 + 计时/提交/退出
+   Practice bottom bar - the exam navigation bar (shared by reading and listening)
+   Question pills + collapsed Part labels + per-section progress + timer/submit/exit
    ═══════════════════════════════════════════════════════ */
 
 .practice-bottom-bar {
@@ -1402,13 +1479,13 @@ input[type="text"].rd-blank-input:disabled {
     z-index: 100;
 }
 
-/* 整条底部条纵向两层（参考考试系统）：
-   上层 = 题号导航区（各 Part 一列：细进度条 + 标签/胶囊，占满全宽）
-   下层 = 独立操作行（实时时钟 + 提交 + 退出，右对齐，分隔线 + 浅底）
-   列内进度条与文字同宽自然对齐；收起列整体可点击。 */
+/* The bar is two stacked layers (modelled on real exam software):
+   top layer = question navigation (one column per Part: a thin progress bar plus label/pills, full width)
+   bottom layer = a separate action row (live clock + submit + exit, right-aligned, with a divider and a tinted background)
+   Each column's progress bar aligns naturally with its text; a collapsed column is clickable as a whole. */
 .pbb-parts {
     display: flex;
-    align-items: stretch;       /* 各列等高 → 细进度条齐一条线 */
+    align-items: stretch;       /* equal column heights -> the thin progress bars line up */
     gap: 28px;
     padding: 10px 14px 9px;
     overflow-x: auto;
@@ -1431,10 +1508,16 @@ input[type="text"].rd-blank-input:disabled {
     transition: background 0.25s ease;
 }
 .pbb-ov-cell.lit { background: var(--color-accent-green); }
-.pbb-part.active .pbb-ov-cell:not(.lit) { background: #cbd5e1; }  /* 当前 Part 未答格略深 */
+/* Unanswered cells in the current Part are slightly darker. This must exclude results mode: there the cells carry
+   .ok/.bad rather than .lit, and this selector's specificity (0,4,0) beats .pbb-ov-cell.ok (0,2,0), greying out the whole current Part. */
+.practice-bottom-bar:not(.results) .pbb-part.active .pbb-ov-cell:not(.lit) { background: #cbd5e1; }
+
+/* Results mode: cells switch from answered/unanswered to correct/incorrect, with the layout unchanged */
+.pbb-ov-cell.ok { background: #16a34a; }
+.pbb-ov-cell.bad { background: #ef4444; }
 
 .pbb-part-row {
-    flex: 1 1 auto;             /* 占满进度条以下整个下层带并垂直居中 */
+    flex: 1 1 auto;             /* fills the whole lower band below the progress bar and centres vertically */
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1443,11 +1526,11 @@ input[type="text"].rd-blank-input:disabled {
 
 .pbb-part {
     display: flex;
-    flex-direction: column;     /* 进度条钉在顶层，下层行占满余高 */
+    flex-direction: column;     /* the progress bar is pinned to the top layer, the lower row takes the remaining height */
     gap: 7px;
     min-width: 0;
 }
-.pbb-part.active { flex: 0 0 auto; }  /* 不许收缩：窄视口时整个 .pbb-parts 横向滚动，胶囊不溢出涂到邻列/按钮 */
+.pbb-part.active { flex: 0 0 auto; }  /* Must not shrink: on a narrow viewport the whole .pbb-parts scrolls horizontally so pills do not bleed into neighbouring columns or the buttons */
 .pbb-part-label {
     font-size: 14px;
     font-weight: 700;
@@ -1459,7 +1542,7 @@ input[type="text"].rd-blank-input:disabled {
     min-width: 96px;
     border: none;
     background: none;
-    padding: 0 6px;             /* 无竖向内边距：进度条与活动列顶线严格对齐 */
+    padding: 0 6px;             /* No vertical padding: the progress bar stays strictly aligned with the active column's top line */
     border-radius: 10px;
     cursor: pointer;
     text-align: left;
@@ -1521,7 +1604,27 @@ input[type="text"].rd-blank-input:disabled {
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.28);
 }
 
-/* 下层操作行：独立一行横贯全宽，右对齐（参考考试系统底部工具条） */
+/* Results-mode pills: correct = green, wrong = red. The teal outline on hover/current would cover the semantic
+   colour, so these two rules come after :hover / .current and override it back at equal specificity. */
+.pbb-pill.ok {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+}
+.pbb-pill.bad {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
+.pbb-pill.ok:hover, .pbb-pill.ok.current { border-color: #15803d; color: #fff; }
+.pbb-pill.bad:hover, .pbb-pill.bad.current { border-color: #b91c1c; color: #fff; }
+.pbb-pill.ok.current { box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.28); }
+.pbb-pill.bad.current { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.28); }
+
+/* Results mode has no action row, so add the bottom padding back or the bar looks top-heavy */
+.practice-bottom-bar.results .pbb-parts { padding-bottom: 11px; }
+
+/* Lower action row: its own full-width line, right-aligned (modelled on the exam software's bottom toolbar) */
 .pbb-actions {
     display: flex;
     align-items: center;
@@ -1588,10 +1691,10 @@ input[type="text"].rd-blank-input:disabled {
     .pbb-parts { gap: 14px; padding: 8px 10px 6px; }
     .pbb-actions { padding: 6px 10px; }
     .pbb-pill { min-width: 28px; height: 28px; font-size: 13px; }
-    .pbb-part.collapsed { display: none; } /* 窄屏收起态信息由细进度条承担 */
+    .pbb-part.collapsed { display: none; } /* on a narrow screen the thin progress bar carries the collapsed-state information */
 }
 
-/* ── 无配置落地页（冷启动进 /reading /listening 时，替代原来的自动付费生成）── */
+/* -- No-config landing page (shown on a cold start to /reading or /listening, replacing the old automatic paid generation) -- */
 .rp-noconfig {
     justify-content: center;
     align-items: center;
@@ -1657,4 +1760,61 @@ input[type="text"].rd-blank-input:disabled {
 
 .rp-noconfig-secondary:hover {
     background: rgba(13, 148, 136, 0.08);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Pane layout freeze (2026-07-28)
+   ──────────────────────────────────────────────────────────────
+   The dividers can now be dragged the full 0-100% (JS only clamps to [0, container width], see utils/pane_resize.ts).
+   The cost is that a pane can be dragged very narrow, where English reflows into a vertical strip one or two letters
+   wide - unreadable and useless as a reference. So each pane's **content** gets an absolute floor:
+
+     --pane-freeze-min = container width x 30% - that panel's own padding/border
+
+   It is written in absolute pixels rather than `min-width: 30%` because a percentage min-width resolves against the
+   parent panel's own width - narrow the parent and it narrows too, which is no freeze at all. Subtracting the panel's
+   own padding makes the **whole panel** lay out at 30%; without it the trigger point moves up to roughly 45% (measured).
+
+   Children are uniformly border-box: the default content-box makes min-width govern the content width only and adds
+   the child's own padding outside it, which likewise moves the trigger point earlier.
+
+   The panel is overflow-x: hidden, so below 30% the right side is **clipped** rather than reflowed, and no horizontal
+   scrollbar appears. Drag back and the layout returns exactly as it was.
+   ══════════════════════════════════════════════════════════════ */
+
+.reading-layout > .reading-sidebar.open,
+.reading-layout > .main-content,
+.results-layout > .results-content,
+.results-layout > .passage-sidebar.open {
+    /* 0 before JS takes over (first frame), which is equivalent to the feature being off */
+    --pane-freeze-min: 0px;
+    overflow-x: hidden;
+}
+
+/* The floor goes on the **children**: the panel itself must still be draggable narrow, it is the layout inside that freezes */
+.reading-layout > .reading-sidebar.open > *,
+.reading-layout > .main-content > *,
+.results-layout > .results-content > *,
+.results-layout > .passage-sidebar.open > * {
+    box-sizing: border-box;
+    min-width: var(--pane-freeze-min);
+}
+
+/* a collapsed pane is 0 wide, so the freeze value must not push content back out */
+.reading-layout > .reading-sidebar:not(.open) > *,
+.results-layout > .passage-sidebar:not(.open) > * {
+    min-width: 0;
+}
+
+/* Dragged very narrow (< 64px), collapse the padding too, otherwise it wedges the panel at ~48px and
+   'drag the full 100%' is an empty promise. Specificity beats .passage-sidebar.open, so no !important needed. */
+.reading-layout > .reading-sidebar.open.is-pane-collapsed,
+.reading-layout > .main-content.is-pane-collapsed,
+.results-layout > .results-content.is-pane-collapsed,
+.results-layout > .passage-sidebar.open.is-pane-collapsed {
+    padding-left: 0;
+    padding-right: 0;
+    /* Collapse the border as well: leaving it stalls the panel at 1px, one hair short of 'dragged to 0' */
+    border-left-width: 0;
+    border-right-width: 0;
 }

@@ -1,6 +1,6 @@
-// 全套模拟 · 写作 Task 1 / Task 2 底部切换条 —— 仿听力/阅读的 Part 切换布局，
-// 两篇作文在页面间直接互跳（sessionStorage 草稿各自持久化，切换不丢正文），
-// 不再经大厅往返。已提交的任务显示 ✅ 且不可再进。
+// Full mock - the Task 1 / Task 2 bottom switcher for writing, laid out like the listening and reading Part switcher.
+// The two essays jump directly between pages (each draft persists in sessionStorage, so switching does not lose text)
+// instead of going back through the hub. A submitted task shows a tick and cannot be reopened.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMockDetail, type MockDetail } from '../../api/mock';
@@ -20,7 +20,7 @@ export function MockWritingTaskBar({ mockId, current }: Props) {
 
     useEffect(() => {
         let cancelled = false;
-        getMockDetail(mockId).then(d => { if (!cancelled) setDetail(d); }).catch(() => { /* 拿不到就不显示切换条 */ });
+        getMockDetail(mockId).then(d => { if (!cancelled) setDetail(d); }).catch(() => { /* hide the switcher when it cannot be resolved */ });
         return () => { cancelled = true; };
     }, [mockId]);
 

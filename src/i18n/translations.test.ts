@@ -50,7 +50,7 @@ describe('i18n parity — every language vs zh (source of truth)', () => {
   it('no string value is unintentionally empty (all languages)', () => {
     // Paths that legitimately hold "" strings — e.g. calendar dayLabels uses alternating
     // empties to render only Mon/Wed/Fri labels on a 7-day strip; markedUnit is the
-    // zh measure-word slot ("5 个") which English renders as bare "5".
+    // zh measure-word slot which English renders as a bare number.
     const ALLOWED_EMPTY =
       /^(profile\.home\.calendar\.dayLabels\[[0246]\]|vocab\.(storyMode|articleCopy)\.markedUnit)$/;
     const findEmpties = (obj: unknown, prefix = ''): string[] => {

@@ -47,11 +47,11 @@ function clampArticleReviewDays(value: number): number {
 }
 
 /**
- * 根据 fsrs_due 计算距今的真实剩余天数。
+ *  -- 2. Right: list detail area (main content) --
  *
- * 注意：fsrs_scheduled_days 是 FSRS 复习间隔（上次复习 → 下次到期），
- * 不等于距今的剩余天数！随着时间推移两者会越来越不一致。
- * 本函数从到期日期反算距今天数，确保和日期显示完全匹配。
+ * Compute the real number of days left from fsrs_due.
+ * Note: fsrs_scheduled_days is the FSRS review interval (last review -> next due),
+ * which is NOT the number of days left from today. The two drift further apart over time.
  */
 function computeRemainingDays(fsrsDue?: string | null): number {
     if (!fsrsDue) return 0;
@@ -84,8 +84,8 @@ function shouldStartReview(plan: LearningPlan): boolean {
 }
 
 /**
- * 清理与计划相关的所有浏览器缓存
- * 当用户修改学习计划时调用，防止缓存数据与数据库不同步导致的模式失败
+ * This derives days-from-today from the due date so it always matches the displayed date.
+ * Clear every browser cache tied to this plan.
  */
 function clearPlanCaches(planId: number): void {
     devLog('[计划缓存] 开始清理缓存...', { planId });
@@ -99,16 +99,16 @@ function clearPlanCaches(planId: number): void {
         }
     }
 
-    // 1. 清理 sessionStorage（会话级别）
+    //Called whenever the user edits a learning plan, so stale cached data cannot desync from the database and break a mode.
     const sessionKeys = [
-        'vocab_flashcard_session',           // 词汇学习主会话
+        'vocab_flashcard_session',           // 1. clear sessionStorage (session scope)
         `vocab_flashcard_session_plan_${planId}`,
         ...dynamicPlanSessionKeys,
-        'reading_session_cache',              // 阅读会话缓存
-        'listening_session_cache',            // 听力会话缓存
-        'vocab_doing_session_mcq',            // 词汇训练 - 4选1
-        'vocab_doing_session_dictation',      // 词汇训练 - 听写
-        'vocab_doing_session_complete',       // 词汇训练 - 补全
+        'reading_session_cache',              // main vocabulary study session
+        'listening_session_cache',            // reading session cache
+        'vocab_doing_session_mcq',            // listening session cache
+        'vocab_doing_session_dictation',      // vocabulary training - multiple choice
+        'vocab_doing_session_complete',       // vocabulary training - dictation
     ];
 
     Array.from(new Set(sessionKeys)).forEach(key => {
@@ -118,9 +118,9 @@ function clearPlanCaches(planId: number): void {
         }
     });
 
-    // 2. 清理与此计划相关的 localStorage 数据
-    // ⚠️ 注意：这里保留 mode 和 masteryTarget，因为这是用户的偏好设置
-    // 如果要强制重置，可以取消注释下面的代码
+    // vocabulary training - completion
+    // 2. clear the localStorage data tied to this plan
+    // Note: mode and masteryTarget are kept on purpose - they are the user's preferences
     // localStorage.removeItem(`lp_study_mode_${planId}`);
     // localStorage.removeItem(`lp_mastery_target_${planId}`);
 
@@ -210,7 +210,7 @@ export default function LearningPlanDetailPage() {
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [deletingEntry, setDeletingEntry] = useState<PlanEntry | null>(null);
 
-    // 每行卡片数（用户可调网格密度），按计划持久化
+    // uncomment the code below to force-reset them as well
     const [colsPerRow, setColsPerRow] = useState<number>(() => {
         const raw = Number(localStorage.getItem(`lp_cols_${planId}`) ?? '4');
         return Number.isFinite(raw) ? Math.min(6, Math.max(1, Math.floor(raw))) : 4;
@@ -219,7 +219,7 @@ export default function LearningPlanDetailPage() {
         localStorage.setItem(`lp_cols_${planId}`, String(colsPerRow));
     }, [planId, colsPerRow]);
 
-    // 折叠进顶栏的两个面板（今日已学 / 添加单词）以浮层形式打开
+    // Cards per row (user-adjustable grid density), persisted per plan
     const [activePanel, setActivePanel] = useState<null | 'today' | 'add'>(null);
 
     // ── Load plan + words ──────────────────────────────────────────────────
@@ -228,7 +228,7 @@ export default function LearningPlanDetailPage() {
             listPlanWords(planId),
         ])
             .then(([r]) => {
-                // 以后端返回的 fsrs_scheduled_days 为准，避免前端时区重算导致天数偏差。
+                // The two panels folded into the top bar (studied today / add words) open as overlays
                 setEntries(r.entries);
             })
             .catch(() => showToast(t('vocab.details.msgLoadFail'), 'error'))
@@ -305,7 +305,7 @@ export default function LearningPlanDetailPage() {
         try {
             const { plan: p } = await updatePlan(planId, { name });
             setPlan(p);
-            // 修改计划名称后，清除相关缓存以防止不一致
+            // Trust the fsrs_scheduled_days the backend returns; recomputing on the client would skew the day count by timezone.
             clearPlanCaches(planId);
             showToast(t('vocab.details.msgSaveSuccess'), 'success');
         } catch {
@@ -326,8 +326,8 @@ export default function LearningPlanDetailPage() {
         try {
             const { plan: p } = await updatePlan(planId, { daily_count: dailyCount });
             setPlan(p);
-            // 修改daily_count成功后，使用完整的缓存清理函数
-            // 这样下次进入学习页面时，会使用新的daily_count重新构建队列
+            // After renaming the plan, clear the related caches to prevent inconsistency
+            // After daily_count changes, use the full cache-clearing helper
             clearPlanCaches(planId);
             showToast(t('vocab.details.msgDailySaveSuccess'), 'success');
         } catch {
@@ -508,7 +508,7 @@ export default function LearningPlanDetailPage() {
 
             let msg = t('vocab.plans.msgStartFail');
 
-            // 根据错误类型提供具体的用户消息
+            // so the next visit to the study page rebuilds the queue with the new daily_count
             if (status === 402) {
                 msg = t('vocab.details.msgInsufficientAT');
             } else if (status === 400 && errorMsg?.includes('没有单词')) {
@@ -551,7 +551,7 @@ export default function LearningPlanDetailPage() {
             });
             if (r.entry) setEntries(prev => [r.entry!, ...prev]);
             setAddWord_(''); setAddZh(''); setAddPhonetic(''); setAddGrammar('');
-            // 添加词汇后，清理缓存（队列已改变）
+            // give a specific user-facing message per error type
             clearPlanCaches(planId);
             showToast(t('vocab.details.msgAddSuccess'), 'success');
         } catch (e: unknown) {
@@ -571,7 +571,7 @@ export default function LearningPlanDetailPage() {
                 ? t('vocab.details.msgImportSuccessSkip').replace('{n}', String(entries_added)).replace('{skipped}', String(skipped))
                 : t('vocab.details.msgImportSuccess').replace('{n}', String(entries_added));
             showToast(msg, 'success');
-            // 导入词汇后，清理缓存（队列已改变）
+            // After adding words, clear the cache (the queue has changed)
             clearPlanCaches(planId);
             // Reload word list
             const r = await listPlanWords(planId);
@@ -716,7 +716,7 @@ export default function LearningPlanDetailPage() {
     const existingWords = useMemo(() => new Set(entries.map(e => e.word)), [entries]);
     const isDuplicateWord = addWord_.trim() !== '' && existingWords.has(addWord_.trim().toLowerCase());
 
-    // 书库单词：前端过滤 + 分页
+    // After importing words, clear the cache (the queue has changed)
     const { bookWords_, bookTotal } = useMemo(() => {
         let list = allBookWords;
         if (bookQ.trim()) {
@@ -782,7 +782,7 @@ export default function LearningPlanDetailPage() {
     return (
         <Layout backUrl="/vocabulary/plans" backText={t('vocab.details.backToVocab')} noPadding={true}>
             <div className="lpx-page">
-                {/* ── 顶栏：计划名 / 每日词数 / 学习模式下拉 / 开始 / 今日 / 添加 ── */}
+                {/* wordbook entries: client-side filtering plus pagination */}
                 <div className="lpx-toolbar">
                     <input
                         className="lpx-name"
@@ -859,7 +859,7 @@ export default function LearningPlanDetailPage() {
                     </button>
                 </div>
 
-                {/* ── 模式配置条（仅抄写 / 文章抄写模式出现）── */}
+                {/* -- Top bar: plan name / daily word count / study mode dropdown / start / today / add -- */}
                 {studyMode === 'copy' && (
                     <div className="lpx-modecfg">
                         <label className="lpx-modecfg-item">
@@ -897,7 +897,7 @@ export default function LearningPlanDetailPage() {
                     </div>
                 )}
 
-                {/* ── 列表子头：标题 / 排序 / 搜索 / 每行列数 ── */}
+                {/* -- Mode config bar (copy and article-copy modes only) -- */}
                 <div className="lpx-listbar">
                     <h4 className="lpx-list-title" dangerouslySetInnerHTML={{ __html: sanitize(t('vocab.details.listTitle')
                         .replace('{learned}', String(entries.filter(e => e.fsrs_state !== 0).length))
@@ -941,7 +941,7 @@ export default function LearningPlanDetailPage() {
                     </div>
                 )}
 
-                {/* ── 单词卡片网格（占满宽度，仅此区域滚动）── */}
+                {/* -- List subheader: title / sort / search / columns per row -- */}
                 <div className="lpx-gridwrap">
                     {loading ? (
                         <div className="lp-empty">{t('common.loading')}</div>
@@ -964,7 +964,7 @@ export default function LearningPlanDetailPage() {
                     )}
                 </div>
 
-                {/* ── 分页条（始终显示在底部）── */}
+                {/* -- Word card grid (full width, the only scrolling area) -- */}
                 <div className="lpx-pager">
                     <button
                         className="lp-page-btn"
@@ -1002,7 +1002,7 @@ export default function LearningPlanDetailPage() {
                 </div>
             </div>
 
-            {/* ── 今日已学 面板（顶栏「今日学习」按钮折叠出；进度并入头部、词表直接常显）── */}
+            {/* -- Pagination bar (always pinned to the bottom) -- */}
             {activePanel === 'today' && plan && (() => {
                 const todayTotal = getPlanTodayTarget(plan);
                 const pct = todayTotal > 0 ? Math.min(100, Math.round((plan.studied_today / todayTotal) * 100)) : 0;
@@ -1046,7 +1046,7 @@ export default function LearningPlanDetailPage() {
                 );
             })()}
 
-            {/* ── 添加单词 面板（顶栏「＋ 添加单词」按钮折叠出）── */}
+            {/* -- 'Studied today' panel (unfolded by the top-bar button; progress is merged into the header and the word list is always visible) -- */}
             {activePanel === 'add' && (
                 <div className="lpx-overlay" onClick={() => setActivePanel(null)}>
                     <div className="lpx-panel lpx-panel-add" onClick={e => e.stopPropagation()}>

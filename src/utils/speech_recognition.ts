@@ -1,8 +1,8 @@
 /**
- * Web Speech API 封装 + 朗读匹配
+ * Web Speech API wrapper plus read-aloud matching
  *
- * 项目已 Chrome-only（ChromeOnlyGuard），webkitSpeechRecognition 可用。
- * 英文识别用 en-US，中文识别用 zh-CN。
+ * The project is Chrome-only (ChromeOnlyGuard), so webkitSpeechRecognition is available.
+ * English recognition uses en-US, Chinese uses zh-CN.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -27,13 +27,13 @@ export type RecognitionLang = 'en-US' | 'en-GB' | 'zh-CN';
 
 export interface StartRecognitionOptions {
     lang: RecognitionLang;
-    /** interim (未定型) 结果回调 */
+    /** interim (not yet finalised) result callback */
     onInterim?: (transcript: string) => void;
-    /** 一次 final 结果 */
+    /** one final result */
     onFinal: (transcript: string) => void;
-    /** 出错回调（no-speech / audio-capture / not-allowed / network） */
+    /** error callback (no-speech / audio-capture / not-allowed / network) */
     onError?: (err: string) => void;
-    /** 识别自然结束 */
+    /** recognition ended on its own */
     onEnd?: () => void;
 }
 
@@ -43,8 +43,8 @@ export interface RecognitionHandle {
 }
 
 /**
- * 启动一次连续识别。返回 handle 可主动 stop/abort。
- * 内部会在识别自然结束时自动重启（保持监听状态），直到调用方 abort。
+ * Start one continuous recognition. The returned handle can stop or abort it.
+ * It restarts itself whenever recognition ends naturally (staying in listening mode) until the caller aborts.
  */
 export function startRecognition(options: StartRecognitionOptions): RecognitionHandle | null {
     const Ctor = getRecognitionCtor();
@@ -79,7 +79,7 @@ export function startRecognition(options: StartRecognitionOptions): RecognitionH
 
         rec.onerror = (event: any) => {
             const errStr = String(event?.error ?? 'unknown');
-            // no-speech 太常见,不算失败
+            // no-speech is far too common to count as a failure
             if (errStr !== 'no-speech' && errStr !== 'aborted') {
                 options.onError?.(errStr);
             }
@@ -91,7 +91,7 @@ export function startRecognition(options: StartRecognitionOptions): RecognitionH
                 try {
                     rec.start();
                 } catch {
-                    // 无法重启:等下一次外部调用
+                    // cannot restart: wait for the next external call
                 }
             }
         };
@@ -127,7 +127,7 @@ export function startRecognition(options: StartRecognitionOptions): RecognitionH
     };
 }
 
-/* ── 匹配算法 ─────────────────────────────────────────────────────────────── */
+/* -- Matching algorithm ------------------------------------------------------- */
 
 const EN_PUNCT_RE = /[.,!?;:'"()[\]{}\-–—_/\\]/g;
 const ZH_PUNCT_RE = /[。,，、；;：:！？!?()（）【】[\]"'"'《》<>/\\\-–—_·]/g;
@@ -142,7 +142,7 @@ export function normalizeZh(input: string): string {
 }
 
 /**
- * Levenshtein distance (小串场景,O(m*n) 足够).
+ * Levenshtein distance (short strings, so O(m*n) is plenty).
  */
 function levenshtein(a: string, b: string): number {
     if (a === b) return 0;
@@ -168,8 +168,8 @@ function levenshtein(a: string, b: string): number {
 }
 
 /**
- * 英文匹配:含子串 或 Levenshtein 距离 ≤ max(1, floor(len*0.2))
- * 短语允许识别时中间夹词/次序保留。
+ * English match: substring containment, or a Levenshtein distance <= max(1, floor(len*0.2)).
+ * A phrase may have extra words in between as long as the order is preserved.
  */
 export function matchesEnWord(transcript: string, target: string): boolean {
     const t = normalizeEn(transcript);
@@ -178,13 +178,13 @@ export function matchesEnWord(transcript: string, target: string): boolean {
 
     if (t.includes(w)) return true;
 
-    // 短语:每个组成词都在 transcript 中即算通过(顺序不强制)
+    // Phrase: every component word appearing anywhere in the transcript passes (order is not enforced)
     if (w.includes(' ')) {
         const parts = w.split(' ').filter(Boolean);
         return parts.every((p) => t.includes(p));
     }
 
-    // 单词:模糊匹配 + 逐 token 比对
+    // Word: fuzzy match plus a token-by-token comparison
     const tolerance = Math.max(1, Math.floor(w.length * 0.2));
     if (levenshtein(t, w) <= tolerance) return true;
 
@@ -193,8 +193,8 @@ export function matchesEnWord(transcript: string, target: string): boolean {
 }
 
 /**
- * 从卡片的 zh(例如 "n. 苹果; 果; 苹果树")拆出候选释义分片。
- * 剥离词性前缀 + 按分隔符切,过滤 1 字以下。
+ * Split candidate glosses out of a card's zh field (for example 'n. apple; fruit; apple tree').
+ * Strips the part-of-speech prefix, splits on separators, and drops anything shorter than one character.
  */
 export function extractZhCandidates(rawZh: string): string[] {
     if (!rawZh) return [];
@@ -211,8 +211,8 @@ export function extractZhCandidates(rawZh: string): string[] {
 }
 
 /**
- * 宽松中文匹配:任一释义分片出现在 transcript 中即算通过。
- * 分片长度=1:必须整字命中;长度≥2:允许单字命中(适配语音识别把"苹果"识别成"平果""频果"等)。
+ * Loose Chinese match: any single gloss fragment appearing in the transcript passes.
+ * A one-character fragment must match exactly; two characters or more allow a single-character hit (speech recognition often mangles a word into a homophone).
  */
 export function matchesZhMeaning(transcript: string, targetZh: string): boolean {
     const t = normalizeZh(transcript);
@@ -224,7 +224,7 @@ export function matchesZhMeaning(transcript: string, targetZh: string): boolean 
         const c = normalizeZh(cand);
         if (!c) continue;
         if (t.includes(c)) return true;
-        // 兜底:分片≥2字时,如果 transcript 覆盖了 ≥50% 的字符,也算通过
+        // Fallback: for fragments of 2+ characters, covering >= 50% of them in the transcript also passes
         if (c.length >= 2) {
             const chars = Array.from(c);
             const hits = chars.filter((ch) => t.includes(ch)).length;

@@ -33,7 +33,7 @@ export default function UserHome() {
         return `${h}:${m}:${s}`;
     };
 
-    // Format seconds as X天X小时X分X秒 for the year summary
+    // Format seconds as days/hours/minutes/seconds for the year summary
     const formatSecondsLong = (total: number): string => {
         const d = Math.floor(total / 86400);
         const h = Math.floor((total % 86400) / 3600);
@@ -47,7 +47,7 @@ export default function UserHome() {
         return parts.join('').trim();
     };
 
-    // Format seconds as readable for tooltip (e.g. 1小时23分)
+    // Format seconds readably for the tooltip (for example, 1h 23m)
     const formatSecondsMid = (secs: number): string => {
         const h = Math.floor(secs / 3600);
         const m = Math.floor((secs % 3600) / 60);

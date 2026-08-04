@@ -1,14 +1,14 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
-// 全套模拟 (Mock Exam)：配置页 + 考试大厅 + 题库卡片
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
+// Full mock exam: config page + exam hub + bank card
 
 export const mock = {
-  // ── AI 练习菜单卡片 ──
+  // -- AI practice menu card --
   menuCard: {
     title: '全套模拟',
     desc: '听读写说一次生成，按真考流程限时作答，产出综合成绩单。',
   },
 
-  // ── 配置页 ──
+  // -- Config page --
   config: {
     pageTitle: '全套模拟',
     pageSubtitle: '一次生成完整的听 / 读 / 写 / 说四科套题，按真实考试流程作答',
@@ -83,7 +83,7 @@ export const mock = {
     toastFail: '创建失败：{msg}',
   },
 
-  // ── 考试大厅 ──
+  // -- Exam hub --
   hub: {
     pageTitle: '模拟考大厅',
     backToBank: '返回题库',
@@ -146,7 +146,7 @@ export const mock = {
     noTimeLimit: '无总时限',
   },
 
-  // ── 考试模式（答题页内）──
+  // -- Exam mode (inside the answering pages) --
   examMode: {
     examBadge: '🎯 模拟考试进行中',
     exitConfirmTitle: '退出本部分？',
@@ -166,7 +166,7 @@ export const mock = {
     essaySubmittedNext: '本篇已提交，进入另一篇作文',
     speakingReaction: '{s} 秒内开始作答',
     speakingReactionTimeout: '超时未开口，本题记空，进入下一题',
-    // 听力真考流程（无进度条、连播、检查时间）
+    // The real listening exam flow (no progress bar, continuous playback, checking time)
     listeningFlow: {
       startBtn: '🎧 开始听力考试',
       startHint: '录音只播放一次，不能暂停或回放',
@@ -180,7 +180,7 @@ export const mock = {
     },
   },
 
-  // ── 题库卡片（第 5 个 tab）──
+  // -- Bank card (the 5th tab) --
   bank: {
     tab: '全套模拟',
     enterHub: '进入考场',

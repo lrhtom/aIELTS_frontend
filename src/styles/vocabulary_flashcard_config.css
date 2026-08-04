@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   记忆卡配置页样式
-   依赖 practice_page.css 中的 .config-page-wrap / .config-card / .toggle-row 等
+   Flashcard config page styling
+   Depends on .config-page-wrap / .config-card / .toggle-row and friends from practice_page.css
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── 统计徽章 ──────────────────────────────────────────────────── */
+/* -- Statistic badges ------------------------------------------ */
 .fc-stats-row {
     display: flex;
     gap: 10px;
@@ -28,7 +28,7 @@
 .fc-stat-badge.badge-new     { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
 .fc-stat-badge.badge-total   { border-color: var(--color-border); background: var(--color-bg); }
 
-/* ── 进度条 ──────────────────────────────────────────────────────── */
+/* -- Progress bar ---------------------------------------------- */
 .fc-progress-bar {
     height: 5px;
     background: var(--color-border);

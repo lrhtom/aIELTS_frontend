@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
 
 export const aiPractice = {
   backToPractice: '返回题库',
@@ -71,4 +71,19 @@ export const aiBank = {
   toastGenerationFailed: '生成失败，可删除后重试。',
   backToBank: '📚 返回题库',
   redoBtn: '🔁 重新作答',
+  // Site-wide template question: an admin picks one per skill and every user can see it
+  templateBadge: '全站模板题',
+  templateBadgeHint: '管理员指定的示范题，所有用户都能做',
+  templateSetBtn: '设为模板',
+  templateUnsetBtn: '取消模板',
+  templateSetConfirm: '把「{title}」设为本科目的全站模板题？所有用户都会看到它，同科目原有的模板题会被替换。',
+  templateSetOk: '已设为全站模板题',
+  templateUnsetOk: '已取消模板题',
+  templateSetFail: '设置模板题失败',
+  templateOpenHint: '点开即复制到我的题库',
+  templateOpening: '正在复制…',
+  templateUseFail: '复制模板题失败，请重试',
+  // Writing-tab shortcut: corrections and AI-teacher lessons are archived on the Service Records page, while the bank holds only questions
+  recordsLinkBtn: '📂 服务记录',
+  recordsLinkHint: '回顾所有作文批改与 AI 解析',
 };

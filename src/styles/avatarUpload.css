@@ -1,4 +1,4 @@
-/* 头像上传组件样式 */
+/* Avatar upload component styling */
 .avatar-upload {
     display: flex;
     flex-direction: column;
@@ -33,7 +33,7 @@
     box-shadow: none;
 }
 
-/* 尺寸控制 */
+/* size control */
 .avatar-upload-small .avatar-container {
     width: 80px;
     height: 80px;
@@ -163,7 +163,7 @@
     line-height: 1.4;
 }
 
-/* 导航栏中的头像上传样式 */
+/* avatar upload styling inside the navbar */
 .navbar-avatar-container {
     position: relative;
     display: inline-block;

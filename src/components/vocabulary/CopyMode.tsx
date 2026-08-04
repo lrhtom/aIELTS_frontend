@@ -61,7 +61,7 @@ export default function CopyMode({
 }: Props) {
     const { t } = useLang();
 
-    // ── 闪烁模式状态 ──
+    // play the English pronunciation, delaying recognition so it does not pick up our own playback
     const [blinkEnabled, setBlinkEnabled] = useState(() => {
         try {
             return localStorage.getItem('vocab_copy_blink_enabled') === 'true';
@@ -79,10 +79,10 @@ export default function CopyMode({
             return v > 0 ? v : 1;
         } catch { return 1; }
     });
-    const [blinkFlashing, setBlinkFlashing] = useState(false); // 当前是否处于闪烁显示阶段
+    const [blinkFlashing, setBlinkFlashing] = useState(false); // -- Blink mode state --
     const [showBlinkConfig, setShowBlinkConfig] = useState(false);
 
-    // 持久化闪烁设置
+    // whether we are currently in the visible phase of the blink
     useEffect(() => {
         try {
             localStorage.setItem('vocab_copy_blink_enabled', String(blinkEnabled));
@@ -91,7 +91,7 @@ export default function CopyMode({
         } catch { /* ignore */ }
     }, [blinkEnabled, blinkHideSeconds, blinkShowSeconds]);
 
-    // 计算当前输入的有效抄写次数
+    // persist the blink settings
     const requiredCount = Math.max(0, copyRemaining[currentCardIdx] ?? copyRepetitions);
     const validCount = countCopies(copyInput, currentCard.word);
     const isCountMet = validCount >= requiredCount;
@@ -106,7 +106,7 @@ export default function CopyMode({
 
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
-    // ── 闪烁定时器 ──
+    // count how many valid copies the current input contains
     const blinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const clearBlinkTimer = useCallback(() => {
@@ -117,7 +117,7 @@ export default function CopyMode({
     }, []);
 
     useEffect(() => {
-        // 不启用闪烁 → 清理
+        // -- Blink timer --
         if (!blinkEnabled) {
             clearBlinkTimer();
             // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -125,7 +125,7 @@ export default function CopyMode({
             return;
         }
 
-        // 循环：隐藏 blinkHideSeconds → 显示 blinkShowSeconds → 重复
+        // blinking disabled -> clean up
         let cancelled = false;
 
         const scheduleHide = () => {
@@ -146,7 +146,7 @@ export default function CopyMode({
             }, blinkShowSeconds * 1000);
         };
 
-        // 开始：从隐藏阶段开始
+        // Cycle: hide for blinkHideSeconds -> show for blinkShowSeconds -> repeat
         scheduleHide();
 
         return () => {
@@ -155,20 +155,20 @@ export default function CopyMode({
         };
     }, [blinkEnabled, blinkHideSeconds, blinkShowSeconds, currentCardIdx, clearBlinkTimer]);
 
-    // ── 综合判断单词是否应显示 ──
-    // 优先级：提交后 > 用户主动显示模式 > 偷看 > 输入正确 > 闪烁显示
+    // start in the hidden phase
+    // -- Overall decision on whether the word should be visible --
     const shouldShowWord = (() => {
-        // 1. 已提交 → 始终显示
+        // Priority: after submission > the user's explicit show mode > peeking > input is correct > the blink's visible phase
         if (copySubmitted) return true;
-        // 2. 用户主动选择了"显示模式"（未隐藏） → 始终显示
+        // 1. already submitted -> always visible
         if (copyWordVisible) return true;
-        // 3. 偷看中 → 显示
+        // 2. the user chose 'show mode' (not hidden) -> always visible
         if (isPeeking) return true;
-        // 4. 用户输入已完全匹配 → 显示
+        // 3. peeking -> visible
         if (inputMatchesWord && copyInput.trim().length > 0) return true;
-        // 5. 闪烁模式开启且处于闪烁显示阶段 → 显示
+        // 4. the user's input already matches exactly -> visible
         if (blinkEnabled && blinkFlashing) return true;
-        // 6. 其余情况 → 隐藏
+        // 5. blink mode is on and we are in its visible phase -> visible
         return false;
     })();
 
@@ -307,7 +307,7 @@ export default function CopyMode({
                         </button>
                     )}
                 </div>
-                {/* 闪烁参数面板 */}
+                {/* 6. otherwise -> hidden */}
                 {blinkEnabled && showBlinkConfig && (
                     <div style={{
                         marginTop: '10px',
@@ -370,7 +370,7 @@ export default function CopyMode({
                         </div>
                     </div>
                 )}
-                {/* 闪烁模式指示器 */}
+                {/* blink settings panel */}
                 {blinkEnabled && !showBlinkConfig && (
                     <div style={{
                         marginTop: '6px',
@@ -433,7 +433,7 @@ export default function CopyMode({
                             const typedCopies = extractTypedCopies(copyInput, currentCard.word, requiredCount);
                             const maxWords = Math.max(targetWords.length, typedCopies.length);
 
-                            // 确定光标所在 copy 和 char 位置
+                            // blink mode indicator
                             const prefix = copyInput.slice(0, selectionStart);
                             const prefixCopies = extractTypedCopies(prefix, currentCard.word, requiredCount);
                             let cursorCopyIndex = 0;
@@ -495,7 +495,7 @@ export default function CopyMode({
                                 let val = e.target.value;
                                 const isMultiWord = currentCard.word.includes(' ');
 
-                                // 阻止手动空格 — 单字模式空格由自动补全管理
+                                // work out which copy and character the cursor is in
                                 if (val.length > copyInput.length) {
                                     const added = val.slice(copyInput.length);
                                     if (added === ' ' && !isMultiWord) {
@@ -503,7 +503,7 @@ export default function CopyMode({
                                     }
                                 }
 
-                                // 词组内部自动补空格 — 用户只需连续打字，空格自动插入
+                                // Block manual spaces - in single-word mode the spaces are managed by autocompletion
                                 if (isMultiWord && val.length > copyInput.length) {
                                     const segments = currentCard.word.trim().toLowerCase().split(/\s+/);
                                     const segCount = segments.length;
@@ -516,15 +516,15 @@ export default function CopyMode({
                                         const totalTyped = typedSegments.length;
                                         const partialIdx = totalTyped % segCount;
 
-                                        // partialIdx > 0 表示当前 copy 正在输入中
-                                        // partialIdx = 0 表示刚好完成了一个完整 copy（交给抄写分隔逻辑处理）
+                                        // Auto-insert spaces inside a phrase - the user just keeps typing and the spaces appear
+                                        // partialIdx > 0 means the current copy is still being typed
                                         if (partialIdx > 0) {
                                             const curSegIdx = partialIdx - 1;
                                             const lastSegment = typedSegments[totalTyped - 1];
                                             const completeCopies = Math.floor(totalTyped / segCount);
 
                                             if (lastSegment === segments[curSegIdx] && curSegIdx < segCount - 1) {
-                                                // 验证当前 copy 中之前的段是否全部匹配
+                                                // partialIdx = 0 means a complete copy was just finished (handled by the copy-separation logic)
                                                 let prevMatch = true;
                                                 for (let p = 0; p < curSegIdx; p++) {
                                                     if (typedSegments[completeCopies * segCount + p] !== segments[p]) {
@@ -540,7 +540,7 @@ export default function CopyMode({
                                     }
                                 }
 
-                                // 抄写之间自动补空格：当输入末尾完整匹配目标词时
+                                // verify that every earlier segment of the current copy matches
                                 if (val.length > copyInput.length) {
                                     if (val.trimEnd().toLowerCase().endsWith(currentCard.word.trim().toLowerCase())) {
                                         const currentCopies = countCopies(val, currentCard.word);
@@ -550,7 +550,7 @@ export default function CopyMode({
                                     }
                                 }
                                 onCopyInput(val);
-                                // 延迟更新光标位置
+                                // Auto-insert a space between copies: when the end of the input exactly matches the target word
                                 requestAnimationFrame(() => {
                                     setSelectionStart(inputRef.current?.selectionStart ?? val.length);
                                 });
@@ -559,7 +559,7 @@ export default function CopyMode({
                                 setSelectionStart((e.target as HTMLTextAreaElement).selectionStart || 0);
                             }}
                             onKeyDown={(e) => {
-                                // 阻止空格键
+                                // update the cursor position on the next tick
                                 if (e.key === ' ') {
                                     e.preventDefault();
                                     return;

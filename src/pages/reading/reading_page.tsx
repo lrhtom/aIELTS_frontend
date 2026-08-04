@@ -8,16 +8,18 @@ import { api } from '../../api/client';
 import { showToast } from '../../components/common/Toast';
 import { getAIQuestion, submitAIQuestion } from '../../api/ai_question';
 import { useLang } from '../../i18n/LanguageContext';
-import ReadingQuestionRenderer, { scoreSection } from '../../components/reading/ReadingQuestionRenderer';
+import ReadingQuestionRenderer, { scoreSection, isQuestionCorrect } from '../../components/reading/ReadingQuestionRenderer';
 import ReadingPassageBlock from '../../components/reading/ReadingPassageBlock';
 import { rawToBand, formatBand } from '../../utils/ielts_band';
+import { resolveAnswerSentences } from '../../utils/answer_sentences';
+import { applyPaneWidth, watchPaneFreezeMin } from '../../utils/pane_resize';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
-import PracticeBottomBar from '../../components/common/PracticeBottomBar';
+import PracticeBottomBar, { type PracticeNavLabels } from '../../components/common/PracticeBottomBar';
 import { MockTimerBar } from '../../components/mock/MockExamShell';
 import { useMockExamGuard } from '../../components/mock/useMockExamGuard';
 import '../../styles/reading_page.css';
 
-// 题目数据来自 AI 生成/题库旧记录，字段漂移不可完全预防——出错时降级为局部提示而不是整页白屏
+// Custom prompt instructions (advanced, optional)
 export default function ReadingPageWrapper() {
     return (
         <ErrorBoundary>
@@ -31,7 +33,7 @@ function Reading_page() {
     const [searchParams] = useSearchParams();
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
-    // 全套模拟：mockId 存在 → 考试模式（计时 + 防退出 + 交卷回大厅）
+    // Question data comes from AI generation or legacy bank records, so field drift cannot be fully prevented - on error degrade to a local notice rather than a blank page
     const mockIdParam = searchParams.get('mockId');
     const mockId = mockIdParam ? Number(mockIdParam) : null;
     const vocabInput: string = state?.vocabInput ?? '';
@@ -53,12 +55,12 @@ function Reading_page() {
     const customDescription: string = typeof state?.customDescription === 'string' ? state.customDescription.trim() : '';
     const customPrompt: string = typeof state?.customPrompt === 'string' ? state.customPrompt.trim() : '';
 
-    // 冷启动（直接输网址/刷新/书签/自动化工具）时 location.state 是空的。
-    // 以前这种情况会直接走 generateReading() —— 用默认参数发起一次**付费** AI 生成，
-    // 用户刷新一次就静默扣掉几千 AT。现在改成渲染落地页，引导回配置页。
+    // Full mock: mockId present -> exam mode (timed + exit guard + submit returns to the hub)
+    // On a cold start (typed URL / refresh / bookmark / automation tool) location.state is empty.
+    // This used to fall straight through to generateReading(), firing a **paid** AI generation with default
     const [noConfig, setNoConfig] = useState(false);
 
-    // 用单一 useState 替代 reactive store
+    // parameters, so one refresh silently burned thousands of AT. It now renders a landing page back to the config page.
     const [st, setSt] = useState(createReadingState);
     const set = <K extends keyof typeof st>(k: K, v: typeof st[K]) =>
         setSt(s => ({ ...s, [k]: v }));
@@ -74,8 +76,8 @@ function Reading_page() {
 
     const CACHE_KEY = 'reading_session_cache';
 
-    // ── 全套模拟考试模式 ──
-    // 作答中（step 2）开启防退出守卫；交卷/查看结果（step 3）后解除。
+    // a single useState replaces the reactive store
+    // -- Full mock exam mode --
     const isMockActive = mockId !== null && st.step === 2 && !st.isLoading;
     const { confirmExit: mockConfirmExit } = useMockExamGuard({
         mockId: mockId ?? 0,
@@ -83,13 +85,13 @@ function Reading_page() {
         active: isMockActive,
     });
     const MOCK_DRAFT_KEY = mockId ? `mock:${mockId}:reading:answers` : '';
-    // 草稿自动保存：刷新后能恢复进度（deadline 在服务端，计时不受影响）
+    // The exit guard is armed while answering (step 2) and lifted after submit / view results (step 3).
     useEffect(() => {
         if (!isMockActive || !MOCK_DRAFT_KEY) return;
         const timer = setInterval(() => {
             try {
                 localStorage.setItem(MOCK_DRAFT_KEY, JSON.stringify(userAnswersRef.current));
-            } catch { /* 存储满等异常不阻塞作答 */ }
+            } catch { /* Auto-save the draft so progress survives a refresh (the deadline lives on the server, so timing is unaffected) */ }
         }, 4000);
         return () => clearInterval(timer);
     }, [isMockActive, MOCK_DRAFT_KEY]);
@@ -98,7 +100,7 @@ function Reading_page() {
         if (hasRequested.current) return;
         hasRequested.current = true;
 
-        // 题库模式：从后端按 bankId 拉取，不再调用 AI 生成
+        // a full quota or other storage error must not block answering
         if (bankId) {
             sessionStorage.removeItem(CACHE_KEY);
             setSt(createReadingState());
@@ -106,19 +108,19 @@ function Reading_page() {
             return;
         }
 
-        // 刷新恢复：优先从 sessionStorage 读取缓存数据
+        // Bank mode: fetch by bankId from the backend, never call AI generation
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) {
             try {
                 const { quizData: cachedQuiz, vocabList: cachedVocab } = JSON.parse(cached);
                 setSt(s => ({ ...s, quizData: cachedQuiz, vocabList: cachedVocab, isLoading: false }));
-                return; // 跳过 AI 生成
+                return; // Refresh recovery: prefer the cached data in sessionStorage
             } catch {
                 sessionStorage.removeItem(CACHE_KEY);
             }
         }
 
-        // 没有配置就不生成：state 为空说明不是从配置页进来的
+        // skip AI generation
         if (!state) {
             setNoConfig(true);
             return;
@@ -129,13 +131,13 @@ function Reading_page() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // mock 模式刷新恢复：无服务端答案时从本地草稿续答
+    // No config means no generation: empty state proves we did not come from the config page
     const restoreMockDraft = (): Record<number, string> => {
         if (!MOCK_DRAFT_KEY) return {};
         try {
             const raw = localStorage.getItem(MOCK_DRAFT_KEY);
             if (raw) return JSON.parse(raw) as Record<number, string>;
-        } catch { /* 草稿损坏按空处理 */ }
+        } catch { /* mock refresh recovery: with no server-side answers, resume from the local draft */ }
         return {};
     };
 
@@ -237,7 +239,7 @@ function Reading_page() {
 
     const generateReading = async () => {
         set('isLoading', true);
-        // 解析词汇
+        // treat a corrupted draft as empty
         const parsedList: VocabItem[] = vocabInput.trim().split('\n').map(line => {
             const parts = line.split(/[-:]/);
             return {
@@ -340,7 +342,7 @@ function Reading_page() {
             if (!(await showConfirm(t('readingDetails.submitConfirm')))) return;
         }
 
-        // mock 模式：交卷时同步评分（raw + band）进 aiFeedback，供大厅/成绩单读取
+        // parse the vocabulary
         if (bankId && mockId) {
             const sectionsToScore: (FullPassageSection | QuizData)[] = st.fullData
                 ? (st.fullData.passages || []).flatMap(p => p.sections || [])
@@ -357,7 +359,7 @@ function Reading_page() {
             } catch (err) {
                 console.error('mock submit failed:', err);
                 showToast(t('readingDetails.toastSaveFail'), 'error');
-                if (!forced) return; // 手动交卷失败时留在页面重试；超时强制交卷则继续离场
+                if (!forced) return; // mock mode: on submit, write the score (raw + band) into aiFeedback synchronously for the hub and report to read
             }
             if (MOCK_DRAFT_KEY) localStorage.removeItem(MOCK_DRAFT_KEY);
             showToast(t('mock.examMode.submittedToHub'), 'success');
@@ -429,13 +431,13 @@ function Reading_page() {
 
         const handleMouseMove = (e: MouseEvent) => {
             if (!isResizingLeft && !isResizingRight) return;
-            if (isResizingLeft && leftSidebarRef.current) {
-                const newWidth = startWidth + (e.clientX - startX);
-                if (newWidth > 150 && newWidth < window.innerWidth * 0.4) leftSidebarRef.current.style.width = newWidth + 'px';
-            } else if (isResizingRight && rightSidebarRef.current) {
-                const newWidth = startWidth - (e.clientX - startX);
-                // 做题面板允许拉到屏幕 70%，方便宽表格题型（matching 等）完整展示
-                if (newWidth > 150 && newWidth < window.innerWidth * 0.7) rightSidebarRef.current.style.width = newWidth + 'px';
+            // a failed manual submit stays on the page to retry; a timeout force-submit leaves anyway
+            // Both dividers can be dragged the full 0-100%; below 30% the pane's text lays out at 30% and is clipped,
+            const layout = layoutRef.current;
+            if (isResizingLeft) {
+                applyPaneWidth(leftSidebarRef.current, startWidth + (e.clientX - startX), layout);
+            } else if (isResizingRight) {
+                applyPaneWidth(rightSidebarRef.current, startWidth - (e.clientX - startX), layout);
             }
         };
 
@@ -443,7 +445,7 @@ function Reading_page() {
             if (isResizingLeft || isResizingRight) {
                 // @ts-expect-error window globals
                 window.__didDragSidebar = true;
-                // 拖动结束后禁用 transition 防止跳动
+                // so there is no need to clamp the dividers as well (see utils/pane_resize.ts).
                 if (isResizingLeft && leftSidebarRef.current) leftSidebarRef.current.classList.add('no-transition');
                 if (isResizingRight && rightSidebarRef.current) rightSidebarRef.current.classList.add('no-transition');
                 isResizingLeft = false; isResizingRight = false;
@@ -455,12 +457,18 @@ function Reading_page() {
             }
         };
 
+        const stopWatchFreeze = watchPaneFreezeMin(layoutRef.current, [
+            leftSidebarRef.current,
+            layoutRef.current?.querySelector<HTMLElement>('.main-content'),
+            rightSidebarRef.current,
+        ]);
         resizerL?.addEventListener('mousedown', handleMouseDownLeft);
         resizerR?.addEventListener('mousedown', handleMouseDownRight);
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
 
         return () => {
+            stopWatchFreeze();
             resizerL?.removeEventListener('mousedown', handleMouseDownLeft);
             resizerR?.removeEventListener('mousedown', handleMouseDownRight);
             document.removeEventListener('mousemove', handleMouseMove);
@@ -534,6 +542,9 @@ function Reading_page() {
         if (!resizer || !sidebar || !layout) return;
 
         let isResizing = false, startX = 0, startWidth = 0;
+        // disable the transition once dragging ends to stop it jumping
+        const content = layout.querySelector<HTMLElement>('.results-content');
+        const stopWatchFreeze = watchPaneFreezeMin(layout, [sidebar, content]);
 
         const onMouseDown = (e: MouseEvent) => {
             isResizing = true;
@@ -544,10 +555,9 @@ function Reading_page() {
         };
         const onMouseMove = (e: MouseEvent) => {
             if (!isResizing) return;
-            const newWidth = startWidth + (e.clientX - startX);
-            if (newWidth > 200 && newWidth < window.innerWidth * 0.55) {
-                sidebar.style.width = newWidth + 'px';
-            }
+            // Allow dragging across the full 0-100%; what prevents 'dragged too narrow to read' is the layout freeze, not clamping the divider
+            // The passage pane is on the **right** (2026-07-27 redesign: answers left, passage right), so dragging right
+            applyPaneWidth(sidebar, startWidth - (e.clientX - startX), layout);
         };
         const onMouseUp = () => {
             if (isResizing) {
@@ -561,6 +571,7 @@ function Reading_page() {
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
         return () => {
+            stopWatchFreeze();
             resizer.removeEventListener('mousedown', onMouseDown);
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
@@ -569,7 +580,12 @@ function Reading_page() {
 
     // Answer helpers used by the renderer
     const [answerVersion, setAnswerVersion] = useState(0);
-    const getAnswer = useCallback((qid: number) => userAnswersRef.current[qid] || '', []);
+    // narrows it and dragging left widens it - the delta must be negated. With a plus sign it feels inverted.
+    // answerVersion must be in the deps. Answers live in a ref, and the React Compiler (enabled in
+    // vite.config.ts) cannot see in-place ref mutation; as long as getAnswer's identity is stable the compiler
+    // decides the downstream <ReadingQuestionRenderer> / <MatchingLetterGrid> inputs are unchanged and replays
+    // cached JSX. The symptom: clicking a matching question really does store the answer and the bottom bar lights
+    const getAnswer = useCallback((qid: number) => userAnswersRef.current[qid] || '', [answerVersion]);
     const setAnswer = useCallback((qid: number, value: string) => {
         userAnswersRef.current[qid] = value;
         setAnswerVersion(v => v + 1);
@@ -580,8 +596,8 @@ function Reading_page() {
         ? ((st.fullData.passages || []).find(p => p.passageNum === st.activePassage) || (st.fullData.passages || [])[0] || null)
         : null;
 
-    // ── 底部导航条数据 ──
-    // 胶囊显示真实 q.id（full-test 下 Passage 2 = 14..26，与题面印的编号一致）
+    // up as answered, but the cell never shows as selected (reproduced 2026-07-27). Tie the identity to the version so the downstream cache invalidates.
+    // -- Bottom bar data --
     const navQuestionIds = useMemo<number[]>(() => {
         if (st.fullData && activePassageData) {
             return (activePassageData.sections || []).flatMap(sec => (sec.questions || []).map(q => q.id));
@@ -589,9 +605,9 @@ function Reading_page() {
         return (st.quizData?.questions || []).map(q => q.id);
     }, [st.quizData, st.fullData, activePassageData]);
 
-    // answerVersion 是 uncontrolled answersRef 的重渲染节拍，作答后已答集合随之重算
+    // Pills show the real q.id (under full-test Passage 2 = 14..26, matching the numbers printed on the questions)
     const navAnsweredIds = useMemo<Set<number>>(() => {
-        void answerVersion; // 答案存 ref，靠该 tick 触发重算
+        void answerVersion; // answerVersion is the re-render beat for the uncontrolled answersRef, so the answered set recomputes after each answer
         const s = new Set<number>();
         for (const [k, v] of Object.entries(userAnswersRef.current)) {
             if (String(v ?? '').trim()) s.add(Number(k));
@@ -608,8 +624,8 @@ function Reading_page() {
         }));
     }, [st.fullData, st.activePassage]);
 
-    // Memoized Blocks — Part 切换已移到底部导航条（点击收起的 Passage 标签），
-    // 文章列内不再渲染顶部 tabs。
+    // answers live in a ref, so this tick triggers the recompute
+    // Memoized blocks - Part switching moved to the bottom bar (click a collapsed Passage label),
     const articleMemoBlock = useMemo(() => {
         return st.fullData && activePassageData
             ? <ReadingPassageBlock title={activePassageData.title} passage={activePassageData.passage} />
@@ -642,7 +658,7 @@ function Reading_page() {
         // answerVersion in deps to force re-render on answer change
     }, [st.quizData, st.fullData, activePassageData, getAnswer, setAnswer, answerVersion]);
 
-    // 无配置落地页：冷启动进来不生成，给出口而不是静默扣费
+    // so the passage column no longer renders tabs at the top.
     if (noConfig) {
         return (
             <div className="reading-container">
@@ -680,7 +696,7 @@ function Reading_page() {
             v.word.toLowerCase().includes(st.searchQuery.toLowerCase()) ||
             v.meaning.toLowerCase().includes(st.searchQuery.toLowerCase())
         );
-        // full test 不再显示 "Full Test" 面板标题——Part 信息已由底部导航条承担
+        // No-config landing page: a cold start renders this instead of silently charging the user
         const questionPanelTitle = st.fullData
             ? null
             : (st.quizData!.questionType === 'true_false'
@@ -774,7 +790,7 @@ function Reading_page() {
                         scrollContainerId="questionsForm"
                         onSubmit={() => submitQuiz()}
                         onExit={async () => {
-                            // mock 模式：退出 = 判 0，走守卫的确认 + forfeit 流程
+                            // A full test no longer shows the 'Full Test' panel title - the bottom bar carries the Part information
                             if (mockId) {
                                 await mockConfirmExit();
                                 return;
@@ -810,15 +826,61 @@ function Reading_page() {
             total += r.total;
         }
         const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-        // 全套（3 篇 40 题）额外给 9 分制换算；单篇 full 不适用
+        // mock mode: exiting scores 0, so go through the guard's confirm + forfeit flow
         const band = st.fullData && !st.fullData.singlePassage ? rawToBand('reading', score, total) : null;
 
         // Which passages to show for the "show passage" sidebar
-        const passageBlocks = st.fullData ? (st.fullData.passages || []) : [{ passageNum: 1, title: st.quizData!.title, passage: st.quizData!.passage, topic: st.quizData!.topic, sections: [] as FullPassageSection[] }];
+        // A full paper (3 passages, 40 questions) also gets the 9-band conversion; a single passage does not qualify
+        // Single-passage mode wraps quizData into a one-section passage: leaving sections empty means the
+        const passageBlocks = st.fullData
+            ? (st.fullData.passages || [])
+            : [{
+                passageNum: 1,
+                title: st.quizData!.title,
+                passage: st.quizData!.passage,
+                topic: st.quizData!.topic,
+                sections: [st.quizData as unknown as FullPassageSection],
+            }];
 
-        // Flatten sections into a single review list
+        // per-passage answer lookup below finds nothing and the answer sentences never get highlighted in the text.
+        // With all 3 passages, switch by passage: the explanations and text show only the current one, so 40 questions
+        const isMultiPassage = Boolean(st.fullData) && passageBlocks.length > 1;
+        const activeResultPassage = isMultiPassage
+            ? (passageBlocks.some(pb => pb.passageNum === st.activePassage)
+                ? st.activePassage
+                : passageBlocks[0].passageNum)
+            : null;
+        const shownPassages = activeResultPassage == null
+            ? passageBlocks
+            : passageBlocks.filter(pb => pb.passageNum === activeResultPassage);
+        const shownSections: (FullPassageSection | QuizData)[] = activeResultPassage == null
+            ? sectionsToScore
+            : shownPassages.flatMap(pb => pb.sections || []);
+
+        // laid out flat do not make it impossible to find a question or tell which passage it belongs to. Single or partial papers have no switcher and behave as before.
+        const resultMarks = new Map<number, boolean>();
+        const correctIds = new Set<number>();
+        const resultParts = passageBlocks.map(pb => {
+            const ids: number[] = [];
+            for (const sec of (pb.sections || [])) {
+                for (const q of (sec.questions || [])) {
+                    ids.push(q.id);
+                    const ok = isQuestionCorrect(q, getAnswer(q.id));
+                    resultMarks.set(q.id, ok);
+                    if (ok) correctIds.add(q.id);
+                }
+            }
+            return {
+                label: t('results.passageTab').replace('{n}', String(pb.passageNum)),
+                questionIds: ids,
+                active: activeResultPassage == null || pb.passageNum === activeResultPassage,
+            };
+        });
+        const shownQuestionIds = resultParts.filter(p => p.active).flatMap(p => p.questionIds);
+
+        // Flatten the shown sections into a review list
         const allQuestions: Array<{ q: Question; sec: FullPassageSection | QuizData }> = [];
-        for (const sec of sectionsToScore) {
+        for (const sec of shownSections) {
             for (const q of (sec.questions || [])) allQuestions.push({ q, sec });
         }
 
@@ -843,43 +905,35 @@ function Reading_page() {
                                 <div className="score-number">{formatBand(band)}<span className="score-total">/9</span></div>
                             </div>
                         )}
-                        <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
+                        <div className="results-actions">
+                            <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
                             <span className="btn-icon">{st.isPassageOpen ? '📕' : '📖'}</span> {st.isPassageOpen ? t('results.hidePassage') : t('results.showPassage')}
                         </button>
                         {bankId && !mockId && (
-                            // mock 子题一次定档，不允许重做
+                            // Bottom bar data: per-question correctness plus the question ids of every passage (including the collapsed columns)
                             <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t('aiBank.redoBtn')}</button>
                         )}
                         <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{mockId ? '🎯' : bankId ? '📚' : '🏠'}</span> {mockId ? t('mock.examMode.backToHub') : bankId ? t('aiBank.backToBank') : t('common.home')}</button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Results Body */}
+                {/* a mock child is locked in once submitted, no redo */}
                 <div className="results-layout" id="resultsLayout">
-                    {/* Passage Sidebar */}
-                    <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="passageSidebar">
-                        <h3>{t('results.originalPassage')}</h3>
-                        {passageBlocks.map(pb => (
-                            <ReadingPassageBlock key={pb.passageNum} title={pb.title} passage={pb.passage} idPrefix={`passage-${pb.passageNum}`} />
-                        ))}
-                    </div>
-
-                    {/* Resizer */}
-                    <div className={`resizer ${st.isPassageOpen ? 'active' : ''}`} id="resizerPassage"></div>
-
                     {/* Analysis Content */}
-                    <div className="results-content">
+                    <div className="results-content" id="readingResultsContent">
                         {allQuestions.map(({ q, sec }) => {
                             const userAns = getAnswer(q.id) || 'None';
                             const correctList: string[] = Array.isArray(q.answers)
                                 ? (q.answers as unknown[]).map(a => (a == null ? '' : String(a)))
                                 : (q.answer !== undefined ? [String(q.answer)] : []);
-                            const isCorrect = correctList.some(a => a.trim().toLowerCase() === userAns.trim().toLowerCase());
+                            const isCorrect = resultMarks.get(q.id) ?? false;
                             const correctDisplay = correctList.join(' / ') || '—';
                             const questionText = q.question || (q.paragraph ? `Paragraph ${q.paragraph}` : '');
 
                             return (
-                                <div key={q.id} className="result-block">
+                                // Results body - answers on the left, passage on the right
+                                <div key={q.id} className="result-block" data-question-id={q.id}>
                                     <div className="question-text">
                                         {q.id}. {questionText.replace(/\*\*/g, '')}
                                         <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[{(sec.questionType || '').replace(/_/g, ' ')}]</span>
@@ -895,7 +949,47 @@ function Reading_page() {
                             );
                         })}
                     </div>
+
+                    {/* Resizer */}
+                    <div className={`resizer ${st.isPassageOpen ? 'active' : ''}`} id="resizerPassage"></div>
+
+                    {/* data-question-id: the bottom bar uses it for jumps and scrollspy highlighting */}
+                    <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="passageSidebar">
+                        <h3>{t('results.originalPassage')}</h3>
+                        {shownPassages.map(pb => (
+                            <ReadingPassageBlock
+                                key={pb.passageNum}
+                                title={pb.title}
+                                passage={pb.passage}
+                                idPrefix={`passage-${pb.passageNum}`}
+                                // Passage sidebar (right)
+                                answerMarks={resolveAnswerSentences(
+                                    pb.passage,
+                                    (pb.sections || []).flatMap(sec => sec.questions || []),
+                                )}
+                            />
+                        ))}
+                    </div>
                 </div>
+
+                {/* Locate against the whole passage but only with this passage's questions: across passages, another one's words get mis-highlighted here
+                     Bottom bar - the same component as the answering page, only the cells and pills switch to correct/incorrect colours.
+                    Placed **after** results-layout: .results-container is a 100vh flex column and the layout takes flex:1, */}
+                <PracticeBottomBar
+                    questionIds={shownQuestionIds}
+                    answeredIds={correctIds}
+                    resultMarks={resultMarks}
+                    scrollContainerId="readingResultsContent"
+                    navLabels={{
+                        ...(t('readingDetails.questionNav', { returnObjects: true }) as PracticeNavLabels),
+                        progress: t('results.partScore'),
+                    }}
+                    overviewParts={isMultiPassage ? resultParts : undefined}
+                    onPartSelect={i => {
+                        const pb = passageBlocks[i];
+                        if (pb) set('activePassage', pb.passageNum);
+                    }}
+                />
             </div>
         );
     }

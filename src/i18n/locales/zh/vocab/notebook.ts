@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— vocab 子命名空间。
+// Chinese copy (the type source of truth) - the vocab sub-namespace.
 
 export const hub = {
   title: '词汇学习',

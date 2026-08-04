@@ -22,12 +22,12 @@ interface UsageSeriesPoint {
     date: string;
     at_consumed: number;
     call_count: number;
-    // 生成结果分布（数据源 AIGenerationLog，非 AT 交易表）
+    // Generation outcome distribution (sourced from AIGenerationLog, not the AT transaction table)
     ok_first: number;
     ok_repaired: number;
     failed: number;
     gen_total: number;
-    /** true = 这天有日志覆盖不到的扣款，ok_first 里含推算补齐的部分 */
+    /** true = this day has charges the logs cannot account for, so ok_first includes an inferred top-up */
     derived?: boolean;
     derived_ok_first?: number;
     measured_gen_total?: number;
@@ -42,16 +42,16 @@ interface UsageTotals {
     ok_first: number;
     ok_repaired: number;
     failed: number;
-    /** ok_first 里由历史扣款推算补齐的部分 */
+    /** The part of ok_first inferred from historical charges */
     derived_ok_first?: number;
-    /** 只含真实日志的口径 —— 下面三个比率都基于它 */
+    /** The real-logs-only figure - the three ratios below are all based on it */
     measured_gen_total?: number;
     measured_ok_first?: number;
     measured_ok_repaired?: number;
     measured_failed?: number;
-    success_rate: number;      // 正常率 %
-    first_pass_rate: number;   // 首次合规率 %
-    failure_rate: number;      // 异常率 %
+    success_rate: number;      // success rate %
+    first_pass_rate: number;   // first-attempt compliance rate %
+    failure_rate: number;      // failure rate %
 }
 
 interface ScopeRow {
@@ -63,7 +63,7 @@ interface ScopeRow {
     failure_rate: number;
 }
 
-/** 按业务模块分类（口语/听力/…），数据源 AIGenerationLog.scope */
+/** Grouped by business module (speaking/listening/...), sourced from AIGenerationLog.scope */
 interface ModuleRow {
     module: string;
     ok_first: number;
@@ -76,7 +76,7 @@ interface ModuleRow {
     failure_rate: number;
 }
 
-/** 按模型分类，数据源 AT 出账描述 —— 唯一覆盖全部历史的维度 */
+/** Grouped by model, sourced from the AT charge descriptions - the only dimension covering the entire history */
 interface ModelRow {
     kind: 'text' | 'stream' | 'image';
     model: string;
@@ -89,23 +89,23 @@ interface UsageResponse {
     days: number;
     start: string;
     end: string;
-    /** 平台最早有数据的日期，早于它的起点会被后端夹到这天 */
+    /** The earliest date the platform has data for; the backend clamps any earlier start to this day */
     data_start?: string;
-    /** 结果日志上线日；早于这天的 ok_first 是推算补齐的，null = 还没有任何日志 */
+    /** The day outcome logging went live; ok_first before it is inferred, and null means there are no logs at all yet */
     log_start?: string | null;
     user: { id: number; username: string; nickname: string; at_balance: number } | null;
     series: UsageSeriesPoint[];
-    /** 当前所选日期区间的小计 */
+    /** Subtotal for the currently selected date range */
     totals: UsageTotals;
-    /** 不限时间的累计（不随日期区间变化） */
+    /** The all-time total (does not change with the date range) */
     all_time: UsageTotals;
     top_errors: { error_type: string; n: number }[];
     by_scope: ScopeRow[];
-    /** 当前选中的业务模块，'all' = 不筛选 */
+    /** The currently selected business module, 'all' = no filter */
     module?: string;
-    /** 可选模块列表（后端 MODULE_ORDER） */
+    /** The list of available modules (the backend's MODULE_ORDER) */
     modules?: string[];
-    /** 'transaction' = 覆盖全部历史；'log' = 只有生成日志上线之后 */
+    /** 'transaction' = covers the whole history; 'log' = only since generation logging went live */
     source?: 'transaction' | 'log';
     by_module?: ModuleRow[];
     by_model?: ModelRow[];
@@ -118,7 +118,7 @@ interface UserPickResult {
     is_staff: boolean;
 }
 
-/** 后端 DATA_START 的镜像；仅在响应尚未返回时兜底，真值以 data.data_start 为准。 */
+/** A mirror of the backend's DATA_START; only a fallback until the response arrives, with data.data_start as the source of truth. */
 const DATA_START_FALLBACK = '2026-06-04';
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -126,12 +126,12 @@ export default function AdminAIUsage() {
     const { t } = useLang();
     const [mode, setMode] = useState<Mode>('all');
     const [days, setDays] = useState<number>(30);
-    // 自定义日期区间：两个都填了就覆盖 days 预设（只影响图表与区间小计）
+    // Custom date range: filling in both overrides the days preset (affecting only the chart and the range subtotal)
     const [customStart, setCustomStart] = useState('');
     const [customEnd, setCustomEnd] = useState('');
     const useCustom = Boolean(customStart && customEnd);
     const [chartType, setChartType] = useState<ChartType>('bar');
-    // 业务模块筛选：'all' 走 AT 交易表（全部历史），选具体模块改读生成日志
+    // Business module filter: 'all' reads the AT transaction table (the whole history), a specific module reads the generation log instead
     const [module, setModule] = useState('all');
     const [data, setData] = useState<UsageResponse | null>(null);
     const [loading, setLoading] = useState(false);
@@ -191,15 +191,15 @@ export default function AdminAIUsage() {
 
     const chartData = useMemo(() => data?.series || [], [data]);
 
-    // 后端可能是旧版本（未部署/未重启）→ 这些字段会缺失。做兜底，
-    // 否则 .length / .toLocaleString() 会抛错把整个面板炸掉。
+    // The backend may be an older version (not deployed or not restarted) and these fields will be missing. Guard them,
+    // otherwise .length / .toLocaleString() throws and takes the whole panel down.
     const rel = useMemo(() => ({
         gen_total: data?.totals?.gen_total ?? 0,
         ok_first: data?.totals?.ok_first ?? 0,
         ok_repaired: data?.totals?.ok_repaired ?? 0,
         failed: data?.totals?.failed ?? 0,
         derived_ok_first: data?.totals?.derived_ok_first ?? 0,
-        // 只含真实日志的口径，备查用（展示的比率用含补齐的 gen_total）
+        // The real-logs-only figure, kept for reference (the displayed ratios use gen_total, which includes the inferred part)
         measured_gen_total: data?.totals?.measured_gen_total ?? 0,
         measured_ok_first: data?.totals?.measured_ok_first ?? 0,
         measured_failed: data?.totals?.measured_failed ?? 0,
@@ -218,20 +218,20 @@ export default function AdminAIUsage() {
     const byScope = data?.by_scope ?? [];
     const byModule = data?.by_module ?? [];
     const byModel = data?.by_model ?? [];
-    // 后端给的模块列表；首屏还没数据时用一份兜底，页签不至于空着
+    // The module list from the backend; a fallback is used before the first response so the tabs are not empty
     const moduleList = data?.modules ?? ['reading', 'listening', 'speaking', 'writing', 'vocab', 'extra', 'image', 'stream', 'other'];
-    // 页签上的角标：'all' 用面板总调用数，其余用该模块的日志条数
+    // Tab badge: 'all' shows the panel's total call count, the others show that module's log count
     const moduleCount = useMemo(() => {
         const m: Record<string, number> = {};
         if (data) m.all = data.totals.call_count;
         byModule.forEach(r => { m[r.module] = r.total; });
         return m;
     }, [data, byModule]);
-    // 平台最早有数据的日期；后端会把更早的起点夹到这天，这里同步给日期选择器做 min。
+    // The earliest date the platform has data for; the backend clamps earlier starts to it, and this passes it to the date picker as min.
     const dataStart = data?.data_start ?? DATA_START_FALLBACK;
-    // 没有任何生成日志时，百分比显示 "—" 而不是 0% ——
-    // 0% 会被读成"全部失败"，但真实含义是"这段时间没有数据"。
-    // 分母用含补齐的 gen_total：没有失败记录即视为全部成功（当前 = 100% / 0%）。
+    // With no generation logs at all, show the percentages as an em dash rather than 0% -
+    // 0% reads as 'everything failed', when it really means 'there is no data for this period'.
+    // The denominator is gen_total, which includes the inferred part: with no failure records, treat everything as successful (currently 100% / 0%).
     const pct = (v: number) => (rel.gen_total > 0 ? `${v}%` : '—');
 
     const renderChart = () => {
@@ -252,7 +252,7 @@ export default function AdminAIUsage() {
                     {commonAxes}
                     <Bar yAxisId="left" dataKey="at_consumed" name={t('profile.admin.aiUsage.metricAt')} fill="#0d9488" />
                     <Bar yAxisId="right" dataKey="call_count" name={t('profile.admin.aiUsage.metricCalls')} fill="#8b5cf6" />
-                    {/* 生成结果：成功/修复/异常 叠成一根柱，与调用量共用右轴 */}
+                    {/* Generation outcome: success/repaired/failed stacked into one bar, sharing the right axis with call volume */}
                     <Bar yAxisId="right" stackId="gen" dataKey="ok_first" name={t('profile.admin.aiUsage.metricOkFirst')} fill="#22c55e" />
                     <Bar yAxisId="right" stackId="gen" dataKey="ok_repaired" name={t('profile.admin.aiUsage.metricRepaired')} fill="#f59e0b" />
                     <Bar yAxisId="right" stackId="gen" dataKey="failed" name={t('profile.admin.aiUsage.metricFailed')} fill="#ef4444" />
@@ -279,7 +279,7 @@ export default function AdminAIUsage() {
                 </p>
             </div>
 
-            {/* 业务模块分类页签：切换后整个面板（图表 + 卡片）都只统计该类请求 */}
+            {/* Business module tabs: switching restricts the whole panel (charts and cards) to that class of request */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
                 {['all', ...moduleList].map(m => (
                     <button
@@ -337,7 +337,7 @@ export default function AdminAIUsage() {
                     <option value={365}>{t('profile.admin.aiUsage.daysLastN').replace('{n}', '365')}</option>
                 </select>
 
-                {/* 自定义日期区间 —— 只作用于图表和区间小计 */}
+                {/* Custom date range - affects only the chart and the range subtotal */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <input
                         type="date"
@@ -470,7 +470,7 @@ export default function AdminAIUsage() {
                         </div>
                     </div>
 
-                    {/* 生成可靠性卡片（RQ3 指标） */}
+                    {/* Generation reliability cards (the RQ3 metrics) */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 }}>
                         <div style={cardStyle}>
                             <div style={cardLabelStyle}>{t('profile.admin.aiUsage.successRate')}</div>
@@ -521,7 +521,7 @@ export default function AdminAIUsage() {
                         </div>
                     )}
 
-                    {/* 补齐说明：绿柱与 Call Count 对平，但那部分不参与正常率计算 */}
+                    {/* A note about the inferred data: the green bars reconcile with Call Count, but that part is excluded from the success rate */}
                     {rel.derived_ok_first > 0 && (
                         <div style={{
                             padding: '10px 14px', marginBottom: 16, borderRadius: 8, fontSize: 12.5,
@@ -539,7 +539,7 @@ export default function AdminAIUsage() {
                         {renderChart()}
                     </div>
 
-                    {/* 分类一：按业务模块（口语/听力/阅读…），数据源=生成日志 */}
+                    {/* Grouping one: by business module (speaking/listening/reading...), sourced from the generation log */}
                     <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 16, marginTop: 16 }}>
                         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 4 }}>
                             {t('profile.admin.aiUsage.byCategoryTitle')}
@@ -589,7 +589,7 @@ export default function AdminAIUsage() {
                         )}
                     </div>
 
-                    {/* 分类二：按模型 —— 解析 AT 出账描述，覆盖全部历史 */}
+                    {/* Grouping two: by model - parsed from the AT charge descriptions, covering the whole history */}
                     {byModel.length > 0 && (
                         <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 16, marginTop: 16 }}>
                             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 4 }}>
@@ -637,7 +637,7 @@ export default function AdminAIUsage() {
                         </div>
                     )}
 
-                    {/* 按细粒度 scope 拆分的异常率（论文 Table 7.6 口径） */}
+                    {/* Failure rate split by fine-grained scope (the definition used in Table 7.6 of the dissertation) */}
                     {byScope.length > 0 && (
                         <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 16, marginTop: 16 }}>
                             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 12 }}>
@@ -690,7 +690,7 @@ const pillStyle = (active: boolean): React.CSSProperties => ({
     transition: 'all 0.15s',
 });
 
-/** 分类页签：选中态实心，未选中走描边，和 pillStyle 区分开 */
+/** Category tabs: the selected one is solid and the rest are outlined, distinguishing them from pillStyle */
 const tabStyle = (active: boolean): React.CSSProperties => ({
     padding: '5px 12px',
     fontSize: 12.5,

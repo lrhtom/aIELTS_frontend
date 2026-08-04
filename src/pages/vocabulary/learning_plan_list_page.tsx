@@ -188,7 +188,7 @@ export default function LearningPlanListPage() {
     /* ── favorite ── */
     const handleToggleFavorite = async (e: React.MouseEvent, plan: LearningPlan) => {
         e.stopPropagation();
-        // 乐观更新：立即翻转收藏态，让计划马上重排（后收藏的置顶）。
+        // -- create / edit dialog --
         const nextFav = plan.is_favorite ? null : new Date().toISOString();
         setPlans(prev => prev.map(p => p.id === plan.id
             ? { ...p, is_favorite: !p.is_favorite, favorited_at: nextFav }
@@ -273,7 +273,7 @@ export default function LearningPlanListPage() {
 
     const canCreate = user?.is_staff || plans.length < MAX_PLANS;
 
-    // 收藏优先：已收藏排最前，后收藏的更靠前；其余按创建顺序（与下拉框、后端口径统一）。
+    // Optimistic update: flip the favorite state right away so the plan re-sorts immediately (newest favorite on top).
     const sortedPlans = sortPlansByFavorite(plans);
 
     return (
@@ -329,7 +329,7 @@ export default function LearningPlanListPage() {
                     </nav>
                 </div>
 
-                {/* ── 2. 右侧：列表明细区 (Main Content) ── */}
+                {/* Favorites first, most recently favorited higher; everything else in creation order (matching the dropdown and the backend). */}
                 <div className="uc-main-content">
                     <div style={{ padding: '24px 32px' }}>
                         {activeTab === 'plans' && (

@@ -43,7 +43,7 @@ export default function Task2PracticePage() {
     const topicCategory = (searchParams.get('topic') || 'all').trim().toLowerCase() || 'all';
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
-    // 全套模拟：写作部分 T1+T2 共用 60 分钟服务端计时；提交=直接落库（批改延迟到成绩单）
+    // Cold start with no question: give a real landing page and a clear way out, never a silent redirect
     const mockIdParam = searchParams.get('mockId');
     const mockId = mockIdParam ? Number(mockIdParam) : null;
     const customName: string = typeof (state as { customName?: string })?.customName === 'string' ? (state as { customName: string }).customName.trim() : '';
@@ -57,7 +57,7 @@ export default function Task2PracticePage() {
     const hasFetchedRef = useRef<string | null>(null);
     const mockSubmittingRef = useRef(false);
 
-    // ── 全套模拟考试模式（soft 守卫：写作部分内可经大厅切换 T1/T2，不判 0）──
+    // Full mock: the writing section shares one 60-minute server-side timer for T1+T2; submit persists immediately (marking is deferred to the score report)
     const { confirmExit: mockConfirmExit } = useMockExamGuard({
         mockId: mockId ?? 0,
         part: 'writing',
@@ -65,7 +65,7 @@ export default function Task2PracticePage() {
         mode: 'soft',
     });
 
-    // mock：提交作文（正常/超时强制共用）。落库后回大厅，批改延迟到成绩单生成。
+    // -- Full mock exam mode (soft guard: switching T1/T2 via the hub inside the writing section does not score 0) --
     const mockSubmitEssay = async (forced = false) => {
         if (!mockId || !bankId || mockSubmittingRef.current) return;
         const text = userAnswer.trim();
@@ -84,14 +84,14 @@ export default function Task2PracticePage() {
         try {
             await submitAIQuestion(bankId, userAnswer);
             sessionStorage.removeItem(cacheKey);
-            // 另一篇（Task 1）还没写 → 直接进另一篇；两篇都完成才回大厅
+            // mock: submit the essay (shared by the normal and force-on-timeout paths). Persist, then return to the hub; marking is deferred to the score report.
             let nextRoute: string | null = null;
             if (!forced) {
                 try {
                     const d = await getMockDetail(mockId);
                     const sibling = d.parts.writing.task1;
                     if (sibling && !sibling.isAnswered) nextRoute = mockWritingTaskRoute(mockId, 'task1', sibling);
-                } catch { /* 拿不到详情就回大厅 */ }
+                } catch { /* the other piece (Task 1) is unwritten -> go straight to it; only return to the hub once both are done */ }
             }
             if (nextRoute) {
                 showToast(t('mock.examMode.essaySubmittedNext'), 'success');
@@ -195,7 +195,7 @@ export default function Task2PracticePage() {
                     method: 'POST',
                     body,
                 });
-                // 生成后直接进入 AI 题库
+                // fall back to the hub if the detail fetch fails
                 sessionStorage.removeItem(cacheKey);
                 showToast(t('aiBank.toastGeneratedSaved'), 'success');
                 const justId = res.aiQuestionId ?? null;
@@ -232,7 +232,7 @@ export default function Task2PracticePage() {
         if (wordCount < 100) {
             showToast(t('practiceSandbox.toastTooShortTask2'), 'error');
         }
-        // mock：跳过结算浮层，直接落库回大厅（批改延迟到成绩单生成）
+        // go straight to the AI bank once generated
         if (mockId) {
             mockSubmitEssay();
             return;

@@ -1,15 +1,15 @@
 /**
- * useReactive — Vue 风格的 React 响应式工具
+ * useReactive - Vue-style reactivity helpers for React
  *
- * 核心 API:
- *   ref(initialValue)      → 类似 Vue ref，用 .value 读写
- *   reactive(initialObj)   → 类似 Vue reactive，直接读写属性
- *   useRefVal / useReactive → 在组件内订阅，自动触发重渲染
+ * Core API:
+ *   ref(initialValue)      -> like Vue's ref, read and write through .value
+ *   reactive(initialObj)   -> like Vue's reactive, read and write properties directly
+ *   useRefVal / useReactive -> subscribe inside a component and re-render automatically
  */
 
 import { useState, useEffect, useCallback } from 'react';
 
-// ─── 发布-订阅核心 ────────────────────────────────────────────────────────────
+// --- Publish/subscribe core -------------------------------------------------
 
 type Listener = () => void;
 
@@ -50,7 +50,7 @@ export interface Ref<T> {
 const storeMap = new WeakMap<object, Store>();
 
 /**
- * 在【组件外部】创建 ref（类似 Vue ref）
+ * Create a ref **outside** a component (like Vue's ref)
  * @example
  * const count = ref(0);
  * count.value++;
@@ -64,7 +64,7 @@ export function ref<T>(initialValue: T): Ref<T> {
 // ─── reactive ────────────────────────────────────────────────────────────────
 
 /**
- * 在【组件外部】创建响应式对象（类似 Vue reactive）
+ * Create a reactive object **outside** a component (like Vue's reactive)
  * @example
  * const user = reactive({ name: 'Alice', age: 18 });
  * user.name = 'Bob';
@@ -75,10 +75,10 @@ export function reactive<T extends object>(initialObj: T): T {
     return proxy;
 }
 
-// ─── 组件内订阅 hooks ─────────────────────────────────────────────────────────
+// --- In-component subscription hooks ----------------------------------------
 
 /**
- * 通用订阅 hook — 用 useState 强制 re-render
+ * Generic subscription hook - forces a re-render via useState
  */
 function useStore(obj: object) {
     const store = storeMap.get(obj);
@@ -93,7 +93,7 @@ function useStore(obj: object) {
 }
 
 /**
- * 订阅 ref，组件内使用
+ * Subscribe to a ref from inside a component
  * @example
  * const c = useRefVal(count);
  * return <span>{c.value}</span>;
@@ -104,7 +104,7 @@ export function useRefVal<T>(refObj: Ref<T>): Ref<T> {
 }
 
 /**
- * 订阅 reactive 对象，组件内使用
+ * Subscribe to a reactive object from inside a component
  * @example
  * const u = useReactive(user);
  * return <span>{u.name}</span>;

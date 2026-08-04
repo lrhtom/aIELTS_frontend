@@ -3,15 +3,15 @@ import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/confirm.css';
 
 export interface ConfirmOptions {
-    /** 主体提示文案（必填，应来自 i18n） */
+    /** The main message (required, and should come from i18n) */
     message: string;
-    /** 可选标题；不传则不渲染标题栏 */
+    /** Optional title; without it no title bar is rendered */
     title?: string;
-    /** 确认按钮文案，默认 t('common.confirm') */
+    /** Confirm button text, defaulting to t('common.confirm') */
     confirmText?: string;
-    /** 取消按钮文案，默认 t('common.cancel') */
+    /** Cancel button text, defaulting to t('common.cancel') */
     cancelText?: string;
-    /** 危险操作（删除/注销等）：确认按钮变红色 */
+    /** A destructive action (delete, close account, and so on): the confirm button turns red */
     danger?: boolean;
 }
 
@@ -20,13 +20,13 @@ type Resolver = (ok: boolean) => void;
 let openFn: ((opts: ConfirmOptions) => Promise<boolean>) | null = null;
 
 /**
- * 全局命令式确认弹窗，替代 window.confirm()。返回 Promise<boolean>。
+ * Global imperative confirm dialog replacing window.confirm(). Returns Promise<boolean>.
  *
  *   if (!(await showConfirm(t('xxx.deleteConfirm')))) return;
  *   if (await showConfirm({ message: t('xxx.deleteConfirm'), danger: true })) { ... }
  *
- * 使用独立作用域类名（at-confirm-*）+ 独立 confirm.css，全局自包含，不依赖页面级样式。
- * 容器未挂载时回退到原生 confirm，保证行为不丢失。
+ * Uses self-contained class names (at-confirm-*) plus its own confirm.css, so it depends on no page-level styling.
+ * Falls back to the native confirm when the container is not mounted, so the behaviour is never lost.
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export function showConfirm(options: ConfirmOptions | string): Promise<boolean> {
@@ -39,7 +39,7 @@ interface ActiveConfirm extends ConfirmOptions {
     resolve: Resolver;
 }
 
-/** 确认弹窗容器 —— 放在 App 根组件中（和 ToastContainer 并列） */
+/** Confirm dialog container - place it in the App root (alongside ToastContainer) */
 export default function ConfirmServiceContainer() {
     const { t } = useLang();
     const [active, setActive] = useState<ActiveConfirm | null>(null);
@@ -50,7 +50,7 @@ export default function ConfirmServiceContainer() {
     const open = useCallback((opts: ConfirmOptions) => {
         return new Promise<boolean>((resolve) => {
             setActive(prev => {
-                // 已有未决弹窗时，旧的按取消处理，避免 Promise 悬挂
+                // When a dialog is already pending, treat the old one as cancelled so its Promise does not hang
                 if (prev) prev.resolve(false);
                 return { ...opts, resolve };
             });
@@ -70,7 +70,7 @@ export default function ConfirmServiceContainer() {
         setTimeout(() => prevFocusRef.current?.focus(), 0);
     }, []);
 
-    // 打开时：记录焦点、锁定滚动、聚焦确认按钮
+    // On open: remember the focus, lock scrolling, focus the confirm button
     useEffect(() => {
         if (!active) return;
         prevFocusRef.current = document.activeElement as HTMLElement;
@@ -82,7 +82,7 @@ export default function ConfirmServiceContainer() {
         };
     }, [active]);
 
-    // 键盘：Esc 取消、Enter 确认、Tab 焦点陷阱
+    // Keyboard: Esc cancels, Enter confirms, Tab is trapped
     useEffect(() => {
         if (!active) return;
         const onKey = (e: KeyboardEvent) => {

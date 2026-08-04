@@ -208,9 +208,9 @@
 }
 
 .profile-accordion-body.open {
-    /* 管理菜单已有 8 个子项（~327px），300px 会把末项 Service Health 裁掉；
-       放宽到 600px 容纳当前全部并留出后续增项的余量。侧栏本身 overflow-y:auto，
-       手风琴偏高也只会让侧栏滚动，不撑破布局。 */
+    /* The admin menu already has 8 items (~327px), and 300px would clip the last one, Service Health;
+       widened to 600px to fit them all with room for future additions. The sidebar itself is overflow-y:auto,
+       so an over-tall accordion only makes the sidebar scroll rather than breaking the layout. */
     max-height: 600px;
     opacity: 1;
 }
@@ -645,7 +645,7 @@
     background: transparent;
 }
 
-/* 暗色/亮色模式均适配的 teal 层级颜色 */
+/* teal shades that work in both dark and light mode */
 .lc-dot.lc-lvl-0 {
     background: var(--color-border);
 }

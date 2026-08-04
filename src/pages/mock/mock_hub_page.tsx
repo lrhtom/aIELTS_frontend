@@ -1,6 +1,6 @@
-// 模拟考大厅 — 全套模拟的考试控制台。
-// 从上到下 4 行（听 → 读 → 写 → 说，顺序强制）+ 第 5 行成绩单。
-// 状态与计时以服务端为准（getMockDetail 返回 deadline / now），生成中每 6s 轮询。
+//so this pins to the bottom of the viewport no matter how long the explanations scroll.
+// Four rows top to bottom (listening -> reading -> writing -> speaking, order enforced) plus a fifth row for the score report.
+// State and timing come from the server (getMockDetail returns deadline / now); poll every 6s while generating.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
@@ -37,7 +37,7 @@ export default function MockHubPage() {
     const [detail, setDetail] = useState<MockDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
-    // 服务端时钟偏移：serverNow - clientNow，剩余时间一律用服务端时钟计算
+    // Server clock offset: serverNow - clientNow. Remaining time is always computed on the server clock
     const clockOffsetRef = useRef(0);
     const [, forceTick] = useState(0);
 
@@ -55,7 +55,7 @@ export default function MockHubPage() {
 
     useEffect(() => { reload(); }, [reload]);
 
-    // 生成中轮询 + in_progress 时每秒刷新剩余时间显示
+    // poll while generating, and refresh the remaining-time display every second while in_progress
     const anyGenerating = detail
         ? Object.values(detail.parts).some(p => p.genStatus === 'generating')
         : false;
@@ -82,13 +82,13 @@ export default function MockHubPage() {
         return new Date(deadline).getTime() - serverNow();
     };
 
-    // ── 各部分入口路由 ──
+    // -- Entry route for each section --
     const answerRoute = (part: MockExamPart, d: MockDetail): string | null => {
         const pv = d.parts[part];
         if (part === 'listening') return pv.child ? `/listening?bankId=${pv.child.id}&mockId=${d.id}` : null;
         if (part === 'reading') return pv.child ? `/reading?bankId=${pv.child.id}&mockId=${d.id}` : null;
         if (part === 'writing') {
-            // 写作进第一篇未提交的任务；两篇共用服务端 60 分钟计时，可经大厅互切
+            // Writing opens the first unsubmitted task; both share one 60-minute server timer and can be swapped via the hub
             const t1 = pv.task1;
             const t2 = pv.task2;
             if (t1 && !t1.isAnswered) {
@@ -101,7 +101,7 @@ export default function MockHubPage() {
             }
             return null;
         }
-        return null; // speaking 走专用启动流程
+        return null; // speaking goes through its own start flow
     };
 
     const startSpeaking = async (d: MockDetail) => {
@@ -111,7 +111,7 @@ export default function MockHubPage() {
             return;
         }
         const res = await ATInterceptor.bankGeneratePart1();
-        speakingStore.isChatAllowed = true; // 聊天页路由守卫要求显式放行
+        speakingStore.isChatAllowed = true; // the chat page's route guard needs to be let through explicitly
         navigate('/speaking/chat', {
             state: {
                 mode: 'fullTest',
@@ -186,7 +186,7 @@ export default function MockHubPage() {
         }
     };
 
-    // ── 成绩单 ──
+    // -- Score report --
     const allTerminal = detail
         ? detail.order.every(p => ['submitted', 'forfeited', 'expired'].includes(detail.parts[p].status))
         : false;
@@ -196,7 +196,7 @@ export default function MockHubPage() {
             const pv = d.parts[part];
             if (pv.status !== 'submitted') return 0;
             if (part === 'writing') {
-                // 雅思写作：Task 2 双倍权重
+                // IELTS writing: Task 2 carries double weight
                 return Math.round(((writingBands.t1 + 2 * writingBands.t2) / 3) * 10) / 10;
             }
             return pv.child?.band ?? 0;
@@ -211,9 +211,9 @@ export default function MockHubPage() {
         return { bands, overall };
     };
 
-    // 成绩单自动生成（四科全部结束后无需点击）。写作单科不再触发 AI 批改：
-    // 子行已有批改结果（用户写完自己批改过）就用批改分，否则默认用写作历史平均分，
-    // 没有历史数据按 0 计入。
+    // The score report generates itself (no click needed once all four sections are done). Writing alone no longer triggers
+    // AI marking: if the child row already has a correction (the user marked it themselves) use that score, otherwise fall
+    // back to the user's historical writing average, and count it as 0 when there is no history.
     const writingBandFor = (child: MockChildView | null | undefined, avg: number | null): number => {
         if (!child || !child.isAnswered) return 0;
         if (child.band != null) return child.band;
@@ -236,7 +236,7 @@ export default function MockHubPage() {
                         if (all.length > 0) {
                             avg = Math.round((all.reduce((s, r) => s + r.overall, 0) / all.length) * 10) / 10;
                         }
-                    } catch { /* 拿不到历史数据按无数据处理 */ }
+                    } catch { /* treat a failed history fetch as no data */ }
                     if (avg === null) showToast(t('mock.hub.report.noAvgData'), 'error');
                 }
                 t1 = writingBandFor(wv.task1, avg);
@@ -250,7 +250,7 @@ export default function MockHubPage() {
         }
     };
 
-    // 四科全部终态且还没有成绩单 → 自动生成一次
+    // all four sections final and no report yet -> generate one
     useEffect(() => {
         if (!detail || detail.report || autoFinalizeFiredRef.current) return;
         const done = detail.order.every(p => ['submitted', 'forfeited', 'expired'].includes(detail.parts[p].status));
@@ -260,7 +260,7 @@ export default function MockHubPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [detail]);
 
-    // ── 渲染 ──
+    // -- Render --
     const readyCount = useMemo(() => {
         if (!detail) return 0;
         return detail.order.filter(p => detail.parts[p].genStatus === 'ready').length;
@@ -331,7 +331,7 @@ export default function MockHubPage() {
                 </div>
             );
         } else if (status === 'submitted') {
-            // 真考规则：任何单科结果都要等四个部分全部结束后才能查看
+            // Real exam rule: no individual section result is viewable until all four sections have finished
             action = (
                 <div className="mock-row-actions">
                     <span className="mock-badge mock-badge-done">{t('mock.hub.status.submitted')}</span>
@@ -386,7 +386,7 @@ export default function MockHubPage() {
                 <div className="mock-part-list">
                     {detail.order.map(renderPartRow)}
 
-                    {/* ── 第 5 行：成绩单 ── */}
+                    {/* -- Row 5: score report -- */}
                     <div className={`mock-part-row mock-report-row ${allTerminal ? 'is-ready' : 'is-locked'}`}>
                         <div className="mock-part-icon">📋</div>
                         <div className="mock-part-info">
@@ -401,7 +401,7 @@ export default function MockHubPage() {
                             {report ? (
                                 <span className="mock-badge mock-badge-done">{t('mock.hub.report.overall')} {report.overall.toFixed(1)}</span>
                             ) : allTerminal ? (
-                                /* 四科结束自动生成，无需点击 */
+                                /* generated automatically once all four sections finish, no click needed */
                                 <span className="mock-badge mock-badge-timer">{t('mock.hub.report.autoGenerating')}</span>
                             ) : (
                                 <span className="mock-badge mock-badge-locked">🔒</span>
@@ -410,7 +410,7 @@ export default function MockHubPage() {
                     </div>
                 </div>
 
-                {/* ── 成绩单详情 ── */}
+                {/* -- Score report detail -- */}
                 {report && (
                     <div className="mock-report-card">
                         <h3>{t('mock.hub.report.title')}</h3>

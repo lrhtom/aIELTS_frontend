@@ -1,7 +1,7 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
 
 export const speakingChat = {
-  // 直接打开/刷新 /speaking/chat 但没有进行中的会话时的落地文案
+  // Landing copy for opening or refreshing /speaking/chat with no session in progress
   noSessionTitle: '当前没有进行中的口语练习',
   noSessionDesc: '口语练习需要从配置页开始。直接打开这个网址不会自动开启会话；你也可以从题库打开一次已保存的练习。',
   noSessionGoConfig: '去开始口语练习',

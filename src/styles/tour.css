@@ -1,6 +1,6 @@
-/* ─── 向导模式（TourGuide）───
- * 层级：blocker/spotlight 30000 < tooltip 30001。
- * 压过助手球(12000)、导航(1000)，仍低于 toast(99999)。 */
+/* --- Tour guide mode (TourGuide) ---
+ * Stacking: blocker/spotlight 30000 < tooltip 30001.
+ * Above the assistant ball (12000) and the navbar (1000), still below toast (99999). */
 
 .tour-root {
     position: fixed;
@@ -9,14 +9,14 @@
     pointer-events: none;
 }
 
-/* 点击拦截：挡住页面交互；自身不可滚动 → 滚轮事件链回文档，页面仍可滚 */
+/* Click blocker: blocks page interaction; it does not scroll itself, so wheel events chain back to the document and the page still scrolls */
 .tour-blocker {
     position: fixed;
     inset: 0;
     pointer-events: auto;
 }
 
-/* spotlight：透明洞，巨型阴影压暗其余区域 */
+/* spotlight: a transparent hole with a huge shadow dimming everything else */
 .tour-spotlight {
     position: fixed;
     border-radius: 14px;
@@ -27,7 +27,7 @@
     pointer-events: none;
 }
 
-/* 无目标元素时的整屏压暗（居中卡片模式） */
+/* full-screen dimming when there is no target element (centred card mode) */
 .tour-dim {
     position: fixed;
     inset: 0;
@@ -54,7 +54,7 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 居中模式下 transform 被内联样式占用，禁用入场位移动画避免覆盖 */
+/* in centred mode transform is taken by an inline style, so disable the entrance translation to avoid overriding it */
 .tour-tooltip.centered {
     animation: none;
 }
@@ -168,7 +168,7 @@
     outline-offset: 2px;
 }
 
-/* ─── 主页启动按钮 ─── */
+/* --- Home page launch button --- */
 .tour-start-btn {
     display: inline-flex;
     align-items: center;
@@ -189,7 +189,7 @@
     color: #fff;
 }
 
-/* 未看过导览时的呼吸提示点 */
+/* the breathing hint dot shown before the tour has been taken */
 .tour-start-btn .tour-pulse-dot {
     width: 8px;
     height: 8px;

@@ -1,30 +1,30 @@
 /**
- * 统一前端发音工具
+ * Unified frontend pronunciation helper
  *
- * 策略：有道词典真人发音优先 → speechSynthesis fallback
- * 有道词典 TTS 质量远超浏览器原生合成音，接近真人录音水平。
+ * Strategy: prefer Youdao Dictionary's human recordings, fall back to speechSynthesis
+ * Youdao's TTS quality is far above the browser's native synthesis and is close to a real recording.
  */
 
 const YOUDAO_TTS_URL = 'https://dict.youdao.com/dictvoice';
 
-/** 当前正在播放的 Audio 实例 */
+/** the Audio instance currently playing */
 let currentAudio: HTMLAudioElement | null = null;
 
 export interface SpeakWordOptions {
-    /** 口音：uk 英式（默认） / us 美式 */
+    /** accent: uk British (default) / us American */
     accent?: 'uk' | 'us';
-    /** 开始播放时回调 */
+    /** called when playback starts */
     onStart?: () => void;
-    /** 播放完毕回调 */
+    /** called when playback finishes */
     onEnd?: () => void;
-    /** 播放失败回调 */
+    /** called when playback fails */
     onError?: () => void;
 }
 
 /**
- * 朗读英文单词/短语
+ * Speak an English word or phrase.
  *
- * 优先使用有道词典高质量发音，网络失败时 fallback 到浏览器原生 speechSynthesis。
+ * Prefers Youdao's high-quality recording and falls back to the browser's native speechSynthesis on a network failure.
  */
 export function speakWord(word: string, options?: SpeakWordOptions): void {
     const trimmed = word.trim();
@@ -51,16 +51,16 @@ export function speakWord(word: string, options?: SpeakWordOptions): void {
             onStart?.();
         })
         .catch(() => {
-            // 有道请求失败 → fallback 到浏览器原生
+            // the Youdao request failed -> fall back to the browser's native voice
             if (currentAudio === audio) currentAudio = null;
             _fallbackSpeak(trimmed, accent, { onStart, onEnd, onError });
         });
 }
 
 /**
- * 朗读任意文本（中文、长句等不适合有道词典的场景）
+ * Speak arbitrary text (Chinese, long sentences, and anything else Youdao is unsuited to).
  *
- * 使用浏览器原生 speechSynthesis。
+ * Uses the browser's native speechSynthesis.
  */
 export function speakText(text: string, lang: string = 'en-US'): void {
     const trimmed = text.trim();
@@ -76,7 +76,7 @@ export function speakText(text: string, lang: string = 'en-US'): void {
 }
 
 /**
- * 取消所有正在进行的发音
+ * Cancel any pronunciation in progress
  */
 export function cancelSpeak(): void {
     if (currentAudio) {
@@ -89,7 +89,7 @@ export function cancelSpeak(): void {
     }
 }
 
-/* ── 内部 fallback ─────────────────────────────────────────────────────── */
+/* -- Internal fallback ------------------------------------------------- */
 
 function _fallbackSpeak(
     text: string,

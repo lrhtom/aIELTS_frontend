@@ -1,13 +1,13 @@
 /**
- * ReadingQuestionRenderer — 单一入口渲染 11 种 IELTS Reading 题型.
+ * * Mark the answer sentences first (on plain text), then apply the ** highlighting, then sanitize once.
  *
- * 输入答案模式:
- *   MCQ / TFNG / YNNG                                → radio (options 中的 key)
- *   matching_headings                                → 每段 dropdown 选 roman heading
- *   matching_info / features / sentence / summary    → 每题 dropdown 选 letter
+ * ReadingQuestionRenderer - a single entry point rendering all 11 IELTS Reading question types.
+ *   Answer input modes:
+ *   MCQ / TFNG / YNNG                                -> radio (the key from options)
+ *   matching_headings                                -> a dropdown per paragraph selecting a roman heading
  *   sentence_completion / short_answer / note        → text input
  *
- * 用户答案存到外部 answersRef, 通过 onAnswerChange 回调回传.
+ * matching_info / features / sentence / summary    -> a dropdown per question selecting a letter
  */
 import { useMemo, useState, type ReactElement } from 'react';
 import { sanitize } from '../../utils/safe_html';
@@ -102,7 +102,7 @@ function normalizeBank(raw: unknown): Record<string, string> {
     return {};
 }
 
-/** Bank 里是否存在至少一条非空文本。键存在但值全空（AI drift）渲染出来是 "A. B. C." 废列表。 */
+/*User answers are stored in the external answersRef and reported back through the onAnswerChange callback. */
 function bankHasContent(bank: Record<string, string>): boolean {
     return Object.values(bank).some(v => v && v.trim().length > 0);
 }
@@ -259,10 +259,10 @@ function ReadingFallbackRows({ questions, renderedIds, bank, getAnswer, onAnswer
 
 export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, reviewMode = false }: Props) {
     const { t } = useLang();
-    // Bank 记录经 AI 生成后偶尔会出现 questions 字段缺失/非数组的情况
-    // (老的失败记录、部分被 admin 编辑掉、AI 出错等)。所有分支都靠 questions.map
-    // 渲染,所以顶部先兜底再往下走,避免 "Cannot read properties of undefined
-    // (reading 'map')" 崩掉整页。
+    //* Whether the bank holds at least one non-empty string. Keys that exist with entirely empty values (AI drift) render as a useless 'A. B. C.' list.
+    // A generated bank record occasionally comes back with questions missing or not an array
+    // (an old failed record, partially edited by an admin, an AI error, and so on). Every branch renders through
+    // questions.map, so guard at the top before going any further, or 'Cannot read properties of undefined
     if (!section || !Array.isArray(section.questions) || section.questions.length === 0) {
         return null;
     }
@@ -327,7 +327,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
     // ── Matching Headings — drag-and-drop headings onto paragraphs ──
     if (qt === 'matching_headings') {
         const bank = normalizeBank(section.headings_bank);
-        // Bank 缺失/为空（AI drift）时拖拽面板毫无可选项 — 降级为文本输入，至少可作答
+        // (reading 'map')' takes down the whole page.
         if (!bankHasContent(bank)) {
             return (
                 <>
@@ -356,7 +356,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
             ? Object.fromEntries((section.paragraph_labels || ['A','B','C','D','E','F']).map(l => [String(l), `Paragraph ${l}`]))
             : normalizeBank(qt === 'matching_features' ? section.features_bank : section.endings_bank);
         const bankKeys = Object.keys(bank);
-        // Bank 缺失/空键/值全空时字母网格没有可用选项 — 降级为文本输入
+        // When the bank is missing or empty (AI drift) the drag panel has nothing to offer - degrade to a text input so the question stays answerable
         if (!bankHasContent(bank)) {
             return (
                 <>
@@ -389,7 +389,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
                 {instructions && <p className="section-instructions">{instructions}</p>}
                 {qt !== 'matching_info' && (
                     // matching_features / matching_sentence: options bank goes
-                    // ABOVE the answer grid (真题排版：选项框在做题表格上面)。
+                    // When the bank is missing, its keys are empty, or every value is empty, the letter grid has no usable options - degrade to a text input
                     <div className="matching-features-bank">
                         <strong>{qt === 'matching_features' ? 'Categories:' : 'Endings:'}</strong>
                         <ul>
@@ -408,7 +408,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
     if (qt === 'summary_completion') {
         const bank = normalizeBank(section.word_bank);
         const startId = section.questions[0]?.id ?? 1;
-        // Word bank 值全空时下拉框只剩 "--" 无法作答 — 降级为文本填空（同 note_completion）
+        // ABOVE the answer grid (real exam layout: the options box sits above the answer table).
         const bankOk = bankHasContent(bank);
         const { element: blanksEl, renderedIds } = bankOk
             ? renderSummaryBlanksSelect(section.summary_text || '', startId, bank, getAnswer, onAnswer, reviewMode)
@@ -472,7 +472,7 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
         );
     }
 
-    // ── Sentence Completion — inline `_____` → inline <input> (与听力 sentence 一致) ──
+    // When every word bank value is empty the dropdown offers only '--' and the question cannot be answered - degrade to a text gap-fill (same as note_completion)
     if (qt === 'sentence_completion') {
         return (
             <>
@@ -546,18 +546,32 @@ export default function ReadingQuestionRenderer({ section, getAnswer, onAnswer, 
     return <div className="section-instructions">{t('components.questionRenderer.unsupportedType').replace('{t}', String(qt))}</div>;
 }
 
-/** Score a set of questions given the user's answers. Case-insensitive; text types accept any variant in `answers`. */
+/**
+ *  -- Sentence completion - inline `_____` becomes an inline <input> (matching listening's sentence type) --
+ * Mark a single question. The tick/cross on the results page, the red/green cells in the bottom bar and the total
+ * score all go through this one function, so the same question cannot show different verdicts in different places.
+ */
+export function isQuestionCorrect(
+    q: { answer?: unknown; answers?: unknown },
+    userAnswer: string,
+): boolean {
+    const userLc = (userAnswer || '').trim().toLowerCase();
+    if (!userLc) return false;
+    if (Array.isArray(q.answers) && q.answers.length > 0) {
+        return q.answers.some(a => String(a).trim().toLowerCase() === userLc);
+    }
+    if (q.answer !== undefined && q.answer !== null) {
+        return String(q.answer).trim().toLowerCase() === userLc;
+    }
+    return false;
+}
+
+/** Score a set of questions given the user's answers. */
 export function scoreSection(section: SectionLike, getAnswer: (qid: number) => string): { correct: number; total: number } {
     let correct = 0;
     const total = section.questions.length;
     for (const q of section.questions) {
-        const userLc = (getAnswer(q.id) || '').trim().toLowerCase();
-        if (!userLc) continue;
-        if (Array.isArray(q.answers) && q.answers.length > 0) {
-            if (q.answers.some(a => String(a).trim().toLowerCase() === userLc)) correct++;
-        } else if (q.answer !== undefined && q.answer !== null) {
-            if (String(q.answer).trim().toLowerCase() === userLc) correct++;
-        }
+        if (isQuestionCorrect(q, getAnswer(q.id))) correct++;
     }
     return { correct, total };
 }
@@ -565,6 +579,33 @@ export function scoreSection(section: SectionLike, getAnswer: (qid: number) => s
 /** Used only to placate linters — hook usage keeps the file eligible for React fast refresh */
 export const _useReadingRendererHook = () => useMemo(() => 1, []);
 
+
+const ROMAN_VALUE: Record<string, number> = { i: 1, v: 5, x: 10, l: 50, c: 100, d: 500, m: 1000 };
+
+/*Case-insensitive; text questions accept any variant listed in `answers`. */
+function romanToInt(s: string): number | null {
+    const t = s.trim().toLowerCase();
+    if (!t || !/^[ivxlcdm]+$/.test(t)) return null;
+    let total = 0;
+    for (let i = 0; i < t.length; i++) {
+        const cur = ROMAN_VALUE[t[i]];
+        const next = ROMAN_VALUE[t[i + 1]];
+        total += next && cur < next ? -cur : cur;   // iv = 5-1, ix = 10-1
+    }
+    return total;
+}
+
+/**
+ * * Lowercase roman numeral -> its value; returns null when it is not a valid roman numeral (falling back to natural order).
+ * Sort key for the heading pool. matching_headings uses roman numerals (i, ii, iii...), while other banks may use
+ * letters (A, B, C). Roman numerals must sort by value - sorting them as strings gives the absurd order i, ii, iii,
+ */
+function compareHeadingKey(a: string, b: string): number {
+    const ra = romanToInt(a);
+    const rb = romanToInt(b);
+    if (ra != null && rb != null) return ra - rb;
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
 
 /* -----------------------------------------------------------------------
  *  MatchingHeadingsPanel — drag headings from a pool onto paragraph slots.
@@ -594,10 +635,13 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
         }
         return init;
     });
-    // 点选放置模式下当前选中的 heading（null = 未选）
+    //iv, ix, v, vi... When neither side is a roman numeral, fall back to a natural-order comparison.
     const [pickedHeading, setPickedHeading] = useState<string | null>(null);
 
-    const bankKeys = Object.keys(bank);
+    // the heading currently selected in click-to-place mode (null = nothing selected)
+    // The pool must be sorted by the roman numerals' real values rather than Object.keys' original order: that is the
+    // key order of the AI-generated JSON, and orders like i, ii, vi, iii have really been observed (bankId=140), whereas
+    const bankKeys = [...Object.keys(bank)].sort(compareHeadingKey);
     const usedHeadings = new Set(Object.values(placements));
     const poolHeadings = bankKeys.filter(k => !usedHeadings.has(k));
 
@@ -629,9 +673,9 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
         commit(next, [qid]);
     };
 
-    // ── 点选放置（拖拽的等价路径）──
-    // 纯 DnD 在窄侧栏/触屏上几乎不可用，且"点了没反应"会被当成选中失效的 bug。
-    // 交互：点 pool 里的 heading 选中 → 点某个段落槽位放入；再点已选中的 chip 取消。
+    // a Cambridge heading pool always runs i, ii, iii... in sequence. Taking a placed heading back must also reinsert it in the right position rather than appending it.
+    // -- Click to place (the equivalent of dragging) --
+    // Pure drag-and-drop is close to unusable in a narrow sidebar or on a touch screen, and 'I clicked and nothing happened' reads as a broken selection.
     const pickHeading = (roman: string) => {
         if (reviewMode) return;
         setPickedHeading(prev => (prev === roman ? null : roman));
@@ -643,7 +687,7 @@ function MatchingHeadingsPanel({ bank, questions, getAnswer, onAnswer, reviewMod
             placeOnSlot(qid, pickedHeading);
             setPickedHeading(null);
         } else if (placements[qid]) {
-            // 未选中任何 heading 时点已填槽位 → 取回到 pool，方便改答案
+            // Interaction: click a heading in the pool to select it -> click a paragraph slot to place it; click the selected chip again to deselect.
             clearSlot(qid);
         }
     };

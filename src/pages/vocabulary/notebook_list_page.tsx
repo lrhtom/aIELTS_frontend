@@ -55,10 +55,10 @@ export default function NotebookListPage() {
             .finally(() => setLoading(false));
     }, [t]);
 
-    /* ── 打开新建弹窗 ── */
+    /* Cold start or refresh with no cards: render a landing page rather than navigating away silently (a silent redirect is what the user experiences as a crash) */
     const openCreate = () => setModal({ ...DEFAULT_MODAL });
 
-    /* ── 打开编辑弹窗 ── */
+    /* -- open the create dialog -- */
     const openEdit = (e: React.MouseEvent, nb: Notebook) => {
         e.stopPropagation();
         setModal({
@@ -71,7 +71,7 @@ export default function NotebookListPage() {
         });
     };
 
-    /* ── 删除笔记本 ── */
+    /* -- open the edit dialog -- */
     const handleDelete = async (e: React.MouseEvent, nb: Notebook) => {
         e.stopPropagation();
         if (!(await showConfirm({ message: t('vocab.notebooks.msgDeleteConfirm').replace('{title}', nb.title), danger: true }))) return;
@@ -84,7 +84,7 @@ export default function NotebookListPage() {
         }
     };
 
-    /* ── 提交弹窗 ── */
+    /* -- delete a notebook -- */
     const handleSubmit = async () => {
         if (!modal) return;
         if (!modal.title.trim()) { showToast(t('vocab.notebooks.msgTitleRequired'), 'error'); return; }
@@ -127,7 +127,7 @@ export default function NotebookListPage() {
     backText={`${t('common.back')} ${t('vocab.hub.title')}`}
 >
             <div className="config-page-wrap">
-                {/* 新建按钮 */}
+                {/* -- submit the dialog -- */}
                 <div className="config-card" style={{ paddingBottom: '16px' }}>
                     <button
                         className="skill-btn reading"
@@ -143,7 +143,7 @@ export default function NotebookListPage() {
                     )}
                 </div>
 
-                {/* 笔记本网格 */}
+                {/* create button */}
                 <div className="config-card">
                     {loading ? (
                         <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '20px 0' }}>{t('common.loading')}</p>
@@ -192,7 +192,7 @@ export default function NotebookListPage() {
                 </div>
             </div>
 
-            {/* ── 新建/编辑弹窗 ── */}
+            {/* notebook grid */}
             {modal && (
                 <div className="modal-overlay" onClick={() => !saving && setModal(null)}>
                     <div className="modal-box" onClick={e => e.stopPropagation()}>

@@ -32,7 +32,7 @@ export const avatarApi = {
     },
 
     validateImageFile: (file: File): { isValid: boolean; error?: string } => {
-        // 检查文件类型
+        // check the file type
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
             return {
@@ -41,7 +41,7 @@ export const avatarApi = {
             };
         }
 
-        // 检查文件大小 (5MB限制)
+        // check the file size (5MB limit)
         const maxSize = 5 * 1024 * 1024; // 5MB
         if (file.size > maxSize) {
             return {
@@ -53,7 +53,7 @@ export const avatarApi = {
         return { isValid: true };
     },
 
-    // 将文件转换为Base64用于预览
+    // convert the file to Base64 for the preview
     fileToBase64: (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();

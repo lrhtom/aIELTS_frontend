@@ -1,5 +1,5 @@
-// word_selection_store — 仅导出词汇输入的初始值（localStorage 读取）
-// 页面组件中用 useState 管理
+// word_selection_store - only exports the initial value of the vocabulary input (read from localStorage)
+// the page component manages it with useState
 export function getInitialVocabInput(): string {
     return localStorage.getItem('ielts_target_vocab') ?? '';
 }

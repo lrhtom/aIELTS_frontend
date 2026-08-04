@@ -13,7 +13,7 @@ interface SurveyAnswers {
     otherComments: string;
 }
 
-/** 后端 /survey/mine 返回的单条作答（SurveySerializer 的字段） */
+/** One stored response as returned by the backend's /survey/mine (the fields of SurveySerializer) */
 interface SurveyRecord {
     id: number;
     prep_duration: string;
@@ -22,14 +22,14 @@ interface SurveyRecord {
     improvements: string;
     other_comments: string;
     created_at: string;
-    [k: string]: unknown;   // q_* 评分字段
+    [k: string]: unknown;   // the q_* rating fields
 }
 
 const PREP_OPTIONS = ['lt1m', '1to3m', '3to6m', '6mplus'] as const;
 const BAND_OPTIONS = ['5.5-6.0', '6.5', '7.0', '7.5+'] as const;
 
-// 后端 snake_case 字段 ↔ i18n 短键（profile.survey.b.<key>）。
-// 顺序即问卷第 3–10 题顺序，UserSurvey 与 AdminSurvey 共用同一映射约定。
+// Backend snake_case field <-> i18n short key (profile.survey.b.<key>).
+// The order is that of questions 3-10 in the survey; UserSurvey and AdminSurvey share this mapping convention.
 const RATING_FIELDS = [
     { field: 'q_all_skills', key: 'allSkills' },
     { field: 'q_reading_relevant', key: 'readingRelevant' },
@@ -50,16 +50,16 @@ export default function UserSurvey() {
     const [improvements, setImprovements] = useState('');
     const [otherComments, setOtherComments] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    // 已存在的作答（服务端），null = 从没填过。有它就直接展示结果页。
+    // An existing response from the server; null = never filled in. When present, go straight to the results page.
     const [record, setRecord] = useState<SurveyRecord | null>(null);
     const [submitCount, setSubmitCount] = useState(0);
     const [loadingMine, setLoadingMine] = useState(true);
-    // 是否强制显示表单（用户点了「重新填写」）
+    // Whether to force the form to show (the user clicked 'fill in again')
     const [editing, setEditing] = useState(false);
-    // 本次刚提交完（结果页顶部显示 🎉 而不是"你已填写过"）
+    // Just submitted (the results page shows a celebration rather than 'you have already filled this in')
     const [justSubmitted, setJustSubmitted] = useState(false);
 
-    // PNG 导出（复用 speaking_summary 的 html2canvas 写法：截图 → 下载 + 复制剪贴板）
+    // PNG export (reusing speaking_summary's html2canvas approach: screenshot -> download + copy to clipboard)
     const questionsRef = useRef<HTMLDivElement>(null);
     const answersRef = useRef<HTMLDivElement>(null);
     const [exporting, setExporting] = useState<'q' | 'a' | null>(null);
@@ -84,7 +84,7 @@ export default function UserSurvey() {
             URL.revokeObjectURL(url);
             try {
                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            } catch { /* 部分浏览器不支持写图片剪贴板，静默忽略 */ }
+            } catch { /* some browsers cannot write images to the clipboard, ignore silently */ }
             toast.success(t('common.saved'));
         } catch (err) {
             console.error('Export PNG failed', err);
@@ -97,7 +97,7 @@ export default function UserSurvey() {
     const setRating = (field: string, value: number) =>
         setRatings(prev => ({ ...prev, [field]: value }));
 
-    // 服务端记录 → 前端作答结构（snake_case → 组件内用的形状）
+    // server record -> frontend response structure (snake_case -> the shape the component uses)
     const recordToAnswers = useCallback((r: SurveyRecord): SurveyAnswers => {
         const ratingMap: Record<string, number> = {};
         RATING_FIELDS.forEach(({ field }) => {
@@ -114,7 +114,7 @@ export default function UserSurvey() {
         };
     }, []);
 
-    // 进页面先查"我填过没"，填过就直接进结果页
+    // On entering the page, check whether the user has already responded and go straight to the results page if so
     useEffect(() => {
         let alive = true;
         (async () => {
@@ -124,7 +124,7 @@ export default function UserSurvey() {
                 setRecord(res.data?.latest ?? null);
                 setSubmitCount(res.data?.count ?? 0);
             } catch (err) {
-                // 查不到不阻塞填写，退化成空白表单
+                // a failed lookup must not block filling it in; degrade to a blank form
                 console.error('Load my survey failed:', err);
             } finally {
                 if (alive) setLoadingMine(false);
@@ -133,7 +133,7 @@ export default function UserSurvey() {
         return () => { alive = false; };
     }, []);
 
-    // 「重新填写」：用上次作答预填表单，改完提交会新增一条记录（保留历史）
+    // 'Fill in again': prefill the form from the last response, and submitting adds a new record (keeping the history)
     const startEditing = () => {
         if (record) {
             const a = recordToAnswers(record);
@@ -150,7 +150,7 @@ export default function UserSurvey() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Part B（第 3–10 题）全部必填、范围 1–5。Part A / Part C 可选。
+        // Part B (questions 3-10) is entirely required, range 1-5. Parts A and C are optional.
         const allRated = RATING_FIELDS.every(({ field }) => {
             const v = ratings[field];
             return v >= 1 && v <= 5;
@@ -171,7 +171,7 @@ export default function UserSurvey() {
             };
             RATING_FIELDS.forEach(({ field }) => { payload[field] = ratings[field]; });
             const res = await apiClient.post('/survey/submit', payload);
-            // 直接拿后端回写的这条记录当结果页数据源（含 id / created_at）
+            // Use the record the backend echoed back as the results-page data source (it carries id and created_at)
             setRecord(res.data as SurveyRecord);
             setSubmitCount(c => c + 1);
             setJustSubmitted(true);
@@ -184,13 +184,13 @@ export default function UserSurvey() {
         }
     };
 
-    // 结果页/导出用已落库的那条；正在填写时用表单里的当前值
+    // The results page and export use the stored record; while filling in, use the form's current values
     const answersView: SurveyAnswers = record && !editing
         ? recordToAnswers(record)
         : { prepDuration, targetBand, ratings, mostUseful, improvements, otherComments };
     const submittedAt = record?.created_at ? record.created_at.slice(0, 10) : today;
 
-    // 离屏可打印节点：题目（空白问卷）+ 我的作答，均为 html2canvas 截图源
+    // Offscreen printable nodes: the questions (a blank survey) and my responses, both html2canvas sources
     const printNodes = (
         <div className="survey-print-offscreen" aria-hidden="true">
             <div ref={questionsRef} className="survey-print">
@@ -279,7 +279,7 @@ export default function UserSurvey() {
         );
     }
 
-    // 已填过 且 没在重新填写 → 直接展示上次作答
+    // Already responded and not re-filling -> show the previous response directly
     if (record && !editing) {
         return (
             <div className="user-survey">
@@ -318,7 +318,7 @@ export default function UserSurvey() {
                         </div>
                     </div>
 
-                    {/* Part B —— 评分用只读的 1-5 点亮展示 */}
+                    {/* Part B - ratings shown read-only as lit 1-5 dots */}
                     <div className="survey-result-section">
                         <h4>{t('profile.survey.partBEvaluation')}</h4>
                         {RATING_FIELDS.map(({ field, key }) => (

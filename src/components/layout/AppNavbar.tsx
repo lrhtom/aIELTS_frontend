@@ -57,7 +57,7 @@ export default function AppNavbar({ onToggleSidebar, pageTitle, pageSubtitle, ti
             content = `🎯 Target ${score}`;
         }
         
-        // Remove trailing " | Target " or " | 目标 分" if score was empty
+        // Remove a trailing ' | Target ' if the score was empty
         if (!score) {
             content = content.replace(' | Target ', '').replace(' | 目标  分', '');
         }

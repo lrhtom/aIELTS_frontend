@@ -1,4 +1,4 @@
-/* ─── 练习入口页 + AI技能选择页 共用样式 ──────────────────────────────── */
+/* --- Shared styles for the practice hub and the AI skill picker ------------ */
 
 .practice-hub {
     min-height: 100vh;
@@ -45,7 +45,7 @@
     font-size: 15px;
 }
 
-/* ─── 练习模式卡片（原题 / AI） ───────────────────────────────────────── */
+/* --- Practice mode cards (past papers / AI) ------------------------------- */
 
 .mode-cards {
     display: grid;
@@ -103,7 +103,7 @@
     box-shadow: 0 8px 30px rgba(13, 148, 136, 0.15);
 }
 
-/* ─── AI 技能选择页 4 宫格 ──────────────────────────────────────────── */
+/* --- AI skill picker, 4-up grid ------------------------------------------- */
 
 .skill-grid {
     display: grid;
@@ -192,7 +192,7 @@
     margin-top: 8px;
 }
 
-/* ─── 响应式 ──────────────────────────────────────────────────────────── */
+/* --- Responsive ------------------------------------------------------ */
 
 @media (max-width: 640px) {
     .practice-hub-container {
@@ -293,7 +293,7 @@
     color: #fff;
 }
 
-/* 鈹€鈹€鈹€ BENTO BOX PREMIUM REDESIGN 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
+/* --- BENTO BOX PREMIUM REDESIGN ------------------------------------------- */
 
 .practice-hub-container {
     max-width: 900px; /* Widened for bento layout */
@@ -311,9 +311,9 @@
 
 .bento-card {
     position: relative;
-    /* 去掉 backdrop-filter: blur(20px)：同屏 7 张卡的实时背景模糊每帧重算，
-       与常驻助手球的无限 box-shadow 重绘叠加会造成本页持续卡顿。改用更实的
-       半透明底色，视觉几乎无差别但零逐帧模糊开销。 */
+    /* Dropped backdrop-filter: blur(20px): live background blur on 7 cards at once is recomputed every frame,
+       and combined with the repaints from the always-present assistant ball's infinite box-shadow it made this page
+       stutter continuously. A more opaque translucent fill looks almost identical with zero per-frame blur cost. */
     background: rgba(255, 255, 255, 0.82);
     border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 24px;
@@ -458,7 +458,7 @@
 .bento-speaking { --glow-color: #f97316; } /* Orange */
 .bento-writing { --glow-color: #3b82f6; } /* Blue */
 .bento-bank { --glow-color: #ec4899; } /* Pink */
-.bento-mock { --glow-color: #0d9488; } /* Teal — 全套模拟 */
+.bento-mock { --glow-color: #0d9488; } /* Teal - full mock */
 .bento-others { --glow-color: #64748b; } /* Slate */
 
 /* Hover Effects */

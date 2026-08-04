@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
 
 export const readingConfig = {
   backToAI: '返回 AI 练习',
@@ -155,7 +155,7 @@ export const readingDetails = {
   showTargets: '显示目标词',
   submitConfirm: '您还有未完成的题目，确定要交卷吗？',
   writingPassage: 'AI 正在为您编写雅思阅读文章...',
-  // 直接打开/刷新 /reading 但没有出题配置时的落地文案
+  // Landing copy for opening or refreshing /reading with no generation config
   noConfigTitle: '还没有可做的阅读题',
   noConfigDesc: '阅读练习需要先在配置页选好词汇、难度和题型再生成。直接打开这个网址不会自动出题，以免误消耗 AT。',
   noConfigGoConfig: '去配置并生成',

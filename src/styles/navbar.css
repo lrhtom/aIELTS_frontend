@@ -1,4 +1,4 @@
-/* 导航栏基础样式 */
+/* Navbar base styles */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -18,7 +18,7 @@
     box-shadow: none;
 }
 
-/* 打开侧边栏按钮 */
+/* open-sidebar button */
 .sidebar-open-btn {
     width: 40px;
     height: 40px;
@@ -39,7 +39,7 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
 
-/* 汉堡菜单图标 */
+/* hamburger menu icon */
 .hamburger-icon {
     width: 24px;
     height: 24px;
@@ -167,7 +167,7 @@
     align-items: center;
 }
 
-/* 导航链接居中 (保留旧类名避免破坏) */
+/* centred navigation links (old class names kept so nothing breaks) */
 .navbar-links {
     display: flex;
     gap: 32px;
@@ -199,7 +199,7 @@
     border-radius: 2px;
 }
 
-/* 右侧鉴权区 */
+/* auth area on the right */
 .navbar-auth {
     display: flex;
     align-items: center;
@@ -212,7 +212,7 @@
     gap: 16px;
 }
 
-/* 用户头像样式 */
+/* user avatar styling */
 .user-avatar {
     display: inline-flex;
     align-items: center;
@@ -250,7 +250,7 @@
     letter-spacing: 0;
 }
 
-/* 透明模糊背景效果 - 用于没有头像的情况 */
+/* translucent blurred background - used when there is no avatar */
 .avatar-placeholder {
     position: relative;
     overflow: hidden;
@@ -275,7 +275,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* 按钮样式 */
+/* button styling */
 .auth-btn {
     padding: 8px 20px;
     border-radius: 8px;
@@ -309,7 +309,7 @@
     transform: translateY(-1px);
 }
 
-/* 响应式调整 */
+/* responsive adjustments */
 @media (max-width: 768px) {
     .navbar {
         padding: 12px 20px;

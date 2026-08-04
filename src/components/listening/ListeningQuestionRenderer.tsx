@@ -1,8 +1,8 @@
 /**
- * ListeningQuestionRenderer — 渲染 5 种 v2 新题型 (form / table / flowchart / matching / short_answer).
- * 现有 4 种 (article / sentence / multiple_choice / map) 沿用 listening_page.tsx 内部现有渲染, 未走此组件.
+ *  Clicking a filled slot with no heading selected takes it back to the pool, making it easy to change an answer
+ * ListeningQuestionRenderer - renders the 5 new v2 question types (form / table / flowchart / matching / short_answer).
  *
- * 数据模型: 每题的答案在外部 answersRef 中, 通过 getAnswer/onAnswer 读写.
+ * The existing 4 (article / sentence / multiple_choice / map) keep the rendering inside listening_page.tsx and do not go through this component.
  */
 import type { ReactElement } from 'react';
 import type {
@@ -75,7 +75,7 @@ function renderStructuredWithBlanks(
     onAnswer: (qid: number, v: string) => void,
     disabled: boolean,
 ): { element: ReactElement; renderedIds: Set<number> } {
-    // 与阅读 note_completion / summary_completion 共用 .rd-inline-blank-block / .rd-blank-* 样式
+    //Data model: each question's answer lives in the external answersRef, read and written through getAnswer/onAnswer.
     const parts = content.split(/(\(\d+\)\s*_+)/g);
     const renderedIds = new Set<number>();
     const element = (
@@ -280,7 +280,7 @@ export function MatchingRenderer({ data, getAnswer, onAnswer, reviewMode = false
     const bank = normalizeBank(data.options_bank);
     const bankKeys = Object.keys(bank);
     const questions = Array.isArray(data.questions) ? data.questions : [];
-    // Bank 缺失/空键/值全空（AI drift）时字母网格没有可用选项 — 降级为文本输入，至少可作答
+    // Shares the .rd-inline-blank-block / .rd-blank-* styling with reading's note_completion / summary_completion
     if (!bankKeys.some(k => bank[k] && bank[k].trim().length > 0)) {
         return (
             <div className="listening-matching-block">
@@ -298,7 +298,7 @@ export function MatchingRenderer({ data, getAnswer, onAnswer, reviewMode = false
     return (
         <div className="listening-matching-block">
             {data.matching_intro && <p className="section-instructions">{data.matching_intro}</p>}
-            {/* Layout rule: options bank ABOVE the answer grid (选项框在做题表格上面) */}
+            {/* When the bank is missing, its keys are empty, or every value is empty (AI drift), the letter grid has no usable options - degrade to a text input so the question stays answerable */}
             <div className="matching-features-bank">
                 <strong>Options:</strong>
                 <ul>

@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— vocab 子命名空间。
+// Chinese copy (the type source of truth) - the vocab sub-namespace.
 
 export const flashcardDoing = {
   toastCopyEmpty: '请先输入抄写内容',
@@ -11,6 +11,9 @@ export const flashcardDoing = {
   statRated: '累计评分',
   statTimesUnit: '次',
   statForgot: '遗忘',
+  // Summary buckets: word counts, one bucket per word (see RS_WORD_LABELS)
+  bucketRelearned: '重复学习',
+  wordBucketHint: '按单词统计，每个词只归入一类，忘过的词一律算重复学习',
   autoSpeakOn: '自动发音开',
   autoSpeakOff: '自动发音关',
   autoSpeakDisableAria: '关闭自动发音',
@@ -109,7 +112,7 @@ export const customMemory = {
     easy: '容易',
   },
   defaultTitle: '自定义记忆卡',
-  // 直接打开/刷新自定义卡片学习页或结果页但没有会话时的落地文案
+  // Landing copy for opening or refreshing the custom-card study or results page with no session
   noSessionTitle: '当前没有进行中的学习',
   noSessionDesc: '自定义记忆卡的学习需要从卡组列表里点开始。直接打开这个网址不会自动开始。',
   noResultTitle: '没有可显示的成绩',

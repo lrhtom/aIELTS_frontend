@@ -7,12 +7,12 @@
     border-radius: 8px;
     border: 1px solid #e5e7eb;
     padding: 0;
-    /* 容器查询：窄容器（如阅读右侧 300px 题目栏）切换为芯片模式，
-       否则表格 min-width 会把 radio 圆点推到横向溢出区，用户无法作答 */
+    /* Container query: a narrow container (such as the 300px question column on the reading page) switches to chip mode,
+       otherwise the table's min-width pushes the radio dots into horizontal overflow and the user cannot answer */
     container-type: inline-size;
 }
 
-/* 芯片模式的字母标签 — 宽表格模式下隐藏（字母显示在表头） */
+/* Letter label in chip mode - hidden in wide-table mode (the letters live in the table header) */
 .mg-cell-letter {
     display: none;
 }
@@ -205,8 +205,8 @@
     .mg-dot { width: 20px; height: 20px; }
 }
 
-/* ── 窄容器芯片模式：每题一行「题干 + A-F 字母按钮」，不再用宽表格 ──
-   触发条件是容器宽度（阅读右侧题目栏 ~300px），与视口宽度无关。 */
+/* -- Narrow-container chip mode: one row per question ('stem + A-F letter buttons') instead of a wide table --
+   The trigger is the container width (the reading page's question column, ~300px), not the viewport width. */
 @container (max-width: 560px) {
     .matching-grid thead { display: none; }
     .matching-grid,
@@ -262,7 +262,7 @@
     .mg-cell.is-cell-answer .mg-cell-letter { border-color: #10b981; border-style: dashed; color: #10b981; background: white; }
 }
 
-/* 选择格从 label+隐藏radio 改为显式按钮：抹平 button 默认样式 */
+/* The choice cell changes from label + hidden radio to an explicit button: flatten the default button styling */
 button.mg-cell-label {
     background: transparent;
     border: none;

@@ -307,7 +307,7 @@ export default function ListeningConfig() {
                                 </div>
                             </div>
                         </div>
-                        {/* 自定义提示词指令（高级，可选）*/}
+                        {/* Custom prompt instructions (advanced, optional)*/}
                         <div className="uc-card-group">
                             <CustomPromptField value={customPrompt} onChange={setCustomPrompt} />
                         </div>

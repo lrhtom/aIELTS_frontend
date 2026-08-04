@@ -14,8 +14,8 @@ import '../../styles/speaking_page.css';
 
 export type IeltsPart = 'part1' | 'part2' | 'part3';
 export type SpeakingMode = 'chat' | 'call' | 'exam' | 'scenario' | 'fullTest' | 'part1' | 'part2' | 'part3';
-// 2026-07-07 起全套考试并入全真模拟：Part 选择器多一档 'full'，
-// 选中后仍走 mode='fullTest' 的既有聊天页机器（fullTestPhase 自动过渡等零改动）
+// Since 2026-07-07 the full exam is folded into the full mock: the Part selector has an extra 'full' option,
+// which still drives the existing mode='fullTest' chat machinery (fullTestPhase transitions and so on unchanged)
 type ExamScope = IeltsPart | 'full';
 
 interface PartInfo {
@@ -33,7 +33,7 @@ interface ModeInfo {
     color: string;
 }
 
-// 场景干扰选项（真实难度增强）——键须与后端 INTERFERENCE_KEYS / INTERFERENCE_SUBOPTIONS 一致
+// Scenario interference options (realism boosters) - keys must match the backend's INTERFERENCE_KEYS / INTERFERENCE_SUBOPTIONS
 export type ScenarioModifierKey = 'accent' | 'crosstalk' | 'noise' | 'audioquality' | 'smalltalk';
 const SCENARIO_MODIFIERS: { key: ScenarioModifierKey; icon: string; color: string; bg: string }[] = [
     { key: 'accent', icon: '🗣️', color: '#ef4444', bg: '#fee2e2' },
@@ -42,13 +42,13 @@ const SCENARIO_MODIFIERS: { key: ScenarioModifierKey; icon: string; color: strin
     { key: 'audioquality', icon: '📻', color: '#6366f1', bg: '#e0e7ff' },
     { key: 'smalltalk', icon: '🫖', color: '#10b981', bg: '#d1fae5' },
 ];
-// 每个干扰项可再多选的子选项（键须与后端 INTERFERENCE_SUBOPTIONS 一致）
+// Sub-options each interference item can further select (keys must match the backend's INTERFERENCE_SUBOPTIONS)
 const SCENARIO_SUBOPTIONS: Record<ScenarioModifierKey, string[]> = {
     accent: ['brummie', 'eastmidlands', 'scouse', 'geordie', 'cockney'],
     crosstalk: ['fast', 'interrupt', 'overlap'],
     noise: ['pub', 'canteen', 'office', 'street'],
-    audioquality: ['phone', 'muffled', 'radio'],  // 音质干扰：对 AI 语音加滤波
-    smalltalk: [],  // 仅开关，无子选项
+    audioquality: ['phone', 'muffled', 'radio'],  // Audio-quality interference: filter the AI voice
+    smalltalk: [],  // toggle only, no sub-options
 };
 
 export default function Speaking() {
@@ -61,8 +61,8 @@ export default function Speaking() {
         { id: 'full', emoji: '📋', title: t('speakingConfig.ieltsPart.parts.full.title'), desc: t('speakingConfig.ieltsPart.parts.full.desc') },
     ];
 
-    // 2026-07-07 起 call（通话）模式并入 chat：唯一差异只是隐藏键盘，
-    // 降级为"纯语音模式"开关；旧 call 会话在题库恢复时自动映射。
+    // Since 2026-07-07 call mode is folded into chat: the only difference was hiding the keyboard, so it
+    // degrades to a voice-only switch; legacy call sessions are mapped automatically when restored from the bank.
     const MODES: ModeInfo[] = [
         {
             id: 'chat',
@@ -97,12 +97,12 @@ export default function Speaking() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isChecking, setIsChecking] = useState(false);
     const [isGeneratingScenario, setIsGeneratingScenario] = useState(false);
-    // 自定义题库卡片标题/简介（留空 = 自动用话题名，卡片无简介）
+    // Custom bank card title/description (blank = use the topic name, and the card shows no description)
     const [customName, setCustomName] = useState('');
     const [customDescription, setCustomDescription] = useState('');
-    // 纯语音模式（原通话模式）：隐藏键盘输入，仅 chat 模式生效
+    // Voice-only mode (formerly call mode): hides keyboard input, chat mode only
     const [voiceOnly, setVoiceOnly] = useState(false);
-    // 场景干扰选项（真实难度增强）：{ 选项key: [已选子选项] }，可多选、每项可再细选，仅 scenario 模式生效
+    // Scenario interference options (realism boosters): { optionKey: [selected sub-options] }, multi-select with per-item detail, scenario mode only
     const [scenarioModifiers, setScenarioModifiers] = useState<Record<string, string[]>>({});
     const optionOn = (key: ScenarioModifierKey) => key in scenarioModifiers;
     const toggleOption = (key: ScenarioModifierKey) =>
@@ -337,7 +337,7 @@ export default function Speaking() {
             backText={t('speakingConfig.backToAI')}
         >
             <div className="uc-console">
-                {/* ── 1. 左侧：模式切换列 (Sidebar) ── */}
+                {/* -- 1. Left: mode switcher column (sidebar) -- */}
                 <div className="uc-sidebar">
                         <div className="uc-sidebar-title">{t('speakingConfig.modes.title')}</div>
                         <nav className="uc-sidebar-nav">
@@ -354,7 +354,7 @@ export default function Speaking() {
                         </nav>
                     </div>
 
-                    {/* ── 2. 右侧：配置明细区 (Main Content) ── */}
+                    {/* -- 2. Right: configuration detail area (main content) -- */}
                     <div className="uc-main-content">
                         <div className="uc-main-header">
                             <h2>{MODES.find(m => m.id === selectedMode)?.title}</h2>
@@ -363,7 +363,7 @@ export default function Speaking() {
 
                         <div className="uc-settings-list">
                             <div className="uc-card-group">
-                                {/* IELTS Part Segmented Control（含"全套"档 = 原全套考试模式） */}
+                                {/* IELTS Part segmented control (including the 'full' option = the old full-exam mode) */}
                                 {selectedMode === 'exam' && (
                                     <div className="uc-list-row">
                                         <div className="uc-row-label-flex">
@@ -478,7 +478,7 @@ export default function Speaking() {
                                 </div>
                             </div>
 
-                                {/* 纯语音模式（原通话模式）：只在自由对话下显示 */}
+                                {/* Voice-only mode (formerly call mode): only shown for free conversation */}
                                 {selectedMode === 'chat' && (
                                     <div className="uc-list-row">
                                         <div className="uc-row-label">
@@ -497,7 +497,7 @@ export default function Speaking() {
                                     </div>
                                 )}
 
-                                {/* 场景干扰选项（真实难度增强）：只在场景对话下显示，可选择性开启 */}
+                                {/* Scenario interference options (realism boosters): only shown for scenario conversation, opt-in */}
                                 {selectedMode === 'scenario' && (
                                     <>
                                         <div className="uc-list-row uc-row-vertical" style={{ paddingBottom: 4 }}>
@@ -528,7 +528,7 @@ export default function Speaking() {
                                                         </label>
                                                     </div>
                                                 </div>
-                                                {/* 细选：开启后展开可多选的子选项（无子选项的如 Small talk 不展开）*/}
+                                                {/* Detail: once enabled, expand the multi-select sub-options (items without sub-options, such as small talk, do not expand)*/}
                                                 {optionOn(m.key) && SCENARIO_SUBOPTIONS[m.key].length > 0 && (
                                                     <div className="scenario-suboptions">
                                                         {SCENARIO_SUBOPTIONS[m.key].map(sub => {
@@ -586,7 +586,7 @@ export default function Speaking() {
                             </div>
                             </div>
 
-                            {/* 自定义题库卡片标题/简介（与听/读/写配置页同一套 customQuestion 文案） */}
+                            {/* Custom bank card title/description (same customQuestion copy as the listening/reading/writing config pages) */}
                             <div className="uc-card-group">
                                 <div className="uc-list-row uc-row-vertical">
                                     <div className="uc-row-label-flex">

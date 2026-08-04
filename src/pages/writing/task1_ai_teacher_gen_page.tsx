@@ -53,7 +53,7 @@ export default function Task1AiTeacherGenPage() {
         }
         setSubmitting(true);
         sessionStorage.removeItem('task1AiTeacherLesson');
-        // 题目同时写进 query（图片太大只能留在 state），保证刷新后至少还认得题目
+        // clicking twice generates two sets and burns double the AT for nothing
         navigate(`/writing/task1-ai-teacher/lesson?topic=${encodeURIComponent(trimmed)}`, {
             state: { topic: trimmed, image: imageBase64 },
         });

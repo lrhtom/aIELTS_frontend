@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— vocab 命名空间装配。
+// Chinese copy (the type source of truth) - the vocab namespace assembly.
 import * as study from './study';
 import * as plans from './plans';
 import * as notebook from './notebook';
@@ -45,7 +45,7 @@ export const vocab = {
   reviewDetail: '复习明细',
   retry: '再来一轮',
   studyTitle: '记忆卡背诵',
-  // 直接打开/刷新背诵页但没有学习会话时的落地文案
+  // Landing copy for opening or refreshing the study page with no study session
   noSessionTitle: '当前没有进行中的学习',
   noSessionDesc: '背诵需要从学习计划页开始。为保证复习记录准确，刷新页面不会保留上一次的单词进度。',
   noSessionGoPlan: '回到学习计划',

@@ -1,6 +1,6 @@
 
 
 export const speakingStore = {
-    // Speaking 模块状态
+    // Speaking module state
     isChatAllowed: false,
 };

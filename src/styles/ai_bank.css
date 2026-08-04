@@ -208,13 +208,23 @@
 
 .ai-bank-card-head {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
+    flex-wrap: nowrap;
+    /* The action cluster in the top-right corner is absolutely positioned, so clearance has to be reserved here.
+       Without it a longer subtype ('multiple_choice') slides under the delete button and the two layers of text
+       overlap - which was already happening before the template badge existed.
+       With that clearance there is no room for three chips side by side, so instead of wrapping, subtype ends in an
+       ellipsis: wrapping would stretch the card head to three lines, which is far worse than truncating a minor label. */
+    padding-right: 108px;
+    min-height: 28px;
     margin-bottom: 16px;
 }
 
 /* Status Badges */
 .ai-bank-status {
+    flex-shrink: 0;
+    white-space: nowrap;
     font-size: 12px;
     font-weight: 600;
     padding: 4px 12px;
@@ -315,6 +325,12 @@
     color: #475569;
     border: 1px solid #e2e8f0;
     text-transform: capitalize;
+    /* The card head does not wrap; when space runs short this minor label gives way (ellipsis) rather than crowding the status and template badges */
+    min-width: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Card Content */
@@ -450,6 +466,151 @@
 .ai-bank-card-delete svg {
     stroke: currentColor;
     transition: stroke 0.3s ease;
+}
+
+/* -- Site-wide template question -----------------------------------
+   An admin picks one per skill and every user sees it on that tab and can start it directly
+   (opening it makes the backend copy it under their own name, see useAIQuestionTemplate). */
+.ai-bank-template-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #6ee7b7;
+    white-space: nowrap;
+}
+
+/* The template card takes the teal accent throughout, distinguishing it from the amber of a favorite */
+.ai-bank-card.is-template {
+    border-color: rgba(13, 148, 136, 0.45);
+    box-shadow: 0 10px 30px rgba(13, 148, 136, 0.08), inset 0 0 0 1px rgba(13, 148, 136, 0.28);
+}
+
+/* A row at the bottom of the card: template toggle / 'opening copies it' note. Kept apart from the top-right
+   cluster, because three buttons crammed into that absolute corner would cover both the status and subtype lines. */
+.ai-bank-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.ai-bank-card-template {
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    border-radius: 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    white-space: nowrap;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.ai-bank-card:hover .ai-bank-card-template { opacity: 1; }
+
+.ai-bank-card-template:hover {
+    background: #f0fdfa;
+    border-color: #5eead4;
+    color: var(--color-primary);
+}
+
+.ai-bank-card-template.is-on {
+    opacity: 1;
+    background: #ccfbf1;
+    border-color: rgba(13, 148, 136, 0.5);
+    color: #0f766e;
+}
+
+/* Someone else's template: no delete or favorite button, replaced by a one-line note telling the user what opening it does */
+.ai-bank-template-hint {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    color: #64748b;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .ai-bank-card-template { opacity: 0.85; }
+    /* on a narrow screen the two top-right buttons are gone, so no clearance is needed */
+    .ai-bank-card-head { padding-right: 108px; }
+}
+
+/* The writing tab's Service Records entry. The tabs already carry a 40px bottom margin, and the toolbar eats
+   part of it back so there are not two stacked gaps between the button and the card grid. */
+.ai-bank-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin: -20px 0 24px;
+    animation: fadeIn 0.5s ease-out both;
+}
+
+.ai-bank-records-link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 10px 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    color: #334155;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ai-bank-records-link:hover {
+    background: #f0fdfa;
+    border-color: #5eead4;
+    color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(13, 148, 136, 0.15);
+}
+
+.ai-bank-records-link-hint {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+}
+
+.ai-bank-records-link-arrow {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+}
+
+.ai-bank-records-link:hover .ai-bank-records-link-arrow { transform: translateX(3px); }
+
+@media (max-width: 768px) {
+    .ai-bank-toolbar { justify-content: stretch; }
+    .ai-bank-records-link { width: 100%; justify-content: center; }
+    /* a narrow screen cannot fit button + subtitle + arrow on one line, so the subtitle gives way */
+    .ai-bank-records-link-hint { display: none; }
 }
 
 /* Animations */

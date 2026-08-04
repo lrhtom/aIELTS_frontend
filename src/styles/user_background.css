@@ -1,4 +1,4 @@
-/* ── 背景设置页 ── */
+/* -- Background settings page -- */
 .ub-page {
     display: flex;
     flex-direction: column;
@@ -38,7 +38,7 @@
     margin-bottom: 16px;
 }
 
-/* ── 颜色色块 ── */
+/* -- Colour swatches -- */
 .ub-color-grid {
     display: flex;
     flex-wrap: wrap;
@@ -98,7 +98,7 @@
     pointer-events: none;
 }
 
-/* ── 图片输入区 ── */
+/* -- Image input area -- */
 .ub-image-tabs {
     display: flex;
     gap: 8px;
@@ -206,7 +206,7 @@
     object-fit: cover;
 }
 
-/* ── 底部操作栏 ── */
+/* -- Bottom action bar -- */
 .ub-actions {
     display: flex;
     align-items: center;
@@ -263,7 +263,7 @@
     color: var(--color-accent-teal);
 }
 
-/* ── 模糊度滑块 ── */
+/* -- Blur slider -- */
 .ub-blur-row {
     display: flex;
     align-items: center;

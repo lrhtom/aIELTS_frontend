@@ -2,10 +2,18 @@ import Layout from '../components/layout/Layout';
 import { showConfirm } from '../components/common/ConfirmService';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { listAIQuestions, deleteAIQuestion, toggleFavoriteAIQuestion, type AIQuestionSkill, type AIQuestionSummary } from '../api/ai_question';
+import {
+    listAIQuestions, deleteAIQuestion, toggleFavoriteAIQuestion,
+    setAIQuestionTemplate, copyTemplateQuestion,
+    type AIQuestionSkill, type AIQuestionSummary,
+} from '../api/ai_question';
 import { showToast } from '../components/common/Toast';
 import { useLang } from '../i18n/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/ai_bank.css';
+
+/** Tabs whose items can be made site-wide templates (mirrors the backend's _TEMPLATABLE_SKILLS; the full mock is excluded) */
+const TEMPLATABLE_SKILLS: AIQuestionSkill[] = ['listening', 'reading', 'writing', 'speaking'];
 
 function resolveAnswerRoute(item: AIQuestionSummary): string {
     const id = item.id;
@@ -13,15 +21,17 @@ function resolveAnswerRoute(item: AIQuestionSummary): string {
     if (item.skill === 'reading') return `/reading?bankId=${id}`;
     if (item.skill === 'listening') return `/listening?bankId=${id}`;
     if (item.skill === 'speaking') {
-        // 有总结报告 → 直达报告页；进行中 → 回聊天页续聊
+        // Has a summary report -> straight to the report page; still in progress -> back to the chat page to continue
         return item.hasFeedback ? `/speaking/summary?bankId=${id}` : `/speaking/chat?bankId=${id}`;
     }
     if (item.skill === 'writing') {
-        // 已批改且未重做 → 看批改结果；其余（pending 或 redone）→ 进答题页
+        // A full writing set (Task 1 + Task 2) is a parent row and cannot be answered itself; open the hub and pick one
+        if (item.subtype === 'full') return `/writing/full/${id}`;
+        // Marked and not redone -> show the correction; everything else (pending or redone) -> the answering page
         if (item.isAnswered && !isRedone(item)) return `/writing/correction?bankId=${id}`;
         if (item.subtype.startsWith('chart:')) {
-            // 把子类型带进 URL，否则 chart_practice_page 默认 type='line'，
-            // map 题进来时 isMapType 判错，地图区域不会渲染。
+            // Carry the subtype in the URL, otherwise chart_practice_page defaults to type='line',
+            // which makes isMapType false for map questions so the map area never renders.
             const chartSubtype = item.subtype.slice('chart:'.length);
             return `/writing/chart/doing?bankId=${id}&type=${encodeURIComponent(chartSubtype)}`;
         }
@@ -50,6 +60,8 @@ function formatDate(value: string | null): string {
 export default function AIBankPage() {
     const navigate = useNavigate();
     const { t } = useLang();
+    const { user } = useAuth();
+    const isAdmin = Boolean(user?.is_staff || user?.is_superuser);
     const [searchParams] = useSearchParams();
     const justId = searchParams.get('just');
 
@@ -65,7 +77,7 @@ export default function AIBankPage() {
         v === 'reading' || v === 'listening' || v === 'writing' || v === 'speaking' || v === 'mock';
 
     const [activeSkill, setActiveSkill] = useState<AIQuestionSkill>(() => {
-        // ?skill= 直达指定 tab（口语退出按钮用），优先级高于上次记住的 tab
+        // ?skill= jumps straight to a given tab (used by the speaking exit button); outranks the remembered tab
         const fromQuery = searchParams.get('skill');
         if (isSkillKey(fromQuery)) return fromQuery;
         const stored = sessionStorage.getItem('ai_bank_active_skill');
@@ -109,23 +121,28 @@ export default function AIBankPage() {
     const sortedItems = useMemo(() => {
         const favTime = (it: AIQuestionSummary) => (it.favoritedAt ? Date.parse(it.favoritedAt) : 0);
         const createTime = (it: AIQuestionSummary) => (it.createdAt ? Date.parse(it.createdAt) : 0);
-        // 收藏优先：已收藏排最前，后收藏的（favoritedAt 更大）更靠前；其余按生成时间倒序。
+        // Site templates are always pinned to the top (the backend sorts the same way, so the optimistic update must match);
+        // then favorites: favorited first, most recently favorited (larger favoritedAt) higher; everything else newest-first.
         const arr = [...items].sort((a, b) => {
+            if (a.isTemplate !== b.isTemplate) return a.isTemplate ? -1 : 1;
             const fa = favTime(a), fb = favTime(b);
             if (fa !== fb) return fb - fa;
             return createTime(b) - createTime(a);
         });
         const just = justId ? Number(justId) : NaN;
         if (Number.isNaN(just)) return arr;
-        // 刚生成的题目永远置顶，方便用户立刻看到（优先级高于收藏排序）。
+        // The just-generated item is always pinned to the top so the user sees it immediately (outranks favorite ordering).
         const head = arr.filter(it => it.id === just);
         const tail = arr.filter(it => it.id !== just);
         return [...head, ...tail];
     }, [items, justId]);
 
-    const handleClick = (item: AIQuestionSummary) => {
-        // 全套模拟：任何状态都进大厅（大厅展示生成进度 / 失败重生成入口）
-        if (item.skill === 'mock') {
+    const [usingTemplateId, setUsingTemplateId] = useState<number | null>(null);
+
+    const handleClick = async (item: AIQuestionSummary) => {
+        // Multi-part items (full mock / full writing set) open the hub in any state:
+        // the hub shows each child's generation progress itself, so there is nothing to gate here
+        if (item.skill === 'mock' || (item.skill === 'writing' && item.subtype === 'full')) {
             navigate(resolveAnswerRoute(item));
             return;
         }
@@ -137,7 +154,44 @@ export default function AIBankPage() {
             showToast(item.errorMessage || t('aiBank.toastGenerationFailed'), 'error');
             return;
         }
+        // Someone else's template: have the backend copy it under our own name before answering.
+        // Answering against the template id directly would 404 on submit (submit only accepts the author), and even if
+        // it were allowed, every user's answers would overwrite each other on the same row.
+        if (item.isTemplate && !item.isOwner) {
+            if (usingTemplateId) return;             // a copy request is in flight, do not double-click
+            setUsingTemplateId(item.id);
+            try {
+                const copy = await copyTemplateQuestion(item.id);
+                // The copy is in our own bank now and must show up immediately (the backend dedupes, so no duplicate insert)
+                setItems(prev => (prev.some(it => it.id === copy.id) ? prev : [...prev, copy]));
+                navigate(resolveAnswerRoute(copy));
+            } catch {
+                showToast(t('aiBank.templateUseFail'), 'error');
+            } finally {
+                setUsingTemplateId(null);
+            }
+            return;
+        }
         navigate(resolveAnswerRoute(item));
+    };
+
+    const handleToggleTemplate = async (e: React.MouseEvent, item: AIQuestionSummary) => {
+        e.stopPropagation();
+        const next = !item.isTemplate;
+        if (next && !(await showConfirm(t('aiBank.templateSetConfirm').replace('{title}', item.title || t('aiBank.untitled'))))) return;
+        try {
+            const updated = await setAIQuestionTemplate(item.id, next);
+            // Only one per skill: setting a new one bumps the old template of the same skill. Mirror that rule locally,
+            // otherwise the stale badge sticks around until the next poll.
+            setItems(prev => prev.map(it => {
+                if (it.id === updated.id) return { ...it, isTemplate: updated.isTemplate };
+                return next && it.isTemplate ? { ...it, isTemplate: false } : it;
+            }));
+            showToast(next ? t('aiBank.templateSetOk') : t('aiBank.templateUnsetOk'), 'success');
+        } catch (err) {
+            const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+            showToast(msg || t('aiBank.templateSetFail'), 'error');
+        }
     };
 
     const handleDelete = async (e: React.MouseEvent, item: AIQuestionSummary) => {
@@ -155,7 +209,7 @@ export default function AIBankPage() {
 
     const handleToggleFavorite = async (e: React.MouseEvent, item: AIQuestionSummary) => {
         e.stopPropagation();
-        // 乐观更新：立即翻转收藏态，让卡片马上重排（后收藏的置顶）。
+        // Optimistic update: flip the favorite state right away so the card re-sorts immediately (newest favorite on top).
         const nextFav = item.isFavorite ? null : new Date().toISOString();
         setItems(prev => prev.map(it => it.id === item.id
             ? { ...it, isFavorite: !it.isFavorite, favoritedAt: nextFav }
@@ -166,7 +220,7 @@ export default function AIBankPage() {
                 ? { ...it, isFavorite: updated.isFavorite, favoritedAt: updated.favoritedAt }
                 : it));
         } catch {
-            // 失败回滚到操作前状态
+            // roll back to the pre-click state on failure
             setItems(prev => prev.map(it => it.id === item.id
                 ? { ...it, isFavorite: item.isFavorite, favoritedAt: item.favoritedAt }
                 : it));
@@ -201,6 +255,22 @@ export default function AIBankPage() {
                     ))}
                 </div>
 
+                {/* The bank stores questions only; corrections and AI-teacher lessons are archived on the Service Records page.
+                    Only the writing tab gets this entry point - the other three skills have no matching records page. */}
+                {activeSkill === 'writing' && (
+                    <div className="ai-bank-toolbar">
+                        <button
+                            type="button"
+                            className="ai-bank-records-link"
+                            onClick={() => navigate('/writing/ai-teachers/records')}
+                        >
+                            <span className="ai-bank-records-link-label">{t('aiBank.recordsLinkBtn')}</span>
+                            <span className="ai-bank-records-link-hint">{t('aiBank.recordsLinkHint')}</span>
+                            <span className="ai-bank-records-link-arrow" aria-hidden="true">→</span>
+                        </button>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="ai-bank-empty">{t('aiBank.loading')}</div>
                 ) : sortedItems.length === 0 ? (
@@ -211,12 +281,13 @@ export default function AIBankPage() {
                 ) : (
                     <div className="ai-bank-grid">
                         {sortedItems.map(item => {
+                            const canTemplate = TEMPLATABLE_SKILLS.includes(item.skill);
                             const isJust = justId && Number(justId) === item.id;
                             const isGenerating = item.status === 'generating';
                             const isFailed = item.status === 'failed';
-                            // speaking：对话开始即有 userAnswer，"完成"以有总结报告为准；
-                            // 且每轮都会同步 lastAttemptAt，redone 概念不适用
-                            // mock：以综合成绩单为准（父行的 userAnswer 是考试状态机）
+                            // speaking: userAnswer exists from the first turn, so 'done' means a summary report exists;
+                            // and lastAttemptAt syncs every turn, so the redone concept does not apply
+                            // mock: the combined score report is what counts (the parent row's userAnswer is the exam state machine)
                             const isSpeaking = item.skill === 'speaking';
                             const isMock = item.skill === 'mock';
                             const answeredFlag = isMock ? Boolean(item.mock?.hasReport) : (isSpeaking ? item.hasFeedback : item.isAnswered);
@@ -242,18 +313,27 @@ export default function AIBankPage() {
                                 : isFailed
                                     ? 'is-failed'
                                     : (answeredFlag ? 'is-answered' : 'is-pending');
+                            // Someone else's template: it can only be used, not deleted or favorited (those act on the author's row)
+                            const isForeignTemplate = item.isTemplate && !item.isOwner;
                             return (
                                 <div
                                     key={item.id}
-                                    className={`ai-bank-card ${isJust ? 'is-just' : ''} ${cardStateClass} ${item.isFavorite ? 'is-favorite' : ''}`}
-                                    onClick={() => handleClick(item)}
+                                    className={`ai-bank-card ${isJust ? 'is-just' : ''} ${cardStateClass} ${item.isFavorite ? 'is-favorite' : ''} ${item.isTemplate ? 'is-template' : ''}`}
+                                    onClick={() => { void handleClick(item); }}
                                     aria-disabled={!isMock && (isGenerating || isFailed)}
                                 >
                                     <div className="ai-bank-card-head">
                                         <span className={`ai-bank-status ${statusClass}`}>
                                             {statusLabel}
                                         </span>
-                                        {item.subtype && <span className="ai-bank-subtype">{item.subtype}</span>}
+                                        {item.isTemplate && (
+                                            <span className="ai-bank-template-badge" title={t('aiBank.templateBadgeHint')}>
+                                                📌 {t('aiBank.templateBadge')}
+                                            </span>
+                                        )}
+                                        {/* The card head is only so wide (the action cluster on the right needs clearance), so three chips will not fit.
+                                            When the template badge shows, subtype gives way: a two-or-three-letter stub carries no information. */}
+                                        {item.subtype && !item.isTemplate && <span className="ai-bank-subtype">{item.subtype}</span>}
                                     </div>
                                     <div className="ai-bank-card-title">{item.title || t('aiBank.unnamedFallback')}</div>
                                     {item.description && (
@@ -266,26 +346,51 @@ export default function AIBankPage() {
                                         <span>{t('aiBank.generatedAt').replace('{time}', formatDate(item.createdAt))}</span>
                                         {item.lastAttemptAt && <span>{t('aiBank.lastAttemptAt').replace('{time}', formatDate(item.lastAttemptAt))}</span>}
                                     </div>
-                                    <div className="ai-bank-card-actions">
-                                        <button
-                                            type="button"
-                                            className={`ai-bank-card-favorite ${item.isFavorite ? 'is-on' : ''}`}
-                                            onClick={(e) => handleToggleFavorite(e, item)}
-                                            aria-label={item.isFavorite ? t('aiBank.unfavoriteAriaLabel') : t('aiBank.favoriteAriaLabel')}
-                                            aria-pressed={item.isFavorite}
-                                            title={item.isFavorite ? t('aiBank.unfavoriteAriaLabel') : t('aiBank.favoriteAriaLabel')}
-                                        >
-                                            {item.isFavorite ? '★' : '☆'}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="ai-bank-card-delete"
-                                            onClick={(e) => handleDelete(e, item)}
-                                            aria-label={t('aiBank.deleteAriaLabel')}
-                                        >
-                                            <span>{t('aiBank.deleteBtn')}</span>
-                                        </button>
-                                    </div>
+                                    {/* The top-right action cluster holds just favorite + delete (someone else's template has neither).
+                                        The template toggle is a low-frequency admin action, so it sits on its own row at the bottom of the card. */}
+                                    {!isForeignTemplate && (
+                                        <div className="ai-bank-card-actions">
+                                            <button
+                                                type="button"
+                                                className={`ai-bank-card-favorite ${item.isFavorite ? 'is-on' : ''}`}
+                                                onClick={(e) => handleToggleFavorite(e, item)}
+                                                aria-label={item.isFavorite ? t('aiBank.unfavoriteAriaLabel') : t('aiBank.favoriteAriaLabel')}
+                                                aria-pressed={item.isFavorite}
+                                                title={item.isFavorite ? t('aiBank.unfavoriteAriaLabel') : t('aiBank.favoriteAriaLabel')}
+                                            >
+                                                {item.isFavorite ? '★' : '☆'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="ai-bank-card-delete"
+                                                onClick={(e) => handleDelete(e, item)}
+                                                aria-label={t('aiBank.deleteAriaLabel')}
+                                            >
+                                                <span>{t('aiBank.deleteBtn')}</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                    {(isForeignTemplate || (isAdmin && canTemplate && !isGenerating && !isFailed && !item.templateSourceId)) && (
+                                        <div className="ai-bank-card-footer">
+                                            {isForeignTemplate && (
+                                                <span className="ai-bank-template-hint">
+                                                    {usingTemplateId === item.id ? t('aiBank.templateOpening') : t('aiBank.templateOpenHint')}
+                                                </span>
+                                            )}
+                                            {/* Admin toggle: only on the four skill tabs, only once generated, and never on a template copy */}
+                                            {isAdmin && canTemplate && !isGenerating && !isFailed && !item.templateSourceId && (
+                                                <button
+                                                    type="button"
+                                                    className={`ai-bank-card-template ${item.isTemplate ? 'is-on' : ''}`}
+                                                    onClick={(e) => { void handleToggleTemplate(e, item); }}
+                                                    aria-pressed={item.isTemplate}
+                                                    title={item.isTemplate ? t('aiBank.templateUnsetBtn') : t('aiBank.templateSetBtn')}
+                                                >
+                                                    📌 {item.isTemplate ? t('aiBank.templateUnsetBtn') : t('aiBank.templateSetBtn')}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}

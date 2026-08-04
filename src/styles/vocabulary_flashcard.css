@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   记忆卡练习页样式（doing page — flip card + 4 study modes）
-   依赖 practice_page.css 中的 .config-page-wrap 等
+   Flashcard practice page styling (doing page - flip card + 4 study modes)
+   Depends on .config-page-wrap and friends from practice_page.css
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .fc-top-hints {
@@ -59,7 +59,7 @@
     opacity: 0.85;
 }
 
-/* ── Header 行 ───────────────────────────────────────────────────────────── */
+/* -- Header row ------------------------------------------------------------ */
 .fc-header {
     display: flex;
     align-items: center;
@@ -73,7 +73,7 @@
     font-weight: 600;
 }
 
-/* ── 进度条 ───────────────────────────────────────────────────────────── */
+/* -- Progress bar ---------------------------------------------------------- */
 .fc-progress-bar {
     width: 100%;
     height: 4px;
@@ -89,7 +89,7 @@
     transition: width 0.3s ease;
 }
 
-/* ── 3-D 翻牌场景 ─────────────────────────────────────────────────────────── */
+/* -- 3-D flip scene -------------------------------------------------------- */
 .fc-scene {
     perspective: 1200px;
     width: 100%;
@@ -113,13 +113,13 @@
     transform: rotateY(180deg);
 }
 
-/* 状态光晕 */
+/* state glow */
 .fc-card.status-good   .fc-face { border-color: rgba(16, 185, 129, 0.5); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.10), 0 8px 28px rgba(0,0,0,0.07); }
 .fc-card.status-again  .fc-face { border-color: rgba(239, 68,  68, 0.45); box-shadow: 0 0 0 3px rgba(239, 68,  68, 0.08), 0 8px 28px rgba(0,0,0,0.07); }
 .fc-card.status-hard   .fc-face { border-color: rgba(249, 115, 22, 0.45); box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.08), 0 8px 28px rgba(0,0,0,0.07); }
 .fc-card.status-easy   .fc-face { border-color: rgba(59,  130, 246, 0.5); box-shadow: 0 0 0 3px rgba(59,  130, 246, 0.10), 0 8px 28px rgba(0,0,0,0.07); }
 
-/* 卡面公共样式 */
+/* shared card face styling */
 .fc-face {
     position: absolute;
     inset: 0;
@@ -138,8 +138,8 @@
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* 背面旋转 180° 并左对齐。padding 较正面更紧凑，因为内容分 header/body/footer 三段，
-   内部 .fc-back-body 自己负责滚动，所以 .fc-face--back 自身不再 overflow-y. */
+/* The back is rotated 180 degrees and left-aligned. Its padding is tighter than the front because the content splits
+   into header/body/footer and the inner .fc-back-body scrolls itself, so .fc-face--back no longer sets overflow-y. */
 .fc-face--back {
     transform: rotateY(180deg);
     align-items: stretch;
@@ -148,13 +148,13 @@
     padding: 28px 32px;
 }
 
-/* 非翻牌模式（choice/write/copy）：仅单面，卡片自适应内容高度 */
+/* Non-flip modes (choice/write/copy): a single face, with the card height following the content */
 .fc-card > .fc-face:only-child {
     position: relative;
     inset: auto;
 }
 
-/* ── 正面内容 ────────────────────────────────────────────────────────────── */
+/* -- Front content --------------------------------------------------------- */
 .fc-word {
     font-size: 38px;
     font-weight: 800;
@@ -184,7 +184,7 @@
     gap: 5px;
 }
 
-/* ── 背面内容 (legacy classes — still used by GazeMode) ──────────────────── */
+/* -- Back content (legacy classes - still used by GazeMode) ---------------- */
 .fc-back-word {
     font-size: 20px;
     font-weight: 700;
@@ -210,7 +210,7 @@
     align-self: flex-start;
 }
 
-/* ── 背面内容 (rich layout — FlashcardMode) ───────────────────────────────
+/* -- Back content (rich layout - FlashcardMode) ---------------------------
    Three-region layout: header (word + phonetic), body (defs + examples,
    scrollable), footer (state pill). Designed to look composed at any height
    between 320px and ~600px. */
@@ -390,7 +390,7 @@
     font-weight: 500;
 }
 
-/* ── 评分按钮行 ──────────────────────────────────────────────────────────── */
+/* -- Rating button row ----------------------------------------------------- */
 .fc-rating-row {
     display: flex;
     gap: 8px;
@@ -450,14 +450,14 @@
 .fc-btn .btn-interval { font-size: 11px; opacity: 0.65; font-weight: 500; }
 .fc-btn .btn-due-date { font-size: 10px; opacity: 0.8; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.2px; }
 
-/* 翻牌前灰色遮罩提示 */
+/* grey overlay hint shown before the card is flipped */
 .fc-rating-row.locked .fc-btn {
     opacity: 0.3;
     pointer-events: none;
     filter: grayscale(0.5);
 }
 
-/* ── 键盘提示 ────────────────────────────────────────────────────────────── */
+/* -- Keyboard hints -------------------------------------------------------- */
 .fc-kb-hint {
     text-align: center;
     font-size: 12px;
@@ -467,7 +467,7 @@
     margin-bottom: 12px;
 }
 
-/* ── 凝视扫描模式 ──────────────────────────────────────────────────────────── */
+/* -- Gaze scanning mode ------------------------------------------------------ */
 .fc-gaze-loading {
   text-align: center;
   padding: 32px 16px;
@@ -548,7 +548,7 @@
 
 
 
-/* ── 凝视校准弹窗 ──────────────────────────────────────────────────────────── */
+/* -- Gaze calibration dialog ------------------------------------------------- */
 .fc-gaze-calibration-overlay {
   position: fixed;
   inset: 0;
@@ -631,7 +631,7 @@
   cursor: not-allowed;
 }
 
-/* ── 追踪子菜单 ──────────────────────────────────────────────────────────── */
+/* -- Tracking submenu ------------------------------------------------------ */
 .fc-mode-badge-wrap {
     position: relative;
     display: inline-flex;
@@ -724,7 +724,7 @@
     opacity: 0.8;
 }
 
-/* ── 结果页 ──────────────────────────────────────────────────────────────── */
+/* -- Results page ---------------------------------------------------------- */
 .fc-result-wrap {
     width: 100%;
 }
@@ -740,7 +740,19 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
-    margin-bottom: 24px;
+    /* The unit hint sits directly under the cards, so the gap moved there */
+    margin-bottom: 8px;
+}
+
+/* States the unit of the four cards above: words, one bucket each. Without it
+   the row reads as a rating histogram and the numbers look inconsistent with
+   the per-click totals below. */
+.fc-result-stats-hint {
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
 }
 
 .fc-result-stat {
@@ -763,7 +775,7 @@
 .fc-result-stat.rs-easy   .rs-num { color: #2563eb; }
 .fc-result-stat .rs-label { font-size: 12px; color: var(--color-text-secondary); }
 
-/* 结果列表 */
+/* results list */
 .fc-result-list {
     list-style: none;
     padding: 0;
@@ -792,7 +804,7 @@
 .fc-ri-zh      { color: var(--color-text-secondary); }
 .fc-ri-due     { font-size: 12px; color: var(--color-text-secondary); white-space: nowrap; }
 
-/* 结果操作按钮 */
+/* results action buttons */
 .fc-result-actions {
     display: flex;
     gap: 12px;
@@ -899,7 +911,7 @@
     transition: opacity 0.1s 0.04s;
 }
 
-/* ── 4选1 choice options ─────────────────────────────────────────────────── */
+/* -- Multiple choice options ----------------------------------------------- */
 .fc-choices {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1001,7 +1013,7 @@
     cursor: not-allowed;
 }
 
-/* ── 4选1 前置：会/不会选择 ─────────────────────────────────────────────── */
+/* -- Multiple choice, step 1: know it / do not know ------------------------ */
 .fc-choice-reveal-actions {
     max-width: 680px;
     margin: 0 auto 20px;
@@ -1057,7 +1069,7 @@
     cursor: not-allowed;
 }
 
-/* ── 隐藏题目按钮 ─────────────────────────────────────────────────────────────── */
+/* -- Hide question button -------------------------------------------------------- */
 .fc-choice-hide-btn {
     padding: 8px 18px;
     border-radius: 10px;
@@ -1081,7 +1093,7 @@
     cursor: not-allowed;
 }
 
-/* ── Write mode — 首字母提示 ─────────────────────────────────────────────── */
+/* -- Write mode - first letter hint ---------------------------------------- */
 .fc-write-hint {
     display: flex;
     align-items: center;
@@ -1161,7 +1173,7 @@
 .fc-write-submit:hover:not(:disabled) { background: var(--color-primary-hover); }
 .fc-write-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* 快速自评按钮 */
+/* quick self-rating buttons */
 .fc-quick-assess {
     display: flex;
     gap: 10px;
@@ -1183,7 +1195,7 @@
 .fc-qa-proficient { background: #f0fdf4; color: #16a34a; border-color: #86efac; }
 .fc-qa-key { font-size: 11px; opacity: 0.6; font-weight: 400; margin-left: 4px; }
 
-/* 抄写模式：卡片内展示参考单词 */
+/* copy mode: show the reference word inside the card */
 .fc-unknown-reveal {
     display: flex;
     align-items: center;
@@ -1271,7 +1283,7 @@
 .fc-write-undo:hover:not(:disabled) { color: var(--color-text); border-color: var(--color-text-secondary); }
 .fc-write-undo:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* 抄写模式下独立显示的撤销按钮 */
+/* the standalone undo button shown in copy mode */
 .fc-write-area > .fc-write-undo {
     display: block;
     width: 100%;
@@ -1279,7 +1291,7 @@
     text-align: center;
 }
 
-/* ── 响应式 ──────────────────────────────────────────────────────────────── */
+/* -- Responsive ------------------------------------------------------------ */
 @media (max-width: 600px) {
     .fc-word            { font-size: 30px; }
     .fc-meaning         { font-size: 22px; }
@@ -1296,7 +1308,7 @@
     .fc-completion-hint--in-card { margin-top: 10px; }
 }
 
-/* ── 背面 Word enrichment ─────────────────────────────────────────────────── */
+/* -- Back-face word enrichment --------------------------------------------- */
 .fc-phonetic {
     font-size: 14px;
     color: var(--color-text-secondary);
@@ -1366,7 +1378,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   四选一 (ChoiceMode) 视觉翻新
+   Multiple choice (ChoiceMode) visual refresh
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .choice-quiz-card {
@@ -1468,7 +1480,7 @@
     animation: choiceFadeSlideIn 0.3s ease forwards;
 }
 
-/* ── Reveal actions (会 / 不会) ──────────────────────────────────────────── */
+/* -- Reveal actions (know it / do not know) -------------------------------- */
 .choice-reveal-actions {
     max-width: 680px;
     margin: 0 auto 20px;
@@ -1798,7 +1810,7 @@
     .choice-btn-next { width: 100%; text-align: center; justify-content: center; }
 }
 
-/* ── Blink flash animation (CopyMode 闪烁模式) ──────────────────────────── */
+/* -- Blink flash animation (CopyMode blink mode) -------------------------- */
 @keyframes blink-flash {
     0%   { opacity: 0; transform: scale(0.95); }
     20%  { opacity: 1; transform: scale(1.02); }
@@ -1864,7 +1876,7 @@
     color: var(--color-text-secondary);
 }
 
-/* ── 无会话落地页（冷启动/刷新进来没有卡片时，替代原来的静默跳转）── */
+/* -- No-session landing page (shown on a cold start or refresh with no cards, replacing the old silent redirect) -- */
 .fc-nosession {
     text-align: center;
     padding: 4rem 1.5rem;
@@ -1920,7 +1932,7 @@
 /* ── FlashcardMode phonetic front ────────────────────────────────────────── */
 .fc-phonetic-front { margin-top: 6px; }
 
-/* ── 中文正面：字号略小、行距舒展 ─────────────────────────────────────── */
+/* -- Chinese on the front: slightly smaller type, looser line height ------- */
 .fc-word.fc-word--zh {
     font-size: 30px;
     letter-spacing: 0;
@@ -1929,7 +1941,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   朗读单词模式 (ReadAloudMode)
+   Read-aloud mode (ReadAloudMode)
    ══════════════════════════════════════════════════════════════════════════ */
 
 .fc-read-scene {

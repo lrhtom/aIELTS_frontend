@@ -1,6 +1,6 @@
-// 全套模拟 · 防退出守卫（独立文件：MockExamShell.tsx 只导出组件，满足 react-refresh 规则）
-// 浏览器返回键 / beforeunload 拦截；确认退出 → forfeit 判 0 → 回大厅。
-// 页面内的退出按钮请调用返回的 confirmExit。
+// Full mock - the exit guard (its own file: MockExamShell.tsx exports only components, satisfying the react-refresh rule)
+// Intercepts the browser back button and beforeunload; confirming exit -> forfeit (score 0) -> back to the hub.
+// The page's own exit button should call the returned confirmExit.
 import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { showConfirm } from '../common/ConfirmService';
@@ -10,20 +10,20 @@ import { useLang } from '../../i18n/LanguageContext';
 interface MockGuardOptions {
     mockId: number;
     part: MockExamPart;
-    /** 守卫是否生效（部分已交卷/已结束后应关掉，让用户自由离开） */
+    /** Whether the guard is active (turn it off once the part is submitted or finished, so the user can leave freely) */
     active: boolean;
-    /** soft：只挂 beforeunload 提示，返回键/退出不判 0（写作部分 T1↔T2 需经大厅
-     *  切换，离开页面 ≠ 弃考，60 分钟墙钟兜底）。默认 strict。 */
+    /** soft: only attaches the beforeunload prompt; the back button and exiting do not score 0 (the writing part
+     *  needs T1 and T2 to swap through the hub, so leaving the page is not abandoning the exam, and the 60-minute wall clock backstops it). Defaults to strict. */
     mode?: 'strict' | 'soft';
 }
 
-/** 防退出守卫。返回 confirmExit —— 页面自己的返回/退出按钮应调用它。 */
+/** The exit guard. Returns confirmExit - the page's own back/exit button should call it. */
 export function useMockExamGuard({ mockId, part, active, mode = 'strict' }: MockGuardOptions) {
     const navigate = useNavigate();
     const { t } = useLang();
     const activeRef = useRef(active);
     useEffect(() => { activeRef.current = active; }, [active]);
-    // forfeit 进行中/已发出：popstate 重入时不再弹第二次确认
+    // a forfeit is in flight or already sent: do not ask for confirmation a second time when popstate re-enters
     const leavingRef = useRef(false);
 
     const doForfeit = useCallback(async () => {
@@ -31,13 +31,13 @@ export function useMockExamGuard({ mockId, part, active, mode = 'strict' }: Mock
         try {
             await forfeitMockPart(mockId, part);
         } catch {
-            // 已结束/已清算等情况直接忽略——反正要离开
+            // already finished or settled: just ignore it, we are leaving anyway
         }
         navigate(`/mock/${mockId}`, { replace: true });
     }, [mockId, part, navigate]);
 
-    /** 页面内退出按钮入口：确认后判 0 并回大厅。返回是否真的离开了。
-     *  soft 模式：直接回大厅，不判 0（写作部分内自由移动）。 */
+    /** Entry point for the page's own exit button: confirm, score 0, and return to the hub. Returns whether we actually left.
+     *  soft mode: go straight back to the hub without scoring 0 (free movement within the writing part). */
     const confirmExit = useCallback(async (): Promise<boolean> => {
         if (!activeRef.current || mode === 'soft') {
             navigate(`/mock/${mockId}`);
@@ -54,13 +54,13 @@ export function useMockExamGuard({ mockId, part, active, mode = 'strict' }: Mock
         return ok;
     }, [doForfeit, mockId, navigate, t, mode]);
 
-    // 浏览器返回键：压一层哨兵历史，popstate 时弹确认（soft 模式不拦）
+    // Browser back button: push a sentinel history entry and confirm on popstate (soft mode does not intercept)
     useEffect(() => {
         if (!active || mode === 'soft') return;
         window.history.pushState({ mockSentinel: true }, '');
         const onPop = () => {
             if (!activeRef.current || leavingRef.current) return;
-            // 先推回，保持停留；用户确认后再真正离开
+            // push it back first to stay put; only really leave once the user confirms
             window.history.pushState({ mockSentinel: true }, '');
             confirmExit();
         };
@@ -68,7 +68,7 @@ export function useMockExamGuard({ mockId, part, active, mode = 'strict' }: Mock
         return () => window.removeEventListener('popstate', onPop);
     }, [active, mode, confirmExit]);
 
-    // 关标签页/刷新：原生提示（刷新是允许的——回来还能续答，deadline 不动）
+    // Closing the tab or refreshing: the native prompt (refreshing is allowed - coming back resumes and the deadline does not move)
     useEffect(() => {
         if (!active) return;
         const onBeforeUnload = (e: BeforeUnloadEvent) => {

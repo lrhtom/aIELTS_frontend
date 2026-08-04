@@ -1,52 +1,58 @@
 /**
- * Pure helpers used by the flashcard rating buttons to preview when a card will next be due
- * for each of the 4 ratings (Again / Hard / Good / Easy).
+ * The pure-function part of the 'next due date' label on the flashcard rating buttons.
  *
- * Kept separate from the component so they can be unit-tested without React.
+ * Kept out of the component so it can be unit tested without React.
+ *
+ * This file once carried its own estimate that **did not agree with the real scheduler** (Hard x0.6 / Good x1.0 /
+ * Easy x1.5, with a 4-day fallback for new cards), and `vocab_due_label.test.ts` pinned those wrong values as the
+ * expected ones, so the bug survived a long time under the protection of green tests. It now delegates entirely to
+ * `utils/fsrs.ts` - the implementation ported verbatim from the backend's `fsrs_utils.py` and pinned by a golden table.
+ * Do not reinvent a set of coefficients in this file again.
  */
+import { previewInterval, elapsedCalendarDays } from './fsrs';
 
 export type FsrsState = 0 | 1 | 2 | 3; // 0=New, 1=Learning, 2=Review, 3=Relearning
 
 export interface FsrsCardLike {
     state: number;
     stability: number;
+    /** When absent, falls back the same way the backend does (the initial difficulty of rating 3). Pass it in for an accurate prediction. */
+    difficulty?: number;
+    /** Time of the last review; when absent the card is treated as just reviewed (elapsed = 0). */
+    last_review?: string | null;
 }
 
 /**
- * Predict the next due Date for `card` if the user rated it `rating` (1..4) right now.
+ * Predict when the card would next be due if `card` were rated `rating` (1..4) right now.
  *
- * Mirrors the heuristic in `predictDueAtFromRating` in vocabulary_flashcard_doing_page.tsx —
- * this is a UI estimate, not the server's authoritative FSRS scheduler.
+ * The interval comes from the real FSRS scheduler. Day intervals land at **midnight UTC**, matching the backend's
+ * `_next_day_midnight()`, rather than 'now + N x 24h' - otherwise a card reviewed in the evening would land a day
+ * later than the backend actually schedules it and the label would disagree.
  */
 export function predictNextDueAt(card: FsrsCardLike, rating: number, now: Date = new Date()): Date {
-    const next = new Date(now);
-    const s = Number(card.stability || 0);
+    const { scheduledDays } = previewInterval({
+        state: card.state,
+        stability: Number(card.stability || 0),
+        difficulty: Number(card.difficulty || 0),
+        elapsedDays: elapsedCalendarDays(card.last_review, now),
+    }, rating);
 
-    // New, Learning, Relearning: short-loop. Easy graduates to ~stability days.
-    if (card.state === 0 || card.state === 1 || card.state === 3) {
-        const days = rating <= 3 ? 1 : Math.max(1, Math.round(s || 4));
-        next.setDate(next.getDate() + days);
-        return next;
+    // scheduled_days = 0: a Review-stage Again, back in 5 minutes on the same day
+    if (scheduledDays === 0) {
+        return new Date(now.getTime() + 5 * 60 * 1000);
     }
-
-    // Review: Again sends to Relearning (5min). Hard/Good/Easy scale stability.
-    if (rating === 1) {
-        next.setMinutes(next.getMinutes() + 5);
-        return next;
-    }
-    const factor = rating === 2 ? 0.6 : rating === 3 ? 1.0 : 1.5;
-    const days = Math.max(1, Math.round((s || 1) * factor));
-    next.setDate(next.getDate() + days);
-    return next;
+    // day interval: midnight UTC today + N days (matching the backend's _next_day_midnight)
+    const midnightUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    return new Date(midnightUtc + scheduledDays * 86400000);
 }
 
 /**
- * Short label rendered inside each rating button.
+ * The short label inside each rating button.
  *
- * - Same calendar day → todayLabel (e.g. "今天")
- * - +1 day            → tomorrowLabel (e.g. "明天")
- * - Same year         → "MM-DD"
- * - Different year    → "YYYY-MM-DD"
+ * - same day  -> todayLabel (for example 'Today')
+ * - +1 day    -> tomorrowLabel (for example 'Tomorrow')
+ * - same year -> 'MM-DD'
+ * - next year -> 'YYYY-MM-DD'
  */
 export function formatDueLabel(
     due: Date,

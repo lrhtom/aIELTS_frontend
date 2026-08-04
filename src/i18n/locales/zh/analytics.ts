@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
 
 export const analytics = {
   practice: {

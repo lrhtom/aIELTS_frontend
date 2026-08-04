@@ -618,7 +618,7 @@
     border-color: var(--color-primary);
 }
 
-/* 冷启动无题目时的落地页（替代原来的静默跳转） */
+/* Landing page for a cold start with no question (replacing the old silent redirect) */
 .at-empty-wrap {
     text-align: center;
     padding: 4rem 1.5rem;

@@ -225,14 +225,14 @@ function ScheduledWordsModal({ days, planId, onClose, t }: { days: number; planI
     );
 }
 
-// 9 分制 KPI 配色（与 PracticeAnalyticsPanel 的 bandClass 同阈值，五面板统一）
+// 9-band KPI colours (same thresholds as PracticeAnalyticsPanel's bandClass, consistent across all five panels)
 function paBandClass(b: number): string {
     if (b >= 7) return 'pa-acc-high';
     if (b >= 5.5) return 'pa-acc-mid';
     return 'pa-acc-low';
 }
 
-// 掌握程度分级（与后端 analytics_views.py 的 stability 阈值、图表配色一一对应）
+// Mastery tiers (matching the stability thresholds in the backend's analytics_views.py and the chart colours one for one)
 const MASTERY_LEVELS = [
     { key: 'unlearned', color: '#94a3b8' },
     { key: 'beginner', color: '#f87171' },
@@ -685,7 +685,7 @@ function MasteryBarChart({ data, maxCount, t: labels }: { data: StateBucket[]; m
     const barGap = 10;
     const barW = Math.max(16, (graphW - barGap * (data.length + 1)) / data.length);
 
-    // 渐进色谱：未学习(灰) → 初识(红) → 熟悉(橙) → 巩固(蓝) → 掌握(绿) → 精通(金)
+    // A graded spectrum: not studied (grey) -> introduced (red) -> familiar (orange) -> consolidated (blue) -> mastered (green) -> expert (gold)
     const colors = ['#94a3b8', '#f87171', '#fb923c', '#60a5fa', '#34d399', '#fbbf24'];
 
     const yTicks = 4;
@@ -893,7 +893,7 @@ function WritingAnalyticsPanel({ t }: { t: any }) { // eslint-disable-line @type
         latestScore = lastT2.overall;
     }
 
-    // 平均分 + 最近批改（大小作文合并，新→旧）
+    // Average score plus recent corrections (Task 1 and Task 2 combined, newest first)
     const allRecords = [
         ...validTask1Trend.map(r => ({ ...r, taskLabel: t.task1 as string })),
         ...validTask2Trend.map(r => ({ ...r, taskLabel: t.task2 as string })),
@@ -1278,7 +1278,7 @@ function SpeakingAnalyticsPanel({ t }: { t: any }) { // eslint-disable-line @typ
         return <div className="pa-panel"><div className="pa-loading">{t.practice.loading}</div></div>;
     }
 
-    // 数据源 = AI 题库里已生成总结报告的口语会话（聊到一半没出报告的不计入）
+    // Data source = speaking sessions in the AI bank that produced a summary report (sessions abandoned mid-conversation are excluded)
     if (!data || data.trend.length === 0) {
         return (
             <div className="pa-panel">
@@ -1298,7 +1298,7 @@ function SpeakingAnalyticsPanel({ t }: { t: any }) { // eslint-disable-line @typ
     const target = user?.target_speaking ? Number(user.target_speaking) : null;
     const recentSessions = [...trend].reverse().slice(0, 10);
 
-    // 雷达图只用 7 个核心维度（所有模式共有）；ARE/coherence/depth 属模式专有，不进雷达
+    // The radar chart uses only the 7 core dimensions (common to every mode); ARE/coherence/depth are mode-specific and stay off the radar
     const RADAR_DIMS: { key: string; label: string }[] = [
         { key: 'accuracy',      label: tRoot('speakingConfig.summary.metricAccuracy') },
         { key: 'pronunciation', label: tRoot('speakingConfig.summary.metricPronunciation') },
@@ -1380,7 +1380,7 @@ function SpeakingScoreLineChart({ data, color, t, targetScore }: { data: Speakin
     const graphW = W - padL - padR;
     const graphH = H - padT - padB;
 
-    // 与写作趋势图相同的自适应 Y 轴：默认下限 4，低分数据出现时按 0.5 档下探
+    // The same adaptive Y axis as the writing trend chart: a floor of 4 by default, dropping in 0.5 steps when low scores appear
     const maxScore = 9;
     const minScore = useMemo(() => {
         let lo = 4;
@@ -1478,7 +1478,7 @@ function SpeakingScoreLineChart({ data, color, t, targetScore }: { data: Speakin
     );
 }
 
-/** N 维雷达图（口语 7 个核心维度）；结构沿用 WritingSkillsRadarChart，轴数自适应 */
+/** An N-dimensional radar chart (the 7 core speaking dimensions); structurally the same as WritingSkillsRadarChart, with an adaptive axis count */
 function SpeakingSkillsRadarChart({ data, targetScore }: { data: { label: string; score: number }[]; targetScore?: number | null }) {
     const W = 460;
     const H = 400;

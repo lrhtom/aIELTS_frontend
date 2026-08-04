@@ -9,7 +9,7 @@ import ChromeOnlyGuard from './components/guards/ChromeOnlyGuard';
 import ATBalanceMonitor from './components/billing/ATBalanceMonitor';
 import { useAuth } from './contexts/AuthContext';
 
-// 通用页面
+// Common pages
 import HomePage from './pages/home_page';
 import PracticeHub from './pages/practice_hub';
 import AIPractice from './pages/ai_practice';
@@ -27,23 +27,23 @@ import CreativeWorkshopFavoritesPage from './pages/creative_workshop/creative_wo
 import CreativeWorkshopPreviewPage from './pages/creative_workshop/creative_workshop_preview_page';
 import CreativeWorkshopEditPage from './pages/creative_workshop/creative_workshop_edit_page';
 
-// 认证
+// Auth
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 
-// 阅读
+// Reading
 import WordSelection_page from './pages/reading/WordSelection_page';
 import Reading_page from './pages/reading/reading_page';
 
-// 听力
+// Listening
 import ListeningConfig from './pages/listening/listening_config';
 import ListeningPage from './pages/listening/listening_page';
 
-// 口语
+// Speaking
 import Speaking from './pages/speaking/speaking';
 import SpeakingSummaryPage from './pages/speaking/speaking_summary';
 
-// 写作
+// Writing
 import Writing_page from './pages/writing/writing_page';
 import WritingChatConfigPage from './pages/writing/writing_chat_config_page';
 import WritingCorrectionPage from './pages/writing/writing_correction_page';
@@ -55,6 +55,8 @@ import Task2OpinionDrillGeneratingPage from './pages/writing/task2_opinion_drill
 import Task2OpinionDrillDoingPage from './pages/writing/task2_opinion_drill_doing_page';
 import Task2PracticePage from './pages/writing/task2_practice_page';
 import ChartPracticePage from './pages/writing/chart_practice_page';
+import WritingFullConfigPage from './pages/writing/writing_full_config_page';
+import WritingFullHubPage from './pages/writing/writing_full_hub_page';
 import AiTeacherGenPage from './pages/writing/ai_teacher_gen_page';
 import AiTeacherLessonPage from './pages/writing/ai_teacher_lesson_page';
 import Task1AiTeacherGenPage from './pages/writing/task1_ai_teacher_gen_page';
@@ -62,11 +64,11 @@ import Task1AiTeacherLessonPage from './pages/writing/task1_ai_teacher_lesson_pa
 import AiTeachersHubPage from './pages/writing/ai_teachers_hub_page';
 import WritingServiceRecordsPage from './pages/writing/writing_service_records_page';
 
-// 全套模拟
+// Full mock exam
 import MockConfigPage from './pages/mock/mock_config_page';
 import MockHubPage from './pages/mock/mock_hub_page';
 
-// 词汇
+// Vocabulary
 import VocabularyPracticePage from './pages/vocabulary/vocabulary_practice_page';
 import VocabularyTrainingPage from './pages/vocabulary/vocabulary_training_page';
 import CustomMemoryCreatePage from './pages/vocabulary/custom_memory_create_page';
@@ -149,6 +151,8 @@ export default function App() {
         <Route path="/writing/task2/doing" element={<ProtectedRoute><Task2PracticePage /></ProtectedRoute>} />
         <Route path="/writing/chart" element={<Navigate to="/writing/task1" replace />} />
         <Route path="/writing/chart/doing" element={<ProtectedRoute><ChartPracticePage /></ProtectedRoute>} />
+        <Route path="/writing/full" element={<ProtectedRoute><WritingFullConfigPage /></ProtectedRoute>} />
+        <Route path="/writing/full/:id" element={<ProtectedRoute><WritingFullHubPage /></ProtectedRoute>} />
         <Route path="/writing/ai-teacher" element={<ProtectedRoute><AiTeacherGenPage /></ProtectedRoute>} />
         <Route path="/writing/ai-teacher/lesson" element={<ProtectedRoute><AiTeacherLessonPage /></ProtectedRoute>} />
         <Route path="/writing/task1-ai-teacher" element={<ProtectedRoute><Task1AiTeacherGenPage /></ProtectedRoute>} />

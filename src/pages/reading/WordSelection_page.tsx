@@ -187,7 +187,7 @@ export default function WordSelection_page() {
     const toggleMixType = (k: ReadingQuestionTypeKey) => {
         setSingleMix(prev => {
             if (prev.includes(k)) return prev.filter(x => x !== k);
-            if (prev.length >= 3) return prev; // 最多 3 种
+            if (prev.length >= 3) return prev; // Keep polling while any child is still generating; the card flips itself to 'start'
             return [...prev, k];
         });
     };
@@ -312,7 +312,7 @@ export default function WordSelection_page() {
                                 </div>
                             </div>
                         </div>
-                        {/* 自定义提示词指令（高级，可选）*/}
+                        {/* at most 3 types*/}
                         <div className="uc-card-group">
                             <CustomPromptField value={customPrompt} onChange={setCustomPrompt} />
                         </div>

@@ -30,17 +30,17 @@ export default function UserBackground() {
     const [imageInputMode, setImageInputMode] = useState<'url' | 'upload'>('url');
     const [imageUrlInput, setImageUrlInput] = useState(user?.bg_image_url || '');
 
-    // 上传状态
+    // upload state
     const [uploading, setUploading] = useState(false);
     const [uploadMsg, setUploadMsg] = useState('');
 
-    // 保存状态
+    // save state
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
 
     const fileRef = useRef<HTMLInputElement>(null);
 
-    // ── 本地预览颜色（不保存）──
+    // -- Local colour preview (not saved) --
     const previewColor = (value: string) => {
         applyUserBackground({ ...user, bg_color: value, bg_image_url: null } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
         setBgColor(value);
@@ -48,7 +48,7 @@ export default function UserBackground() {
         setImageUrlInput('');
     };
 
-    // ── 本地预览 URL 图片（不保存）──
+    // -- Local URL image preview (not saved) --
     const previewImageUrl = (url: string) => {
         if (!url) return;
         applyUserBackground({ ...user, bg_color: null, bg_image_url: url, bg_blur: bgBlur } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -56,25 +56,25 @@ export default function UserBackground() {
         setBgColor('');
     };
 
-    // ── 实时预览模糊度变化 ──
+    // -- Live preview of blur changes --
     const handleBlurChange = (val: number) => {
         setBgBlur(val);
         const layer = document.getElementById('bg-image-layer') as HTMLDivElement | null;
         if (layer) layer.style.filter = `blur(${val}px)`;
     };
 
-    // ── 上传图片文件到服务器 ──
+    // -- Upload an image file to the server --
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // 先本地预览
+        // preview locally first
         const localUrl = URL.createObjectURL(file);
         applyUserBackground({ ...user!, bg_color: null, bg_image_url: localUrl });
         setBgImageUrl(localUrl);
         setBgColor('');
 
-        // 上传到服务器
+        // upload to the server
         setUploading(true);
         setUploadMsg('');
         try {
@@ -86,7 +86,7 @@ export default function UserBackground() {
             const serverUrl: string = resp.data.image_url;
             setBgImageUrl(serverUrl);
             setImageUrlInput(serverUrl);
-            // 已自动写入数据库，直接更新本地用户状态
+            // already written to the database, so just update the local user state
             updateUser(resp.data.user);
             setUploadMsg(`✅ ${t('profile.background.uploadSuccess')}`);
         } catch (err: unknown) {
@@ -124,7 +124,7 @@ export default function UserBackground() {
         }
     };
 
-    // ── 手动保存颜色/URL 设置（图片上传已自动保存）──
+    // -- Manually save colour/URL settings (image uploads save themselves) --
     const handleSave = async () => {
         setSaving(true);
         setSaveMsg('');
@@ -152,7 +152,7 @@ export default function UserBackground() {
                 <p className="ub-desc">{t('profile.background.desc')}</p>
             </div>
 
-            {/* ── 颜色自定义 ── */}
+            {/* -- Colour customisation -- */}
             <section className="ub-section">
                 <div className="ub-section-title">🎨 {t('profile.background.colorSection')}</div>
                 <p className="ub-section-desc">{t('profile.background.colorDesc')}</p>
@@ -168,7 +168,7 @@ export default function UserBackground() {
                             {bgColor === p.value && <span className="ub-swatch-check">✓</span>}
                         </button>
                     ))}
-                    {/* 自定义颜色拾取 */}
+                    {/* custom colour picker */}
                     <label className="ub-swatch ub-custom-swatch" title={t('profile.background.colorSection')}>
                         <input
                             type="color"
@@ -180,7 +180,7 @@ export default function UserBackground() {
                 </div>
             </section>
 
-            {/* ── 背景图片自定义 ── */}
+            {/* -- Background image customisation -- */}
             <section className="ub-section">
                 <div className="ub-section-title">🖼 {t('profile.background.imageSection')}</div>
                 <p className="ub-section-desc">{t('profile.background.imageDesc')}</p>
@@ -237,7 +237,7 @@ export default function UserBackground() {
                 )}
             </section>
 
-            {/* ── 模糊度调节 ── */}
+            {/* -- Blur adjustment -- */}
             <section className="ub-section">
                 <div className="ub-section-title">🌫 {t('profile.background.blurSection')}</div>
                 <p className="ub-section-desc">{t('profile.background.blurDesc')}</p>
@@ -255,7 +255,7 @@ export default function UserBackground() {
                 </div>
             </section>
 
-            {/* ── 底部操作栏 ── */}
+            {/* -- Bottom action bar -- */}
             <div className="ub-actions">
                 <button className="ub-clear-btn" onClick={handleClear} disabled={saving || uploading}>{t('profile.background.clearBtn')}</button>
                 <div className="ub-actions-right">

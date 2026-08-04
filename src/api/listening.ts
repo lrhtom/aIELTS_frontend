@@ -43,7 +43,7 @@ export interface ListeningFullRequest {
     scenarioS2?: string;
     scenarioS3?: string;
     scenarioS4?: string;
-    /** 只生成第 N 段 (1|2|3|4); 省略则生成全 4 段 */
+    /** Generate only section N (1|2|3|4); omit to generate all 4 */
     sectionNum?: 1 | 2 | 3 | 4;
 }
 

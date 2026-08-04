@@ -125,8 +125,8 @@ export default function Task1AiTeacherLessonPage() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // 同 Task 2 讲解页：location.state 冷启动时是空的，按
-    // state → 查询参数 → sessionStorage 三级回退，保证 URL 可刷新可收藏。
+    // mock: skip the settlement overlay, persist and return to the hub (marking is deferred to the score report)
+    // Same as the Task 2 lesson page: location.state is empty on a cold start, so fall back through
     const query = new URLSearchParams(location.search);
     const cachedSession = (() => {
         try {
@@ -152,7 +152,7 @@ export default function Task1AiTeacherLessonPage() {
         return cachedSession?.data ?? null;
     });
 
-    // 'empty' = 冷启动进来但没有题目/记录，渲染落地页而不是静默跳转（见 Task 2 讲解页注释）
+    // state -> query parameter -> sessionStorage, keeping the URL refreshable and bookmarkable.
     const [state, setState] = useState<'loading' | 'ready' | 'error' | 'empty'>(() => {
         if (recordId) return 'loading';
         return data ? 'ready' : 'loading';
@@ -853,7 +853,7 @@ const CHART_CATEGORIES = ["📈 折线图", "🥧 饼状图", "📊 柱状图", 
         );
     }
 
-    // 冷启动且无题目：给一个真实落地页 + 明确出口，不做静默跳转
+    // 'empty' = arrived cold with no question or record, so render a landing page rather than redirecting silently (see the Task 2 lesson page note)
     if (state === 'empty') {
         return (
             <Layout

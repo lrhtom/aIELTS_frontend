@@ -182,7 +182,7 @@ export default function AdminServiceHealth() {
                         </div>
                     </div>
 
-                    {/* This-run cost (损耗) */}
+                    {/* This-run cost */}
                     <div className="ash-cost">
                         <Coins size={16} className="ash-cost-icon" />
                         <span className="ash-cost-title">{t('profile.admin.serviceHealth.costTitle')}:</span>

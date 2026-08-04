@@ -1,7 +1,7 @@
-// 全套模拟 · 考试模式共享组件
-// MockTimerBar：sticky 倒计时条。挂载时调 startMockPart（幂等）取服务端 deadline，
-// 剩余时间按服务端时钟计算（刷新/断线不重置）；归零回调 onExpire（由页面自动交卷）。
-// 防退出守卫见 ./useMockExamGuard.ts（react-refresh 要求组件文件只导出组件）。
+// Full mock - shared components for exam mode
+// MockTimerBar: a sticky countdown bar. On mount it calls startMockPart (idempotent) to get the server's deadline,
+// and the remaining time is computed on the server clock (so a refresh or reconnect does not reset it); onExpire fires at zero (the page auto-submits).
+// The exit guard lives in ./useMockExamGuard.ts (react-refresh requires a component file to export only components).
 import { useEffect, useRef, useState } from 'react';
 import { startMockPart, type MockExamPart } from '../../api/mock';
 import { useLang } from '../../i18n/LanguageContext';
@@ -17,9 +17,9 @@ function fmt(ms: number): string {
 interface MockTimerBarProps {
     mockId: number;
     part: MockExamPart;
-    /** 倒计时归零时回调一次（页面应立即自动交卷当前草稿） */
+    /** Called once when the countdown hits zero (the page should immediately auto-submit the current draft) */
     onExpire?: () => void;
-    /** start 被拒（该部分已结束/未解锁等）→ 页面应退回大厅 */
+    /** start was refused (the part has already finished, is not unlocked, and so on) -> the page should return to the hub */
     onRejected?: (message: string) => void;
 }
 
@@ -63,7 +63,7 @@ export function MockTimerBar({ mockId, part, onExpire, onRejected }: MockTimerBa
     const remaining = deadlineMs - (Date.now() + offsetRef.current);
     if (remaining <= 0 && !expiredFiredRef.current) {
         expiredFiredRef.current = true;
-        // setState 期间不触发副作用：微任务里回调
+        // Do not fire side effects during setState: call back in a microtask
         queueMicrotask(() => onExpire?.());
     }
     const cls = remaining <= 60_000 ? 'is-danger' : remaining <= 5 * 60_000 ? 'is-warning' : '';

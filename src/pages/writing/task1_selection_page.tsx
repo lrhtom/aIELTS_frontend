@@ -176,7 +176,7 @@ export default function Task1SelectionPage() {
                             </div>
                         </div>
 
-                        {/* 自定义提示词指令（高级，可选）· 地图题走图像生成，不适用 */}
+                        {/* Full set (Task 1 + Task 2): generates both questions at once, then answer each from the hub */}
                         {selectedType !== 'map' && (
                             <div className="uc-card-group">
                                 <CustomPromptField value={customPrompt} onChange={setCustomPrompt} />

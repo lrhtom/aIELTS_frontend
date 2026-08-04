@@ -15,10 +15,10 @@ interface Props {
     onFlip: () => void;
     onRating: (rating: number) => void;
     estimateInterval: (card: VocabCard, rating: number) => string;
-    /** Returns the formatted absolute date (e.g. "06-25" / "今天") the card will next surface at after this rating. */
+    /* block the space key */
     previewNextDueLabel?: (card: VocabCard, rating: number) => string;
     simpleMode?: boolean;
-    /** false 时正面锁死不可翻（用于「必须听完发音再翻面」） */
+    /** Returns the formatted absolute date (for example '06-25' or 'Today') the card will next surface at after this rating. */
     canFlip?: boolean;
 }
 

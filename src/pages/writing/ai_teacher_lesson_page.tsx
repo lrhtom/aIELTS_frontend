@@ -457,9 +457,9 @@ function SingleLangBadBox({ en, zh, label }: { en: string; zh: string; label: st
 
 const SESSION_KEY = 'aiTeacherLesson';
 
-// 'empty' = 冷启动进来但没有任何题目/记录可显示。
-// 这种情况必须渲染一个真实页面，不能默默 navigate 走 —— 否则用户刷新就"闪退"，
-// Lighthouse 之类的工具也会因为立即重定向而测不到这个页面。
+// The lesson page carries ?record=<id> so refreshing or bookmarking this record still opens it
+// 'empty' = arrived cold with no question or record to show.
+// That case must render a real page and never navigate away silently - otherwise a refresh reads as a crash,
 type PageState = 'loading' | 'error' | 'ready' | 'empty';
 
 export default function AiTeacherLessonPage() {
@@ -467,9 +467,9 @@ export default function AiTeacherLessonPage() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // location.state 只活在内存里：直接输网址、刷新、或被 Lighthouse 这类工具冷启动时
-    // 一律是空的。所以按 state → 查询参数 → sessionStorage 三级回退取参数，
-    // 保证这个 URL 可刷新、可收藏、可被审计工具打开。
+    // and tools like Lighthouse cannot measure a page that redirects immediately.
+    // location.state only lives in memory: a typed URL, a refresh, or a cold start by a tool like Lighthouse
+    // always leaves it empty. So the parameters fall back through state -> query parameter -> sessionStorage,
     const query = new URLSearchParams(location.search);
     const cachedSession = (() => {
         try {
@@ -484,7 +484,7 @@ export default function AiTeacherLessonPage() {
     const recordId = (location.state as any)?.record_id
         ?? (query.get('record') ? Number(query.get('record')) : undefined);
 
-    // 提取高级偏好设置
+    // keeping this URL refreshable, bookmarkable, and reachable by audit tools.
     const [viewpointEnabled] = useState(() => (location.state as any)?.viewpointEnabled || false);
     const [viewpoint] = useState(() => (location.state as any)?.viewpoint || '');
     const [customInstructions] = useState(() => (location.state as any)?.customInstructions || '');
@@ -1335,7 +1335,7 @@ const QUESTION_TYPES = ["同意与否类 (Agree / Disagree)", "双边讨论类 (
         );
     }
 
-    // 冷启动且无题目：给一个真实落地页 + 明确出口，不做静默跳转
+    // pull out the advanced preferences
     if (state === 'empty') {
         return (
             <Layout

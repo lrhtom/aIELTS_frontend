@@ -110,7 +110,7 @@ export default function VocabularyTrainingDoingPage() {
             return;
         }
 
-        // 仅浏览器刷新答题页时恢复进度；普通路由跳转不恢复
+        // start studying
         if (isReloadNavigation()) {
             const cached = sessionStorage.getItem(sessionKey);
             if (cached) {
@@ -338,7 +338,7 @@ export default function VocabularyTrainingDoingPage() {
         });
     }, [mode, step, questions, currentIndex]);
 
-    // 完全听写：每道新题自动朗读一次
+    // Restore progress only on a browser refresh of the answering page; ordinary route changes do not restore
     useEffect(() => {
         if (mode !== 'dictation' || step !== 'doing') return;
         if (questions.length === 0 || !questions[currentIndex]) return;

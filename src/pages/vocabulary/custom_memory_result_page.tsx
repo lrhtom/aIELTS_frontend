@@ -45,7 +45,7 @@ export default function CustomMemoryResultPage() {
     const [ready, setReady] = useState(false);
     const [restarting, setRestarting] = useState(false);
 
-    // 同 study 页：冷启动没有成绩数据时渲染落地页，不静默跳走
+    // == Copy mode ==
     const [noSession, setNoSession] = useState(false);
 
     useEffect(() => {

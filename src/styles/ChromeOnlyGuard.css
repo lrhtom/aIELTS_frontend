@@ -12,7 +12,7 @@
 .chrome-guard-banner {
     position: sticky;
     top: 0;
-    z-index: 10001; /* 确保在 Navbar (1000) 之上 */
+    z-index: 10001; /* make sure it sits above the navbar (1000) */
     background: linear-gradient(90deg, #fff7ed, #ffedd5);
     border-bottom: 1px solid #fed7aa;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);

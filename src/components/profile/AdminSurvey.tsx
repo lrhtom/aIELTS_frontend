@@ -39,7 +39,7 @@ interface SurveyStats {
     targetBandDist: Record<string, number>;
 }
 
-// 与 UserSurvey 一致的字段 ↔ 短键映射（profile.survey.bShort.<key>）。
+// The same field <-> short key mapping as UserSurvey (profile.survey.bShort.<key>).
 const RATING_FIELDS = [
     { field: 'q_all_skills', key: 'allSkills' },
     { field: 'q_reading_relevant', key: 'readingRelevant' },
@@ -64,13 +64,13 @@ export default function AdminSurvey() {
     const [currentPage, setCurrentPage] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
 
-    // PNG 导出（复用 speaking_summary 的 html2canvas 写法：截图 → 下载 + 复制剪贴板）
+    // PNG export (reusing speaking_summary's html2canvas approach: screenshot -> download + copy to clipboard)
     const questionsRef = useRef<HTMLDivElement>(null);
     const statsRef = useRef<HTMLDivElement>(null);
-    // 单份作答的离屏截图源；导出哪一份就先把它渲染进去
+    // Offscreen screenshot source for a single response; whichever one is being exported is rendered in first
     const respondentRef = useRef<HTMLDivElement>(null);
     const [printItem, setPrintItem] = useState<SurveyItem | null>(null);
-    // 'q' 题目 / 'r' 汇总 / `c${id}` 某一份作答
+    // 'q' the questions / 'r' the summary / `c${id}` one particular response
     const [exporting, setExporting] = useState<string | null>(null);
 
     const exportPng = useCallback(async (node: HTMLElement | null, filename: string, kind: string) => {
@@ -92,7 +92,7 @@ export default function AdminSurvey() {
             URL.revokeObjectURL(url);
             try {
                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            } catch { /* 部分浏览器不支持写图片剪贴板，静默忽略 */ }
+            } catch { /* some browsers cannot write images to the clipboard, ignore silently */ }
             toast.success(t('common.saved'));
         } catch (e) {
             console.error('Export PNG failed', e);
@@ -104,7 +104,7 @@ export default function AdminSurvey() {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // 下载某位用户的作答报告：先同步渲染离屏节点，再截图
+    // Download one user's response report: render the offscreen node synchronously first, then screenshot it
     const exportRespondent = useCallback(async (item: SurveyItem) => {
         if (exporting) return;
         flushSync(() => setPrintItem(item));
@@ -274,7 +274,7 @@ export default function AdminSurvey() {
                 {renderStats()}
             </div>
 
-            {/* 离屏可打印问卷（导出题目 PNG 的截图源，按 Appendix B 排版） */}
+            {/* Offscreen printable survey (the screenshot source for exporting the questions as a PNG, laid out per Appendix B) */}
             <div className="survey-print-offscreen" aria-hidden="true">
                 <div ref={questionsRef} className="survey-print">
                     <h1 className="sp-title">{t('profile.survey.heading')}</h1>
@@ -312,7 +312,7 @@ export default function AdminSurvey() {
                     <div className="sp-line" />
                 </div>
 
-                {/* 单份作答报告（点卡片下载按钮时才有内容） */}
+                {/* A single response report (only populated when the card's download button is clicked) */}
                 <div ref={respondentRef} className="survey-print">
                     {printItem && (
                         <>

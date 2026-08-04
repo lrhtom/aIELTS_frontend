@@ -423,7 +423,7 @@
 }
 
 /* ═════════════════════════════════════════════════════════════════
-   Practice Analytics (Reading / Listening 正确率)
+   Practice analytics (reading / listening accuracy)
    ═════════════════════════════════════════════════════════════════ */
 .pa-panel {
     display: flex;
@@ -461,7 +461,7 @@
     font-weight: 600;
     color: var(--color-text);
 }
-/* 统计口径徽章：只统计 40 题全套卷 */
+/* Scope badge: only complete 40-question papers are counted */
 .pa-skill-scope-badge {
     font-size: 11px;
     font-weight: 600;
@@ -500,7 +500,7 @@
 }
 
 /* KPI row */
-/* 弹性 KPI 行：主位 + 任意数量副位（听/说/读/写/mock 五面板共用） */
+/* Flexible KPI row: one primary plus any number of secondary slots (shared by the listening/speaking/reading/writing/mock panels) */
 .pa-kpi-row {
     display: flex;
     align-items: stretch;

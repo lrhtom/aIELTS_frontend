@@ -8,7 +8,7 @@ import { useLang } from '../../i18n/LanguageContext';
 import '../../styles/practice_page.css';
 import '../../styles/vocabulary_flashcard_config.css';
 
-/* ── 解析输入 ─────────────────────────────────────────────────────────────── */
+/* -- 'Add words' panel (unfolded by the top-bar '+ Add words' button) -- */
 interface VocabEntry { en: string; zh: string }
 
 function parseVocabInput(raw: string): VocabEntry[] {
@@ -37,7 +37,7 @@ function parseVocabInput(raw: string): VocabEntry[] {
     }).filter(Boolean) as VocabEntry[];
 }
 
-/* ── 卡片排序：到期卡优先，新卡在后 ─────────────────────────────────────── */
+/* -- Parse the input ------------------------------------------------------- */
 function sortCards(cards: VocabCard[]): VocabCard[] {
     return [...cards].sort((a, b) => {
         const aNew = a.state === 0;
@@ -47,7 +47,7 @@ function sortCards(cards: VocabCard[]): VocabCard[] {
     });
 }
 
-/* ── 组件 ─────────────────────────────────────────────────────────────────── */
+/* -- Card ordering: due cards first, new cards after ----------------------- */
 export default function VocabularyFlashcardConfigPage() {
     const { t } = useLang();
     const navigate = useNavigate();
@@ -63,12 +63,12 @@ export default function VocabularyFlashcardConfigPage() {
 
     const handleVocabChange = (val: string) => {
         setVocabInput(val);
-        // 输入改变后清空上次同步结果
+        // -- Component -------------------------------------------------------------
         setAllCards(null);
         setStats(null);
     };
 
-    /* 同步词汇到后端，获取 FSRS 状态 */
+    /* clear the last sync result once the input changes */
     const handleSync = async () => {
         const entries = parseVocabInput(vocabInput);
         if (entries.length === 0) {
@@ -87,7 +87,7 @@ export default function VocabularyFlashcardConfigPage() {
         }
     };
 
-    /* 开始背诵 */
+    /* sync the vocabulary to the backend and get the FSRS state back */
     const handleStart = () => {
         if (!allCards) {
             showToast(t('vocab.flashcardConfig.toastNoSync'), 'error');

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { type User, authApi } from '../api/auth';
 import { mediaUrl } from '../utils/media';
 
-// ── 背景模糊层管理 ────────────────────────────────────────
+// -- Background blur layer management --------------------
 function getOrCreateBgLayer(blur: number): HTMLDivElement {
     let layer = document.getElementById('bg-image-layer') as HTMLDivElement | null;
     if (!layer) {
@@ -16,7 +16,7 @@ function getOrCreateBgLayer(blur: number): HTMLDivElement {
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
             backgroundAttachment: 'fixed',
-            transform: 'scale(1.08)', // 防止模糊后出现白边
+            transform: 'scale(1.08)', // prevent a white fringe appearing after the blur
             transition: 'background-image 0.3s ease, filter 0.2s ease',
         });
         document.body.prepend(layer);
@@ -29,24 +29,24 @@ function removeBgLayer() {
     document.getElementById('bg-image-layer')?.remove();
 }
 
-// ── 背景工具函数 ──────────────────────────────────────────
+// -- Background helpers ----------------------------------
 // eslint-disable-next-line react-refresh/only-export-components
 export function applyUserBackground(user: User | null) {
     if (user?.bg_image_url) {
-        // 图片模式：通过独立 div 层展示，带模糊
+        // Image mode: displayed through its own div layer, with the blur
         const blur = typeof user.bg_blur === 'number' ? user.bg_blur : 2;
         const layer = getOrCreateBgLayer(blur);
         // bg_image_url is polymorphic — mediaUrl() passes external http(s):// URLs
         // through untouched and prepends VITE_MEDIA_BASE to relative keys.
         layer.style.backgroundImage = `url(${mediaUrl(user.bg_image_url)})`;
-        // body 本身透明，让模糊层打底
+        // the body itself is transparent so the blur layer shows through
         document.body.style.background = 'transparent';
         document.body.style.backgroundColor = 'transparent';
     } else if (user?.bg_color) {
-        // 颜色/渐变模式：不需要模糊层
+        // Colour / gradient mode: no blur layer needed
         removeBgLayer();
         const isGrad = user.bg_color.startsWith('linear-gradient') || user.bg_color.startsWith('radial-gradient');
-        // 先清 shorthand，再设置属性，否则 background 会覆盖 backgroundColor
+        // Clear the shorthand first, then set the property, otherwise background overrides backgroundColor
         document.body.style.background = isGrad ? user.bg_color : '';
         document.body.style.backgroundColor = isGrad ? '' : user.bg_color;
     } else {

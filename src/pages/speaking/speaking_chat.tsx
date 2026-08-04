@@ -93,7 +93,7 @@ function countMatches(text: string, word: string): number {
     return (text.match(rx) || []).length;
 }
 
-// 欢迎语是对话内容（英文），不走 i18n —— 与 AI 回复同语言
+// The welcome message is conversation content (English) and does not go through i18n - same language as the AI replies
 function buildWelcome(mode: SpeakingMode, isFullTest: boolean, questions: ExamQuestion[], scenario: string): string {
     if (mode === 'scenario') {
         return `Acting for scenario: "${scenario}". I am ready to start. What would you like to say first?`;
@@ -108,7 +108,7 @@ function buildWelcome(mode: SpeakingMode, isFullTest: boolean, questions: ExamQu
     return "Welcome to IELTS speaking practice. Tell me when you are ready.";
 }
 
-// 题库卡片标题是落库数据（同 AI 生成的英文题目名），不走 i18n
+// The bank card title is stored data (the AI-generated English question name) and does not go through i18n
 function buildSessionTitle(mode: SpeakingMode, questions: ExamQuestion[], scenario: string): string {
     const topic = questions[0]?.topic || '';
     if (mode === 'fullTest') return topic ? `IELTS Full Test · ${topic}` : 'IELTS Full Speaking Test';
@@ -171,41 +171,41 @@ function SpeakingChatPage() {
         scenarioModifiers?: Record<string, string[]>,
         mockId?: number,
     };
-    // 从 AI 题库恢复会话：/speaking/chat?bankId=123
+    // Restore a session from the AI bank: /speaking/chat?bankId=123
     const [searchParams] = useSearchParams();
     const bankIdRaw = searchParams.get('bankId');
     const resumeId = bankIdRaw && !Number.isNaN(Number(bankIdRaw)) ? Number(bankIdRaw) : null;
-    // 全套模拟：考试规则（5 秒反应 + 防退出 + 结束回大厅）。新开局走 state，刷新/恢复走 query。
+    // Full mock: exam rules (5-second reaction + exit guard + return to the hub when finished). A fresh start uses state; refresh and restore use the query.
     const mockIdRaw = searchParams.get('mockId');
     const mockId: number | null = state?.mockId ?? (mockIdRaw && !Number.isNaN(Number(mockIdRaw)) ? Number(mockIdRaw) : null);
 
     const vocabRaw: string = state?.vocabInput ?? '';
     const initialMode: SpeakingMode = state?.mode ?? 'chat';
-    // rootMode/scenarioPrompt 需要在恢复会话时被覆写，所以是 state 而不是 const
+    // rootMode/scenarioPrompt get overwritten when restoring a session, hence state rather than const
     const [rootMode, setRootMode] = useState<SpeakingMode>(initialMode);
     const [scenarioPrompt, setScenarioPrompt] = useState<string>(state?.scenarioInput ?? '');
-    // 纯语音模式（原 call 模式并入 chat 后的开关）：隐藏键盘输入
+    // Voice-only mode (the switch left over after call mode folded into chat): hides keyboard input
     const [voiceOnly, setVoiceOnly] = useState<boolean>(state?.voiceOnly ?? false);
-    // 场景干扰选项（真实难度增强）：{选项:[子选项]}，随会话配置持久化，恢复时从 content 还原
+    // Scenario interference options (realism boosters): {option:[sub-options]}, persisted with the session config and restored from content
     const [scenarioModifiers, setScenarioModifiers] = useState<Record<string, string[]>>(state?.scenarioModifiers ?? {});
-    // 背景噪音环境音：静音开关（默认外放）
+    // Background ambience: mute toggle (audible by default)
     const [ambienceMuted, setAmbienceMuted] = useState(false);
     const ambienceRef = useRef<NoiseAmbience | null>(null);
-    // 音质干扰：对 TTS 语音施加滤波（电话/闷响/无线电）
+    // Audio-quality interference: apply a filter to the TTS voice (phone/muffled/radio)
     const audioFxRef = useRef<AudioQualityFx | null>(null);
     const [activeMode, setActiveMode] = useState<SpeakingMode>(initialMode);
     const [activeExamQuestions, setActiveExamQuestions] = useState<ExamQuestion[]>(state?.questions ?? []);
     const isFullTestMode = rootMode === 'fullTest';
     const isExamMode = activeMode === 'part1' || activeMode === 'part2' || activeMode === 'part3' || isFullTestMode;
 
-    // ── 路由守卫：防止刷新或直接跳转进来（带 bankId 的恢复入口放行）─────────
-    // 不做静默 navigate —— 那在用户看来就是"闪退"，自动化工具也测不到本页。
-    // 改为置位 noSession，渲染一个带出口的落地页。
+    // -- Route guard: block refreshes and direct jumps (the bankId restore entry is allowed) ---------
+    // No silent navigate - to the user that reads as a crash, and automation cannot test this page either.
+    // Set noSession instead and render a landing page with a way out.
     //
-    // 用 useState 惰性初始化而不是 effect：初始化流程（建会话行等）也在 effect 里，
-    // 同一次 commit 里所有 effect 都会跑，靠 effect 置位挡不住它们 —— 必须在渲染阶段
-    // 就把结论定下来，让下面的 effect 能第一行 return。冻结在挂载时也避免了卸载清理
-    // 把 isChatAllowed 置 false 后本值被反转。
+    // Lazily initialise with useState rather than an effect: the setup flow (creating the session row and so on) also
+    // lives in an effect, and every effect in the same commit runs, so setting a flag from an effect cannot stop them -
+    // the verdict has to be settled during render so the effects below can return on their first line. Freezing at mount also
+    // stops this value flipping once the unmount cleanup sets isChatAllowed to false.
     const [noSession] = useState(() => !speakingStore.isChatAllowed && !resumeId);
     useEffect(() => {
         if (noSession) return;
@@ -274,7 +274,7 @@ function SpeakingChatPage() {
     // Prevent concurrent handleSend calls
     const pendingRef = useRef(false);
 
-    // ── 会话持久化（AI 题库）──
+    // -- Session persistence (AI bank) --
     const sessionIdRef = useRef<number | null>(null);
     const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingSyncRef = useRef<Record<string, unknown> | null>(null);
@@ -297,15 +297,15 @@ function SpeakingChatPage() {
         setWords(prev => { const n = fn(prev); wordsRef.current = n; return n; });
     };
 
-    // ── 全套模拟：防退出守卫 + 5 秒反应规则 ─────────────────────────────
-    // 守卫在会话结束（finished）后解除；退出确认 → forfeit 判 0 → 回大厅。
+    // -- Full mock: exit guard + 5-second reaction rule ---------------------------------
+    // The guard lifts once the session is finished; confirming exit -> forfeit (score 0) -> back to the hub.
     const { confirmExit: mockConfirmExit } = useMockExamGuard({
         mockId: mockId ?? 0,
         part: 'speaking',
         active: mockId !== null && status !== 'finished',
     });
-    // 考官说完（idle）起 5 秒内必须开口；Part 2 备考期（prepTimeLeft>0）豁免。
-    // 超时 → 本题按空回答走正常流水线（评分≈0 并推进下一题/换 Part）。
+    // Once the examiner stops speaking (idle) the user has 5 seconds to start; Part 2 prep time (prepTimeLeft>0) is exempt.
+    // Timeout -> this question goes through the normal pipeline as a blank answer (score near 0, then advance or switch Part).
     const [reactionLeft, setReactionLeft] = useState<number | null>(null);
     const reactionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     useEffect(() => {
@@ -334,11 +334,11 @@ function SpeakingChatPage() {
 
     // ── Init: play welcome then unlock mic ─────────────────────────────────
     useEffect(() => {
-        // 无会话（冷启动/刷新进来）：什么都不做，交给落地页渲染。
-        // 尤其不能往下走 —— 下面会建一条 speaking 会话行，冷启动跑一次就多一条脏数据。
+        // No session (cold start or arrived by refresh): do nothing and let the landing page render.
+        // Above all do not fall through - the code below creates a speaking session row, so every cold start would add a dirty record.
         if (noSession) return;
 
-        // 重置所有状态到初始值，防止从其他页面返回时残留旧数据
+        // Reset all state to its initial value so nothing stale survives coming back from another page
         setStatusSync('loading');
         setChatHistory([]);
         setLiveTranscript('');
@@ -350,15 +350,15 @@ function SpeakingChatPage() {
         setShowTextInput(false);
         setIsMicUnusable(false);
 
-        // 不做预请求——新?Chrome 要求 getUserMedia 必须由用户手势触发，
-        // useEffect 中调用会被拦截并返回 NotFoundError
-        // 麦克风权限在实际点击录音按钮时（toggleRecording）申请。
-        // 后端各端点已通过 skills.py 注入正确?system prompt，前端不再硬编码
+        // No pre-request - newer Chrome requires getUserMedia to be triggered by a user gesture,
+        // so calling it in useEffect is blocked and returns NotFoundError
+        // Microphone permission is requested when the record button is actually clicked (toggleRecording).
+        // The backend endpoints already inject the right system prompt via skills.py; the frontend no longer hardcodes it
         let isUnmounted = false;
         const controller = new AbortController();
 
         if (resumeId) {
-            // ── 从 AI 题库恢复会话：取回落库状态；已有总结报告则直接看结果 ──
+            // -- Restore a session from the AI bank: fetch the stored state; if a summary report exists, go straight to the result --
             (async () => {
                 try {
                     const detail = await getAIQuestion(resumeId);
@@ -371,7 +371,7 @@ function SpeakingChatPage() {
                     const ua = (detail.userAnswer || {}) as Record<string, unknown>;
                     let mode = ((content.mode as SpeakingMode) || (detail.subtype as SpeakingMode) || 'chat');
                     if (mode === 'call') {
-                        // 旧"通话模式"会话 → 自由对话 + 纯语音
+                        // legacy call-mode sessions -> free conversation + voice-only
                         mode = 'chat';
                         setVoiceOnly(true);
                     } else {
@@ -401,7 +401,7 @@ function SpeakingChatPage() {
                     const savedHistory = Array.isArray(ua.chatHistory) ? (ua.chatHistory as ChatMessage[]) : [];
                     if (savedHistory.length > 0) {
                         setChatHistory(savedHistory);
-                        // 恢复 AI 上下文：只取正文对话（system 提示与评分面板不进上下文）
+                        // Restore the AI context: take the conversation body only (system prompts and the score panel stay out of context)
                         contextRef.current = savedHistory
                             .filter(m => (m.role === 'user' || m.role === 'assistant') && m.content)
                             .map(m => ({ role: m.role, content: m.content }));
@@ -440,8 +440,8 @@ function SpeakingChatPage() {
         contextRef.current = [];
         setChatHistory([{ role: 'assistant', content: welcomeMsg }]);
 
-        // 开局建会话行（不调 AI、不扣 AT）；失败不阻塞练习，仅本次不落库。
-        // sessionCreateFiredRef 挡掉 StrictMode 第二次 effect，避免生成重复 session。
+        // Create the session row at the start (no AI call, no AT charged); a failure does not block practice, it only skips persistence this time.
+        // sessionCreateFiredRef blocks StrictMode's second effect run so no duplicate session is created.
         if (!sessionCreateFiredRef.current) {
             sessionCreateFiredRef.current = true;
             const customTitle = (state?.customTitle ?? '').trim();
@@ -456,13 +456,13 @@ function SpeakingChatPage() {
                     bankSource: state?.bankSource ?? '',
                     voiceOnly: state?.voiceOnly ?? false,
                     scenarioModifiers: state?.scenarioModifiers ?? {},
-                    // 题库卡片简介从 content.description 读取（与听/读/写一致）
+                    // The bank card description is read from content.description (same as listening/reading/writing)
                     description: (state?.customDesc ?? '').trim(),
                 },
                 mockId ?? undefined,
             ).then(res => {
                 sessionIdRef.current = res.id;
-                // mock：把 bankId/mockId 写回 URL，刷新后可直接走恢复路径续考
+                // mock: write bankId/mockId back into the URL so a refresh can take the restore path and continue the exam
                 if (mockId) {
                     window.history.replaceState(window.history.state, '', `/speaking/chat?bankId=${res.id}&mockId=${mockId}`);
                 }
@@ -508,7 +508,7 @@ function SpeakingChatPage() {
                 const url = URL.createObjectURL(blob);
                 const a = new Audio(url);
                 audioRef.current = a;
-                audioFxRef.current?.attach(a); // 音质干扰：接入滤波链（无激活则直接播放）
+                audioFxRef.current?.attach(a); // Audio-quality interference: wire in the filter chain (play directly when nothing is active)
 
                 a.onended = () => {
                     if (!isUnmounted) setStatusSync('idle');
@@ -562,12 +562,12 @@ function SpeakingChatPage() {
     const liveTranscriptRef = useRef('');
     useEffect(() => { liveTranscriptRef.current = liveTranscript; }, [liveTranscript]);
 
-    // ── 会话同步：每次对话/进度变化后防抖 800ms 覆盖式写回 AI 题库 ──────────
-    // 载荷包含恢复会话所需的全部动态状态；分数（含异步并入的 Azure 发音分）
-    // 已经在 chatHistory 消息体里，随之一起落库。
+    // -- Session sync: after every turn or progress change, debounce 800ms and overwrite the AI bank record ----------
+    // The payload carries every dynamic piece of state needed to restore the session; the scores (including the
+    // asynchronously merged Azure pronunciation score) already live in the chatHistory messages and persist with them.
     useEffect(() => {
         if (!sessionIdRef.current) return;
-        if (chatHistory.length <= 1) return; // 只有欢迎语时不同步
+        if (chatHistory.length <= 1) return; // skip syncing when only the welcome message exists
         const payload: Record<string, unknown> = {
             chatHistory,
             words: wordsRef.current,
@@ -588,7 +588,7 @@ function SpeakingChatPage() {
         }, 800);
     }, [chatHistory, status, currentQuestionIndex, activeExamQuestions, fullTestPhase, activeMode, scenarioPrompt]);
 
-    // 卸载时冲刷最后一次未发出的同步，避免丢最后一轮
+    // Flush the last pending sync on unmount so the final turn is not lost
     useEffect(() => () => {
         if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
         const sid = sessionIdRef.current;
@@ -599,11 +599,11 @@ function SpeakingChatPage() {
         }
     }, []);
 
-    // ── 背景噪音环境音（场景模式 + 开启 noise 时循环播放选中的噪音层）────────────
+    // -- Background ambience (scenario mode with noise on: loop the selected noise layer) ------------
     useEffect(() => {
         const noiseSubs = activeMode === 'scenario' ? scenarioModifiers['noise'] : undefined;
         if (noiseSubs === undefined) {
-            // 未开启噪音：停掉并释放
+            // noise off: stop and release
             ambienceRef.current?.stop();
             ambienceRef.current = null;
             return;
@@ -616,7 +616,7 @@ function SpeakingChatPage() {
         ambienceRef.current?.setMuted(ambienceMuted);
     }, [ambienceMuted]);
 
-    // 音质干扰：把选中的滤波 profile 交给 fx；后续每条 TTS 播放时接入
+    // Audio-quality interference: hand the selected filter profile to fx; every later TTS playback wires into it
     useEffect(() => {
         const subs = activeMode === 'scenario' ? scenarioModifiers['audioquality'] : undefined;
         if (subs === undefined) {
@@ -624,10 +624,10 @@ function SpeakingChatPage() {
             return;
         }
         if (!audioFxRef.current) audioFxRef.current = new AudioQualityFx();
-        audioFxRef.current.setProfiles(subs.length ? subs : ['phone']); // 开了但没细选 → 默认电话音质
+        audioFxRef.current.setProfiles(subs.length ? subs : ['phone']); // enabled but nothing chosen -> default to phone quality
     }, [activeMode, scenarioModifiers]);
 
-    // 卸载时停掉环境音 + 释放音效上下文
+    // Stop the ambience and release the audio context on unmount
     useEffect(() => () => {
         ambienceRef.current?.stop(); ambienceRef.current = null;
         audioFxRef.current?.dispose(); audioFxRef.current = null;
@@ -825,11 +825,11 @@ function SpeakingChatPage() {
             srRef.current = sr;
 
             try {
-                // 1. 获取麦克风权限
+                // 1. get microphone permission
                 await setupAudioVisualizer();
                 if (!micStreamRef.current) throw new Error('No stream');
 
-                // 2. 准备后台纯正 WAV 录音器
+                // 2. prepare the background clean-WAV recorder
                 const recorder = new RecordRTC(micStreamRef.current, {
                     type: 'audio',
                     mimeType: 'audio/wav',
@@ -838,7 +838,7 @@ function SpeakingChatPage() {
                     desiredSampRate: 16000,
                 });
 
-                // 3. 当浏览器前端 STT 连通时触发
+                // 3. fires once the browser's front-end STT connects
                 sr.onstart = () => {
                     if (statusRef.current === 'mic_loading') {
                         recorder.startRecording();
@@ -911,7 +911,7 @@ function SpeakingChatPage() {
 
             const a = new Audio(url);
             audioRef.current = a;
-            audioFxRef.current?.attach(a); // 音质干扰：接入滤波链（无激活则直接播放）
+            audioFxRef.current?.attach(a); // Audio-quality interference: wire in the filter chain (play directly when nothing is active)
 
             a.onended = () => {
                 setStatusSync(isFinished ? 'finished' : 'idle');
@@ -1079,7 +1079,7 @@ function SpeakingChatPage() {
                         }
                     }
                 } else if (effectiveMode === 'part2') {
-                    // 连续联动：Part2 固定只问 1 个大问题，然后弹出是否进入 Part3
+                    // Continuous flow: Part 2 always asks exactly one long question, then prompts whether to move on to Part 3
                     setCurrentQuestionIndex(nextIndex);
                     nextReply = 'That is the end of Part 2. Would you like to continue with Part 3 practice?';
                     isContinue = 0;
@@ -1135,7 +1135,7 @@ function SpeakingChatPage() {
                 }
             };
 
-            // 处理结束逻辑
+            // handle the finish logic
             setChatHistory(h => {
                 const newHistory = [...h, aiMsg];
                 if (isContinue === 0) {
@@ -1308,7 +1308,7 @@ function SpeakingChatPage() {
         }
     };
 
-    // 冷启动/刷新进来没有会话：渲染落地页而不是跳走
+    // Cold start or arrived by refresh with no session: render the landing page instead of navigating away
     if (noSession) {
         return (
             <div className="sc-root">
@@ -1331,13 +1331,13 @@ function SpeakingChatPage() {
 
     return (
         <div className="sc-root">
-            {/* 全套模拟：5 秒反应倒计时（Part 2 备考期不出现） */}
+            {/* Full mock: 5-second reaction countdown (absent during Part 2 prep time) */}
             {reactionLeft !== null && (
                 <div className="mock-reaction-badge">
                     ⏱ {t('mock.examMode.speakingReaction').replace('{s}', String(reactionLeft))}
                 </div>
             )}
-            {/* 背景噪音环境音：静音/外放开关（仅场景模式开启 noise 时出现）*/}
+            {/* Background ambience: mute/unmute toggle (only in scenario mode with noise enabled)*/}
             {activeMode === 'scenario' && ('noise' in scenarioModifiers) && (
                 <button
                     type="button"
@@ -1592,7 +1592,7 @@ function SpeakingChatPage() {
                             </div>
                         )}
 
-                        {/* [New] 结束时的总结按钮 */}
+                        {/* [New] summary button shown when finished */}
                         {status === 'finished' && (
                             <div className="sc-finish-overlay">
                                 {showPart3ContinuePrompt ? (
@@ -1637,7 +1637,7 @@ function SpeakingChatPage() {
                             {MIC_LABEL[status]}
                         </button>
 
-                        {/* Text Input Toggle & Area（纯语音模式隐藏键盘；麦克风不可用时始终降级显示） */}
+                        {/* Text input toggle and area (hidden in voice-only mode; always shown as a fallback when the mic is unavailable) */}
                         {((activeMode === 'chat' && !voiceOnly) || isMicUnusable) && (
                             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
                                 {!showTextInput ? (

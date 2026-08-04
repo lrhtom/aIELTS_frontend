@@ -16,9 +16,19 @@ export interface CopyPendingAction {
 export interface ReviewResult {
     word:          string;
     zh:            string;
+    /** The rating that graduated the word (not every rating it received). */
     rating:        number;
     newDue:        string;
     scheduledDays: number;
+    /**
+     * Was this word forgotten (rated Again, or answered wrong) at any point in
+     * the session? Stamped by the store on graduation from `sessionForgot`, so
+     * callers never pass it — see `advanceQueue`.
+     *
+     * It exists so the summary can classify each word into exactly ONE bucket:
+     * a word that was ever forgotten counts as relearned and nowhere else.
+     */
+    forgot:        boolean;
 }
 
 export interface CompletionDueHint {
@@ -181,4 +191,36 @@ export function extractTypedCopies(input: string, target: string, maxCount: numb
     }
 
     return result;
+}
+
+/**
+ * Per-word summary buckets for the end-of-session results page.
+ *
+ * Index 0 = relearned, 1 = hard, 2 = good, 3 = easy, and **every graduated word
+ * lands in exactly one of them**, so the four numbers sum to `results.length`.
+ *
+ * The rule: a word forgotten at any point in the session is relearned and is
+ * counted nowhere else; only words that were never forgotten are bucketed by
+ * the rating that graduated them.
+ *
+ * This used to be a per-CLICK rating histogram computed inline in the results
+ * JSX, which double-counted — a word rated Again 3x then Good once landed in
+ * both the Again column (3) and the Good column (1). The four numbers then
+ * summed to the click count, never to the word count, while sitting next to a
+ * "graduated N words" figure: two units in one row, reading as one distribution.
+ * Per-click totals are still shown separately, explicitly labelled as times.
+ */
+export function summariseWordBuckets(results: ReviewResult[]): [number, number, number, number] {
+    const buckets: [number, number, number, number] = [0, 0, 0, 0];
+    for (const r of results) {
+        if (r.forgot) {
+            buckets[0] += 1;
+            continue;
+        }
+        // rating 2/3/4 -> hard/good/easy. A graduating rating of 1 is only
+        // reachable together with `forgot`, which is handled above; clamping
+        // keeps a malformed record out of the wrong bucket rather than crashing.
+        buckets[Math.min(3, Math.max(1, r.rating - 1))] += 1;
+    }
+    return buckets;
 }

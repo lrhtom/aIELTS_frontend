@@ -29,7 +29,7 @@ export default function AiTeacherGenPage() {
         }
         setSubmitting(true);
         sessionStorage.removeItem('aiTeacherLesson');
-        // 题目同时写进 query：location.state 刷新即丢，带上它讲解页才刷得动
+        // Custom prompt instructions (advanced, optional)
         navigate(`/writing/ai-teacher/lesson?topic=${encodeURIComponent(trimmed)}`, {
             state: {
                 topic: trimmed,

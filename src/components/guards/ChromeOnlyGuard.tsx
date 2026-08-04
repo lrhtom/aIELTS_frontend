@@ -5,8 +5,8 @@ import '../../styles/ChromeOnlyGuard.css';
 export default function ChromeOnlyGuard({ children }: { children: ReactNode }) {
     const { t } = useLang();
 
-    // 兼容 iOS Chrome (CriOS) 和桌面端/安卓端 Chrome
-    // 同时排除 Edge (Edg) 和 Opera (OPR)
+    // Works for iOS Chrome (CriOS) as well as desktop and Android Chrome
+    // while excluding Edge (Edg) and Opera (OPR)
     const isChrome = (/Chrome/.test(navigator.userAgent) || /CriOS/.test(navigator.userAgent)) && 
                      !/Edg\/|OPR\//.test(navigator.userAgent);
 

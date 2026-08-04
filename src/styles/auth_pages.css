@@ -228,7 +228,7 @@
     }
 }
 
-/* 验证码输入组：邮箱输入和发送按钮并排 */
+/* Verification code input group: the email field and the send button side by side */
 .code-input-group {
     display: flex;
     gap: 10px;
@@ -265,7 +265,7 @@
     cursor: not-allowed;
 }
 
-/* info 提示框 */
+/* info notice box */
 .auth-info {
     background: rgba(13, 148, 136, 0.08);
     color: var(--color-primary-hover);
@@ -276,7 +276,7 @@
     animation: slideIn 0.3s ease-out forwards;
 }
 
-/* auth-submit（注册页使用的类名）兼容 */
+/* compatibility with auth-submit (the class name used by the sign-up page) */
 .auth-submit {
     margin-top: 10px;
     padding: 16px;

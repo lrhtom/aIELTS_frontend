@@ -18,6 +18,9 @@ interface Props {
 const HELP_EXAMPLES = [
     { key: 'ollama',     labelKey: 'pOllama',     name: 'llama3.2',            url: 'http://localhost:11434/v1/chat/completions',                    sk: 'ollama' },
     { key: 'openai',     labelKey: 'pOpenai',     name: 'gpt-4o-mini',         url: 'https://api.openai.com/v1/chat/completions',                    sk: 'sk-...' },
+    //two templates each taking what they need, so the results page does not need its own i18n key
+    // For reasoning models (gpt-5.x and the o family) the backend automatically omits temperature and uses
+    { key: 'gpt56',      labelKey: 'pGpt56',      name: 'gpt-5.6-sol',         url: 'https://api.openai.com/v1/chat/completions',                    sk: 'sk-...' },
     { key: 'deepseek',   labelKey: 'pDeepseek',   name: 'deepseek-chat',       url: 'https://api.deepseek.com/v1/chat/completions',                  sk: 'sk-...' },
     { key: 'qwen',       labelKey: 'pQwen',       name: 'qwen-plus',           url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', sk: 'sk-...' },
     { key: 'openrouter', labelKey: 'pOpenrouter', name: 'openai/gpt-4o-mini',  url: 'https://openrouter.ai/api/v1/chat/completions',                 sk: 'sk-or-...' },
@@ -155,6 +158,7 @@ export default function CustomModelModal({ open, editing, onClose, onSaved }: Pr
                             ))}
                         </div>
                         <p className="cm-help-note">{t('components.customModel.helpNote')}</p>
+                        <p className="cm-help-note">{t('components.customModel.helpReasoningNote')}</p>
                         <p className="cm-help-note">{t('components.customModel.helpOllamaNote')}</p>
                     </div>
                 )}

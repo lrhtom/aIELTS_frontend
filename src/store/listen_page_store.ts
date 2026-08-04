@@ -1,11 +1,11 @@
-// ─── 类型定义 ─────────────────────────────────────────────────────────────────
+// --- Type definitions ---------------------------------------------------------
 
 export interface VocabItem {
     word: string;
     meaning: string;
 }
 
-// ── 现有 4 种题型的 Question ──
+// -- Question types for the existing 4 formats --
 export interface ListeningQuestion {
     id: number;
     question: string;
@@ -43,7 +43,7 @@ export interface MultipleChoiceListeningData {
     questions: MultipleChoiceQuestion[];
 }
 
-// ── 地图 (保留) ──
+// -- Map (kept) --
 export interface MapLandmark {
     id: string;
     label: string;
@@ -103,8 +103,8 @@ export interface MapListeningData {
     questions: MapQuestion[];
 }
 
-// ── 5 种新题型的 Data ──
-// Form / Table / Flowchart / ShortAnswer 都是 text-answer 类型: 只是 layout 不同
+// -- Data for the 5 new question types --
+// Form / Table / Flowchart / ShortAnswer are all text-answer types: only the layout differs
 export interface FormListeningData {
     type: 'form';
     title: string;
@@ -147,8 +147,8 @@ export interface ShortAnswerListeningData {
 // Matching: 5 items each mapped to letter A-G
 export interface MatchingListeningItem {
     id: number;
-    question: string;   // 项目名字
-    answer: string;     // 字母 A-G
+    question: string;   // item name
+    answer: string;     // letters A-G
     explanation: string;
 }
 
@@ -173,15 +173,15 @@ export type SingleListeningData =
     | ShortAnswerListeningData
     | MatchingListeningData;
 
-// ── 综合套题 (4 sections) ──
+// -- Combined paper (4 sections) --
 export interface SectionSubsection {
     type: 'multiple_choice' | 'map' | 'matching';
     instructions?: string;
     startId: number;
     endId: number;
     questions: (MultipleChoiceQuestion | MapQuestion | MatchingListeningItem)[];
-    // 可能出现的字段
-    options?: string[];                         // map: 选项列表 A-H
+    // fields that may appear
+    options?: string[];                         // map: option list A-H
     map?: MapData;                              // map
     options_bank?: Record<string, string>;      // matching
 }
@@ -192,14 +192,14 @@ export interface FullListeningSection {
     title: string;
     passage: string;
     scenario?: string;
-    // Section 1: form / Section 4: note — 单题型
+    // Section 1: form / Section 4: note - single question type
     form_intro?: string;
     form_content?: string;
     note_intro?: string;
     note_content?: string;
     // Section 2/3: subsections
     subsections?: SectionSubsection[];
-    // 平铺后的完整题目 (backend 已合并到 flat questions)
+    // the flattened complete question list (the backend already merges them into flat questions)
     questions: (ListeningQuestion | MultipleChoiceQuestion | MapQuestion | MatchingListeningItem)[];
 }
 
@@ -215,7 +215,7 @@ export type ListeningData = SingleListeningData | FullListeningData;
 // Legacy narrowed union for existing render paths
 export type LegacyListeningData = ArticleListeningData | SentenceListeningData | MultipleChoiceListeningData | MapListeningData;
 
-// ─── Store 初始状态工厂 ────────────────────────────────────────────────────────
+// --- Store initial state factory ----------------------------------------------
 
 export interface ListeningState {
     step: number;
@@ -225,7 +225,7 @@ export interface ListeningState {
     activeSection: 1 | 2 | 3 | 4;
     isRightOpen: boolean;
     isPassageOpen: boolean;
-    // 作答耗时（与 reading_page_store 对齐；音频播放进度 playbackTime 是另一回事）
+    // time on task (matching reading_page_store; the audio playback position playbackTime is a separate thing)
     startTime: number;
     elapsedSeconds: number;
 }
@@ -238,7 +238,8 @@ export function createListeningState(): ListeningState {
         listeningData: null,
         activeSection: 1,
         isRightOpen: true,
-        isPassageOpen: false,
+        // The results page expands the transcript by default: checking answers almost always needs it, and making the user open it again is busywork
+        isPassageOpen: true,
         startTime: 0,
         elapsedSeconds: 0,
     };

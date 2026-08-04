@@ -13,7 +13,7 @@ interface TourStep {
     selector?: string;
 }
 
-// 环游路线：主页 → AI 练习中心 → 四技能 → 词汇 → 商店 → 个人中心 → 助手 → 回主页收尾。
+// Layout rule: the options bank sits ABOVE the answer grid
 const TOUR_STEPS: TourStep[] = [
     { id: 'welcome', route: '/', selector: '.hp-headline' },
     { id: 'checkin', route: '/', selector: '.hp-checkin-wrap' },
@@ -31,10 +31,10 @@ const TOUR_STEPS: TourStep[] = [
 ];
 
 const FIND_INTERVAL_MS = 150;
-const FIND_MAX_TRIES = 33; // ~5s：页面懒加载/接口慢时的等待上限
+const FIND_MAX_TRIES = 33; // The tour route: home -> AI practice hub -> the four skills -> vocabulary -> shop -> profile -> assistant -> back home to finish.
 const SPOT_PAD = 8;
 const TT_W = 344;
-const TT_H_FALLBACK = 260; // 首帧估算，之后用实测高度摆位
+const TT_H_FALLBACK = 260; // ~5s: the upper bound on waiting for a lazily loaded page or a slow endpoint
 const GAP = 14;
 const MARGIN = 12;
 
@@ -44,7 +44,7 @@ interface Rect { top: number; left: number; width: number; height: number; }
 
 let startTourFn: (() => void) | null = null;
 
-/** 全局启动向导模式 —— 任何页面调用即可（容器挂在 App 根部）。 */
+/* a first-frame estimate; after that the measured height drives the positioning */
 // eslint-disable-next-line react-refresh/only-export-components
 export function startTour() {
     if (startTourFn) startTourFn();
@@ -65,24 +65,24 @@ function tooltipPos(rect: Rect | null, ttH: number): React.CSSProperties {
     let left = clamp(rect.left + rect.width / 2 - w / 2, MARGIN, vw - w - MARGIN);
     let top: number;
     if (rect.top + rect.height + GAP + ttH <= vh - MARGIN) {
-        top = rect.top + rect.height + GAP;              // 下方
+        top = rect.top + rect.height + GAP;              //* Start the tour globally - callable from any page (the container is mounted at the App root).
     } else if (rect.top - GAP - ttH >= MARGIN) {
-        top = rect.top - GAP - ttH;                      // 上方
+        top = rect.top - GAP - ttH;                      // below
     } else if (rect.left + rect.width + GAP + w <= vw - MARGIN) {
         top = clamp(rect.top + rect.height / 2 - ttH / 2, MARGIN, vh - ttH - MARGIN);
-        left = rect.left + rect.width + GAP;             // 右侧
+        left = rect.left + rect.width + GAP;             // above
     } else if (rect.left - GAP - w >= MARGIN) {
         top = clamp(rect.top + rect.height / 2 - ttH / 2, MARGIN, vh - ttH - MARGIN);
-        left = rect.left - GAP - w;                      // 左侧
+        left = rect.left - GAP - w;                      // to the right
     } else {
-        top = vh - ttH - MARGIN;                         // 兜底：视口底部居中
+        top = vh - ttH - MARGIN;                         // to the left
     }
     return { left, top };
 }
 
 /**
- * 向导模式容器 —— 放在 App 根组件中即可（模式同 ToastContainer）。
- * 跨页面 spotlight 导览：自动跳转路由 → 等目标元素出现 → 高亮 + 气泡讲解。
+ *  fallback: centred at the bottom of the viewport
+ * Tour guide container - just place it in the App root (the same pattern as ToastContainer).
  */
 export default function TourGuide() {
     const { t } = useLang();
@@ -108,7 +108,7 @@ export default function TourGuide() {
         setRect(null);
     }, []);
 
-    // 注册全局启动函数
+    //A cross-page spotlight tour: navigate the route automatically -> wait for the target element -> highlight it and explain in a bubble.
     useEffect(() => {
         startTourFn = () => {
             navPendingRef.current = false;
@@ -119,7 +119,7 @@ export default function TourGuide() {
         return () => { startTourFn = null; };
     }, []);
 
-    // 进入新一站：路由不符则先跳转
+    // register the global start function
     useEffect(() => {
         if (stepIndex === null) return;
         const s = TOUR_STEPS[stepIndex];
@@ -130,11 +130,11 @@ export default function TourGuide() {
             navPendingRef.current = true;
             navigate(s.route);
         }
-        // location.pathname 变化由下方守卫 effect 单独处理
+        // Entering a new stop: navigate first if the route does not match
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stepIndex, navigate]);
 
-    // 路由守卫：用户通过浏览器前进/后退离开当前站 → 静默结束导览
+    // changes to location.pathname are handled separately by the guard effect below
     useEffect(() => {
         if (stepIndex === null) return;
         const s = TOUR_STEPS[stepIndex];
@@ -145,7 +145,7 @@ export default function TourGuide() {
         }
     }, [location.pathname, stepIndex, stop]);
 
-    // 等目标元素出现（路由切换 + 懒加载页面都要等）
+    // Route guard: if the user leaves the current stop via the browser's back/forward buttons, end the tour silently
     useEffect(() => {
         if (stepIndex === null) return;
         const s = TOUR_STEPS[stepIndex];
@@ -161,14 +161,14 @@ export default function TourGuide() {
                 el.scrollIntoView({ block: 'center', behavior: 'smooth' });
                 return;
             }
-            if (++tries >= FIND_MAX_TRIES) { setSearching(false); return; } // 找不到 → 居中卡片兜底
+            if (++tries >= FIND_MAX_TRIES) { setSearching(false); return; } // Wait for the target element to appear (needed for both route changes and lazily loaded pages)
             timer = window.setTimeout(find, FIND_INTERVAL_MS);
         };
         find();
         return () => window.clearTimeout(timer);
     }, [stepIndex, location.pathname]);
 
-    // 追踪目标位置：rAF 循环逐帧量测，平滑跟随滚动 / 布局变化
+    // not found -> fall back to a centred card
     useEffect(() => {
         if (!targetEl) return;
         let raf = 0;
@@ -200,7 +200,7 @@ export default function TourGuide() {
         if (stepIndex > 0) setStepIndex(stepIndex - 1);
     }, [stepIndex]);
 
-    // 键盘：Esc 退出，←/→ 翻站
+    // Track the target's position: measure every frame in a rAF loop so it follows scrolling and layout changes smoothly
     useEffect(() => {
         if (!active) return;
         const onKey = (e: KeyboardEvent) => {
@@ -212,12 +212,12 @@ export default function TourGuide() {
         return () => window.removeEventListener('keydown', onKey);
     }, [active, next, prev, stop]);
 
-    // 换站后把焦点放到「下一步」，键盘用户可以一路 Enter
+    // Keyboard: Esc exits, left/right move between stops
     useEffect(() => {
         if (active) nextBtnRef.current?.focus({ preventScroll: true });
     }, [active, stepIndex]);
 
-    // 实测气泡高度供摆位用 —— 文案长短不一，估算值会导致底部裁切、按钮点不到
+    // After changing stops, focus 'next' so a keyboard user can press Enter all the way through
     useLayoutEffect(() => {
         const h = ttRef.current?.offsetHeight;
         if (h && Math.abs(h - ttH) > 1) setTtH(h);
@@ -236,9 +236,9 @@ export default function TourGuide() {
 
     return (
         <div className="tour-root" role="dialog" aria-modal="true" aria-label={stepText.title}>
-            {/* 点击拦截层：导览期间页面不可交互（滚轮仍可滚动页面） */}
+            {/* The bubble height is measured for positioning - the text varies in length, and an estimate clips the bottom so the button cannot be clicked */}
             <div className="tour-blocker" onClick={e => e.stopPropagation()} />
-            {/* spotlight：透明洞 + 巨型 box-shadow 压暗四周；无目标时整屏压暗 */}
+            {/* Click blocker: the page is not interactive during the tour (the wheel still scrolls the page) */}
             {spot ? (
                 <div className="tour-spotlight" style={spot} />
             ) : (

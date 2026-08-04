@@ -1,4 +1,4 @@
-// ─── 类型定义 ─────────────────────────────────────────────────────────────────
+// --- Type definitions ---------------------------------------------------------
 
 export interface VocabItem {
     word: string;
@@ -19,22 +19,22 @@ export type ReadingQuestionType =
     | 'short_answer';
 export type ReadingJudgementMode = 'easy' | 'normal';
 
-// ── Question shape 是宽松联合: 各题型只用其中一部分字段 ──
+// -- Question shape is a loose union: each question type uses only some of the fields --
 export interface Question {
     id: number;
     explanation: string;
-    // 大部分题型有 question 文本, matching_headings 用 paragraph, note_completion 无
+    // most types have question text; matching_headings uses paragraph and note_completion has none
     question?: string;
     paragraph?: string;
-    // 单答案 (MCQ / TF / YN / matching_*): 字母或 True/False/...
+    // single answer (MCQ / TF / YN / matching_*): a letter or True/False/...
     answer?: string;
-    // 多个可接受答案 (sentence_completion / short_answer / note_completion)
+    // several acceptable answers (sentence_completion / short_answer / note_completion)
     answers?: string[];
-    // 选项字典 (MCQ / TF / YN)
+    // option dictionary (MCQ / TF / YN)
     options?: Record<string, string>;
 }
 
-// ── 单题型 QuizData ──
+// -- Single-type QuizData --
 export interface QuizData {
     title: string;
     passage: string;
@@ -42,7 +42,7 @@ export interface QuizData {
     questionType: ReadingQuestionType;
     questions: Question[];
     judgementMode?: ReadingJudgementMode | null;
-    // 题型专属字段 (来自 backend passthrough)
+    // question-type-specific fields (passed through from the backend)
     headings_bank?: Record<string, string>;
     paragraph_labels?: string[];
     features_bank?: Record<string, string>;
@@ -56,7 +56,7 @@ export interface QuizData {
     wordLimit?: string;
 }
 
-// ── 综合套题 ──
+// -- Combined paper --
 export interface FullPassageSection {
     questionType: ReadingQuestionType;
     instructions: string;
@@ -92,15 +92,15 @@ export interface FullQuizData {
     passages: FullPassage[];
 }
 
-// ─── Store 初始状态工厂 ────────────────────────────────────────────────────────
+// --- Store initial state factory ----------------------------------------------
 
 export interface ReadingState {
-    step: number;              // 2 = 阅读界面, 3 = 结果界面
+    step: number;              // 2 = the reading view, 3 = the results view
     isLoading: boolean;
     vocabList: VocabItem[];
     quizData: QuizData | null;
-    fullData: FullQuizData | null;   // 综合套题数据 (mode = 'full')
-    activePassage: number;           // 综合套题当前选中的 passage 编号
+    fullData: FullQuizData | null;   // combined paper data (mode = 'full')
+    activePassage: number;           // the passage number currently selected in a combined paper
     searchQuery: string;
     isLeftOpen: boolean;
     isRightOpen: boolean;
@@ -122,6 +122,7 @@ export function createReadingState(): ReadingState {
         isRightOpen: true,
         startTime: 0,
         elapsedSeconds: 0,
-        isPassageOpen: false,
+        // The results page expands the passage by default: checking answers almost always needs it, and making the user open it again is busywork
+        isPassageOpen: true,
     };
 }

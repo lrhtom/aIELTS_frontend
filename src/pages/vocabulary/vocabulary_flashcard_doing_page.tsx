@@ -25,8 +25,14 @@ import {
     clampCopyRepetitions,
     clampCopyReviewDays,
     countCopies,
+    summariseWordBuckets,
 } from '../../utils/vocab_flashcard_utils';
+import {
+    emptyProgress, localDateKey, loadTodayProgress, saveTodayProgress,
+    recordGraduation, recordRating, todayWords, type TodayProgress,
+} from '../../utils/vocab_today_progress';
 import { speakWord } from '../../utils/speak';
+import { previewInterval, elapsedCalendarDays } from '../../utils/fsrs';
 import { devLog } from '../../utils/devLog';
 import { useLearningTimer, formatLearningDuration } from '../../hooks/useLearningTimer';
 import { useChoiceOptionsPool } from '../../hooks/useChoiceOptionsPool';
@@ -65,23 +71,41 @@ export default function VocabularyFlashcardDoingPage() {
     }), [t]);
 
     const RS_CLASSES = ['rs-again', 'rs-hard', 'rs-good', 'rs-easy'];
-    const RS_LABELS  = useMemo(() => [
-        t('vocab.ratings.again'),
+    /**
+     * Summary labels. Bucket 0 is deliberately NOT the rating name "Again":
+     * it counts words that were forgotten at some point and then graduated, so
+     * "Relearned" is what actually happened. Calling it Again invites reading
+     * the row as a rating histogram, which is what made the old per-click
+     * numbers so confusing.
+     */
+    const RS_WORD_LABELS = useMemo(() => [
+        t('vocab.flashcardDoing.bucketRelearned'),
         t('vocab.ratings.hard'),
         t('vocab.ratings.good'),
         t('vocab.ratings.easy'),
     ], [t]);
 
+    /**
+     * The line under each rating button saying how many days away the card lands.
+     *
+     * It runs the scheduler in utils/fsrs.ts, ported verbatim from the backend's `fsrs_utils.py`,
+     * so the number shown **is** the interval the backend will actually schedule (`fsrs.golden.test.ts`
+     *
+     * pins it against a golden table exported from the backend).
+     * Do not go back to the old coefficient estimate (Hard x0.6 / Good x1.0 / Easy x1.5): checked against real
+     * cards, 14 of 24 combinations were wrong, and Hard was wrong in *direction* - in real FSRS a successful
+     */
     const estimateInterval = useCallback((card: VocabCard, rating: number): string => {
-        const { state, stability: s } = card;
-        if (state === 0 || state === 1 || state === 3) {
-            if (rating <= 3) return t('vocab.intervals.tomorrow');
-            return `${t('vocab.intervals.approx')}${Math.max(1, Math.round(s || 4))}${t('vocab.intervals.daysUnit')}`;
-        }
-        if (rating === 1) return t('vocab.intervals.minsAfter').replace('{n}', '5');
-        const factor = rating === 2 ? 0.6 : rating === 3 ? 1.0 : 1.5;
-        const days = Math.max(1, Math.round((s || 1) * factor));
-        return days === 1 ? `1${t('vocab.intervals.daysUnit')}` : `${t('vocab.intervals.approx')}${days}${t('vocab.intervals.daysUnit')}`;
+        const { scheduledDays } = previewInterval({
+            state: card.state,
+            stability: card.stability,
+            difficulty: card.difficulty,
+            elapsedDays: elapsedCalendarDays(card.last_review),
+        }, rating);
+        //recall only ever grows stability, even when rated Hard. Measured on the 'abbreviation' card: it showed 89 days, actual 182.
+        if (scheduledDays === 0) return t('vocab.intervals.minsAfter').replace('{n}', '5');
+        if (scheduledDays === 1) return t('vocab.intervals.tomorrow');
+        return t('vocab.intervals.daysAfter').replace('{n}', String(scheduledDays));
     }, [t]);
 
     const formatDue = useCallback((isoStr: string): string => {
@@ -139,7 +163,10 @@ export default function VocabularyFlashcardDoingPage() {
     const graduatedCount = useVocabFlashcardStore((s) => s.graduatedCount);
     const visitKey = useVocabFlashcardStore((s) => s.visitKey);
     const results = useVocabFlashcardStore((s) => s.results);
-    const allRatings = useVocabFlashcardStore((s) => s.allRatings);
+    // `allRatings` deliberately not read here: the summary reports TODAY, and
+    // the store only knows this session. Today's click totals come from
+    // todayProgress instead. The store still records it for its own tests and
+    // for anything that genuinely wants just this session.
 
     const isFlipped = useVocabFlashcardStore((s) => s.isFlipped);
     const isFlipping = useVocabFlashcardStore((s) => s.isFlipping);
@@ -193,15 +220,29 @@ export default function VocabularyFlashcardDoingPage() {
     // ── Page-local state (configuration, init flags, transient menu state) ──
     const [step, setStep] = useState<Step>('doing');
     const [initialized, setInitialized] = useState(false);
-    // 冷启动（直接输网址 / 刷新 / 被 Lighthouse 这类工具打开）时 location.state 是空的，
-    // 没有卡片可背。此时渲染一个说明页而不是静默 navigate 走 —— 静默跳转在用户看来
-    // 就是"闪退"，审计工具也会因为立即重定向而测不到本页。
-    // 注意：这里不恢复会话，"刷新不保留进度"是刻意设计（见 initSession 前的清缓存逻辑）。
+    // scheduledDays = 0 is the Review-stage Again branch: it comes back in 5 minutes, same day
+    // On a cold start (typed URL / refresh / opened by a tool like Lighthouse) location.state is empty,
+    // so there are no cards to study. Render an explanatory page rather than navigating away silently - a silent
+    // redirect reads as a crash to the user, and audit tools cannot measure a page that redirects immediately.
     const [noSession, setNoSession] = useState(false);
     const [planId, setPlanId] = useState<number | null>(null);
     const [planName, setPlanName] = useState('');
     const [planDailyCount, setPlanDailyCount] = useState(0);
     const [studiedTodayBase, setStudiedTodayBase] = useState(0);
+    /**
+     * Everything studied TODAY, not just this session — the results screen is
+     * meant to answer "what did I get through today". Accumulated locally
+     * because no review log exists server-side; see utils/vocab_today_progress.
+     */
+    const [todayProgress, setTodayProgress] = useState<TodayProgress>(() => emptyProgress(localDateKey()));
+    /**
+     * Refs so the answer handler can persist without taking these as deps —
+     * adding them would rebuild the callback on every card and defeat the
+     * memoisation the rest of the page relies on.
+     */
+    const planIdRef = useRef<number | null>(null);
+    const userScopeRef = useRef<string | null>(null);
+    const sessionForgotRef = useRef<boolean[]>([]);
     const [mode, setMode] = useState<StudyMode>('flashcard');
     const [trackingMode, setTrackingMode] = useState<TrackingMode>('none');
     const [trackingMenuOpen, setTrackingMenuOpen] = useState(false);
@@ -276,10 +317,10 @@ export default function VocabularyFlashcardDoingPage() {
     }, []);
 
     /**
-     * 根据错误次数动态调整重新插入的位置：
-     * - 第1次错：放到后10个位置
-     * - 第2次错：放到后20个位置
-     * - 依此类推，直到队尾
+     *  Note: this deliberately does not restore the session. 'A refresh loses your progress' is by design (see the cache clearing before initSession).
+     * Push a wrong card back into the queue at a distance that grows with the mistake count:
+     * - 1st mistake: 10 positions back
+     * - 2nd mistake: 20 positions back
      */
     const reinsertAfterGap = useCallback((rest: number[], cardIndex: number) => {
         const errorCount = sessionErrorCount[cardIndex] ?? 0;
@@ -289,8 +330,8 @@ export default function VocabularyFlashcardDoingPage() {
     }, [sessionErrorCount]);
 
     /**
-     * 写模式专用后插公式（独立于其他模式）：
-     * 第1次错放到后5个，每多错一次后移1个，最多10个。
+     * - and so on, up to the end of the queue
+     * Re-insertion formula specific to the writing mode (independent of the others):
      */
     const reinsertAfterGapForWrite = useCallback((rest: number[], cardIndex: number) => {
         const errorCount = sessionErrorCount[cardIndex] ?? 0;
@@ -298,7 +339,7 @@ export default function VocabularyFlashcardDoingPage() {
         return [...rest.slice(0, gap), cardIndex, ...rest.slice(gap)];
     }, [sessionErrorCount]);
 
-    /* 初始化 */
+    /* Initialise the session from location.state (handed over by the plan page's start action) */
     useEffect(() => {
         const state = location.state as {
             cards?: VocabCard[];
@@ -317,7 +358,7 @@ export default function VocabularyFlashcardDoingPage() {
         const incomingPlanId = state?.planId ?? null;
         const incomingSessionKeyCandidates = getSessionKeyCandidates(incomingPlanId, userSessionScope);
 
-        // 安全优先：每次进入学习页都清理本地会话缓存。
+        // initialise
         incomingSessionKeyCandidates.forEach((key) => sessionStorage.removeItem(key));
         devLog('[词汇学习] 开始学习时已清理本地会话缓存，刷新/中断不保留单词进度', {
             planId: incomingPlanId,
@@ -339,7 +380,7 @@ export default function VocabularyFlashcardDoingPage() {
         );
 
         if (!state?.cards?.length) {
-            // 没有卡片：给一个可停留的说明页，出口按钮指回计划页
+            // Safety first: clear the local session cache on every entry to the study page.
             if (state?.planId) setPlanId(state.planId);
             setNoSession(true);
             return;
@@ -384,7 +425,19 @@ export default function VocabularyFlashcardDoingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    /* Mode同步到localStorage（作为长期持久化备份） */
+    /* Keep the answer handler's refs current without making it re-create per card */
+    useEffect(() => { planIdRef.current = planId; }, [planId]);
+    useEffect(() => { userScopeRef.current = user?.username ?? null; }, [user?.username]);
+    useEffect(() => { sessionForgotRef.current = sessionForgot; }, [sessionForgot]);
+
+    /* Pick today's tally back up, so a second session of the day adds to the
+       first instead of restarting the count. */
+    useEffect(() => {
+        if (!initialized) return;
+        setTodayProgress(loadTodayProgress(planId, user?.username ?? null));
+    }, [initialized, planId, user?.username]);
+
+    /* Mirror the study mode into localStorage as a long-term persistence backup */
     useEffect(() => {
         if (!initialized || !planId) return;
         if (mode && ['flashcard', 'flashcard-simple', 'read-aloud', 'choice', 'write', 'copy'].includes(mode)) {
@@ -392,21 +445,21 @@ export default function VocabularyFlashcardDoingPage() {
         }
     }, [mode, planId, initialized]);
 
-    // canFlip 用于「必须听完发音才能翻面」逻辑：新卡进入时先锁死翻面，
-    // TTS 的 onEnd/onError 触发时解锁；5s 兜底以防 TTS 被下一次 speakWord 取消
-    // (取消不触发 onended，会导致 canFlip 永远停在 false)。
+    // Mirror the mode into localStorage (as a long-term persistence backup)
+    // canFlip drives the 'you must hear the word before you can flip' rule: a new card starts with flipping
+    // locked and unlocks on the TTS onEnd/onError; the 5s fallback covers TTS being cancelled by the next speakWord
     const [canFlip, setCanFlip] = useState(true);
 
-    /* 每张新卡自动播放一次单词读音（所有模式）
-     * setTimeout 解决 Chrome cancel/speak 竞争：cancel() 后立即 speak() 会被吞掉
-     * 朗读模式(read-aloud)由组件内部编排发音+识别时机,跳过外层自动播放避免双播 */
+    /* (a cancel fires no onended, which would strand canFlip at false forever).
+     *  Every new card auto-plays the word once (in all modes)
+     * The setTimeout works around a Chrome cancel/speak race: speak() immediately after cancel() gets swallowed */
     useEffect(() => {
         if (!initialized || queue.length === 0) return;
         if (mode === 'read-aloud') return;
         const word = cards[queue[0]]?.word;
         if (!word) return;
 
-        // 仅普通 flashcard 需要锁翻面；simple 模式没有翻面动作，其它模式不涉及
+        //Read-aloud mode sequences pronunciation and recognition itself, so skip the outer auto-play to avoid double playback
         const shouldGateFlip = mode === 'flashcard';
 
         if (!autoSpeakEnabled) {
@@ -426,7 +479,7 @@ export default function VocabularyFlashcardDoingPage() {
         const speakTimer = setTimeout(() => {
             speakWord(word, { onEnd: unlock, onError: unlock });
         }, 150);
-        // 兜底：TTS 被取消时 onended 不会触发，5s 后强制解锁
+        // Only the plain flashcard needs the flip lock; simple mode has no flip and the other modes are unaffected
         const safetyTimer = setTimeout(unlock, 5000);
 
         return () => {
@@ -438,7 +491,7 @@ export default function VocabularyFlashcardDoingPage() {
 
     const choices = useChoiceOptionsPool({ mode, cards, queue, visitKey });
 
-    /* 队列清空 → 直接进入结果页（评分已实时同步） */
+    /* Queue empty -> go straight to the results page (scores are already synced live) */
     useEffect(() => {
         if (!initialized || step !== 'doing' || queue.length !== 0 || graduatedCount === 0) return;
         setStep('result');
@@ -447,7 +500,7 @@ export default function VocabularyFlashcardDoingPage() {
     const currentCardIdx = queue[0] ?? -1;
     const currentCard    = currentCardIdx >= 0 ? cards[currentCardIdx] : null;
 
-    /* ── 核心：每次作答实时提交，再推进队列 ── */
+    /* queue empty -> go straight to the results page (scores already synced live) */
     const submitAndAdvance = useCallback(async (
         ci: number,
         card: VocabCard,
@@ -512,6 +565,27 @@ export default function VocabularyFlashcardDoingPage() {
             reinsert,
             copyWordHidden,
         });
+
+        // Fold this answer into today's running tally. Recorded per answer
+        // rather than at the results screen so that leaving mid-session still
+        // counts what was actually done — the session itself is never persisted.
+        // `forgot` is taken from the store, which is the only place that knows
+        // whether this word was already missed earlier in the session.
+        setTodayProgress((prev) => {
+            let next = recordRating(prev, fsrsRating);
+            if (graduate) {
+                next = recordGraduation(next, {
+                    word: updatedCard.word,
+                    zh: updatedCard.zh,
+                    rating: fsrsRating,
+                    newDue: updatedCard.due,
+                    scheduledDays: updatedCard.scheduled_days,
+                    forgot: forgotNow || Boolean(sessionForgotRef.current[ci]),
+                });
+            }
+            saveTodayProgress(next, planIdRef.current, userScopeRef.current);
+            return next;
+        });
     }, [
         advanceQueue,
         reinsertAfterGap,
@@ -524,11 +598,11 @@ export default function VocabularyFlashcardDoingPage() {
     ]);
 
     /**
-     * 记忆卡手动评分
-     * - rating>=3（一般/容易）：毕业
-     * - rating 1/2（忘了/困难）：重入队列
+     *  -- Core: submit every answer live, then advance the queue --
+     * Manual rating on a flashcard:
+     * - rating >= 3 (good / easy): graduate
      *
-     * 翻转防偷瞄：评分时如果当前是背面，先触发翻回动画并等 350ms 再切下一张。
+     * - rating 1 or 2 (forgot / hard): back into the queue
      */
     const handleFlashcardRating = useCallback(async (rating: number) => {
         if (submitting || !currentCard || currentCardIdx < 0) return;
@@ -570,7 +644,7 @@ export default function VocabularyFlashcardDoingPage() {
         return masteryTarget;
     }, [masteryTarget, sessionErrorCount, sessionForgot]);
 
-    /* 4选1 / 写单词：自动评分并按对应模式的目标次数毕业 */
+    /*Anti-peek flip: if the card is showing its back when rated, play the flip-back animation and wait 350ms before the next card. */
     const handleAutoRating = useCallback(async (isCorrect: boolean) => {
         if (submitting || !currentCard || currentCardIdx < 0) return;
         setSubmitting(true);
@@ -582,7 +656,7 @@ export default function VocabularyFlashcardDoingPage() {
         const newMastery = nextMastery(curMastery, isCorrect, target);
         const graduate = newMastery >= target;
 
-        // 评分策略：答对未毕业→Good(3) 答错未毕业→Again(1) 答对毕业→Easy(4) 答错毕业→Hard(2)
+        // Multiple choice / spelling: auto-rate and graduate at the target repetition count for that mode
         const fsrsRating = graduate ? (isCorrect ? 4 : 2) : (isCorrect ? 3 : 1);
         const uiRating = isCorrect ? 3 : 1;
 
@@ -646,13 +720,13 @@ export default function VocabularyFlashcardDoingPage() {
         });
     }, [currentCard, currentCardIdx, mode, choiceSelected, choiceCorrect, sessionMastery, buildAutoOutcome]);
 
-    /* 4选1 前置：点击"会"展开题目 */
+    /* Rating policy: correct but not graduated -> Good(3), wrong but not graduated -> Again(1), correct and graduated -> Easy(4), wrong and graduated -> Hard(2) */
     const handleChoiceKnow = useCallback(() => {
         if (submitting || choiceSelected !== null) return;
         setChoiceRevealed(true);
     }, [submitting, choiceSelected, setChoiceRevealed]);
 
-    /* 4选1 点击（仅记录选择，不自动进入下一题） */
+    /* Multiple choice, step 1: clicking 'I know it' reveals the question */
     const handleChoice = useCallback((opt: { zh: string; correct: boolean }, idx: number) => {
         if (choiceSelected !== null || submitting) return;
         setChoiceSelected(idx);
@@ -683,7 +757,7 @@ export default function VocabularyFlashcardDoingPage() {
         setCompletionDueHint,
     ]);
 
-    /* 4选1 点击"不会" */
+    /* Multiple choice click (records the selection only, does not auto-advance) */
     const handleChoiceUnknown = useCallback(() => {
         if (choiceSelected !== null || submitting) return;
         setChoiceSelected(-1);
@@ -692,7 +766,7 @@ export default function VocabularyFlashcardDoingPage() {
         setLastRating(1);
     }, [choiceSelected, submitting, setChoiceSelected, setChoiceCorrect, setChoiceRevealed, setLastRating]);
 
-    /* 4选1 隐藏题目回到初始选择状态 */
+    /* Multiple choice, clicking 'I do not know' */
     const handleChoiceHideQuestion = useCallback(() => {
         if (submitting) return;
         setChoiceRevealed(false);
@@ -705,13 +779,13 @@ export default function VocabularyFlashcardDoingPage() {
         await handleAutoRating(choiceCorrect);
     }, [choiceSelected, choiceCorrect, submitting, handleAutoRating]);
 
-    /* 写英文提交 */
+    /* Multiple choice: hide the question and return to the initial choice state */
     const handleWriteSubmit = useCallback(() => {
         if (writeSubmitted || submitting || !writeInput.trim() || !currentCard) return;
         const input  = writeInput.trim().toLowerCase();
         const target = currentCard.word.toLowerCase();
         if (unknownMode) {
-            // 抄写模式：必须完全正确才能进入"下一个"；错了清空重试
+            // submit the English spelling
             if (input !== target) {
                 setWriteInput('');
                 return;
@@ -753,7 +827,7 @@ export default function VocabularyFlashcardDoingPage() {
     const handleWriteNext = useCallback(async () => {
         if (!writeSubmitted || submitting || writeCorrect === null) return;
         if (quickProficient) {
-            // 熟练自评：直接毕业，不走 mastery 进阶
+            // Copy mode: only a fully correct answer unlocks 'next'; a mistake clears the box to retry
             const ci  = currentCardIdx;
             const card = currentCard;
             if (ci < 0 || !card) return;
@@ -774,7 +848,7 @@ export default function VocabularyFlashcardDoingPage() {
         setSubmitting,
     ]);
 
-    /* 快速自评 */
+    /* quick self-rating */
     const handleQuickAssess = useCallback((correct: boolean) => {
         if (writeSubmitted || submitting || !currentCard) return;
         if (!correct) {
@@ -800,7 +874,7 @@ export default function VocabularyFlashcardDoingPage() {
         setCompletionDueHint,
     ]);
 
-    /* 撤销：回到初始写题状态（不会/熟练选择页） */
+    /* Undo: back to the initial writing state (the 'do not know' / 'know it' choice) */
     const handleWriteUndo = useCallback(() => {
         setWriteInput('');
         setWriteSubmitted(false);
@@ -969,7 +1043,7 @@ export default function VocabularyFlashcardDoingPage() {
         }
     }, [copyWordHidden, copySubmitted, setCopyWordVisible]);
 
-    /* 键盘快捷键（记忆卡模式） */
+    /* Keyboard shortcuts (flashcard mode) */
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (step !== 'doing' || submitting || !mode.startsWith('flashcard')) return;
@@ -978,8 +1052,8 @@ export default function VocabularyFlashcardDoingPage() {
             switch (e.code) {
                 case 'Space':
                     if (mode === 'flashcard-simple') return;
-                    // 语音播放未结束时不允许翻面（只在首次翻面到背面时拦截；
-                    // 已翻到背面后允许自由翻回正面）
+                    // Flipping is blocked while the audio is still playing, but only on the first
+                    // flip to the back; once on the back, flipping freely back to the front is allowed.
                     if (!canFlip && !isFlipped) return;
                     e.preventDefault();
                     setIsFlipping(true);
@@ -996,7 +1070,7 @@ export default function VocabularyFlashcardDoingPage() {
         return () => window.removeEventListener('keydown', handler);
     }, [step, isFlipped, submitting, handleFlashcardRating, mode, canFlip, setIsFlipped, setIsFlipping]);
 
-    /* 键盘快捷键（写单词模式）：快速自评可用时（输入框为空、未提交）：↑ 熟练  ↓ 不会 */
+    /* Keyboard shortcuts (spelling mode). While quick self-rating is available (box empty, not yet submitted): up = known, down = do not know */
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (step !== 'doing' || submitting || mode !== 'write') return;
@@ -1013,7 +1087,7 @@ export default function VocabularyFlashcardDoingPage() {
         return () => window.removeEventListener('keydown', handler);
     }, [step, submitting, mode, writeSubmitted, unknownMode, writeInput, handleQuickAssess]);
 
-    /* 再来一轮 */
+    /* another round */
     const handleRetry = useCallback(() => {
         retrySession(copyRepetitions, copyReviewDays, copyWordHidden);
         setStep('doing');
@@ -1021,7 +1095,7 @@ export default function VocabularyFlashcardDoingPage() {
 
     const backPath  = planId ? `/vocabulary/plans/${planId}` : '/vocabulary/plans';
 
-    /* 评分已实时同步，可直接返回 */
+    /* scores are already synced live, so we can just go back */
     const handleBack = useCallback(() => {
         if (leaving || submitting) return;
         devLog('[词汇学习] 用户点击返回，开始退出前同步');
@@ -1039,7 +1113,7 @@ export default function VocabularyFlashcardDoingPage() {
             });
     }, [backPath, navigate, leaving, submitting, syncCurrentAnsweredBeforeExit, syncLearningTimerOnExit, setLeaving]);
 
-    /* ── 离页保护：仅做提示和学习时长同步，不再持久化单词会话 ── */
+    /* -- Leave guard: only prompts and syncs study time; word sessions are no longer persisted -- */
     useExitWarning({
         enabled: initialized,
         hasPendingWork: queue.length > 0,
@@ -1049,7 +1123,7 @@ export default function VocabularyFlashcardDoingPage() {
         }, [syncLearningTimerOnExit]),
     });
 
-    /* ── 无会话：冷启动/刷新进来没有卡片，渲染说明页而不是跳走 ── */
+    /* -- No session: a cold start or refresh has no cards, so render the explanation page instead of navigating away -- */
     if (noSession) {
         const backTo = planId ? `/vocabulary/plans/${planId}` : '/vocabulary/plans';
         return (
@@ -1076,7 +1150,7 @@ export default function VocabularyFlashcardDoingPage() {
         );
     }
 
-    /* ── 加载中 ── */
+    /* -- No session: a cold start or refresh has no cards, so render the explanation page instead of navigating away -- */
     if (!initialized || (!currentCard && step === 'doing')) {
         return (
             <Layout
@@ -1107,20 +1181,24 @@ export default function VocabularyFlashcardDoingPage() {
             lastRating === 2 ? 'status-hard'  :
             lastRating === 3 ? 'status-good'  : 'status-easy';
 
-    /* ══ 结果页 ══════════════════════════════════════════════════════════════ */
+    /* -- Loading -- */
     if (step === 'result') {
-        // Counts come from ALL clicks the user made this session, not just the
-        // one that graduated each card. A card rated Again 3× then Good once
-        // now contributes {again: 3, good: 1} to the histogram instead of a
-        // single Good — which is why Again used to be perpetually 0.
-        const counts = [1, 2, 3, 4].map((r) => allRatings.filter((x) => x === r).length);
-        const totalClicks = allRatings.length;
-        // `sessionErrorCount` gets reset to 0 on card graduation (see store
-        // `resetErrorCount`), so summing it at end-of-session yields 0 for
-        // everyone. Derive forgets from `allRatings` instead — the total is
-        // simply the number of Again clicks.
-        const totalForgets = counts[0];
-        const graduatedTotal = results.length;
+        // The summary covers TODAY, not just the session that has ended. Study
+        // three words, leave, come back and study three more, and this reads
+        // six — reporting only the last few minutes hid everything earlier in
+        // the day. The tally is accumulated per answer in
+        // utils/vocab_today_progress, so leaving mid-session still counts.
+        //
+        // Four cards, counted by WORD, one bucket per word — see
+        // summariseWordBuckets for the rule and why it is not a click histogram.
+        // Per-click totals still appear below, explicitly labelled 次/times.
+        const doneToday = todayWords(todayProgress);
+        const wordBuckets = summariseWordBuckets(doneToday);
+        const totalClicks = todayProgress.ratingClicks.reduce((a, b) => a + b, 0);
+        // Forget CLICKS (a word missed three times counts three times here),
+        // deliberately a different figure from the relearned WORD count above.
+        const totalForgets = todayProgress.ratingClicks[0];
+        const graduatedTotal = doneToday.length;
         return (
             <Layout>
                 <div className="config-page-wrap">
@@ -1128,10 +1206,16 @@ export default function VocabularyFlashcardDoingPage() {
                         <div className="fc-result-stats">
                             {[0, 1, 2, 3].map((i) => (
                                 <div key={i} className={`fc-result-stat ${RS_CLASSES[i]}`}>
-                                    <div className="rs-num">{counts[i]}</div>
-                                    <div className="rs-label">{RS_LABELS[i]}</div>
+                                    <div className="rs-num">{wordBuckets[i]}</div>
+                                    <div className="rs-label">{RS_WORD_LABELS[i]}</div>
                                 </div>
                             ))}
+                        </div>
+                        {/* Spell out the unit: these are words, one bucket each,
+                            so they sum to the graduated count — unlike the
+                            per-click totals below. */}
+                        <div className="fc-result-stats-hint">
+                            {t('vocab.flashcardDoing.wordBucketHint')}
                         </div>
                         <div style={{
                             marginTop: 14, display: 'flex', gap: 18, flexWrap: 'wrap',
@@ -1146,8 +1230,8 @@ export default function VocabularyFlashcardDoingPage() {
                     <div className="config-card">
                         <h3>{t('vocab.reviewDetail')}</h3>
                         <ul className="fc-result-list">
-                            {results.map((r, i) => (
-                                <li key={i} className="fc-result-item">
+                            {doneToday.map((r) => (
+                                <li key={r.word} className="fc-result-item">
                                     <span className="fc-ri-word">{r.word}</span>
                                     <span className="fc-ri-zh">{r.zh}</span>
                                     <span className="fc-ri-due">{formatDue(r.newDue)}</span>
@@ -1166,7 +1250,7 @@ export default function VocabularyFlashcardDoingPage() {
         );
     }
 
-    /* ══ 背诵页 ══════════════════════════════════════════════════════════════ */
+    /* == Results page ======================================================= */
     if (!currentCard) return null;
 
     return (
@@ -1181,7 +1265,7 @@ export default function VocabularyFlashcardDoingPage() {
             }
         >
             <div className="config-page-wrap fc-doing-page">
-                {/* 进度行 */}
+                {/* == Study page ========================================================= */}
                 <div className="fc-header">
                     <span className="fc-counter">
                         ✓ {dailyDone} / {dailyTotal}
@@ -1288,7 +1372,7 @@ export default function VocabularyFlashcardDoingPage() {
                     <div className="fc-progress-fill" style={{ width: `${progress}%` }} />
                 </div>
 
-                {/* ══ 记忆卡模式 ══ */}
+                {/* progress row */}
                 {(mode === 'flashcard' || mode === 'flashcard-simple') && trackingMode === 'none' && (
                     <FlashcardMode
                         currentCard={currentCard}
@@ -1311,7 +1395,7 @@ export default function VocabularyFlashcardDoingPage() {
                     />
                 )}
 
-                {/* ══ 朗读单词模式 ══ */}
+                {/* == Flashcard mode == */}
                 {mode === 'read-aloud' && (
                     <ReadAloudMode
                         currentCard={currentCard}
@@ -1323,7 +1407,7 @@ export default function VocabularyFlashcardDoingPage() {
                     />
                 )}
 
-                {/* ══ 记忆卡 · 追踪模式 ══ */}
+                {/* == Read-aloud mode == */}
                 {(mode === 'flashcard' || mode === 'flashcard-simple') && trackingMode !== 'none' && (
                     <GazeMode
                         currentCard={currentCard}
@@ -1346,7 +1430,7 @@ export default function VocabularyFlashcardDoingPage() {
                     />
                 )}
 
-                {/* ══ 4选1模式 ══ */}
+                {/* == Flashcard, gaze-tracking mode == */}
                 {mode === 'choice' && (
                     <ChoiceMode
                         currentCard={currentCard}
@@ -1366,7 +1450,7 @@ export default function VocabularyFlashcardDoingPage() {
                     />
                 )}
 
-                {/* ══ 看中文写英文模式 ══ */}
+                {/* == Multiple choice mode == */}
                 {mode === 'write' && (
                     <WriteMode
                         currentCard={currentCard}
@@ -1388,7 +1472,7 @@ export default function VocabularyFlashcardDoingPage() {
                     />
                 )}
 
-                {/* ══ 抄写模式 ══ */}
+                {/* == Chinese-to-English spelling mode == */}
                 {mode === 'copy' && (
                     <CopyMode
                         currentCard={currentCard}

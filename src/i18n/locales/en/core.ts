@@ -126,9 +126,11 @@ export const components: typeof zh.components = {
     helpIntro: 'Any OpenAI-compatible /chat/completions endpoint works. Examples for common services — click "Fill" to auto-populate:',
     helpFill: 'Fill',
     helpNote: 'Tips: the model name is the "model" value in the request; the URL must be the full chat/completions address.',
+    helpReasoningNote: 'Reasoning models (gpt-5.x, o1/o3/o4) reject a custom temperature; the platform omits it automatically and switches to max_completion_tokens, so the example above works as-is.',
     helpOllamaNote: 'Ollama: run "ollama serve" first; any SK works. Reachable via localhost only when this platform runs on the same machine; a remote deployment needs a URL the server can reach (public address or a tunnel).',
     pOllama: 'Ollama (local model)',
     pOpenai: 'OpenAI',
+    pGpt56: 'OpenAI GPT-5.6 Sol (reasoning model)',
     pDeepseek: 'DeepSeek',
     pQwen: 'Qwen (DashScope compatible mode)',
     pOpenrouter: 'OpenRouter',
@@ -155,6 +157,10 @@ export const results: typeof zh.results = {
   statusIncorrect: 'Incorrect',
   explanation: 'Explanation',
   estimatedBand: 'Est. IELTS Band',
+  passageTab: 'Passage {n}',
+  sectionTab: 'Section {n}',
+  allParts: 'All',
+  partScore: '{correct}/{total} correct',
 };
 
 export const billing: typeof zh.billing = {

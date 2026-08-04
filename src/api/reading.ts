@@ -36,7 +36,7 @@ export interface ReadingGenerateRequest {
     topic?: string;
     wordCountMin?: number;
     wordCountMax?: number;
-    /** 用户自定义提示词指令 (高级，可选) */
+    /** User custom prompt instructions (advanced, optional) */
     customPrompt?: string;
 }
 
@@ -44,11 +44,11 @@ export interface ReadingFullRequest {
     difficulty?: string;
     absurdMode?: boolean;
     topic?: string;
-    /** 只生成第 N 篇 (1|2|3); 省略则生成全 3 篇 */
+    /** Generate only passage N (1|2|3); omit to generate all 3 */
     passageNum?: 1 | 2 | 3;
-    /** 单篇模式下的题型组合 (2-3 种题型 key); 省略则用系统预设 */
+    /** The question-type mix for single-passage mode (2-3 type keys); omit to use the system preset */
     mixTypes?: ReadingQuestionTypeKey[];
-    /** 用户自定义提示词指令 (高级，可选) */
+    /** User custom prompt instructions (advanced, optional) */
     customPrompt?: string;
 }
 

@@ -28,7 +28,7 @@ export default function UserBackpack({ onBack }: UserBackpackProps) {
                 setMakeupOpen(false);
             }
         } catch {
-            /* ignore — 保持空态 */
+            /* ignore - keep the empty state */
         } finally {
             setLoading(false);
         }
@@ -38,7 +38,7 @@ export default function UserBackpack({ onBack }: UserBackpackProps) {
 
     const makeupCards = items.find(i => i.item_type === 'makeup_card')?.quantity ?? 0;
 
-    // 最近 window 天内的漏签日（过去、未签、不早于注册日），最近的排前面
+    // Missed check-in days within the last `window` days (in the past, unchecked, not before the registration date), most recent first
     const missedDays = useMemo(() => {
         if (!status) return [] as string[];
         const windowN = status.makeup_window_days || 7;

@@ -1,7 +1,7 @@
 // @ts-expect-error no types available
 import { pipeline, env } from '@xenova/transformers';
 
-// 允许跨域加载本地或HF模型
+// allow cross-origin loading of local or HF models
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 

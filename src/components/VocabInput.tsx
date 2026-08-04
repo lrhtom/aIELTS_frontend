@@ -8,7 +8,7 @@ interface VocabInputProps {
     placeholder?: string;
 }
 
-// 验证：行必须同时包含英文字母 和 中文字符
+// Validation: a line must contain both English letters and Chinese characters
 const hasEnglish = (s: string) => /[a-zA-Z]/.test(s);
 const hasChinese = (s: string) => /[\u4e00-\u9fa5]/.test(s);
 
@@ -31,7 +31,7 @@ export default function VocabInput({ value, onChange, placeholder, className }: 
         return r === 'no-chinese' || r === 'no-english';
     });
 
-    // 失去焦点时：去掉每行多余空格
+    // on blur: strip the extra whitespace from each line
     const handleBlur = () => {
         const trimmed = value
             .split('\n')
@@ -39,7 +39,7 @@ export default function VocabInput({ value, onChange, placeholder, className }: 
             .join('\n');
         if (trimmed !== value) onChange(trimmed);
 
-        // 提示格式不正确的行
+        // flag the incorrectly formatted lines
         if (invalidLines.length > 0) {
             const examples = invalidLines.slice(0, 2).map(l => `"${l.trim()}"`).join('、');
             showToast(
@@ -51,7 +51,7 @@ export default function VocabInput({ value, onChange, placeholder, className }: 
 
     return (
         <div className={`space-y-3 ${className || ''}`}>
-            {/* 词汇计数行 */}
+            {/* word count row */}
             <div className="flex flex-wrap items-center gap-2.5">
                 <span className="text-[13px] text-stone-500">{t('components.vocabInput.label')}：</span>
                 <span className="bg-gradient-to-br from-indigo-500 to-violet-500 text-white rounded-full px-3 py-0.5 text-[13px] font-bold min-w-[32px] text-center shadow-sm">
@@ -73,7 +73,7 @@ export default function VocabInput({ value, onChange, placeholder, className }: 
                 placeholder={placeholder ?? t('components.vocabInput.placeholder')}
             />
 
-            {/* 格式说明 */}
+            {/* format explanation */}
             <p className="text-[12px] text-stone-400 mt-1.5 mb-0">
                 {t('components.vocabInput.formatDesc')}
             </p>

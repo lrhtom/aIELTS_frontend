@@ -38,7 +38,7 @@ const azureTo9 = (v: number | undefined) => v != null ? to05(v * 9 / 100) : 0;
 
 type DimKey = string;
 
-// ── 汇总统计（纯函数：渲染与写回题库共用同一套口径）──────────────────────
+// -- Aggregate statistics (pure functions: rendering and the bank write-back share one definition) ----------------------
 const CORE_DIM_KEYS = ['accuracy', 'pronunciation', 'fluency', 'completeness', 'grammar', 'vocab', 'relevance'];
 
 function activeKeysFor(mode?: string): string[] {
@@ -91,9 +91,9 @@ interface SummaryNavState {
     scenarioPrompt: string;
     words: Word[];
     mode?: string;
-    /** 从聊天页进来时的题库会话 id；有值则把总结写回题库 */
+    /** The bank session id when arriving from the chat page; when set, the summary is written back to the bank */
     sessionId?: number | null;
-    /** 全套模拟：返回按钮改回模拟考大厅 */
+    /** Full mock: the back button returns to the mock exam hub */
     mockId?: number;
 }
 
@@ -126,7 +126,7 @@ export default function SpeakingSummaryPage() {
             const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
             if (!blob) return;
 
-            // 1. 下载到本地
+            // 1. download locally
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -134,13 +134,13 @@ export default function SpeakingSummaryPage() {
             a.click();
             URL.revokeObjectURL(url);
 
-            // 2. 复制到剪贴板
+            // 2. copy to clipboard
             try {
                 await navigator.clipboard.write([
                     new ClipboardItem({ 'image/png': blob })
                 ]);
             } catch {
-                // 部分浏览器不支持剪贴板写入图片，静默忽略
+                // some browsers cannot write images to the clipboard, ignore silently
             }
         } catch (e) {
             console.error('Share failed', e);
@@ -156,7 +156,7 @@ export default function SpeakingSummaryPage() {
     const [data, setData] = useState<SummaryNavState | null>(navState);
     const [loadFailed, setLoadFailed] = useState(false);
 
-    // ── 从 AI 题库打开（?bankId=）：取回已落库的对话与配置渲染报告 ──────────
+    // -- Opened from the AI bank (?bankId=): fetch the stored conversation and config to render the report ----------
     useEffect(() => {
         if (data || !bankId) return;
         getAIQuestion(bankId).then(detail => {
@@ -171,8 +171,8 @@ export default function SpeakingSummaryPage() {
         }).catch(() => setLoadFailed(true));
     }, [bankId, data]);
 
-    // ── 首次从聊天页进来（带 sessionId）：把总结写回题库 ────────────────────
-    // 写入后该会话在题库中视为"有结果"，点击卡片直达本报告页。
+    // -- First arrival from the chat page (with sessionId): write the summary back to the bank --------------------
+    // Once written, the session counts as having a result in the bank and clicking the card lands on this report.
     const savedRef = useRef(false);
     useEffect(() => {
         if (savedRef.current || !navState?.sessionId || !navState.chatHistory?.length) return;
@@ -250,8 +250,8 @@ export default function SpeakingSummaryPage() {
         ];
     }
 
-    // 统一走 computeSummaryStats —— 渲染与写回题库口径一致
-    // （activeDims 的 key 顺序与 activeKeysFor(mode) 完全对应，仅补充展示标签/颜色）
+    // Always via computeSummaryStats, so rendering and the bank write-back stay in step
+    // (activeDims' key order matches activeKeysFor(mode) exactly; this only adds display labels and colours)
     const { rounds, avgs, overall } = computeSummaryStats(chatHistory, mode);
 
     // Vocab coverage

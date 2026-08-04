@@ -1,4 +1,4 @@
-// 全套模拟 (Mock Exam) API — 生成编排 + 考试状态机
+// Full mock exam API - generation orchestration plus the exam state machine
 import { api } from './client';
 import type { AIQuestionStatus, MockPartStatus } from './ai_question';
 
@@ -15,7 +15,7 @@ export interface MockGenerateRequest {
     scenarioS3?: string;
     scenarioS4?: string;
     readingTopic?: string;
-    /** 'random' 由后端定型（存入配置快照，重生成同型） */
+    /** 'random' is resolved by the backend (stored in the config snapshot, so a regeneration keeps the same type) */
     task1Type?: string;
     task2Type?: string;
     task2TopicCategory?: string;
@@ -63,7 +63,7 @@ export interface MockDetail {
     order: MockExamPart[];
     durations: Record<MockExamPart, number | null>;
     graceSec: number;
-    /** 服务端当前时间（校准客户端时钟偏移用） */
+    /** The server's current time (used to calibrate the client clock offset) */
     now: string;
     parts: Record<MockExamPart, MockPartView>;
     report: MockReport | null;

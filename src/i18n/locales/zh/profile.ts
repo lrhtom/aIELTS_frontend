@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
 
 export const profile = {
   goals: {
@@ -480,7 +480,7 @@ export const profile = {
       pickUserFirst: '请先在上方选择一个用户',
       metricAt: 'AT 消耗',
       metricCalls: '调用次数',
-      // 生成可靠性（数据源 AIGenerationLog）
+      // Generation reliability (sourced from AIGenerationLog)
       metricOkFirst: '首次成功',
       metricRepaired: '修复后成功',
       metricFailed: '异常',
@@ -497,7 +497,7 @@ export const profile = {
       byModuleTitle: '按模块拆分',
       colModule: '模块',
       colTotal: '总数',
-      // 日期区间（只作用于图表与区间小计）
+      // Date range (affects only the charts and the range subtotal)
       allTimeValue: '总计 {v}',
       rangeChartOnly: '共 {n} 天 · 仅作用于图表',
       dateFrom: '起始日期',
@@ -507,7 +507,7 @@ export const profile = {
       dataStartHint: '平台最早数据为 {d}，更早的日期会被自动夹到这天',
       clampedToDataStart: '已从最早数据日 {d} 起算',
       derivedHint: '其中 {n} 次「首次成功」由历史扣款推算补齐（AT 只在生成成功后才扣，因此每条扣款记录 = 一次成功）。结果日志于 {d} 上线，在此之前的失败没有留下记录，因此这段时间按「无失败」计入正常率。',
-      // 分类统计（按业务模块 / 按模型）
+      // Grouped statistics (by business module / by model)
       moduleAll: '全部',
       moduleAllHint: '数据源：AT 出账记录，覆盖全部历史',
       moduleLogOnlyHint: '数据源：AI 生成日志，只含日志上线之后',

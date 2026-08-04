@@ -170,7 +170,7 @@ export default function Task2SelectionPage() {
                             </div>
                         </div>
 
-                        {/* 自定义提示词指令（高级，可选）*/}
+                        {/* Cold start with no question: give a real landing page and a clear way out, never a silent redirect*/}
                         <div className="uc-card-group">
                             <CustomPromptField value={customPrompt} onChange={setCustomPrompt} />
                         </div>

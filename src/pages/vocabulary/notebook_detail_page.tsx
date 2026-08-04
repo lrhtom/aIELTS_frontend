@@ -18,7 +18,7 @@ import '../../styles/practice_page.css';
 import '../../styles/vocabulary_notebook.css';
 import '../../styles/vocabulary_learning_plan.css';
 
-/* ── 类型 ─────────────────────────────────────────────────────────────────── */
+/* -- Types ----------------------------------------------------------------- */
 
 interface WordForm {
     word:          string;
@@ -42,7 +42,7 @@ const EMPTY_FORM: WordForm = {
     grammar:       '',
 };
 
-/* ── 单词表单（新增/编辑） ────────────────────────────────────────────────── */
+/* -- Word form (create / edit) ---------------------------------------------- */
 
 function WordFormPanel({
     initial, submitLabel, onSubmit, onCancel, submitting, existingWords,
@@ -175,7 +175,7 @@ function WordFormPanel({
     );
 }
 
-/* ── 主页面 ───────────────────────────────────────────────────────────────── */
+/* -- Main page -------------------------------------------------------------- */
 
 export default function NotebookDetailPage() {
     const { t } = useLang();
@@ -193,7 +193,7 @@ export default function NotebookDetailPage() {
     const [nbTitle,       setNbTitle]       = useState(t('vocab.notebookDetail.titleDefault'));
     const [expandedExamples, setExpandedExamples] = useState<Set<number>>(new Set());
 
-    /* ── 词书导入相关 state ─────────────────────────────────────────────── */
+    /* -- Wordbook import state ------------------------------------------- */
     type AddTab = 'manual' | 'book';
     type BookSubMode = 'all' | 'range' | 'select';
 
@@ -210,7 +210,7 @@ export default function NotebookDetailPage() {
     const [selectedIds,   setSelectedIds]   = useState<Set<number>>(new Set());
     const [importBusy,    setImportBusy]    = useState(false);
 
-    /* 前端过滤 */
+    /* client-side filtering */
     const entries = useMemo(() => {
         let list = allEntries;
         if (selectedTag) list = list.filter(e => e.tags.includes(selectedTag));
@@ -244,7 +244,7 @@ export default function NotebookDetailPage() {
 
     const allWords = useMemo(() => new Set(allEntries.map(e => e.word)), [allEntries]);
 
-    /* 初始加载：一次性取全部条目 + 笔记本标题 */
+    /* Initial load: fetch every entry plus the notebook title in one go */
     useEffect(() => {
         if (!nbId || isNaN(nbId)) { navigate('/vocabulary/notebook', { replace: true }); return; }
         Promise.all([
@@ -255,17 +255,17 @@ export default function NotebookDetailPage() {
             .finally(() => setLoading(false));
     }, [nbId, navigate, t]);
 
-    /* 切换 tag 过滤 */
+    /* toggle the tag filter */
     const handleTagFilter = (tag: string) => {
         setSelectedTag(prev => prev === tag ? '' : tag);
     };
 
-    /* 搜索 */
+    /* search */
     const handleSearch = (q: string) => {
         setSearchQ(q);
     };
 
-    /* ── 词书导入 effects & handlers ──────────────────────────────────── */
+    /* -- Wordbook import effects and handlers --------------------------- */
     useEffect(() => {
         listVocabBooks().then(r => setBooks(r.books)).catch(() => {});
     }, []);
@@ -345,7 +345,7 @@ export default function NotebookDetailPage() {
         }
     };
 
-    /* 添加单词 */
+    /* add a word */
     const handleAdd = async (form: WordForm) => {
         if (!form.word.trim()) return;
         const word = form.word.trim().toLowerCase();
@@ -376,7 +376,7 @@ export default function NotebookDetailPage() {
         }
     };
 
-    /* 编辑单词 */
+    /* edit a word */
     const handleEdit = async (entry: NotebookEntry, form: WordForm) => {
         setSubmitting(true);
         try {
@@ -396,7 +396,7 @@ export default function NotebookDetailPage() {
         }
     };
 
-    /* 删除单词 */
+    /* delete a word */
     const handleRemove = async (entry: NotebookEntry) => {
         if (!(await showConfirm({ message: t('vocab.notebooks.msgDeleteConfirm').replace('{title}', entry.word), danger: true }))) return;
         try {
@@ -408,7 +408,7 @@ export default function NotebookDetailPage() {
         }
     };
 
-    /* 掌握度星星（显示用） */
+    /* mastery stars (display only) */
     const renderStars = (level: number) => (
         <span className="mastery-stars" title={t('vocab.notebookDetail.masteryTitle').replace('{level}', String(level))}>
             {[1, 2, 3, 4, 5].map(n => (
@@ -427,7 +427,7 @@ export default function NotebookDetailPage() {
     backText={t('vocab.notebookDetail.backText')}
 >
             <div className="config-page-wrap">
-                {/* 搜索栏 */}
+                {/* search bar */}
                 <div className="config-card" style={{ paddingBottom: '16px' }}>
                     <div className="nb-search-bar">
                         <input
@@ -445,7 +445,7 @@ export default function NotebookDetailPage() {
                         </button>
                     </div>
 
-                    {/* 标签过滤 */}
+                    {/* tag filter */}
                     {allTags.length > 0 && (
                         <div className="nb-tag-filter-row">
                             {allTags.map(tag => (
@@ -469,7 +469,7 @@ export default function NotebookDetailPage() {
                         </div>
                     )}
 
-                    {/* 添加单词区（tab 式） */}
+                    {/* add-word area (tabbed) */}
                     {showAddForm && (
                         <>
                             <div className="lp-add-tabs" style={{ marginTop: 8 }}>
@@ -650,7 +650,7 @@ export default function NotebookDetailPage() {
                     )}
                 </div>
 
-                {/* 单词列表 */}
+                {/* word list */}
                 <div className="config-card" style={{ padding: 0, overflow: 'hidden' }}>
                     {loading ? (
                         <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', padding: '30px' }}>{t('common.loading')}</p>
@@ -770,7 +770,7 @@ export default function NotebookDetailPage() {
                     )}
                 </div>
 
-                {/* 底部统计 */}
+                {/* footer statistics */}
                 {!loading && (
                     <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '12px' }}>
                     {t('vocab.notebookDetail.wordCount').replace('{n}', String(allEntries.length))}

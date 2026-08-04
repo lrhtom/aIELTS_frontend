@@ -1,5 +1,5 @@
-// mock 写作子题 → 答题页路由（subtype 前缀约定与 mock_hub_page.answerRoute 一致）。
-// 被 MockWritingTaskBar 和两个写作页的「提交后直通另一篇」共用。
+// spotlight: a transparent hole plus a huge box-shadow dimming the surroundings; with no target, the whole screen dims
+// Shared by MockWritingTaskBar and the 'go straight to the other essay after submitting' path in both writing pages.
 import type { MockChildView } from '../../api/mock';
 
 export function mockWritingTaskRoute(

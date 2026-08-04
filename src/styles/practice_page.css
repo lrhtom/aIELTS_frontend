@@ -1,4 +1,4 @@
-/* ─── 练习选词页样式 ───────────────────────────────────────────────────── */
+/* --- Practice word-selection page ----------------------------------------- */
 
 .practice-page {
     min-height: 100vh;
@@ -89,7 +89,7 @@
     line-height: 1.55;
 }
 
-/* ─── 配置卡片 ────────────────────────────────────────────────────────── */
+/* --- Config cards --------------------------------------------------------- */
 
 .config-card {
     background: var(--color-surface);
@@ -115,7 +115,7 @@
     letter-spacing: 0.8px;
 }
 
-/* ─── 难度选择 (分段控件) ────────────────────────────────────────────── */
+/* --- Difficulty picker (segmented control) -------------------------------- */
 
 .difficulty-options {
     display: flex;
@@ -159,7 +159,7 @@
     box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
 }
 
-/* ─── 阅读题型模式卡片 ─────────────────────────────────────────────────── */
+/* --- Reading question-type mode cards ------------------------------------- */
 
 .reading-mode-grid {
     display: grid;
@@ -202,7 +202,7 @@
     line-height: 1.5;
 }
 
-/* ─── 开关行 ─────────────────────────────────────────────────────────── */
+/* --- Toggle rows ---------------------------------------------------------- */
 
 .toggle-row {
     display: flex;
@@ -267,7 +267,7 @@
     transform: translateX(24px);
 }
 
-/* ─── 词汇输入区 ─────────────────────────────────────────────────────── */
+/* --- Vocabulary input area ------------------------------------------------ */
 
 .vocab-textarea {
     width: 100%;
@@ -289,7 +289,7 @@
     outline: none;
 }
 
-/* ─── 技能选择按钮 ────────────────────────────────────────────────────── */
+/* --- Skill selection buttons ---------------------------------------------- */
 
 .skill-buttons {
     display: grid;
@@ -355,7 +355,7 @@
     font-size: 22px;
 }
 
-/* ─── 响应式 ──────────────────────────────────────────────────────────── */
+/* --- Responsive ----------------------------------------------------------- */
 
 @media (max-width: 640px) {
     .practice-container {
@@ -391,7 +391,7 @@
     }
 }
 
-/* ─── 图表题选型动画卡片 ────────────────────────────────────────────────── */
+/* --- Chart-type selection animated cards ---------------------------------- */
 
 .chart-card-btn {
     padding: 1.5rem;
@@ -502,7 +502,7 @@
         box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15), 0 8px 20px rgba(13, 148, 136, 0.1);
     }
 }
-/* ── 学习计划导入行 ────────────────────────────────────────────────────────── */
+/* -- Learning plan import row ------------------------------------------------ */
 .plan-import-row {
     display: flex;
     gap: 8px;
@@ -536,7 +536,7 @@
 .plan-import-btn:hover:not(:disabled) { background: var(--color-primary-hover); }
 .plan-import-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ─── 通用动作按钮（写作练习页使用）────────────────────────────────────── */
+/* --- Shared action buttons (used by the writing practice pages) ------------ */
 
 .primary-button {
     display: inline-flex;
@@ -1612,3 +1612,164 @@
     }
 }
 
+
+/* ══════════════════════════════════════════════
+   Full writing set (Task 1 + Task 2): config page plus hub page
+   ══════════════════════════════════════════════ */
+
+.wf-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.wf-chip {
+    padding: 8px 16px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.wf-chip:hover {
+    border-color: var(--color-primary);
+    color: var(--color-text);
+}
+
+.wf-chip.is-active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+.wf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+.wf-field input {
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+}
+
+.wf-start-btn {
+    padding: 14px 24px;
+    border: none;
+    border-radius: 12px;
+    background: var(--color-primary);
+    color: #fff;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s ease;
+}
+
+.wf-start-btn:hover:not(:disabled) { background: var(--color-primary-hover); }
+.wf-start-btn:disabled { opacity: 0.6; cursor: default; }
+
+.wf-note {
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
+/* -- Hub -- */
+.wf-progress {
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.wf-task-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.wf-task-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-surface);
+}
+
+.wf-task-card.is-graded { border-color: rgba(13, 148, 136, 0.45); }
+.wf-task-card.is-failed { border-color: rgba(239, 68, 68, 0.45); }
+
+.wf-task-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.wf-task-slot {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.wf-task-status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    color: #475569;
+    white-space: nowrap;
+}
+
+.wf-task-status.is-graded { background: #ccfbf1; color: #0f766e; }
+.wf-task-status.is-answered { background: #ecfdf5; color: #059669; }
+.wf-task-status.is-generating { background: #eff6ff; color: #1d4ed8; }
+.wf-task-status.is-failed { background: #fef2f2; color: #b91c1c; }
+
+.wf-task-title {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+.wf-task-error {
+    font-size: 13px;
+    color: #b91c1c;
+    line-height: 1.5;
+}
+
+.wf-task-btn {
+    padding: 10px 18px;
+    border: 1px solid var(--color-primary);
+    border-radius: 10px;
+    background: var(--color-primary);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s ease;
+}
+
+.wf-task-btn:hover:not(:disabled) { background: var(--color-primary-hover); }
+.wf-task-btn:disabled {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-text-secondary);
+    cursor: default;
+}

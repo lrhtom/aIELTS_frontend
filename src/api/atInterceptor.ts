@@ -11,10 +11,10 @@ export interface ATInterceptorOptions {
 
 export class ATInterceptor {
     private static async checkAndConsume(options: ATInterceptorOptions): Promise<boolean> {
-        // 计算预估成本
+        // estimate the cost
         const estimatedCost = calculateCost(options.service, options.params);
 
-        // 获取当前余额
+        // fetch the current balance
         const balance = await balanceApi.getBalance();
 
         // Precheck is advisory only — actual cost is determined server-side.
@@ -24,7 +24,7 @@ export class ATInterceptor {
             // 'at-balance-insufficient' is the event ATBalanceMonitor actually
             // listens for ('at-balance-low' had no listener, so this advisory
             // warning was never shown). Monitor renders it as
-            // needMoreBalance: '{message} (需要{required} AT，当前{current} AT)'.
+            // needMoreBalance: '{message} (needs {required} AT, currently {current} AT)'.
             window.dispatchEvent(new CustomEvent('at-balance-insufficient', {
                 detail: {
                     message: currentT()('billing.estimatedShort'),
@@ -42,23 +42,23 @@ export class ATInterceptor {
         apiCall: () => Promise<T>,
         params?: Record<string, number>
     ): Promise<T> {
-        // 预检余额（仅提醒，不阻断；实际扣费由服务端决定）
+        // Balance pre-check (a warning only, never a block; the server decides the actual charge)
         await this.checkAndConsume({
             service,
             params
         });
 
-        // 执行API调用
+        // make the API call
         const result = await apiCall();
 
-        // 尝试从响应中获取实际消耗的AT币数量
+        // try to read the AT actually consumed out of the response
         try {
-            // 如果响应包含atConsumed信息，记录消耗
+            // record the consumption when the response carries atConsumed
             if (typeof result === 'object' && result !== null && 'atConsumed' in result) {
                 const consumed = (result as { atConsumed: number }).atConsumed;
                 console.log(`AT币消耗完成: ${consumed} AT`);
 
-                // 更新本地余额缓存（可选）
+                // update the local balance cache (optional)
                 window.dispatchEvent(new CustomEvent('at-consumed', {
                     detail: {
                         consumed,
@@ -74,7 +74,7 @@ export class ATInterceptor {
         return result;
     }
 
-    // 封装常见的API调用
+    // wrappers for the common API calls
     static async speakingChat(messages: Array<Record<string, unknown>>, params?: Record<string, number>) {
         return this.intercept('speaking', () =>
             apiClient.post<{ reply: string, grammar_score: number, vocab_score: number, relevance_score: number, atConsumed?: number }>('/speaking/chat', { messages }),

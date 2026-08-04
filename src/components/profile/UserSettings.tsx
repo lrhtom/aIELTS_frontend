@@ -12,13 +12,13 @@ export default function UserSettings() {
     const { lang, setLang, t } = useLang();
     const [isDeleting, setIsDeleting] = useState(false);
     
-    // 修改用户名状态
+    // username change state
     const [newUsername, setNewUsername] = useState('');
     const [isChangingUsername, setIsChangingUsername] = useState(false);
     const [changeUsernameMsg, setChangeUsernameMsg] = useState('');
     const [changeUsernameError, setChangeUsernameError] = useState('');
 
-    // AI生成重试次数状态
+    // AI generation retry count state
     const [aiRetryCount, setAiRetryCount] = useState(user?.aiGenerationRetryCount ?? 0);
     const [isUpdatingRetryCount, setIsUpdatingRetryCount] = useState(false);
     const [updateRetryCountMessage, setUpdateRetryCountMessage] = useState('');
@@ -104,7 +104,7 @@ export default function UserSettings() {
                 <p>{t('settings.subheading')}</p>
             </div>
 
-            {/* 头像设置 */}
+            {/* avatar settings */}
             <div className="user-settings-section">
                 <div className="user-settings-section-header">
                     <div className="user-settings-section-icon">📷</div>
@@ -121,7 +121,7 @@ export default function UserSettings() {
                 </div>
             </div>
 
-            {/* 语言设置 */}
+            {/* language settings */}
             <div className="user-settings-section">
                 <div className="user-settings-section-header">
                     <div className="user-settings-section-icon">🌐</div>
@@ -146,7 +146,7 @@ export default function UserSettings() {
                 </div>
             </div>
 
-            {/* AI模型设置 */}
+            {/* AI model settings */}
             <div className="user-settings-section">
                 <div className="user-settings-section-header">
                     <div className="user-settings-section-icon">🤖</div>
@@ -161,7 +161,7 @@ export default function UserSettings() {
                 <CustomModelManager />
             </div>
 
-            {/* AI生成重试次数设置 */}
+            {/* AI generation retry count setting */}
             <div className="user-settings-section">
                 <div className="user-settings-section-header">
                     <div className="user-settings-section-icon">🔄</div>
@@ -215,7 +215,7 @@ export default function UserSettings() {
                     )}
                 </div>
 
-                {/* 警告信息 */}
+                {/* warning message */}
                 <div className="ai-retry-warning-section">
                     <div className="ai-retry-warning-title">
                         ⚠️ {t('settings.aiRetry.importantNotice')}
@@ -234,7 +234,7 @@ export default function UserSettings() {
                 </div>
             </div>
 
-            {/* 账户管理 */}
+            {/* account management */}
             <div className="user-settings-section">
                 <div className="user-settings-section-header">
                     <div className="user-settings-section-icon">🔐</div>
@@ -244,7 +244,7 @@ export default function UserSettings() {
                     {t('profile.account.description')}
                 </div>
 
-                {/* 修改用户名 */}
+                {/* change username */}
                 <div className="rename-section">
                     <div className="rename-header">
                         <span className="rename-label">{t('profile.rename.title')}</span>
@@ -292,7 +292,7 @@ export default function UserSettings() {
                 </div>
             </div>
 
-            {/* 系统信息 */}
+            {/* system information */}
             <div className="user-settings-section">
                 <div className="user-settings-section-header">
                     <div className="user-settings-section-icon">📊</div>

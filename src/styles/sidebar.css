@@ -1,4 +1,4 @@
-/* ── 遮罩 ── */
+/* -- Overlay -- */
 .sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -13,7 +13,7 @@
   to   { opacity: 1; }
 }
 
-/* ── 侧边栏主体 ── */
+/* -- Sidebar body -- */
 .sidebar {
   position: fixed;
   top: 0;
@@ -27,14 +27,14 @@
   transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.32s ease;
 
-  /* 深色底 + 右侧微光边 */
+  /* dark background with a faint glow on the right edge */
   background: #0d1117;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 6px 0 48px rgba(0, 0, 0, 0.55),
               inset -1px 0 0 rgba(99, 102, 241, 0.08);
 }
 
-/* 右上角装饰性光晕 */
+/* decorative glow in the top-right corner */
 .sidebar::before {
   content: '';
   position: absolute;
@@ -56,7 +56,7 @@
   transform: translateX(0);
 }
 
-/* ── 顶部 Logo 区 ── */
+/* -- Top logo area -- */
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -66,7 +66,7 @@
   flex-shrink: 0;
 }
 
-/* 底部渐变分隔线，替代实线 */
+/* a gradient divider at the bottom instead of a solid line */
 .sidebar-header::after {
   content: '';
   position: absolute;
@@ -81,7 +81,7 @@
       transparent);
 }
 
-/* Logo 图标容器 */
+/* logo icon container */
 .sidebar-logo {
   font-size: 22px;
   line-height: 1;
@@ -106,7 +106,7 @@
   background-clip: text;
 }
 
-/* ── 导航区 ── */
+/* -- Navigation area -- */
 .sidebar-nav-label {
   padding: 20px 18px 8px;
   font-size: 10px;
@@ -145,7 +145,7 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* 图标容器 */
+/* icon container */
 .sidebar-icon {
   font-size: 17px;
   width: 40px;
@@ -170,7 +170,7 @@
   letter-spacing: 0.1px;
 }
 
-/* 激活项 */
+/* active item */
 .sidebar-item.active {
   color: #6ee7b7;
   background: linear-gradient(90deg,
@@ -188,7 +188,7 @@
   font-weight: 600;
 }
 
-/* ── 底部收起按钮 ── */
+/* -- Bottom collapse button -- */
 .sidebar-collapse-btn {
   display: flex;
   align-items: center;
@@ -229,7 +229,7 @@
   opacity: 1;
 }
 
-/* ── 响应式 ── */
+/* -- Responsive -- */
 @media (max-width: 768px) {
   .sidebar {
     width: 256px;

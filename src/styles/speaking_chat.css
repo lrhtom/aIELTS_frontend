@@ -1,4 +1,4 @@
-/* ─── 口语聊天练习页样式 ──────────────────────────────────────────────── */
+/* --- Speaking chat practice page ------------------------------------------ */
 
 /* ── Permission / support banners ── */
 .sc-banner {
@@ -826,7 +826,7 @@
 }
 
 
-/* 背景噪音环境音 · 静音/外放浮动开关 */
+/* Background ambience - floating mute/unmute switch */
 .sc-ambience-toggle {
     position: fixed;
     top: 14px;

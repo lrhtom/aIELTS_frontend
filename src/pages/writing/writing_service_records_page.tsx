@@ -92,7 +92,7 @@ export default function WritingServiceRecordsPage() {
         };
         const targetRoute = routeMap[record.service_type];
         if (targetRoute) {
-            // 讲解页带上 ?record=<id>，这样刷新/收藏这条记录仍然打得开
+            // The question also goes into the query: location.state is lost on refresh, and the lesson page needs it to survive one
             const isLesson = targetRoute.endsWith('/lesson');
             navigate(isLesson ? `${targetRoute}?record=${record.id}` : targetRoute, {
                 state: { record_id: record.id },

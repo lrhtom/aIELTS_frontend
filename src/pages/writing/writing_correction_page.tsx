@@ -55,7 +55,7 @@ export default function WritingCorrectionPage() {
     const [searchParams] = useSearchParams();
     const bankIdParam = searchParams.get('bankId');
     const bankIdFromUrl = bankIdParam ? Number(bankIdParam) : null;
-    // 全套模拟：从大厅「查看结果」进来 → 返回改回大厅、禁用重做
+    // so the frontend no longer hardcodes a system role and cannot double-inject
     const mockIdParam = searchParams.get('mockId');
     const mockId = mockIdParam ? Number(mockIdParam) : null;
     const navState = (location.state || null) as (BankAutoEvaluateState & { record_id?: number }) | null;

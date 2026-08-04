@@ -114,13 +114,13 @@ export const manualData: ManualData = {
                 {
                     id: 'reading',
                     title: 'AI 智能阅读',
-                    content: 'AI 根据目标分数和词汇量生成雅思风格阅读文章，支持选择题（A/B/C/D）和判断题（T/F 或 T/F/NG）。开启荒唐模式后 AI 会生成幽默文章。支持划词翻译、词典查询和目标词汇高亮。提交答案后查看详细解析。综合套题模式按真题规格生成 3 篇文章共 40 题（13+13+14），交卷后除对错统计外还会给出 9 分制预估雅思分。',
+                    content: 'AI 根据目标分数和词汇量生成雅思风格阅读文章，支持选择题（A/B/C/D）和判断题（T/F 或 T/F/NG）。开启荒唐模式后 AI 会生成幽默文章。支持划词翻译、词典查询和目标词汇高亮。提交答案后查看详细解析。综合套题模式按真题规格生成 3 篇文章共 40 题（13+13+14），交卷后除对错统计外还会给出 9 分制预估雅思分。结果页左右各半：左边逐题解析，右边原文，答案所在的整句会加下划线并在句尾标出题号；页面底部是与作答时同款的导航条，红绿方格一眼看出每篇的对错分布，点题号胶囊直接跳到那道题的解析，点收起的 Passage 可切换到另一篇。',
                     keywords: ['阅读', '选择题', '判断题', '荒唐', '翻译', '套题', '全套', '9分制']
                 },
                 {
                     id: 'listening',
                     title: 'AI 智能听力',
-                    content: '提供四种练习模式：文章填空、句子填空、多项选择和地图标注。AI 生成听力原文并配合语音播放。可设置每空字数限制（min/max），开启荒唐模式生成趣味内容。综合套题模式按真题规格生成 4 个 Section 共 40 题，交卷后除对错统计外还会给出 9 分制预估雅思分。',
+                    content: '提供四种练习模式：文章填空、句子填空、多项选择和地图标注。AI 生成听力原文并配合语音播放。可设置每空字数限制（min/max），开启荒唐模式生成趣味内容。综合套题模式按真题规格生成 4 个 Section 共 40 题，交卷后除对错统计外还会给出 9 分制预估雅思分。结果页左右各半：左边逐题解析，右边听力原文稿，答案所在的整句会加下划线并在句尾标出题号；页面底部是与作答时同款的导航条，红绿方格一眼看出每个 Section 的对错分布，点题号胶囊直接跳到那道题的解析，点收起的 Section 可切换到另一节。',
                     keywords: ['听力', '填空', '选择', '地图', '音频', '套题', '全套', '9分制']
                 },
                 {
@@ -132,8 +132,14 @@ export const manualData: ManualData = {
                 {
                     id: 'writing',
                     title: '写作批改与训练',
-                    content: '写作大厅提供三种入口：AI 写作批改（粘贴作文获取四项评分）、Task 1 特训（图表题/地图题/流程图）、Task 2 特训（观点题/报告文/混合文/AI 创新题）。Task 1 支持上传图表图片让 AI 识别。地图题提供两种生成模式：SVG 线稿（文字模型生成，仿真雅思考卷风格）和 FLUX.2-pro 光栅图（图像模型生成，更接近插画风）。批改从任务完成度、连贯与衔接、词汇资源和语法多样性四个维度评分。另有点子练习题板块，一轮生成多道观点题逐题作答并总结。',
+                    content: '写作大厅提供三种入口：AI 写作批改（粘贴作文获取四项评分）、Task 1 特训（图表题/地图题/流程图）、Task 2 特训（观点题/报告文/混合文/AI 创新题）。Task 1 支持上传图表图片让 AI 识别。地图题提供两种生成模式：SVG 线稿（文字模型生成，仿真雅思考卷风格）和 FLUX.2-pro 光栅图（图像模型生成，更接近插画风）。批改从任务完成度、连贯与衔接、词汇资源和语法多样性四个维度评分。另有点子练习题板块，一轮生成多道观点题逐题作答并总结。还有「全套写作 (Task 1 + Task 2)」：一次生成小作文 + 大作文两道题，在题库里合成一张卡片，点进去是一个小大厅，两道题各自作答、各自批改；不限时、不锁顺序，跟全套模拟的考场规则无关。',
                     keywords: ['写作', '批改', 'Task1', 'Task2', '图表', '作文', '评分']
+                },
+                {
+                    id: 'question-bank',
+                    title: 'AI 题库与全站模板题',
+                    content: '每一次生成的听/读/写/说题目都会保存在「AI 题库」（练习中心 → AI 题库），按听力/阅读/写作/口语/全套模拟五个标签分开，可收藏（收藏的排在前面）、可删除、可重做。管理员还能从题库里挑一道题「设为模板」：听/读/写/说每科最多一道全站模板题，会带一枚 📌 徽章置顶显示给**所有**用户；设新的会自动替换同科目原有的那道。模板题点开时系统会复制一份到你自己的题库再进入作答，所以你的答案只属于你，不会和别人互相覆盖；同一道模板重复点也只会复制一次，不会堆卡片。没有设置模板题时这一栏就不出现。',
+                    keywords: ['题库', '模板', '模板题', '全站', '收藏', '管理员', 'bank', 'template']
                 },
                 {
                     id: 'mock-exam',
@@ -163,8 +169,8 @@ export const manualData: ManualData = {
                 {
                     id: 'flashcard',
                     title: '记忆卡训练',
-                    content: '提供四种训练模式：记忆卡（3D 翻转卡片）、4 选 1（选择题）、看中文写英文和抄写模式。翻牌后按 1-4 评分（忘了/困难/一般/容易），系统根据 FSRS 算法自动计算下次复习时间。支持快捷键操作：空格翻转，翻牌后按 1/2/3/4 评分。',
-                    keywords: ['记忆卡', '闪卡', '翻转', '训练', '评分', '快捷键']
+                    content: '提供四种训练模式：记忆卡（3D 翻转卡片）、4 选 1（选择题）、看中文写英文和抄写模式。翻牌后按 1-4 评分（忘了/困难/一般/容易），系统根据 FSRS 算法自动计算下次复习时间。每个评分按钮下方会显示"点了会排到几天后"，这个天数与服务端实际排程一致。支持快捷键操作：空格翻转，翻牌后按 1/2/3/4 评分。本轮结束后的结果页顶部四格是按**单词**统计的：每个词只归入一类，中途忘过的词一律计入"重复学习"，不再重复计入困难/一般/容易，因此四格相加正好等于本轮毕业词数；下面一行的"累计评分""遗忘"则是按**次数**统计的，同一个词点了几次就算几次。',
+                    keywords: ['记忆卡', '闪卡', '翻转', '训练', '评分', '快捷键', '重复学习', '结果页', '统计']
                 },
                 {
                     id: 'notebook',
@@ -206,7 +212,7 @@ export const manualData: ManualData = {
                 {
                     id: 'custom-model',
                     title: '自定义模型（自带 API）',
-                    content: '除内置引擎外，你可以添加自己的 OpenAI 兼容模型：在任意"AI 模型"下拉框最上方点击"＋ 添加自定义模型"，或在设置页的"自定义模型管理"里添加，填写模型名称、接口链接和 SK 密钥，可先"测试"连通性再保存。添加弹窗右上角有帮助按钮（?），点开可查看 Ollama、OpenAI、DeepSeek、通义千问、OpenRouter 等常见服务的填写示例，点"填入"即可一键填充。保存后该模型会出现在全站的模型选择器中，写作/阅读/听力/口语/助手/背单词 AI 导入都能选用。由于使用你自己的 key，调用不消耗平台 AT 币。密钥在服务器加密存储，界面只显示掩码（sk-****xxxx），支持随时编辑或删除。（Ollama 本地模型：本平台部署在本机时可直连 localhost；线上部署需服务器能访问到该地址。）管理面板底部另有"官方模型测试"区：可逐个测试平台内置模型的连通性，使用平台密钥，测试成功按实际 token 消耗扣 AT（失败不扣费），每分钟限 5 次。',
+                    content: '除内置引擎外，你可以添加自己的 OpenAI 兼容模型：在任意"AI 模型"下拉框最上方点击"＋ 添加自定义模型"，或在设置页的"自定义模型管理"里添加，填写模型名称、接口链接和 SK 密钥，可先"测试"连通性再保存。添加弹窗右上角有帮助按钮（?），点开可查看 Ollama、OpenAI、GPT-5.6 Sol、DeepSeek、通义千问、OpenRouter 等常见服务的填写示例，点"填入"即可一键填充。导入推理模型（gpt-5.x、o1/o3/o4）不需要任何额外设置：这类模型不接受自定义 temperature，平台会按模型名自动认出并省略该参数、同时把输出上限换成 max_completion_tokens，填完直接点"测试"就能通。保存后该模型会出现在全站的模型选择器中，写作/阅读/听力/口语/助手/背单词 AI 导入都能选用。由于使用你自己的 key，调用不消耗平台 AT 币。密钥在服务器加密存储，界面只显示掩码（sk-****xxxx），支持随时编辑或删除。（Ollama 本地模型：本平台部署在本机时可直连 localhost；线上部署需服务器能访问到该地址。）管理面板底部另有"官方模型测试"区：可逐个测试平台内置模型的连通性，使用平台密钥，测试成功按实际 token 消耗扣 AT（失败不扣费），每分钟限 5 次。',
                     keywords: ['自定义', '模型', 'API', 'key', '密钥', 'OpenAI', 'Ollama', '自带', '测试', '帮助', '示例']
                 }
             ]
@@ -352,13 +358,13 @@ export const manualData: ManualData = {
                 {
                     id: 'reading',
                     title: 'AI Reading',
-                    content: 'AI generates IELTS-style reading passages based on your target score and vocabulary. Supports Multiple Choice (A/B/C/D) and True/False/Not Given questions. Enable Absurd Mode for humorous passages. Features word translation, dictionary lookup, and target vocabulary highlighting. Review detailed explanations after submission. Full Test mode generates 3 passages with 40 questions (13+13+14) to the authentic exam spec, and the results page adds an estimated IELTS band on the 9-point scale.',
+                    content: 'AI generates IELTS-style reading passages based on your target score and vocabulary. Supports Multiple Choice (A/B/C/D) and True/False/Not Given questions. Enable Absurd Mode for humorous passages. Features word translation, dictionary lookup, and target vocabulary highlighting. Review detailed explanations after submission. Full Test mode generates 3 passages with 40 questions (13+13+14) to the authentic exam spec, and the results page adds an estimated IELTS band on the 9-point scale. The results page splits 50/50 — per-question explanations on the left, the original text on the right with the sentence containing each answer underlined and tagged with its question number. The bottom bar mirrors the one you used while answering: green/red cells show how each passage went, clicking a number jumps to that explanation, and clicking a collapsed passage switches to it.',
                     keywords: ['reading', 'multiple choice', 'true false', 'absurd', 'translation', 'full test', 'band']
                 },
                 {
                     id: 'listening',
                     title: 'AI Listening',
-                    content: 'Four practice modes: Article Gap-fill, Sentence Completion, Multiple Choice, and Map Labelling. AI generates scripts with audio playback. Configure word limits per blank (min/max). Enable Absurd Mode for fun content. Full Test mode generates 4 sections with 40 questions to the authentic exam spec, and the results page adds an estimated IELTS band on the 9-point scale.',
+                    content: 'Four practice modes: Article Gap-fill, Sentence Completion, Multiple Choice, and Map Labelling. AI generates scripts with audio playback. Configure word limits per blank (min/max). Enable Absurd Mode for fun content. Full Test mode generates 4 sections with 40 questions to the authentic exam spec, and the results page adds an estimated IELTS band on the 9-point scale. The results page splits 50/50 — per-question explanations on the left, the transcript on the right with the sentence containing each answer underlined and tagged with its question number. The bottom bar mirrors the one you used while answering: green/red cells show how each section went, clicking a number jumps to that explanation, and clicking a collapsed section switches to it.',
                     keywords: ['listening', 'gap-fill', 'multiple choice', 'map', 'audio', 'full test', 'band']
                 },
                 {
@@ -370,8 +376,14 @@ export const manualData: ManualData = {
                 {
                     id: 'writing',
                     title: 'Writing Correction & Training',
-                    content: 'The Writing Hall offers three paths: AI Correction (paste essay, get four-criterion scores), Task 1 Training (charts/maps/flowcharts with image upload support), and Task 2 Training (opinion/report/mixed/innovative essays). Map questions support two generation modes: SVG line-art (driven by your text model, closest to real exam papers) and FLUX.2-pro raster (image model, more illustrated look). Correction covers Task Achievement, Coherence & Cohesion, Lexical Resource, and Grammatical Range. The Opinion Drill generates a set of questions for sequential practice.',
+                    content: 'The Writing Hall offers three paths: AI Correction (paste essay, get four-criterion scores), Task 1 Training (charts/maps/flowcharts with image upload support), and Task 2 Training (opinion/report/mixed/innovative essays). Map questions support two generation modes: SVG line-art (driven by your text model, closest to real exam papers) and FLUX.2-pro raster (image model, more illustrated look). Correction covers Task Achievement, Coherence & Cohesion, Lexical Resource, and Grammatical Range. The Opinion Drill generates a set of questions for sequential practice. "Full Writing Set (Task 1 + Task 2)" generates both prompts in one click and saves them as a single bank card that opens a small hub, where each task is attempted and graded on its own — no timer and no fixed order, unlike the Full Mock exam.',
                     keywords: ['writing', 'correction', 'Task 1', 'Task 2', 'chart', 'essay', 'scoring']
+                },
+                {
+                    id: 'question-bank',
+                    title: 'AI Question Bank & Site Templates',
+                    content: 'Every listening / reading / writing / speaking item you generate is stored in the AI Question Bank (AI Practice → AI Bank), split across five tabs (Listening, Reading, Writing, Speaking, Full Mock). Items can be favorited (favorites sort first), deleted, and re-attempted. Admins can additionally mark one item per skill as a site-wide template: at most one template for each of Listening / Reading / Writing / Speaking, shown to every user pinned to the top with a 📌 badge; setting a new one automatically replaces the previous template for that skill. Opening a template copies it into your own bank before you start, so your answers stay yours and never overwrite those of another user — and a given template is only ever copied once for you, so repeated clicks do not pile up cards. When no template has been set, nothing extra is shown.',
+                    keywords: ['bank', 'template', 'site template', 'favorite', 'admin', 'shared']
                 },
                 {
                     id: 'mock-exam',
@@ -438,7 +450,7 @@ export const manualData: ManualData = {
                 {
                     id: 'custom-model',
                     title: 'Custom Models (Bring Your Own API)',
-                    content: 'Besides the built-in engines, you can add your own OpenAI-compatible model: pick "+ Add custom model" at the top of any AI model dropdown, or use "Custom model management" in Settings. Fill in the model name, endpoint URL and SK key, and click "Test" to verify connectivity before saving. The help button (?) in the add dialog shows fill-in examples for Ollama, OpenAI, DeepSeek, Qwen and OpenRouter. Saved models appear in every model selector across the site. Calls use your own key, so they cost no platform AT. Keys are stored encrypted server-side and only shown masked (sk-****xxxx); edit or delete anytime. At the bottom of the management panel there is also an "Official model test" section: test each platform-provided model\'s connectivity using the platform key — a successful test is billed in AT by actual token usage (failures are free), limited to 5 tests per minute.',
+                    content: 'Besides the built-in engines, you can add your own OpenAI-compatible model: pick "+ Add custom model" at the top of any AI model dropdown, or use "Custom model management" in Settings. Fill in the model name, endpoint URL and SK key, and click "Test" to verify connectivity before saving. The help button (?) in the add dialog shows fill-in examples for Ollama, OpenAI, GPT-5.6 Sol, DeepSeek, Qwen and OpenRouter. Importing a reasoning model (gpt-5.x, o1/o3/o4) needs no extra setup: those models reject a custom temperature, so the platform recognises them by name, omits the parameter and switches the output cap to max_completion_tokens — fill in the example and "Test" just works. Saved models appear in every model selector across the site. Calls use your own key, so they cost no platform AT. Keys are stored encrypted server-side and only shown masked (sk-****xxxx); edit or delete anytime. At the bottom of the management panel there is also an "Official model test" section: test each platform-provided model\'s connectivity using the platform key — a successful test is billed in AT by actual token usage (failures are free), limited to 5 tests per minute.',
                     keywords: ['custom', 'model', 'API', 'key', 'OpenAI', 'Ollama', 'BYO', 'test', 'official']
                 }
             ]

@@ -1,9 +1,9 @@
-// AI服务AT币消耗配置
+// AT cost configuration for the AI services
 export interface AIServiceCost {
     service: string;
     baseCost: number;
     description: string;
-    factors?: Record<string, number>; // 影响成本的额外因素
+    factors?: Record<string, number>; // additional factors affecting cost
 }
 
 export const aiCostConfig: Record<string, AIServiceCost> = {
@@ -12,8 +12,8 @@ export const aiCostConfig: Record<string, AIServiceCost> = {
         baseCost: 10,
         description: '阅读练习生成',
         factors: {
-            articleLength: 0.05, // 每100个单词额外消耗
-            questionCount: 1, // 每个问题额外消耗
+            articleLength: 0.05, // extra cost per 100 words
+            questionCount: 1, // extra cost per question
         }
     },
     listening: {
@@ -21,7 +21,7 @@ export const aiCostConfig: Record<string, AIServiceCost> = {
         baseCost: 12,
         description: '听力练习生成',
         factors: {
-            audioLength: 0.02, // 每分钟额外消耗
+            audioLength: 0.02, // extra cost per minute
             questionCount: 1,
         }
     },
@@ -30,8 +30,8 @@ export const aiCostConfig: Record<string, AIServiceCost> = {
         baseCost: 8,
         description: '写作批改',
         factors: {
-            essayLength: 0.03, // 每100个单词额外消耗
-            correctionDepth: 2, // 深度批改额外消耗
+            essayLength: 0.03, // extra cost per 100 words
+            correctionDepth: 2, // extra cost for a deep correction
         }
     },
     speaking: {
@@ -39,7 +39,7 @@ export const aiCostConfig: Record<string, AIServiceCost> = {
         baseCost: 6,
         description: '口语对话',
         factors: {
-            conversationLength: 0.04, // 每回合额外消耗
+            conversationLength: 0.04, // extra cost per turn
             feedbackDetail: 1,
         }
     },

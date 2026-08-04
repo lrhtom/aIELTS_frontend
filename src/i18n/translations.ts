@@ -1,8 +1,8 @@
-// i18n 公共入口 — 文案本体按「语言 × 页面」存放在 ./locales/<lang>/<module>.ts
-// - zh 是类型真源：Translations = typeof zh，en(及未来语言)靠 typeof 约束，漏 key 即编译错误
-// - 新增一门语言：复制 locales/zh/ 目录结构并翻译 → Lang 联合类型加成员 → translations 注册一行
-// - 组件消费（i18next）：useLang() → t('<namespace>.<key>')；非 React 模块用 currentT()('<key>')
-// - zh/en 两棵树同时是 i18next resources 的来源（见 ./i18next.ts）；下面的 translations Record 现仅供类型与个别 typeof 使用
+// i18n entry point - the copy itself lives in ./locales/<lang>/<module>.ts, split by language x page
+// - zh is the source of truth for types: Translations = typeof zh, and en (plus any future language) is constrained by typeof, so a missing key is a compile error
+// - Adding a language: copy the locales/zh/ directory structure and translate -> add a member to the Lang union -> register one line in translations
+// - Component usage (i18next): useLang() -> t('<namespace>.<key>'); non-React modules use currentT()('<key>')
+// - The zh and en trees are also the source for the i18next resources (see ./i18next.ts); the translations Record below now only serves types and a few typeof uses
 import { zh } from './locales/zh';
 import { en } from './locales/en';
 

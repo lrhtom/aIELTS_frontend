@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 
-/** 背包物品类型（与后端 UserItem.ItemType 对齐） */
+/** Backpack item types (aligned with the backend's UserItem.ItemType) */
 export type ItemType = 'makeup_card';
 
 export interface BackpackItem {

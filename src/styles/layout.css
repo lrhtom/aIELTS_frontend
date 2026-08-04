@@ -1,9 +1,9 @@
-/* 布局基础样式 */
+/* Layout base styles */
 .layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  /* 移除 padding-left，侧边栏不再影响页面伸缩 */
+  /* padding-left removed - the sidebar no longer affects how the page stretches */
 }
 
 .layout-content {
@@ -17,9 +17,9 @@
   flex-direction: column;
 }
 
-/* 响应式调整 */
+/* responsive adjustments */
 @media (max-width: 768px) {
-  /* 移除响应式padding-left，保持布局不变 */
+  /* responsive padding-left removed, keeping the layout unchanged */
 }
 
 /* ── Browser warning banner ── */

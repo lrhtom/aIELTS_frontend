@@ -28,8 +28,12 @@ interface AdvanceArgs {
     newMastery: number;
     /** New `cards[cardIndex]` (after FSRS sync), or null to keep the existing card. */
     updatedCard: VocabCard | null;
-    /** Append-on-graduate. */
-    graduateResult: ReviewResult | null;
+    /**
+     * Append-on-graduate. `forgot` is filled in by the store, not the caller:
+     * only the store holds `sessionForgot`, which is what "was this word ever
+     * forgotten this session" actually means.
+     */
+    graduateResult: Omit<ReviewResult, 'forgot'> | null;
     /** "Next due" hint shown after graduation. */
     completionDueHint: CompletionDueHint | null;
     /**
@@ -253,7 +257,15 @@ export const useVocabFlashcardStore = create<VocabFlashcardStore>((set) => ({
                 sessionErrorCount: resetErrorCount,
                 sessionMastery,
                 queue,
-                results: graduateResult ? [...state.results, graduateResult] : state.results,
+                // Stamp "was ever forgotten" at graduation time. `sessionForgot`
+                // is the version computed above, so it already includes this
+                // click — a word failed on its very last attempt still counts.
+                results: graduateResult
+                    ? [...state.results, {
+                        ...graduateResult,
+                        forgot: Boolean(sessionForgot[cardIndex]),
+                    }]
+                    : state.results,
                 allRatings: [...state.allRatings, ratingClicked],
                 graduatedCount: graduate ? state.graduatedCount + 1 : state.graduatedCount,
                 visitKey: state.visitKey + 1,

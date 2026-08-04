@@ -15,7 +15,7 @@ let toastId = 0;
 let addToastFn: ((message: string, type: ToastType, code?: string | number) => void) | null = null;
 
 /**
- * 全局调用方法，替代 alert()
+ * Global helper that replaces alert()
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export function showToast(message: string, type: ToastType = 'error', code?: string | number) {
@@ -27,7 +27,7 @@ export function showToast(message: string, type: ToastType = 'error', code?: str
 }
 
 /**
- * Toast 容器组件 —— 放在 App 根组件中即可
+ * Toast container component - just place it in the App root
  */
 export default function ToastContainer() {
     const { t } = useLang();
@@ -37,13 +37,13 @@ export default function ToastContainer() {
         const id = ++toastId;
         setToasts(prev => [...prev, { id, message, type, code }]);
 
-        // 3 秒后自动消失
+        // disappears automatically after 3 seconds
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
         }, 3000);
     }, []);
 
-    // 注册全局函数
+    // register the global function
     useEffect(() => {
         addToastFn = addToast;
         return () => { addToastFn = null; };

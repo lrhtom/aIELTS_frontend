@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   笔记本功能 —— 专属样式
-   依赖 practice_page.css 中的 .config-page-wrap / .config-card / .practice-header 等
+   Notebook feature - dedicated styling
+   Depends on .config-page-wrap / .config-card / .practice-header and friends from practice_page.css
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── 颜色变量映射 ──────────────────────────────────────────────────────────── */
+/* -- Colour variable mapping ------------------------------------------------- */
 .nb-card[data-color="teal"]    { --nb-color: #0d9488; }
 .nb-card[data-color="indigo"]  { --nb-color: #6366f1; }
 .nb-card[data-color="violet"]  { --nb-color: #8b5cf6; }
@@ -13,7 +13,7 @@
 .nb-card[data-color="sky"]     { --nb-color: #0ea5e9; }
 .nb-card[data-color="orange"]  { --nb-color: #f97316; }
 
-/* ── 笔记本列表网格 ────────────────────────────────────────────────────────── */
+/* -- Notebook list grid ------------------------------------------------------ */
 .nb-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -21,7 +21,7 @@
     margin-bottom: 8px;
 }
 
-/* ── 笔记本卡片 ───────────────────────────────────────────────────────────── */
+/* -- Notebook card ----------------------------------------------------------- */
 .nb-card {
     --nb-color: #6366f1;
     position: relative;
@@ -117,7 +117,7 @@
 .nb-action-btn:hover { background: var(--color-surface); color: var(--color-text); }
 .nb-action-btn.danger:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
 
-/* ── 空状态 ───────────────────────────────────────────────────────────────── */
+/* -- Empty state ------------------------------------------------------------- */
 .nb-empty {
     text-align: center;
     padding: 40px 20px;
@@ -127,7 +127,7 @@
 
 .nb-empty-icon { font-size: 36px; display: block; margin-bottom: 12px; }
 
-/* ── 颜色选择器 ───────────────────────────────────────────────────────────── */
+/* -- Colour picker ----------------------------------------------------------- */
 .nb-color-picker {
     display: flex;
     gap: 10px;
@@ -148,7 +148,7 @@
 .nb-color-dot:hover { transform: scale(1.15); }
 .nb-color-dot.selected { border-color: var(--color-text); transform: scale(1.1); }
 
-/* ── 弹窗（新建/编辑笔记本） ─────────────────────────────────────────────── */
+/* -- Dialog (create / edit a notebook) -------------------------------------- */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -232,7 +232,7 @@
 .modal-btn.primary:hover { background: var(--color-primary-hover); }
 .modal-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* ── 单词搜索 & 标签过滤栏 ───────────────────────────────────────────────── */
+/* -- Word search and tag filter bar ------------------------------------------ */
 .nb-search-bar {
     display: flex;
     gap: 10px;
@@ -262,7 +262,7 @@
     min-height: 28px;
 }
 
-/* ── 标签 chip ────────────────────────────────────────────────────────────── */
+/* -- Tag chip ---------------------------------------------------------------- */
 .tag-chip {
     display: inline-flex;
     align-items: center;
@@ -306,7 +306,7 @@
 
 .tag-chip-remove:hover { opacity: 1; color: #dc2626; }
 
-/* ── 单词列表 ─────────────────────────────────────────────────────────────── */
+/* -- Word list --------------------------------------------------------------- */
 .word-list {
     display: flex;
     flex-direction: column;
@@ -358,14 +358,14 @@
     flex-shrink: 0;
 }
 
-/* ── 掌握度星星 ───────────────────────────────────────────────────────────── */
+/* -- Mastery stars ----------------------------------------------------------- */
 .mastery-stars {
     display: flex;
     gap: 2px;
     font-size: 12px;
 }
 
-/* ── 内嵌单词表单 ─────────────────────────────────────────────────────────── */
+/* -- Inline word form -------------------------------------------------------- */
 .word-form {
     background: var(--color-bg);
     border: 1.5px solid var(--color-primary);
@@ -475,7 +475,7 @@
 .wf-btn.primary:hover { background: var(--color-primary-hover); }
 .wf-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* ── 展开内嵌编辑行 ───────────────────────────────────────────────────────── */
+/* -- Expanded inline edit row ------------------------------------------------ */
 .word-item-edit {
     padding: 14px 16px;
     border-bottom: 1px solid var(--color-border);
@@ -484,7 +484,7 @@
 
 .word-item-edit:last-child { border-bottom: none; }
 
-/* ── 响应式 ──────────────────────────────────────────────────────────────── */
+/* -- Responsive -------------------------------------------------------------- */
 @media (max-width: 640px) {
     .nb-grid { grid-template-columns: 1fr; }
     .word-item { grid-template-columns: 120px 1fr auto; }

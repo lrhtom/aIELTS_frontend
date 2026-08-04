@@ -14,5 +14,5 @@ export interface User {
     last_login?: string | null;
     createdAt: string;
     updatedAt: string;
-    atBalance: number; // AT币余额
+    atBalance: number; // AT balance
 }

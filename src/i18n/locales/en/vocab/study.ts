@@ -12,6 +12,9 @@ export const flashcardDoing: typeof zh.flashcardDoing = {
   statRated: 'Ratings',
   statTimesUnit: 'times',
   statForgot: 'Forgot',
+  // Summary buckets: word counts, one bucket per word (see RS_WORD_LABELS)
+  bucketRelearned: 'Relearned',
+  wordBucketHint: 'Counted by word — each word falls in one bucket only; any word you forgot counts as relearned',
   autoSpeakOn: 'Auto-speak On',
   autoSpeakOff: 'Auto-speak Off',
   autoSpeakDisableAria: 'Disable auto-speak',

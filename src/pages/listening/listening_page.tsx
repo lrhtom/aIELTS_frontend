@@ -23,6 +23,8 @@ import { useLang } from '../../i18n/LanguageContext';
 import { sanitize } from '../../utils/safe_html';
 import { mapImageSrc } from '../../utils/media';
 import { rawToBand, formatBand } from '../../utils/ielts_band';
+import { resolveAnswerSentences, markResolvedSentences } from '../../utils/answer_sentences';
+import { applyPaneWidth, watchPaneFreezeMin } from '../../utils/pane_resize';
 import {
     FormRenderer,
     TableRenderer,
@@ -36,13 +38,13 @@ import {
 import ListeningMapSVG from '../../components/listening/ListeningMapSVG';
 import MatchingLetterGrid from '../../components/common/MatchingLetterGrid';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
-import PracticeBottomBar from '../../components/common/PracticeBottomBar';
+import PracticeBottomBar, { type PracticeNavLabels } from '../../components/common/PracticeBottomBar';
 import { MockTimerBar } from '../../components/mock/MockExamShell';
 import { useMockExamGuard } from '../../components/mock/useMockExamGuard';
 import '../../styles/listening_page.css';
 import '../../styles/reading_page.css';
 
-// 数字英文映射（用于答案比对）
+// Number-to-word map (used for answer comparison)
 const numberWords: Record<string, string> = {
     '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
     '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine',
@@ -68,7 +70,7 @@ function checkAnswer(userAns: string, acceptableAnswers: unknown): boolean {
     return acceptableAnswers.some(a => normalizeAnswer(String(a ?? '')) === norm);
 }
 
-// 题目数据来自 AI 生成/题库旧记录，字段漂移不可完全预防——出错时降级为局部提示而不是整页白屏
+// Question data comes from AI generation or legacy bank records, so field drift cannot be fully prevented - on error degrade to a local notice rather than a blank page
 export default function ListeningPageWrapper() {
     return (
         <ErrorBoundary>
@@ -82,7 +84,7 @@ function ListeningPage() {
     const [searchParams] = useSearchParams();
     const bankIdParam = searchParams.get('bankId');
     const bankId = bankIdParam ? Number(bankIdParam) : null;
-    // 全套模拟：mockId 存在 → 考试模式（计时 + 防退出 + 交卷回大厅）
+    // Full mock: mockId present -> exam mode (timed + exit guard + submit returns to the hub)
     const mockIdParam = searchParams.get('mockId');
     const mockId = mockIdParam ? Number(mockIdParam) : null;
     const vocabInput: string = state?.vocabInput ?? '';
@@ -106,7 +108,7 @@ function ListeningPage() {
     const { t } = useLang();
     const [absurdMode] = useState<boolean>(Boolean(state?.absurdMode));
 
-    // 冷启动无配置 → 渲染落地页，不发起付费生成（详见 reading_page 同名注释）
+    // Cold start with no config -> render the landing page, do not kick off a paid generation (see the same note in reading_page)
     const [noConfig, setNoConfig] = useState(false);
     const [st, setSt] = useState(createListeningState);
     const set = <K extends keyof typeof st>(k: K, v: typeof st[K]) =>
@@ -141,13 +143,23 @@ function ListeningPage() {
 
     // ── Answer helpers for v2 renderers (must be declared BEFORE any early
     // return so the hook order stays stable across renders — see Rules of Hooks). ──
-    const getAnswer = useCallback((qid: number) => userAnswersRef.current[qid] || '', []);
+    // renderTick must be in the deps for the same reason as reading_page's getAnswer: answers live in a ref,
+    // and the React Compiler (enabled in vite.config.ts) cannot see in-place ref mutation. As long as getAnswer's
+    // identity is stable the compiler decides the downstream component's inputs are unchanged and replays cached JSX,
+    // so clicks 'register but do not show'. Reading hit this as a real bug on 2026-07-27 (matching questions would not respond).
+    //
+    // Listening has not shown it yet only because the matching grid is written inside an IIFE whose props are rebuilt
+    // every render - an accident of the implementation. Extract that block into a component and it reproduces instantly.
+    // Harden it the same way here rather than relying on the accident.
+    //
+    // No input-performance cost: text gap-fills write the ref directly (not via setAnswerV2), so typing does not re-render.
+    const getAnswer = useCallback((qid: number) => userAnswersRef.current[qid] || '', [renderTick]);
     const setAnswerV2 = useCallback((qid: number, value: string) => {
         userAnswersRef.current[qid] = value;
         setRenderTick(t => t + 1);
     }, []);
 
-    // ── 底部导航条数据（胶囊显示真实 q.id；full-test 下 Section 2 = 11..20） ──
+    // -- Bottom bar data (pills show the real q.id; under full-test Section 2 = 11..20) --
     const navQuestionIds = useMemo<number[]>(() => {
         const data = st.listeningData;
         if (!data) return [];
@@ -159,10 +171,10 @@ function ListeningPage() {
         return Array.isArray(qs) ? qs.map(q => q.id) : [];
     }, [st.listeningData, st.activeSection]);
 
-    // renderTick 是 answersRef 的重渲染节拍（内联填空是 uncontrolled，输入中不触发，
-    // 已答填色在下一次自然重渲染时跟上——与现有行为一致的已知取舍）
+    // renderTick is the re-render beat for answersRef (inline gap-fills are uncontrolled and do not fire while typing,
+    // so the answered fill colour catches up on the next natural re-render - a known trade-off, consistent with existing behaviour)
     const navAnsweredIds = useMemo<Set<number>>(() => {
-        void renderTick; // 答案存 ref，靠该 tick 触发重算
+        void renderTick; // answers live in a ref, so this tick triggers the recompute
         const s = new Set<number>();
         for (const [k, v] of Object.entries(userAnswersRef.current)) {
             if (String(v ?? '').trim()) s.add(Number(k));
@@ -180,7 +192,7 @@ function ListeningPage() {
         }));
     }, [st.listeningData, st.activeSection]);
 
-    // 作答耗时 tick（与阅读一致；音频播放进度是另一回事）
+    // time-on-task tick (same as reading; audio playback progress is a separate thing)
     useEffect(() => {
         if (st.step !== 2 || st.isLoading || !st.startTime) return;
         const interval = setInterval(() => {
@@ -197,7 +209,7 @@ function ListeningPage() {
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
-    // 作答耗时（顶部工具栏中间显示；与音频进度 formatAudioTime 是两回事）
+    // time on task (shown in the middle of the top toolbar; distinct from audio progress via formatAudioTime)
     const formatElapsed = useCallback((totalSeconds: number) => {
         const h = Math.floor(totalSeconds / 3600);
         const m = Math.floor((totalSeconds % 3600) / 60);
@@ -252,7 +264,7 @@ function ListeningPage() {
         });
     };
 
-    // 清理 URL 对象
+    // release the object URL
     useEffect(() => {
         return () => {
             if (audioUrl) {
@@ -263,7 +275,7 @@ function ListeningPage() {
 
     const CACHE_KEY = 'listening_session_cache';
 
-    // ── 全套模拟考试模式 ──
+    // -- Full mock exam mode --
     const isMockActive = mockId !== null && st.step === 2 && !st.isLoading;
     const { confirmExit: mockConfirmExit } = useMockExamGuard({
         mockId: mockId ?? 0,
@@ -271,24 +283,24 @@ function ListeningPage() {
         active: isMockActive,
     });
     const MOCK_DRAFT_KEY = mockId ? `mock:${mockId}:listening:answers` : '';
-    // 草稿自动保存：刷新后能恢复进度（deadline 在服务端，计时不受影响）
+    // Auto-save the draft so progress survives a refresh (the deadline lives on the server, so timing is unaffected)
     useEffect(() => {
         if (!isMockActive || !MOCK_DRAFT_KEY) return;
         const timer = setInterval(() => {
             try {
                 localStorage.setItem(MOCK_DRAFT_KEY, JSON.stringify(userAnswersRef.current));
-            } catch { /* 存储异常不阻塞作答 */ }
+            } catch { /* a storage failure must not block answering */ }
         }, 4000);
         return () => clearInterval(timer);
     }, [isMockActive, MOCK_DRAFT_KEY]);
 
-    // mock 模式刷新恢复：无服务端答案时从本地草稿续答
+    // mock refresh recovery: with no server-side answers, resume from the local draft
     const restoreMockDraft = (): Record<number, string> => {
         if (!MOCK_DRAFT_KEY) return {};
         try {
             const raw = localStorage.getItem(MOCK_DRAFT_KEY);
             if (raw) return JSON.parse(raw) as Record<number, string>;
-        } catch { /* 草稿损坏按空处理 */ }
+        } catch { /* treat a corrupted draft as empty */ }
         return {};
     };
 
@@ -296,7 +308,7 @@ function ListeningPage() {
         if (hasRequested.current) return;
         hasRequested.current = true;
 
-        // 题库模式：按 bankId 拉取题目，不调用 AI 生成
+        // Bank mode: fetch the question by bankId, never call AI generation
         if (bankId) {
             sessionStorage.removeItem(CACHE_KEY);
             setSt(createListeningState());
@@ -304,7 +316,7 @@ function ListeningPage() {
             return;
         }
 
-        // 刷新恢复：优先从 sessionStorage 读取缓存数据
+        // Refresh recovery: prefer the cached data in sessionStorage
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) {
             try {
@@ -317,14 +329,14 @@ function ListeningPage() {
                     startTime: Date.now(),
                     elapsedSeconds: 0,
                 }));
-                // 音频不可持久化，刷新后无音频但题目保留
+                // audio cannot be persisted, so after a refresh the questions survive but the audio does not
                 return;
             } catch {
                 sessionStorage.removeItem(CACHE_KEY);
             }
         }
 
-        // 没有配置就不生成：state 为空说明不是从配置页进来的（同 reading_page 注释）
+        // No config means no generation: empty state proves we did not come from the config page (same as the reading_page note)
         if (!state) {
             setNoConfig(true);
             return;
@@ -447,7 +459,7 @@ function ListeningPage() {
         return text.replace(/\*\*(.*?)\*\*/g, '<span class="highlight">$1</span>');
     };
 
-    // 去掉 ** 标记用于 TTS
+    // strip ** markers for TTS
     const stripMarkers = (text: string): string => {
         return text.replace(/\*\*/g, '');
     };
@@ -518,7 +530,7 @@ function ListeningPage() {
         // Total question count spans full-test sections OR single quiz.
         let totalQuestions = 0;
         if (st.listeningData.type === 'full') {
-            // 题库脏记录可能缺 sections / questions 数组，逐层兜底避免交卷即崩
+            // A dirty bank record may be missing the sections / questions arrays; guard at every level so submitting does not crash
             for (const sec of (st.listeningData.sections || [])) {
                 totalQuestions += Array.isArray(sec.questions) ? sec.questions.length : 0;
             }
@@ -530,13 +542,13 @@ function ListeningPage() {
         if (!forced && answeredQuestions < totalQuestions) {
             if (!(await showConfirm(t('readingDetails.submitConfirm')))) return;
         }
-        // 停止 TTS
+        // stop TTS
         if (audioRef.current) {
             audioRef.current.pause();
         }
         setTtsSpeaking(false);
 
-        // mock 模式：交卷时同步评分（raw + band）进 aiFeedback，供大厅/成绩单读取
+        // mock mode: on submit, write the score (raw + band) into aiFeedback synchronously for the hub and report to read
         if (bankId && mockId) {
             const allQs: { id: number; answer?: string; answers?: string[] }[] = [];
             if (st.listeningData.type === 'full') {
@@ -556,7 +568,7 @@ function ListeningPage() {
             } catch (err) {
                 console.error('mock submit failed:', err);
                 showToast(t('listeningDetails.toastSaveFail'), 'error');
-                if (!forced) return; // 手动交卷失败留在页面重试；超时强制交卷继续离场
+                if (!forced) return; // a failed manual submit stays on the page to retry; a timeout force-submit leaves anyway
             }
             if (MOCK_DRAFT_KEY) localStorage.removeItem(MOCK_DRAFT_KEY);
             showToast(t('mock.examMode.submittedToHub'), 'success');
@@ -578,14 +590,14 @@ function ListeningPage() {
         setSt(s => ({ ...s, step: 2, startTime: Date.now(), elapsedSeconds: 0 }));
     };
 
-    // 播放已经预提取的音频
+    // play the already-prefetched audio
     const startTTS = async () => {
         if (!audioRef.current || ttsStarted) return;
         setTtsStarted(true);
         setTtsSpeaking(true);
 
         try {
-            // 从头开始播放
+            // start from the beginning
             audioRef.current.currentTime = 0;
             await audioRef.current.play();
         } catch (err: unknown) {
@@ -598,7 +610,7 @@ function ListeningPage() {
 
     // Resizer logic (REMOVED: The layout is now single-column with inline inputs)
 
-    // 浮动下划线
+    // floating underline
     const executeUnderline = () => {
         if (!activeEditorRef.current) return;
         activeEditorRef.current.contentEditable = 'true';
@@ -671,6 +683,9 @@ function ListeningPage() {
         if (!resizer || !sidebar || !layout) return;
 
         let isResizing = false, startX = 0, startWidth = 0;
+        // Allow dragging across the full 0-100%; what prevents 'dragged too narrow to read' is the layout freeze, not clamping the divider
+        const content = layout.querySelector<HTMLElement>('.results-content');
+        const stopWatchFreeze = watchPaneFreezeMin(layout, [sidebar, content]);
 
         const onMouseDown = (e: MouseEvent) => {
             isResizing = true;
@@ -681,10 +696,10 @@ function ListeningPage() {
         };
         const onMouseMove = (e: MouseEvent) => {
             if (!isResizing) return;
-            const newWidth = startWidth + (e.clientX - startX);
-            if (newWidth > 200 && newWidth < window.innerWidth * 0.55) {
-                sidebar.style.width = newWidth + 'px';
-            }
+            // The transcript pane is visually on the **right** (CSS order flips it, see the
+            // #listeningResultsLayout rules in reading_page.css), so dragging right narrows it and dragging left widens it -
+            // hence the negated delta. DOM order is unchanged; do not reason from DOM position.
+            applyPaneWidth(sidebar, startWidth - (e.clientX - startX), layout);
         };
         const onMouseUp = () => {
             if (isResizing) {
@@ -698,13 +713,14 @@ function ListeningPage() {
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
         return () => {
+            stopWatchFreeze();
             resizer.removeEventListener('mousedown', onMouseDown);
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
         };
     }, [st.step, st.isPassageOpen]);
 
-    // 无配置落地页：冷启动进来不生成，给出口而不是静默扣费
+    // No-config landing page: a cold start renders this instead of silently charging the user
     if (noConfig) {
         return (
             <div className="reading-container">
@@ -780,17 +796,17 @@ function ListeningPage() {
         const isShortAnswerMode = st.listeningData.type === 'short_answer';
         const isMatchingMode = st.listeningData.type === 'matching';
 
-        // 去除原文所有的 ** 标记（考试呈现时不需要加粗高亮）
+        // strip every ** marker from the transcript (no bold highlighting in exam presentation)
         const removeMarkdown = (text: string) => {
             if (!text) return '';
             return text.replace(/\*\*/g, '');
         };
 
-        // 辅助渲染内联填空
+        // helper for rendering inline gap-fills
         const renderInlineInput = (qId: number, idx: number) => {
-            // 与阅读 note/summary/sentence completion 共用 .rd-blank-input 样式。
-            // data-question-id 挂在 input 本体：article/sentence/兜底三种路径都经过
-            // 这里，底部导航条的跳转/高亮锚点一处覆盖。
+            // Shares the .rd-blank-input styling with reading's note/summary/sentence completion.
+            // data-question-id sits on the input itself: the article, sentence and fallback paths all go
+            // through here, so the bottom bar's jump and highlight anchors are covered in one place.
             return (
                 <input
                     key={`input-${qId}-${idx}`}
@@ -806,11 +822,11 @@ function ListeningPage() {
 
         const renderSentenceMode = () => {
             if (st.listeningData?.type !== 'sentence') return null;
-            // 与阅读 sentence_completion 共用 .rd-inline-q-block / .rd-blank-* 样式
+            // Shares the .rd-inline-q-block / .rd-blank-* styling with reading's sentence_completion
             const qs = Array.isArray(st.listeningData.questions) ? st.listeningData.questions : [];
             return qs.map(q => {
-                // AI drift 防御：question 缺失/非字符串时 bankVal 兜底；空格标记用
-                // /_{2,}/（与阅读一致），而不是假设恰好 5 个下划线
+                // AI drift guard: fall back to bankVal when question is missing or not a string; match gaps with
+                // /_{2,}/ (same as reading) instead of assuming exactly five underscores
                 const parts = bankVal(q.question).split(/_{2,}/);
                 return (
                     <div key={q.id} className="rd-inline-q-block">
@@ -821,7 +837,7 @@ function ListeningPage() {
                                 {i < parts.length - 1 && renderInlineInput(q.id, i)}
                             </span>
                         ))}
-                        {/* 题面里没有任何空格标记（AI 漏写）时补一个输入框，保证可作答 */}
+                        {/* If the stem has no gap marker at all (the AI forgot), add one input so the question stays answerable */}
                         {parts.length === 1 && renderInlineInput(q.id, 0)}
                     </div>
                 );
@@ -833,8 +849,8 @@ function ListeningPage() {
             const textToSplit = st.listeningData.blanked_passage || st.listeningData.passage || '';
             const paragraphs = textToSplit.split('\n\n');
             const qs = Array.isArray(st.listeningData.questions) ? st.listeningData.questions : [];
-            // 空格按出现顺序对应 questions 数组顺序（而不是假设 id 恰好是 1..N）；
-            // 空格标记用 /_{2,}/ 兼容 AI 下划线数量漂移
+            // Gaps map to the questions array in order of appearance (rather than assuming the ids happen to be 1..N);
+            // the gap pattern /_{2,}/ tolerates the AI drifting on underscore count
             const qids = qs.map(q => q.id);
             const renderedIds = new Set<number>();
             let blankIdx = 0;
@@ -860,7 +876,7 @@ function ListeningPage() {
                     </p>
                 );
             });
-            // 文中空格数少于题目数（AI 漏标）时，为缺失的题目补独立输入框
+            // When the text has fewer gaps than questions (the AI under-marked), add standalone inputs for the missing ones
             const missing = qs.filter(q => !renderedIds.has(q.id));
             return (
                 <div className="listening-article-inline">
@@ -885,7 +901,7 @@ function ListeningPage() {
 
         const renderMultipleChoiceMode = () => {
             if (st.listeningData?.type !== 'multiple_choice') return null;
-            // 与阅读 MCQ 共用 .question-block / .question-text / .option-label 样式
+            // Shares the .question-block / .question-text / .option-label styling with reading MCQ
             const qs = Array.isArray(st.listeningData.questions) ? st.listeningData.questions : [];
             return (
                 <div className="listening-mc-mode" key={`tick-${renderTick}`}>
@@ -915,7 +931,7 @@ function ListeningPage() {
             );
         };
 
-        // ─── 地图题模式 ─────────────────────────────────────
+        // --- Map question mode -----------------------------------
         const renderMapMode = () => {
             if (st.listeningData?.type !== 'map') return null;
             const mapData = st.listeningData.map || ({} as MapData);
@@ -1067,11 +1083,8 @@ function ListeningPage() {
                                     rows={rows}
                                     letters={letters}
                                     letterTitles={titles}
-                                    getAnswer={id => userAnswersRef.current[Number(id)] || ''}
-                                    onAnswer={(id, letter) => {
-                                        userAnswersRef.current[Number(id)] = letter;
-                                        setRenderTick(t => t + 1);
-                                    }}
+                                    getAnswer={id => getAnswer(Number(id))}
+                                    onAnswer={(id, letter) => setAnswerV2(Number(id), letter)}
                                 />
                             );
                         })()}
@@ -1207,7 +1220,7 @@ function ListeningPage() {
                             const activeSec = sections.find(s => s.sectionNum === st.activeSection) || sections[0];
                             if (!activeSec) return null;
                             const offset = ((activeSec.sectionNum || 1) - 1) * 10;
-                            {/* Section 切换已移到底部导航条（点击收起的 Section 标签） */}
+                            {/* Section switching moved to the bottom bar (click a collapsed Section label) */}
                             return (
                                 <>
                                     <div className="full-section-block">
@@ -1346,7 +1359,7 @@ function ListeningPage() {
                             isShortAnswerMode ? <ShortAnswerRenderer data={st.listeningData as ShortAnswerListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
                             isMatchingMode ? <MatchingRenderer data={st.listeningData as MatchingListeningData} getAnswer={getAnswer} onAnswer={setAnswerV2} /> :
                             st.listeningData.type === 'sentence' ? renderSentenceMode() :
-                            // 未知题型（AI drift / 老题库记录）：给出明确提示而不是静默空白
+                            // Unknown question type (AI drift / legacy bank record): show a clear notice rather than a silent blank
                             <div className="section-instructions">
                                 {t('components.questionRenderer.unsupportedType').replace('{t}', String(st.listeningData.type))}
                             </div>)}
@@ -1359,7 +1372,7 @@ function ListeningPage() {
                         scrollContainerId="listeningContent"
                         onSubmit={() => submitQuiz()}
                         onExit={async () => {
-                            // mock 模式：退出 = 判 0，走守卫的确认 + forfeit 流程
+                            // mock mode: exiting scores 0, so go through the guard's confirm + forfeit flow
                             if (mockId) {
                                 if (audioRef.current) audioRef.current.pause();
                                 await mockConfirmExit();
@@ -1413,13 +1426,60 @@ function ListeningPage() {
         const { correct: score } = scoreListeningQuestions(allResultQuestions, id => userAnswersRef.current[id] || '');
         const total = allResultQuestions.length;
         const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-        // 全套（4 section 40 题）额外给 9 分制换算；单 section 的 full 记录被 total 门槛挡住
+        // A full paper (4 sections, 40 questions) also gets the 9-band conversion; single-section 'full' records are held back by the total threshold
         const band = isFullResults ? rawToBand('listening', score, total) : null;
+        // With all 4 sections present, switch by section: the explanations and transcript show only the current
+        // section, otherwise 40 questions and 4 scripts laid out flat make it impossible to find a question or tell which section it belongs to.
+        const fullSections = isFullResults ? ((st.listeningData as FullListeningData).sections || []) : [];
+        const isMultiSection = fullSections.length > 1;
+        const activeResultSection = isMultiSection
+            ? (fullSections.some(s => s.sectionNum === st.activeSection)
+                ? st.activeSection
+                : fullSections[0].sectionNum)
+            : null;
+        const shownSections = activeResultSection == null
+            ? fullSections
+            : fullSections.filter(s => s.sectionNum === activeResultSection);
+
+        // the questions to show in the current view (after switching sections, only this section's)
+        const shownQuestions = activeResultSection == null
+            ? allResultQuestions
+            : allResultQuestions.filter(q => q.sectionNum === activeResultSection);
+
+        // Bottom bar data: per-question correctness plus the question ids of every section (including the collapsed columns).
+        // The verdict must use the same rules as the tick/cross on the answer cards below (including checkAnswer's
+        // number-to-word normalisation), otherwise you get the self-contradicting 'red pill, ticked card'.
+        // Note the header total goes through scoreListeningQuestions (literal comparison), which is stricter - a known difference, left alone.
+        const verdictOf = (q: { id: number; answer?: string; answers?: string[] }): boolean => {
+            const userAns = userAnswersRef.current[q.id] || 'None';
+            if (q.answer !== undefined && q.answer !== null && q.answers === undefined) {
+                return userAns.trim().toUpperCase() === String(q.answer).trim().toUpperCase();
+            }
+            if (Array.isArray(q.answers) && q.answers.length > 0) {
+                return checkAnswer(userAns, q.answers);
+            }
+            return false;
+        };
+        const resultMarks = new Map<number, boolean>();
+        const correctIds = new Set<number>();
+        for (const q of allResultQuestions) {
+            const ok = verdictOf(q);
+            resultMarks.set(q.id, ok);
+            if (ok) correctIds.add(q.id);
+        }
+        const resultParts = (isMultiSection ? fullSections : []).map(s => ({
+            label: t('results.sectionTab').replace('{n}', String(s.sectionNum)),
+            questionIds: allResultQuestions.filter(q => q.sectionNum === s.sectionNum).map(q => q.id),
+            active: s.sectionNum === activeResultSection,
+        }));
+
         // Concatenate passages for the "show passage" sidebar
         const passageText = isFullResults
-            ? ((st.listeningData as FullListeningData).sections || []).map(s => `[Section ${s.sectionNum}] ${s.title || ''}\n\n${s.passage || ''}`).join('\n\n---\n\n')
+            ? shownSections.map(s => `[Section ${s.sectionNum}] ${s.title || ''}\n\n${s.passage || ''}`).join('\n\n---\n\n')
             : ((st.listeningData as LegacyListeningData).passage || '');
         const passageParagraphs = passageText.split('\n\n');
+        // Only use the answers of the sections currently shown: otherwise another section's words get mis-highlighted in this script
+        const shownAnswerMarks = resolveAnswerSentences(passageText, shownQuestions);
 
         return (
             <div className="results-container">
@@ -1439,26 +1499,31 @@ function ListeningPage() {
                                 <div className="score-number">{formatBand(band)}<span className="score-total">/9</span></div>
                             </div>
                         )}
-                        <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
+                        <div className="results-actions">
+                            <button onClick={() => set('isPassageOpen', !st.isPassageOpen)} className={`toolbar-btn ${st.isPassageOpen ? 'active' : 'toolbar-btn-outline'}`}>
                             <span className="btn-icon">{st.isPassageOpen ? '✕' : '📖'}</span> {st.isPassageOpen ? t('results.hidePassage') : t('results.showPassage')}
                         </button>
                         {bankId && !mockId && (
-                            // mock 子题一次定档，不允许重做
+                            // a mock child is locked in once submitted, no redo
                             <button onClick={restartFromBank} className="toolbar-btn toolbar-btn-outline"><span className="btn-icon">🔁</span> {t('aiBank.redoBtn')}</button>
                         )}
                         <button onClick={onReturnHome} className="toolbar-btn"><span className="btn-icon">{mockId ? '🎯' : bankId ? '📚' : '🏠'}</span> {mockId ? t('mock.examMode.backToHub') : bankId ? t('aiBank.backToBank') : t('common.home')}</button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Results Body */}
+                {/* Results body - answers on the left, transcript on the right */}
                 <div className="results-layout" id="listeningResultsLayout">
-                    {/* Passage Sidebar */}
+                    {/* Passage sidebar - earlier in the DOM, moved to the visual right by CSS order */}
                     <div className={`passage-sidebar ${st.isPassageOpen ? 'open' : ''}`} id="listeningPassageSidebar">
                         <h3>{t('results.originalPassage')}</h3>
                         <h4 dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(st.listeningData.title)) }}></h4>
                         <div className="passage-text">
                             {passageParagraphs.map((p, idx) => (
-                                <p key={idx} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(p)) }}></p>
+                                <p key={idx} dangerouslySetInnerHTML={{
+                                    // Mark answer sentences on plain text first, then apply ** highlighting, then sanitize once
+                                    __html: sanitize(formatHighlight(markResolvedSentences(p, shownAnswerMarks))),
+                                }}></p>
                             ))}
                         </div>
                         {st.vocabList.length > 0 && (
@@ -1479,24 +1544,18 @@ function ListeningPage() {
                     <div className={`resizer ${st.isPassageOpen ? 'active' : ''}`} id="listeningResizerPassage"></div>
 
                     {/* Analysis Content */}
-                    <div className="results-content">
-                        {allResultQuestions.map(q => {
+                    <div className="results-content" id="listeningResultsContent">
+                        {shownQuestions.map(q => {
                             const userAns = userAnswersRef.current[q.id] || 'None';
                             const hasOptions = Boolean(q.options && Object.keys(q.options).length > 0);
-                            const hasLetterAnswer = q.answer !== undefined && q.answer !== null && q.answers === undefined;
                             const hasTextAnswers = Array.isArray(q.answers) && q.answers.length > 0;
-
-                            let isCorrect = false;
-                            if (hasLetterAnswer) {
-                                isCorrect = userAns.trim().toUpperCase() === String(q.answer).trim().toUpperCase();
-                            } else if (hasTextAnswers) {
-                                isCorrect = checkAnswer(userAns, q.answers as string[]);
-                            }
+                            // Goes through the same verdictOf as above, so it always agrees with the bottom bar's red/green cells
+                            const isCorrect = resultMarks.get(q.id) ?? false;
 
                             // Legacy MCQ / Map special renderings preserved
                             if ((isMultipleChoiceMode || q.sectionType === 'mixed') && hasOptions) {
                                 return (
-                                    <div key={q.id} className="result-block">
+                                    <div key={q.id} className="result-block" data-question-id={q.id}>
                                         <div className="question-text">
                                             {q.id}. {(q.question || '').replace(/\*\*/g, '')}
                                             {q.sectionNum !== undefined && <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[Section {q.sectionNum}]</span>}
@@ -1530,7 +1589,7 @@ function ListeningPage() {
                                 const correctOptText = mapOptions.find(o => o.startsWith(String(q.answer || ''))) || q.answer;
                                 const userOptText = mapOptions.find(o => o.startsWith(userAns)) || userAns;
                                 return (
-                                    <div key={q.id} className="result-block">
+                                    <div key={q.id} className="result-block" data-question-id={q.id}>
                                         <div className="question-text">📍 Location {q.id}</div>
                                         <p>
                                             {t('results.yourAnswer')}: <strong className={isCorrect ? 'ans-correct' : 'ans-incorrect'}>{userOptText || 'None'}</strong> | {t('results.correctAnswer')}: <strong>{correctOptText}</strong>
@@ -1548,7 +1607,7 @@ function ListeningPage() {
                             }
                             // Default renderer: text answers OR letter matching / summary etc.
                             return (
-                                <div key={q.id} className="result-block">
+                                <div key={q.id} className="result-block" data-question-id={q.id}>
                                     <div className="question-text">
                                         {q.id}. {(q.question || '').replace(/\*\*/g, '')}
                                         {q.sectionNum !== undefined && <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>[Section {q.sectionNum}]</span>}
@@ -1569,6 +1628,25 @@ function ListeningPage() {
                         })}
                     </div>
                 </div>
+
+                {/* Bottom bar - the same component as the answering page, only the cells and pills switch to correct/incorrect colours.
+                    Placed **after** results-layout: .results-container is a 100vh flex column and the layout takes flex:1,
+                    so this pins to the bottom of the viewport no matter how long the explanations scroll. */}
+                <PracticeBottomBar
+                    questionIds={shownQuestions.map(q => q.id)}
+                    answeredIds={correctIds}
+                    resultMarks={resultMarks}
+                    scrollContainerId="listeningResultsContent"
+                    navLabels={{
+                        ...(t('listeningDetails.questionNav', { returnObjects: true }) as PracticeNavLabels),
+                        progress: t('results.partScore'),
+                    }}
+                    overviewParts={isMultiSection ? resultParts : undefined}
+                    onPartSelect={i => {
+                        const s = fullSections[i];
+                        if (s) set('activeSection', s.sectionNum);
+                    }}
+                />
             </div>
         );
     }

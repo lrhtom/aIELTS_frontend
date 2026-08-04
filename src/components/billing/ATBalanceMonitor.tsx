@@ -4,15 +4,15 @@ import { useLang } from '../../i18n/LanguageContext';
 import { showToast } from '../common/Toast';
 
 /**
- * ATBalanceMonitor组件监听AT币余额相关事件
- * 应该在App.tsx中放置这个组件，全局监听余额变化
+ * ATBalanceMonitor listens for AT balance events.
+ * Place it in App.tsx to watch balance changes globally.
  */
 export default function ATBalanceMonitor() {
     const { user, updateUser } = useAuth();
     const { t } = useLang();
 
     useEffect(() => {
-        // 监听AT币消耗事件
+        // listen for AT spend events
         const handleATConsumed = (event: Event) => {
             const customEvent = event as CustomEvent<{ consumed: number; description?: string }>;
             const detail = customEvent.detail;
@@ -23,14 +23,14 @@ export default function ATBalanceMonitor() {
                 };
                 updateUser(updatedUser);
 
-                // 显示消耗提示
+                // show the spend notice
                 if (detail.consumed > 0) {
                     showToast(t('billing.consumedToast').replace('{n}', detail.consumed.toString()), 'success');
                 }
             }
         };
 
-        // 监听AT币退款事件（AI操作失败，费用退还）
+        // listen for AT refund events (an AI operation failed and the cost was returned)
         const handleATRefunded = (event: Event) => {
             const customEvent = event as CustomEvent<{ refunded: number }>;
             const { refunded } = customEvent.detail;
@@ -40,7 +40,7 @@ export default function ATBalanceMonitor() {
             }
         };
 
-        // 监听AT币不足事件
+        // listen for insufficient-balance events
         const handleATBalanceInsufficient = (event: Event) => {
             const customEvent = event as CustomEvent<{ message?: string; currentBalance?: number; requiredBalance?: number }>;
             const detail = customEvent.detail;
@@ -55,7 +55,7 @@ export default function ATBalanceMonitor() {
 
             showToast(fullMessage, 'error', '402');
 
-            // 可以在这里触发充值页面或提示
+            // a top-up page or prompt could be triggered here
             if (window.location.pathname !== '/profile') {
                 window.dispatchEvent(new CustomEvent('open-recharge-modal'));
             }
@@ -72,6 +72,6 @@ export default function ATBalanceMonitor() {
         };
     }, [user, updateUser, t]);
 
-    // 这个组件不需要渲染任何内容
+    // this component renders nothing
     return null;
 }

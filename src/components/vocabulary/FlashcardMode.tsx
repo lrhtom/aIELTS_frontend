@@ -12,12 +12,12 @@ interface Props {
     onFlip: () => void;
     onRating: (rating: number) => void;
     estimateInterval: (card: VocabCard, rating: number) => string;
-    /** Returns the formatted absolute date (e.g. "06-25" / "今天") the card will next surface at after this rating. */
+    /** When false the front is locked and cannot be flipped (used for 'you must hear the pronunciation before flipping') */
     previewNextDueLabel?: (card: VocabCard, rating: number) => string;
     simpleMode?: boolean;
-    /** 'en' → 正面英文(默认); 'zh' → 正面中文,背面英文 */
+    /** Returns the formatted absolute date (for example '06-25' or 'Today') the card will next surface at after this rating. */
     frontFace?: 'en' | 'zh';
-    /** false 时正面锁死不可翻（用于「必须听完发音再翻面」） */
+    /** 'en' -> English on the front (default); 'zh' -> Chinese on the front, English on the back */
     canFlip?: boolean;
 }
 

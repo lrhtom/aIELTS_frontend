@@ -5,7 +5,7 @@ import i18n from './i18next';
 
 interface LanguageContextValue {
     lang: Lang;
-    /** i18next 函数式取值：t('mock.config.title')。 */
+    /** Functional i18next lookup: t('mock.config.title'). */
     t: TFunction<'translation'>;
     setLang: (lang: Lang, syncToServer?: boolean) => void;
 }

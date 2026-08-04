@@ -4,6 +4,7 @@
  * label is rendered as a bold marker beside its paragraph. Otherwise plain paragraphs.
  */
 import { sanitize } from '../../utils/safe_html';
+import { markResolvedSentences, type ResolvedMark } from '../../utils/answer_sentences';
 
 function formatHighlight(text: string): string {
     return (text || '').replace(/\*\*(.*?)\*\*/g, '<span class="highlight">$1</span>');
@@ -13,11 +14,22 @@ interface Props {
     title: string;
     passage: string;
     idPrefix?: string;
+    /**
+     * * When false the front is locked and cannot be flipped (used for 'you must hear the pronunciation before flipping')
+     * Results page only: the whole sentence containing each of these answers is underlined, so it can be checked against the passage.
+     */
+    answerMarks?: ResolvedMark[];
+}
+
+/*The answering page omits it and the passage stays clean. */
+function renderPassageHTML(text: string, marks?: ResolvedMark[]): string {
+    const marked = marks?.length ? markResolvedSentences(text || '', marks) : (text || '');
+    return sanitize(formatHighlight(marked));
 }
 
 const LABEL_RE = /^\[([A-Z])\]\s*$/;
 
-export default function ReadingPassageBlock({ title, passage, idPrefix = 'articleContent' }: Props) {
+export default function ReadingPassageBlock({ title, passage, idPrefix = 'articleContent', answerMarks }: Props) {
     // Try to split by labelled paragraphs first
     const rawParas = (passage || '').split(/\n\n+/);
     const hasLabels = rawParas.some(p => {
@@ -45,12 +57,12 @@ export default function ReadingPassageBlock({ title, passage, idPrefix = 'articl
                             return (
                                 <p key={idx} className="labelled-paragraph">
                                     <strong className="para-label">[{label}]</strong>{' '}
-                                    <span dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(body)) }} />
+                                    <span dangerouslySetInnerHTML={{ __html: renderPassageHTML(body, answerMarks) }} />
                                 </p>
                             );
                         }
                     }
-                    return <p key={idx} dangerouslySetInnerHTML={{ __html: sanitize(formatHighlight(para)) }} />;
+                    return <p key={idx} dangerouslySetInnerHTML={{ __html: renderPassageHTML(para, answerMarks) }} />;
                 })}
             </div>
         </div>

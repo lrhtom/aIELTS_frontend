@@ -1,5 +1,5 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
-// 向导模式（新手导览）：主页启动，跨页面 spotlight 引导。
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
+// Tour guide mode (the newcomer walkthrough): launched from the home page, a cross-page spotlight tour.
 
 export const tour = {
   startBtn: '向导模式',

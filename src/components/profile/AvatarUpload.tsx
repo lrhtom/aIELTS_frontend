@@ -36,7 +36,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
         const file = event.target.files?.[0];
         if (!file) return;
 
-        // 验证文件
+        // validate the file
         const validation = avatarApi.validateImageFile(file);
         if (!validation.isValid) {
             showToast(validation.error || t('profile.avatarUpload.fileValidationError'), 'error');
@@ -44,15 +44,15 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
         }
 
         try {
-            // 生成预览
+            // generate the preview
             const preview = await avatarApi.fileToBase64(file);
             setPreviewUrl(preview);
 
-            // 上传文件
+            // upload the file
             setIsUploading(true);
             const response = await avatarApi.uploadAvatar(file);
 
-            // 更新用户信息
+            // update the user information
             updateUser(response.user);
             onAvatarUpdate?.(response.user.avatar_url || null);
 
@@ -64,7 +64,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
             setPreviewUrl(mediaUrl(user?.avatar_url) || null);
         } finally {
             setIsUploading(false);
-            // 清除文件输入
+            // clear the file input
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -82,7 +82,7 @@ export default function AvatarUpload({ onAvatarUpdate, className = '', size = 'm
             setIsUploading(true);
             const response = await avatarApi.deleteAvatar();
 
-            // 更新用户信息
+            // update the user information
             updateUser(response.user);
             onAvatarUpdate?.(null);
             setPreviewUrl(null);

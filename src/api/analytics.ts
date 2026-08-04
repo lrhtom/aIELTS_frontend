@@ -100,7 +100,7 @@ export interface PracticeSkillStats {
     recent: PracticeAttempt[];
 }
 
-/* 全套模拟成绩单（finalize 后的 overall + 四科 band） */
+/* Full mock score report (the overall plus four skill bands, after finalize) */
 export interface MockReportItem {
     id: number;
     title: string;
@@ -120,7 +120,7 @@ export interface PracticeAnalytics {
     };
     mock: {
         total: number;
-        reports: MockReportItem[];  // 新→旧
+        reports: MockReportItem[];  // newest first
     };
 }
 
@@ -129,7 +129,7 @@ export async function getPracticeAnalytics(): Promise<PracticeAnalytics> {
     return res.data;
 }
 
-/* ── Speaking session analytics（只含有 summary 报告的会话）── */
+/* -- Speaking session analytics (only sessions that produced a summary report) -- */
 export interface SpeakingTrendItem {
     id: number;
     date: string;          // MM-DD HH:MM

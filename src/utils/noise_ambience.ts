@@ -1,23 +1,23 @@
 /**
- * 场景对话「背景噪音」环境音生成器（Web Audio API，纯前端合成，无需音频文件）
+ * Background ambience generator for scenario conversations (Web Audio API, synthesised entirely in the browser, no audio files)
  *
- * 选中的每种噪音子类型（pub / canteen / office / street）各生成一条循环噪音链
- * （循环 pink noise → 带通/低通滤波 → 增益，部分带低频嗡鸣 / 缓慢起伏），
- * 多种同时混音循环播放，音量压低以免盖过 TTS。
+ * Each selected noise subtype (pub / canteen / office / street) gets its own looping noise chain
+ * (looping pink noise -> bandpass/lowpass filter -> gain, some with a low hum or a slow swell),
+ * and several are mixed and looped together, kept quiet so they do not drown out the TTS.
  *
- * 之所以用程序合成而不是打包音频文件：无版权风险、离线可用、体积几乎为 0，
- * 且便于随开随停。日后若想换成真实录音，只需把 buildProfile 换成 <audio>/AudioBuffer 加载即可。
+ * Synthesised rather than shipped as audio files because it carries no copyright risk, works offline, adds almost
+ * nothing to the bundle, and starts and stops instantly. To swap in real recordings later, just replace buildProfile with an <audio>/AudioBuffer loader.
  */
 
 export type NoiseProfileKey = 'pub' | 'canteen' | 'office' | 'street';
 
 interface ProfileParams {
     type: BiquadFilterType;
-    freq: number;   // 滤波中心/截止频率
+    freq: number;   // filter centre / cutoff frequency
     q: number;
-    gain: number;   // 该噪音相对增益 (0..1)
-    hum?: number;   // 可选低频嗡鸣频率 (Hz)，模拟空调/机器
-    lfo?: number;   // 可选缓慢幅度起伏频率 (Hz)，模拟人群/车流的涨落
+    gain: number;   // relative gain of this noise layer (0..1)
+    hum?: number;   // optional low hum frequency (Hz), imitating air conditioning or machinery
+    lfo?: number;   // optional slow amplitude swell frequency (Hz), imitating the ebb and flow of a crowd or traffic
 }
 
 const PROFILE_PARAMS: Record<NoiseProfileKey, ProfileParams> = {
@@ -48,7 +48,7 @@ export class NoiseAmbience {
     private gestureArmed = false;
     running = false;
 
-    /** 启动并播放给定子类型（会在需要时创建 AudioContext）。 */
+    /** Start playing the given subtypes (creating the AudioContext if needed). */
     async start(profiles: string[]): Promise<void> {
         if (!AC) return;
         if (!this.ctx) {
@@ -61,20 +61,20 @@ export class NoiseAmbience {
         await this.ctx.resume().catch(() => {});
         this.running = true;
         this.setProfiles(profiles);
-        // 自动播放策略：若仍被挂起，等下一次用户手势再恢复
+        // Autoplay policy: if it is still suspended, resume on the next user gesture
         if (this.ctx.state === 'suspended') this.armGestureResume();
     }
 
-    /** 重新设定要播放的子类型（增删噪音层）。 */
+    /** Change which subtypes are playing (adding and removing noise layers). */
     setProfiles(profiles: string[]): void {
         const valid = profiles.filter((p): p is NoiseProfileKey => p in PROFILE_PARAMS);
-        // 开了「背景噪音」但没细选任何子类型 → 默认给个 pub+office 混音
+        // Background noise is on but no subtype was chosen -> default to a pub+office mix
         this.active = valid.length ? valid : (['pub', 'office'] as NoiseProfileKey[]);
         if (!this.running || !this.ctx || !this.buffer || !this.master) return;
 
         this.clearNodes();
         for (const p of this.active) this.nodes.push(this.buildProfile(p));
-        // 多层混音时整体压低，避免叠加过响
+        // turn the whole thing down when layers are mixed, so they do not stack up too loud
         const target = this.muted ? 0 : this.volume / Math.sqrt(this.active.length || 1);
         this.rampMaster(target);
     }
@@ -150,7 +150,7 @@ export class NoiseAmbience {
         g.connect(master);
         src.start();
 
-        // 缓慢幅度起伏（人群/车流涨落）
+        // slow amplitude swell (crowd / traffic ebb and flow)
         let lfo: OscillatorNode | null = null;
         let lfoGain: GainNode | null = null;
         if (p.lfo) {
@@ -163,7 +163,7 @@ export class NoiseAmbience {
             lfo.start();
         }
 
-        // 低频嗡鸣（空调/机房）
+        // low hum (air conditioning / server room)
         let hum: OscillatorNode | null = null;
         let humGain: GainNode | null = null;
         if (p.hum) {
@@ -189,7 +189,7 @@ export class NoiseAmbience {
         };
     }
 
-    /** 生成一段可循环的 pink noise（Paul Kellet 近似）。 */
+    /** Generate a loopable stretch of pink noise (Paul Kellet's approximation). */
     private makePinkBuffer(ctx: AudioContext, seconds: number): AudioBuffer {
         const len = Math.floor(ctx.sampleRate * seconds);
         const buf = ctx.createBuffer(1, len, ctx.sampleRate);

@@ -148,8 +148,8 @@ function WritingChatPage() {
     }, [chatHistory]);
 
     // ── Init: system prompt + greeting ──────────────────────────────────────
-    // 后端 writing_chat 端点已通过 skill_writing_chat_system() 注入完整的 system prompt
-    // 前端不再硬编码 system role，避免双重注入
+    // The question also goes into the query (the image is too large, so it stays in state), so a refresh at least still knows the question
+    // The backend writing_chat endpoint already injects the full system prompt via skill_writing_chat_system(),
     useEffect(() => {
         contextRef.current = [];
 

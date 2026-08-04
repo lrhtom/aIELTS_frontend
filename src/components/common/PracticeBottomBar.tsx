@@ -1,61 +1,71 @@
 /**
- * PracticeBottomBar — 阅读/听力练习页共享的底部考试导航条。
+ * PracticeBottomBar - the exam navigation bar shared by the reading and listening practice pages.
  *
- * 结构（纵向两层，参考考试系统底部条）:
- *   1. 上层·题号导航区: 每个 Part 一列（细"一题一格"进度条在上、标签/胶囊在下），
- *      占满全宽; 当前 Part 展开胶囊，其余收起为 "Part N  x/y"，整列可点击切换。
- *   2. 下层·操作行: 独立一行横贯全宽，右对齐 [实时时钟 | 提交 | 退出]。
- *      只有一个 Part 时上层只渲染当前列。
+ * Structure (two stacked layers, modelled on exam software's bottom bar):
+ *   1. Upper layer, question navigation: one column per Part (a thin one-cell-per-question progress bar on top, the
+ *         label and pills below), filling the width; the current Part expands its pills and the rest collapse to
+ *      'Part N  x/y' with the whole column clickable to switch.
+ *      2. Lower layer, action row: its own full-width line, right-aligned [live clock | submit | exit].
  *
- * 题号胶囊三态:
- *   - 默认: 描边
- *   - 已答: teal 填充
- *   - 当前可见: 高亮描边环（IntersectionObserver 实时跟踪, 可与已答叠加）
+ * With only one Part, the upper layer renders just the current column.
+ *   The three pill states:
+ *   - default:  outlined
+ *   - answered: filled teal
  *
- * 跳转/高亮都锚定题目节点上的 data-question-id 属性（各题型渲染器逐处补齐），
- * 点击胶囊 scrollIntoView 平滑滚动; observer root 用视口 + 居中检测带，
- * 不依赖具体哪个祖先在滚动。
+ * - currently visible: a highlighted outline ring (tracked live by IntersectionObserver, and can combine with answered)
+ * The results page reuses the same bar (pass resultMarks to enter results mode): the layout is identical, only
+ * 'answered/unanswered' becomes 'correct/incorrect' colouring and the action row is dropped (redo and back live in the top toolbar).
+ *
+ * That way both pages share one implementation of the bottom bar and cannot drift apart.
+ * Jumping and highlighting both anchor on the data-question-id attribute of the question node (added in every question renderer);
+ * clicking a pill calls scrollIntoView for a smooth scroll. The observer root is the viewport with a centred detection band,
  */
 import { useEffect, useRef, useState } from 'react';
 
 export interface PracticeOverviewPart {
     label: string;
-    /** 该 Part 全部题目的真实 id（进度条一题一格 + 收起标签的 x/y 都由此派生） */
+    /*so it does not depend on which ancestor happens to be scrolling. */
     questionIds: number[];
     active: boolean;
 }
 
 export interface PracticeNavLabels {
-    jumpTo: string;    // '跳转到第 {n} 题'
+    jumpTo: string;    //* The real ids of every question in this Part (both the one-cell-per-question progress bar and the collapsed label's x/y derive from it)
     progress: string;  // '{answered} / {total}'
     barLabel: string;
 }
 
 interface Props {
-    /** 当前 Part 显示名（"Passage 2" / "Section 3"）；单题型模式可省略 */
+    /* 'jump to question {n}' */
     partLabel?: string | null;
-    /** 当前可见 Part 的真实题目 id 列表（full-test 下如 [14..26]，与题面印的编号一致） */
+    /** Display name of the current Part ('Passage 2' / 'Section 3'); omitted in single-type mode */
     questionIds: number[];
-    /** 已作答的题目 id 集合（全局，跨 Part） */
+    /** The real question ids of the currently visible Part (in a full test, [14..26] for example, matching the numbers printed on the questions) */
     answeredIds: Set<number>;
-    /** 题目容器的 DOM id（'questionsForm' | 'listeningContent'） */
+    /** The set of answered question ids (global, across Parts). In results mode, pass the set of correct ones. */
     scrollContainerId: string;
-    onSubmit: () => void;
-    onExit: () => void;
-    submitLabel: string;
-    exitLabel: string;
+    /** DOM id of the question container ('questionsForm' | 'listeningContent') */
+    onSubmit?: () => void;
+    onExit?: () => void;
+    submitLabel?: string;
+    exitLabel?: string;
     navLabels: PracticeNavLabels;
-    /** full-test 模式传入全部 Part（含当前）；单题型不传 */
+    /** Omit and the action row is not rendered at all (which is what the results page does: redo and back live in the top toolbar) */
     overviewParts?: PracticeOverviewPart[];
-    /** 点击收起的 Part 标签切换过去（index 对应 overviewParts 下标） */
+    /** In full-test mode pass every Part (including the current one); omit for single-type */
     onPartSelect?: (index: number) => void;
+    /**
+     * * Click a collapsed Part label to switch to it (index refers to the overviewParts index)
+     * Results mode: qid -> whether it was correct. Passing this switches the cells and pills from the
+     */
+    resultMarks?: Map<number, boolean>;
 }
 
 function fmt(tpl: string, vars: Record<string, string | number>): string {
     return Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), tpl);
 }
 
-/** 系统实时时钟（wall clock, HH:MM）——参考考试系统底部显示的真实时间。 */
+/*answered/unanswered pair to correct/incorrect (green/red); everything else matches the answering page exactly. */
 function WallClock() {
     const [now, setNow] = useState<{ h: string; m: string }>(() => {
         const d = new Date();
@@ -83,11 +93,12 @@ export default function PracticeBottomBar({
     navLabels,
     overviewParts,
     onPartSelect,
+    resultMarks,
 }: Props) {
     const [currentId, setCurrentId] = useState<number | null>(null);
-    // 点击跳转后的平滑滚动期间，IO 会连续触发一串中间题的高亮闪烁——
-    // 用一个短暂的时间窗抑制。不能用"等目标进入视口中带再解锁"：列表两端的
-    // 题目可能永远到不了中带，锁死后 scrollspy 就再也不动了。
+    //* The system's live wall clock (HH:MM) - mirroring the real time shown at the bottom of exam software.
+    // During the smooth scroll after a jump, the IntersectionObserver fires for every question passed over and the
+    // highlight flickers through them - suppressed with a short time window. It cannot wait for 'the target reaches
     const suppressUntilRef = useRef(0);
 
     const idsKey = questionIds.join(',');
@@ -106,18 +117,18 @@ export default function PracticeBottomBar({
                 if (e.isIntersecting) visible.add(qid);
                 else visible.delete(qid);
             }
-            // 抑制窗内仍更新 visible 集合，只是不改高亮；窗口过后
-            // 静止时无新事件（高亮停在点击题），一滚动立刻恢复跟踪。
+            // the centre band' instead: questions at either end of the list may never reach it, and scrollspy would lock up.
+            // The visible set is still updated inside the suppression window, only the highlight is held; once the window
             if (Date.now() < suppressUntilRef.current) return;
             if (visible.size > 0) setCurrentId(Math.min(...visible));
         }, { root: null, rootMargin: '-40% 0px -40% 0px', threshold: 0 });
 
         anchors.forEach(a => io.observe(a));
         return () => io.disconnect();
-        // idsKey 变化 = Part 切换后题目 DOM 已重建，必须重挂载 observer
+        // passes, sitting still produces no new events (the highlight stays on the clicked question) and any scroll resumes tracking immediately.
     }, [idsKey, scrollContainerId]);
 
-    // Part 切换后旧的 currentId 已不在新 id 集里，清掉避免残留高亮
+    // idsKey changing = the question DOM was rebuilt after a Part switch, so the observer must be remounted
     useEffect(() => {
         setCurrentId(prev => (prev !== null && questionIds.includes(prev) ? prev : null));
         suppressUntilRef.current = 0;
@@ -134,16 +145,21 @@ export default function PracticeBottomBar({
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
 
+    // after a Part switch the old currentId is no longer in the new id set, so clear it to avoid a stale highlight
+    const stateClass = (qid: number) => {
+        if (resultMarks) return resultMarks.get(qid) ? ' ok' : ' bad';
+        return answeredIds.has(qid) ? ' answered' : '';
+    };
+
     const pills = (
         <div className="pbb-pills" role="group" aria-label={navLabels.barLabel}>
             {questionIds.map(qid => {
-                const answered = answeredIds.has(qid);
                 const current = currentId === qid;
                 return (
                     <button
                         key={qid}
                         type="button"
-                        className={`pbb-pill${answered ? ' answered' : ''}${current ? ' current' : ''}`}
+                        className={`pbb-pill${stateClass(qid)}${current ? ' current' : ''}`}
                         onClick={() => jumpTo(qid)}
                         title={fmt(navLabels.jumpTo, { n: qid })}
                         aria-label={fmt(navLabels.jumpTo, { n: qid })}
@@ -156,8 +172,8 @@ export default function PracticeBottomBar({
         </div>
     );
 
-    // 每个 Part 自成一列：细进度条在上、标签+胶囊（当前）/ 标签+x/y（收起）在下，
-    // 列内两行同宽天然对齐。收起的 Part 整列（含进度条区域）都是可点击的切换按钮。
+    // Two states on the answering page (answered/unanswered) and two on the results page (correct/incorrect) - only the colour class changes, never the layout
+    // Each Part is its own column: the thin progress bar on top, and below it the label plus pills (current) or the
     const partsToRender = overviewParts && overviewParts.length > 0
         ? overviewParts
         : [{ label: partLabel || '', questionIds, active: true }];
@@ -165,13 +181,18 @@ export default function PracticeBottomBar({
     const stripOf = (p: { questionIds: number[] }) => (
         <div className="pbb-part-strip" aria-hidden="true">
             {p.questionIds.map(qid => (
-                <span key={qid} className={`pbb-ov-cell${answeredIds.has(qid) ? ' lit' : ''}`} />
+                <span
+                    key={qid}
+                    className={`pbb-ov-cell${resultMarks
+                        ? (resultMarks.get(qid) ? ' ok' : ' bad')
+                        : (answeredIds.has(qid) ? ' lit' : '')}`}
+                />
             ))}
         </div>
     );
 
     return (
-        <div className="practice-bottom-bar">
+        <div className={`practice-bottom-bar${resultMarks ? ' results' : ''}`}>
             <div className="pbb-parts">
                 {partsToRender.map((p, i) =>
                     p.active ? (
@@ -194,8 +215,11 @@ export default function PracticeBottomBar({
                             <div className="pbb-part-row">
                                 <span className="pbb-part-label">{p.label}</span>
                                 <span className="pbb-part-progress">
+                                    {/* label plus x/y (collapsed), the two rows naturally aligned at equal width. A collapsed Part's whole column (progress bar included) is the switch button.
+                                         {answered} for the answering page, {correct} for the results page; one number, */}
                                     {fmt(navLabels.progress, {
                                         answered: p.questionIds.filter(id => answeredIds.has(id)).length,
+                                        correct: p.questionIds.filter(id => answeredIds.has(id)).length,
                                         total: p.questionIds.length,
                                     })}
                                 </span>
@@ -204,15 +228,19 @@ export default function PracticeBottomBar({
                     )
                 )}
             </div>
-            <div className="pbb-actions">
-                <span className="pbb-clock-wrap" title="">🕐 <WallClock /></span>
-                <button type="button" className="pbb-btn pbb-btn-submit" onClick={onSubmit}>
-                    {submitLabel}
-                </button>
-                <button type="button" className="pbb-btn pbb-btn-exit" onClick={onExit}>
-                    {exitLabel}
-                </button>
-            </div>
+            {onSubmit && (
+                <div className="pbb-actions">
+                    <span className="pbb-clock-wrap" title="">🕐 <WallClock /></span>
+                    <button type="button" className="pbb-btn pbb-btn-submit" onClick={onSubmit}>
+                        {submitLabel}
+                    </button>
+                    {onExit && (
+                        <button type="button" className="pbb-btn pbb-btn-exit" onClick={onExit}>
+                            {exitLabel}
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

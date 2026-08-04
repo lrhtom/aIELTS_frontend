@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
 
 export const writingHub = {
   backToPractice: '返回AI突击特训',
@@ -16,6 +16,10 @@ export const writingHub = {
   task2: {
     title: '大作文 (Task 2)',
     desc: '针对雅思大作文（Task 2）深度特训。您可以选择不同流派类型的命题（包括观点、报告、混合等），或挑战大模型的创新预测试题。',
+  },
+  full: {
+    title: '全套写作 (Task 1 + Task 2)',
+    desc: '一次生成小作文 + 大作文两道题，落成题库里的一张卡片。不限时、不锁顺序，随时进去分别作答和批改。',
   },
   opinionDrill: {
     title: '🧠 观点练习题板块',
@@ -342,4 +346,59 @@ export const badExampleTypes = {
   wordy_background: '背景冗长',
   new_idea_in_conclusion: '结尾新观点',
   vague_summary: '总结空泛',
+};
+
+export const writingFull = {
+  // config page
+  configTitle: '全套写作练习',
+  configSubtitle: '一次生成 Task 1 + Task 2 两道题',
+  backToWriting: '返回写作大厅',
+  task1Label: 'Task 1 题型',
+  task2Label: 'Task 2 题型',
+  task1Types: {
+    random: '🎲 随机',
+    line: '📈 折线图',
+    bar: '📊 柱状图',
+    pie: '🥧 饼图',
+    horizontal: '🛶 条形图',
+    table: '🧮 表格',
+    mixed: '🔀 混合图',
+    flowchart: '⚙️ 流程图',
+    map: '🗺️ 地图',
+  },
+  task2Types: {
+    opinion: '观点题',
+    opinion_agree: '同意与否',
+    opinion_discuss: '讨论双方',
+    opinion_advantages: '利弊比较',
+    report: '报告题',
+    mixed: '混合题',
+  },
+  customNameLabel: '自定义名称（可选）',
+  customNamePlaceholder: '留空则用默认标题',
+  startBtn: '生成全套写作',
+  starting: '正在受理…',
+  costNote: '两道题分别调用 AI 生成，按实际用量扣 AT 币。生成在后台进行，可以先离开页面。',
+  toastStarted: '已开始生成，稍等片刻',
+  toastStartFail: '生成受理失败，请重试',
+  // hub page
+  hubTitle: '全套写作练习',
+  hubSubtitle: '两道题各自作答、各自批改，不限时也不锁顺序',
+  backToBank: '📚 返回题库',
+  loading: '加载中…',
+  loadFail: '加载失败',
+  notFound: '找不到这份全套写作练习',
+  progress: '已作答 {answered}/2 · 已批改 {graded}/2',
+  untitled: '（生成中）',
+  slots: { task1: 'Task 1 小作文', task2: 'Task 2 大作文' },
+  status: {
+    generating: '⏳ 生成中',
+    failed: '⚠️ 生成失败',
+    ready: '未作答',
+    answered: '已作答',
+    graded: '已批改',
+  },
+  startTaskBtn: '开始作答',
+  continueBtn: '继续作答',
+  viewCorrection: '查看批改',
 };

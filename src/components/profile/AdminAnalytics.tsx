@@ -367,7 +367,7 @@ export default function AdminAnalytics() {
                     <span className="an-detail-email">{detail.user.email || '—'}</span>
                 </div>
 
-                {/* 单选按钮：一次只看一个视图，避免一页塞满所有图 */}
+                {/* Radio buttons: view one at a time, rather than cramming every chart onto one page */}
                 <div className="an-radio-group" role="radiogroup">
                     {DETAIL_VIEWS.map(v => (
                         <label key={v} className={`an-radio ${detailView === v ? 'active' : ''}`}>

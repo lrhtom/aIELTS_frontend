@@ -76,7 +76,7 @@ export default function ReadAloudMode({
                     stageRef.current = 'zh';
                     setStage('zh');
                     setTranscript('');
-                    // 切换到中文:重新用 zh-CN 启动
+                    // max_completion_tokens, so entering one just works with no extra setup - see _is_reasoning_model in api/core/ai_client.py
                     setTimeout(() => startForStage('zh', word, zh), 150);
                 } else if (stageRef.current === 'zh' && matchesZhMeaning(text, zh)) {
                     setZhPassed(true);
@@ -104,7 +104,7 @@ export default function ReadAloudMode({
         }
     }, [supported, stopRecognition]);
 
-    /* 每张新卡:重置状态,自动播英文一次,启动英文识别 */
+    /* switching to Chinese: restart recognition with zh-CN */
     useEffect(() => {
         setEnPassed(false);
         setZhPassed(false);
@@ -116,7 +116,7 @@ export default function ReadAloudMode({
 
         const word = currentCard.word;
         const zh = currentCard.zh;
-        // 播英文发音,延迟启动识别避免拾取自己的播放音
+        // each new card: reset the state, auto-play the English once, and start English recognition
         speakWord(word);
         const timer = setTimeout(() => {
             if (supported) startForStage('en', word, zh);

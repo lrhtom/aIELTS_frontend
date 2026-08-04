@@ -67,7 +67,7 @@ export default function CustomModelManager() {
             const r = await testOfficialModel(provider);
             setOfficialResults(prev => ({ ...prev, [provider]: r }));
         } catch (e) {
-            // 400（余额不足）/ 429（限流）时后端返回 {error: 文案}，直接展示
+            // On 400 (insufficient balance) or 429 (rate limited) the backend returns {error: message}; show it directly
             const msg = axios.isAxiosError(e)
                 ? (e.response?.data as { error?: string } | undefined)?.error
                 : undefined;

@@ -1,6 +1,6 @@
 /**
- * 重试工具：指数退避重试机制
- * 用于处理临时网络错误和超时
+ * Retry helper: exponential backoff
+ * Used for transient network errors and timeouts
  */
 
 export interface RetryOptions {
@@ -13,34 +13,34 @@ export interface RetryOptions {
 }
 
 /**
- * 检查是否是可重试的临时错误
+ * Is this a transient, retryable error?
  * - 408 Request Timeout
  * - 429 Too Many Requests
  * - 500 Internal Server Error
  * - 502 Bad Gateway
  * - 503 Service Unavailable
  * - 504 Gateway Timeout
- * - 网络错误（ERR_NETWORK 等）
+ * - network errors (ERR_NETWORK and friends)
  */
 function isTransientError(error: unknown): boolean {
   try {
     const axiosError = error as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     const status = axiosError?.response?.status;
     
-    // HTTP 状态码判断
+    // check the HTTP status code
     if (status) {
       return [408, 429, 500, 502, 503, 504].includes(status);
     }
     
-    // 网络错误判断
+    // check for a network error
     if (axiosError?.code) {
-      // axios 网络错误
+      // axios network error
       return ['ECONNABORTED', 'ENOTFOUND', 'ERR_NETWORK', 'ETIMEDOUT'].includes(
         axiosError.code
       );
     }
     
-    // 检查错误消息中的网络关键词
+    // look for network keywords in the error message
     const message = String((error as any)?.message || '').toLowerCase(); // eslint-disable-line @typescript-eslint/no-explicit-any
     return message.includes('timeout') || 
            message.includes('network') || 
@@ -52,10 +52,10 @@ function isTransientError(error: unknown): boolean {
 }
 
 /**
- * 非阻塞错误：不应该重试的错误
+ * Non-blocking errors: errors that must not be retried
  * - 400 Bad Request
  * - 401 Unauthorized  
- * - 402 Payment Required (AT币不足)
+ * - 402 Payment Required (not enough AT)
  * - 403 Forbidden
  * - 404 Not Found
  * - 409 Conflict
@@ -72,10 +72,10 @@ function isNonTransientError(error: unknown): boolean {
 }
 
 /**
- * 带指数退避的重试机制
- * @param fn 要执行的异步函数
- * @param options 重试选项
- * @returns Promise，要么解析为结果，要么拒绝最后的错误
+ * Retry with exponential backoff
+ * @param fn the async function to run
+ * @param options retry options
+ * @returns a Promise that either resolves with the result or rejects with the last error
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
@@ -109,7 +109,7 @@ export async function retryWithBackoff<T>(
     } catch (error) {
       lastError = error;
 
-      // 请求被主动取消（AbortController / CanceledError），无需日志，直接抛出
+      // The request was deliberately cancelled (AbortController / CanceledError) - no logging, just rethrow
       if (
         (error as any)?.code === 'ERR_CANCELED' ||
         (error as any)?.name === 'CanceledError'
@@ -119,7 +119,7 @@ export async function retryWithBackoff<T>(
 
       console.warn(`[重试] 第 ${attempt} 次失败:`, error);
 
-      // 检查是否是永久错误
+      // check for a permanent error
       if (isNonTransientError(error)) {
         console.error(`[重试] 永久错误 (不重试):`, {
           status: (error as any)?.response?.status, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -128,13 +128,13 @@ export async function retryWithBackoff<T>(
         throw error;
       }
 
-      // 检查是否是可重试的临时错误
+      // check for a transient, retryable error
       if (!isTransientError(error)) {
         console.error(`[重试] 非网络临时错误 (不重试):`, error);
         throw error;
       }
 
-      // 最后一次尝试失败，抛出错误
+      // the last attempt failed, throw
       if (attempt === maxAttempts) {
         console.error(
           `[重试] 已达最大重试次数 (${maxAttempts})，放弃重试`
@@ -142,7 +142,7 @@ export async function retryWithBackoff<T>(
         throw error;
       }
 
-      // 计算延迟时间（指数退避）
+      // compute the delay (exponential backoff)
       const delay = Math.min(
         initialDelay * Math.pow(backoffMultiplier, attempt - 1),
         maxDelay
@@ -154,18 +154,18 @@ export async function retryWithBackoff<T>(
       
       onRetry?.(attempt, delay, error);
 
-      // 等待指定时间后重试
+      // wait the given time, then retry
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 
-  // 不应该到达这里，但以防万一
+  // unreachable, but just in case
   throw lastError || new Error('Unknown error after maximum retries');
 }
 
 /**
- * 带用户提示的重试包装
- * 自动显示"重试中..."提示，并在完成后隐藏
+ * Retry wrapper with a user-facing notice
+ * Shows a 'retrying...' notice automatically and hides it when done
  */
 export async function retryWithUserFeedback<T>(
   fn: () => Promise<T>,

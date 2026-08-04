@@ -8,7 +8,7 @@ export default function UserGoals() {
     const { user, updateUser } = useAuth();
     const { t } = useLang();
 
-    // 个人目标设置状态
+    // personal goal settings state
     const [targetListening, setTargetListening] = useState(user?.target_listening ?? '');
     const [targetReading, setTargetReading] = useState(user?.target_reading ?? '');
     const [targetWriting, setTargetWriting] = useState(user?.target_writing ?? '');
@@ -77,7 +77,7 @@ export default function UserGoals() {
                 <p>{t('profile.goals.desc')}</p>
             </div>
 
-            {/* 个人目标设置 */}
+            {/* personal goal settings */}
             <div className="user-settings-section">
                 <div className="user-settings-section-header">
                     <div className="user-settings-section-icon">🎯</div>

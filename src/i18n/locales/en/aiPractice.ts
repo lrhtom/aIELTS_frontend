@@ -72,4 +72,19 @@ export const aiBank: typeof zh.aiBank = {
   toastGenerationFailed: 'Generation failed. Delete and retry.',
   backToBank: '📚 Back to Bank',
   redoBtn: '🔁 Redo',
+  // Site-wide template question: one per skill, set by an admin, visible to everyone
+  templateBadge: 'Site template',
+  templateBadgeHint: 'A showcase item picked by an admin — everyone can attempt it',
+  templateSetBtn: 'Make template',
+  templateUnsetBtn: 'Unset template',
+  templateSetConfirm: 'Make "{title}" the site-wide template for this skill? Every user will see it, and the existing template for this skill will be replaced.',
+  templateSetOk: 'Set as the site-wide template',
+  templateUnsetOk: 'Template cleared',
+  templateSetFail: 'Failed to update the template',
+  templateOpenHint: 'Opening copies it to your bank',
+  templateOpening: 'Copying…',
+  templateUseFail: 'Failed to copy the template, please retry',
+  // Writing-tab shortcut: corrections and AI-teacher lessons live in Service Records, not the bank
+  recordsLinkBtn: '📂 Service Records',
+  recordsLinkHint: 'Review past corrections and AI lessons',
 };

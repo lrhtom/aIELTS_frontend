@@ -21,8 +21,8 @@ export interface ChoiceOption {
 }
 
 /**
- * Owns the "刘洪波雅思真经" distractor pool + per-card choice generation
- * for the 4选1 mode. Only re-runs when the visible card changes.
+ * Owns the distractor pool from the Liu Hongbo IELTS practice material plus the per-card choice generation
+ * for multiple-choice mode. Only re-runs when the visible card changes.
  */
 export function useChoiceOptionsPool({
     mode,

@@ -1,16 +1,16 @@
 /**
- * 前端状态层测试：背单词会话的 Zustand store 状态迁移。
+ * Frontend state-layer tests: the Zustand store's state transitions for a vocabulary study session.
  *
- * 对应论文 §7.1 单元测试层里"前端状态"那一项 —— 此前只有纯工具函数
- * (format / retry / ielts_band …) 有测试，真正承载会话状态的 store 一条都没有。
+ * This is the 'frontend state' item in the unit test layer of section 7.1 - previously only the pure utility
+ * functions (format / retry / ielts_band and so on) had tests, and the store that actually carries session state had none.
  *
- * 测的是三个级联动作：
- *   initSession   开局：队列、掌握度、抄写计数全部按卡数初始化
- *   advanceQueue  每次评分后的队列推进（毕业出队 / 未毕业重排）
- *   retrySession  再来一轮：保留卡片，清空本轮所有进度
+ * Three cascading actions are covered:
+ *   initSession   opening: the queue, mastery counts and copy counts are all sized from the card count
+ *   advanceQueue  advancing the queue after each rating (graduated cards leave, ungraduated ones are re-queued)
+ *   retrySession  another round: keep the cards, clear every bit of this round's progress
  *
- * 这些动作一次改十几个字段，是最容易出"改了 A 忘了 B"的地方，也正是
- * store 值得单测的原因。
+ * Each of these changes a dozen fields at once, which is where 'changed A, forgot B' bugs come from - and exactly
+ * why the store is worth unit testing.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { VocabCard } from '../api/vocab';
@@ -30,7 +30,7 @@ const makeCard = (word: string): VocabCard => ({
     lapses: 0,
     state: 0,
     last_review: null,
-    // Word 表富信息：真实数据里可能为空，这里给空值即可
+    // Word table enrichment: real data may leave these empty, so empty values are fine here
     phonetic: '',
     grammar: '',
     definitions: [],
@@ -41,10 +41,10 @@ const CARDS = [makeCard('alpha'), makeCard('beta'), makeCard('gamma')];
 
 const get = () => useVocabFlashcardStore.getState();
 
-/** 未毕业时把当前卡塞回队尾（页面里 flashcard 模式的实际策略）。 */
+/** Push the current card to the back of the queue when it has not graduated (the actual flashcard-mode policy on the page). */
 const reinsertToTail = (rest: number[], cardIndex: number) => [...rest, cardIndex];
 
-/** advanceQueue 的默认参数，测试只覆盖关心的字段。 */
+/** Default arguments for advanceQueue; the tests only override the fields they care about. */
 const advance = (over: Partial<Parameters<ReturnType<typeof get>['advanceQueue']>[0]> = {}) =>
     get().advanceQueue({
         cardIndex: get().queue[0],
@@ -132,7 +132,7 @@ describe('advanceQueue', () => {
     });
 
     it('每次调用都记录点击的评分 —— 不只是毕业那次', () => {
-        // 同一张卡连点三次 Again 再以 Good 毕业，直方图必须看到 4 次
+        // three Agains on the same card followed by a Good to graduate must show 4 entries in the histogram
         advance({ ratingClicked: 1 });
         advance({ cardIndex: 1, ratingClicked: 1 });
         advance({ cardIndex: 2, ratingClicked: 1 });
@@ -147,12 +147,12 @@ describe('advanceQueue', () => {
     });
 
     it('毕业时把该卡的错误计数清零，遗忘标记保留', () => {
-        advance({ cardIndex: 0, forgotNow: true });                    // 错 1 次
+        advance({ cardIndex: 0, forgotNow: true });                    // one mistake
         advance({ cardIndex: 1 });
         advance({ cardIndex: 2 });
         advance({ cardIndex: 0, graduate: true });
-        expect(get().sessionErrorCount[0]).toBe(0);   // 计数清零
-        expect(get().sessionForgot[0]).toBe(true);    // 但"曾经忘过"要留痕
+        expect(get().sessionErrorCount[0]).toBe(0);   // the count is reset
+        expect(get().sessionForgot[0]).toBe(true);    // but 'was forgotten at some point' must still leave a trace
     });
 
     it('只更新目标卡的掌握度，其余不动', () => {
@@ -175,6 +175,38 @@ describe('advanceQueue', () => {
         expect(get().results).toHaveLength(0);
         advance({ graduate: true, graduateResult: { word: 'x' } as never });
         expect(get().results).toHaveLength(1);
+    });
+
+    // The summary classifies each word into exactly one bucket, and `forgot` is
+    // what decides it. It has to be stamped by the store because only the store
+    // knows whether the word was ever missed *earlier* in the session — the
+    // call site only knows about the current click.
+    it('毕业结果打上 forgot：全程没错过的词为 false', () => {
+        advance({ cardIndex: 0, forgotNow: false, graduate: true,
+                  graduateResult: { word: 'alpha' } as never });
+        expect(get().results[0].forgot).toBe(false);
+    });
+
+    it('毕业结果打上 forgot：先错后对的词仍为 true（只算一次重复学习）', () => {
+        advance({ cardIndex: 0, forgotNow: true,  graduate: false, graduateResult: null });
+        advance({ cardIndex: 0, forgotNow: false, graduate: true,
+                  graduateResult: { word: 'alpha' } as never });
+        expect(get().results).toHaveLength(1);
+        expect(get().results[0].forgot).toBe(true);
+    });
+
+    it('毕业结果打上 forgot：最后一次答错才毕业的词也算忘过', () => {
+        advance({ cardIndex: 0, forgotNow: true, graduate: true,
+                  graduateResult: { word: 'alpha' } as never });
+        expect(get().results[0].forgot).toBe(true);
+    });
+
+    it('forgot 按卡片各算各的，不会串到别的词上', () => {
+        advance({ cardIndex: 0, forgotNow: true,  graduate: true,
+                  graduateResult: { word: 'alpha' } as never });
+        advance({ cardIndex: 1, forgotNow: false, graduate: true,
+                  graduateResult: { word: 'beta' } as never });
+        expect(get().results.map((r) => r.forgot)).toEqual([true, false]);
     });
 
     it('每次推进都递增 visitKey 并清掉上一张卡的 UI 残留', () => {
@@ -215,7 +247,7 @@ describe('retrySession', () => {
     it('保留卡片本身，但队列与全部进度归零', () => {
         get().retrySession(3, 2, false);
         const s = get();
-        expect(s.cards).toHaveLength(3);          // 卡片不重新拉取
+        expect(s.cards).toHaveLength(3);          // the cards are not re-fetched
         expect(s.queue).toEqual([0, 1, 2]);
         expect(s.sessionMastery).toEqual([0, 0, 0]);
         expect(s.sessionForgot).toEqual([false, false, false]);

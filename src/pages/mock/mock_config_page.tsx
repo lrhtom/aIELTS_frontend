@@ -1,6 +1,6 @@
-// 全套模拟 · 生成配置页 — 采用与其他题目编辑页相同的侧边栏布局：
-// 左侧边栏按 听→读→写→说→开始 顺序导航，右侧编辑对应科目细节，最后一步（开始）
-// 显示全局设置 + 考试规则 + 生成按钮。提交后 202 返回题库「全套模拟」tab 查看进度。
+// Full mock, generation config page - same sidebar layout as the other question editors:
+// the left sidebar navigates listening -> reading -> writing -> speaking -> start, the right edits that skill's detail,
+// and the last step (start) shows global settings + exam rules + the generate button. Submitting returns 202 and the bank's 'full mock' tab shows progress.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
@@ -12,7 +12,7 @@ import '../../styles/practice_page.css';
 
 const DIFFICULTIES = ['6.0', '6.5', '7.0', '7.5', '8.0', '8.5'];
 
-// 各 Section 的场景池（与 listening_config.tsx 一致，label 走 listeningConfig.scenario.list）
+// Scenario pool per section (same as listening_config.tsx; labels come from listeningConfig.scenario.list)
 const SCENARIOS_BY_SECTION: Record<1 | 2 | 3 | 4, string[]> = {
     1: ['accommodation', 'job_enquiry', 'gym_signup', 'travel_booking', 'library_signup', 'event_booking', 'restaurant_booking', 'phone_survey'],
     2: ['museum_tour', 'campus_orientation', 'park_intro', 'facility_opening', 'radio_show', 'event_announcement'],
@@ -30,7 +30,7 @@ const STEP_ICON: Record<Step, string> = {
     listening: '🎧', reading: '📖', writing: '✍️', speaking: '🗣️', overview: '🚀',
 };
 
-/** random 大作文题型在前端定型（与 task2_selection_page 的抽取逻辑一致） */
+/** The random Task 2 essay type is settled on the client (same draw logic as task2_selection_page) */
 function resolveTask2Type(selected: string): string {
     if (selected !== 'random') return selected;
     const mainPool = ['opinion', 'report', 'mixed', 'innovation'];
@@ -154,7 +154,7 @@ export default function MockConfigPage() {
                     </div>
 
                     <div className="uc-settings-list">
-                        {/* ── 听力 ── */}
+                        {/* -- Listening -- */}
                         {step === 'listening' && (
                             <div className="uc-card-group">
                                 <div className="uc-list-row uc-row-vertical">
@@ -189,7 +189,7 @@ export default function MockConfigPage() {
                             </div>
                         )}
 
-                        {/* ── 阅读 ── */}
+                        {/* -- Reading -- */}
                         {step === 'reading' && (
                             <div className="uc-card-group">
                                 <div className="uc-list-row">
@@ -211,7 +211,7 @@ export default function MockConfigPage() {
                             </div>
                         )}
 
-                        {/* ── 写作 ── */}
+                        {/* -- Writing -- */}
                         {step === 'writing' && (
                             <div className="uc-card-group">
                                 <div className="uc-list-row">
@@ -256,7 +256,7 @@ export default function MockConfigPage() {
                             </div>
                         )}
 
-                        {/* ── 口语 ── */}
+                        {/* -- Speaking -- */}
                         {step === 'speaking' && (
                             <div className="uc-card-group">
                                 <div className="uc-list-row uc-row-vertical">
@@ -271,7 +271,7 @@ export default function MockConfigPage() {
                             </div>
                         )}
 
-                        {/* ── 开始（全局设置 + 规则 + 生成）── */}
+                        {/* -- Start (global settings + rules + generate) -- */}
                         {step === 'overview' && (
                             <>
                                 <div className="uc-card-group">
@@ -330,7 +330,7 @@ export default function MockConfigPage() {
                                     </div>
                                 </div>
 
-                                {/* 考试规则 */}
+                                {/* exam rules */}
                                 <div className="uc-card-group" style={{ border: '1px solid var(--color-primary)' }}>
                                     <div className="uc-list-row uc-row-vertical">
                                         <span className="row-title" style={{ fontSize: 15, fontWeight: 700 }}>{t('mock.config.rules.title')}</span>

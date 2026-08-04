@@ -15,13 +15,13 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
   return (
     <div className={`sidebar ${collapsed ? 'collapsed' : 'expanded'}`}>
-      {/* 顶部 Logo */}
+      {/* Top logo */}
       <div className="sidebar-header">
         <span className="sidebar-logo">🎓</span>
         <span className="sidebar-title">aIELTS</span>
       </div>
 
-      {/* 导航项 */}
+      {/* Navigation items */}
       <div className="sidebar-nav-label">{t('nav.sidebarTitle')}</div>
       <nav className="sidebar-content" aria-label="Main navigation">
         <Link to="/" className={`sidebar-item ${location.pathname === '/' ? 'active' : ''}`}>
@@ -70,7 +70,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         )}
       </nav>
 
-      {/* 左下角收起按钮 */}
+      {/* Collapse button in the bottom-left corner */}
       <button className="sidebar-collapse-btn" onClick={onToggle} title={t('nav.collapse')}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />

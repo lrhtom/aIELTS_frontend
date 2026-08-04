@@ -27,9 +27,9 @@ export interface LearningPlan {
 }
 
 /**
- * 收藏优先排序：已收藏排最前，后收藏的更靠前；其余按创建时间升序。
- * 与后端 PlanListView 的 order_by(favorited_at desc nulls last, created_at) 口径一致，
- * 供所有展示学习计划的下拉框 / 列表复用，保证顺序统一。
+ * Favorites-first ordering: favorited entries come first, most recently favorited higher; everything else by ascending creation time.
+ * Matches the backend PlanListView's order_by(favorited_at desc nulls last, created_at),
+ * and is reused by every dropdown and list that shows learning plans so the order is consistent everywhere.
  */
 export function sortPlansByFavorite<T extends Pick<LearningPlan, 'favorited_at' | 'created_at'>>(plans: T[]): T[] {
     return [...plans].sort((a, b) => {
@@ -148,8 +148,8 @@ export async function addWord(
     return resp.data;
 }
 
-// AI 解析：把一段文章/词表交给 AI 提取成 [{word, zh}]，仅预览、不写库。
-// exists=true 表示该词已在本计划中（前端可标灰/默认不选）。
+// AI parsing: hand a passage or word list to the AI to extract [{word, zh}]; preview only, nothing is written to the database.
+// exists=true means the word is already in this plan (the frontend can grey it out or leave it unselected).
 export interface AiParsedWord {
     word:    string;
     zh:      string;
@@ -161,7 +161,7 @@ export async function aiParsePlanWords(
     text: string,
 ): Promise<{ words: AiParsedWord[]; atConsumed?: number }> {
     const resp = await apiClient.post(`/plans/${planId}/ai-parse/`, { text }, {
-        timeout: 130_000, // 130s — 略高于后端 AI 120s 超时
+        timeout: 130_000, // 130s - slightly above the backend's 120s AI timeout
     });
     return resp.data;
 }

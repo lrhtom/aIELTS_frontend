@@ -17,7 +17,7 @@ export default function AIPractice() {
                 <div className="practice-hub-container" style={{paddingTop: '20px'}}>
 
                     <div className="bento-grid">
-                        {/* AI 题库 — 听/读/写 题库入口 */}
+                        {/* AI Question Bank - listening / reading / writing entry point */}
                         <Link to="/practice/ai/bank" className="bento-card bento-bank">
                             <div className="bento-glow"></div>
                             <div className="bento-content">
@@ -68,7 +68,7 @@ export default function AIPractice() {
                         </Link>
 
 
-                        {/* 全套模拟 — 听读写说一次生成，真考流程限时作答 */}
+                        {/* Full mock - generates all four skills at once, timed like the real exam */}
                         <Link to="/practice/ai/mock" className="bento-card bento-mock">
                             <div className="bento-glow"></div>
                             <div className="bento-content">

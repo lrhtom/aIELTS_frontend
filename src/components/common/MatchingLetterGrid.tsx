@@ -106,8 +106,8 @@ export default function MatchingLetterGrid({
                                     ].filter(Boolean).join(' ');
                                     return (
                                         <td key={letter} className={cls}>
-                                            {/* 显式 onClick 按钮，不用 label→隐藏 radio 的转发链
-                                                （曾出现点击无反应的环境兼容问题） */}
+                                            {/* An explicit onClick button rather than the label -> hidden radio forwarding chain
+                                                (which had environment-specific problems where clicks did nothing) */}
                                             <button
                                                 type="button"
                                                 className="mg-cell-label"
@@ -117,7 +117,7 @@ export default function MatchingLetterGrid({
                                                 onClick={() => onAnswer(row.id, letter)}
                                             >
                                                 <span className="mg-dot" aria-hidden="true" />
-                                                {/* 窄容器芯片模式的字母标签（宽表格模式下 CSS 隐藏，字母在表头） */}
+                                                {/* The letter label for narrow-container chip mode (hidden by CSS in wide-table mode, where the letters are in the header) */}
                                                 <span className="mg-cell-letter" aria-hidden="true">{letter}</span>
                                             </button>
                                         </td>

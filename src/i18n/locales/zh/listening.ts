@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
 
 export const listeningConfig = {
   backToAI: '返回 AI 练习',
@@ -157,7 +157,7 @@ export const listeningDetails = {
   audioError: '播放音频出错',
   noQuestions: 'AI 未能生成题目，请重试',
   writingPassage: 'AI 正在为您编写雅思听力原文...',
-  // 直接打开/刷新 /listening 但没有出题配置时的落地文案
+  // Landing copy for opening or refreshing /listening with no generation config
   noConfigTitle: '还没有可做的听力题',
   noConfigDesc: '听力练习需要先在配置页选好词汇、难度和场景再生成。直接打开这个网址不会自动出题，以免误消耗 AT。',
   noConfigGoConfig: '去配置并生成',

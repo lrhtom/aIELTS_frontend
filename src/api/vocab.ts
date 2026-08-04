@@ -24,16 +24,16 @@ export interface VocabCard {
 export interface VocabStats {
     total: number;
     new:   number;  // state=0
-    due:   number;  // state!=0 且 due<=now
+    due:   number;  // state != 0 and due <= now
 }
 
-/** 批量同步词汇，返回全部卡片状态及统计 */
+/** Sync words in bulk, returning every card's state plus the statistics */
 export async function syncVocab(words: Array<{ word: string; zh: string }>) {
     const resp = await apiClient.post('/vocab/sync', { words });
     return resp.data as { cards: VocabCard[]; stats: VocabStats };
 }
 
-/** 获取用户全部卡片，dueOnly=true 仅返回今日到期 */
+/** Fetch all of the user's cards; dueOnly=true returns only those due today */
 export async function getCards(dueOnly = false) {
     const resp = await apiClient.get('/vocab/cards', {
         params: dueOnly ? { due_only: 'true' } : {},
@@ -41,7 +41,7 @@ export async function getCards(dueOnly = false) {
     return resp.data as { cards: VocabCard[]; stats: VocabStats };
 }
 
-/** 提交复习评分（1=忘了 / 2=困难 / 3=一般 / 4=容易） */
+/** Submit a review rating (1=forgot / 2=hard / 3=good / 4=easy) */
 export async function submitReview(
     word:             string,
     rating:           number,

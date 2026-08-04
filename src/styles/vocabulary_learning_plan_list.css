@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   学习计划列表页 + 创建弹窗样式
-   依赖 practice_page.css 中的 .config-page-wrap / .config-card / .practice-header
+   Learning plan list page plus the create dialog.
+   Depends on .config-page-wrap / .config-card / .practice-header from practice_page.css
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Page-level overrides ────────────────────────────────────────────────── */
@@ -8,7 +8,7 @@
 .lp-list-section-divider { margin-top: 36px; }
 
 /* ── Plan accent colours (by index) ────────────────────────────────────────── */
-/* 采用更柔和的高级莫兰迪色板 */
+/* a softer, more refined Morandi palette */
 .lp-plan-card[data-idx="0"] { --lp-color: #14b8a6; --lp-bg-subtle: #f0fdfa; --lp-color-dark: #0f766e; }   /* teal */
 .lp-plan-card[data-idx="1"] { --lp-color: #8b5cf6; --lp-bg-subtle: #f5f3ff; --lp-color-dark: #6d28d9; }   /* violet */
 .lp-plan-card[data-idx="2"] { --lp-color: #3b82f6; --lp-bg-subtle: #eff6ff; --lp-color-dark: #1d4ed8; }   /* blue */

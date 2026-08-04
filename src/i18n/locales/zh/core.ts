@@ -1,4 +1,4 @@
-// 中文文案（类型真源）— en 侧以 typeof 引用本文件。
+// Chinese copy (the type source of truth) - the en side references this file with typeof.
 
 export const navbar = {
   goals: {
@@ -82,10 +82,10 @@ export const components = {
     desc: '选择后台出题和批改所使用的引擎',
   },
   customModel: {
-    // 下拉选择器
+    // dropdown selector
     addOption: '＋ 添加自定义模型',
     customTag: '自定义',
-    // 弹窗
+    // dialog
     addTitle: '添加自定义模型',
     editTitle: '编辑自定义模型',
     nameLabel: '模型名称',
@@ -103,7 +103,7 @@ export const components = {
     errUrl: '接口链接必须以 http(s):// 开头',
     errKey: '请填写 SK 密钥',
     saveFail: '保存失败',
-    // 设置页管理面板
+    // settings page admin panel
     managerTitle: '自定义模型管理',
     managerDesc: '添加你自己的 OpenAI 兼容模型（自带密钥，调用不消耗 AT）。',
     addBtn: '添加自定义模型',
@@ -113,25 +113,27 @@ export const components = {
     deleteConfirm: '确定删除该自定义模型？',
     deleteFail: '删除失败',
     loadFail: '加载失败',
-    // 测试结果（与后端 ping status 对应）
+    // test results (matching the backend's ping status)
     testOk: '连接正常',
     testAuth: '鉴权失败（密钥或权限有误）',
     testRateLimited: '被限流，请稍后再试',
     testReqError: '端点在线但请求被拒（模型名/参数/链接有误）',
     testError: '连接失败（链接不可达或超时）',
     testUnconfigured: '配置不完整',
-    // 帮助面板：常见导入示例
+    // help panel: common import examples
     helpAria: '查看导入示例',
     helpIntro: '本平台支持任意 OpenAI 兼容的 /chat/completions 接口。以下为常见服务的填写示例，点“填入”可一键填充：',
     helpFill: '填入',
     helpNote: '要点：模型名称就是请求里的 model 值；接口链接要填 chat/completions 的完整地址。',
+    helpReasoningNote: '推理模型（gpt-5.x、o1/o3/o4）不接受自定义 temperature，本平台会自动省略该参数并改用 max_completion_tokens，按上面的示例直接填即可。',
     helpOllamaNote: 'Ollama：先本地运行 ollama serve，SK 可随意填。本平台部署在本机时可直连 localhost；线上部署需让服务器能访问到该地址（公网地址或内网穿透）。',
     pOllama: 'Ollama（本地模型）',
     pOpenai: 'OpenAI',
+    pGpt56: 'OpenAI GPT-5.6 Sol（推理模型）',
     pDeepseek: 'DeepSeek',
     pQwen: '通义千问（DashScope 兼容模式）',
     pOpenrouter: 'OpenRouter',
-    // 官方模型测试区（设置页面板底部）
+    // official model test area (bottom of the settings panel)
     officialTitle: '官方模型测试',
     officialDesc: '测试平台官方模型的连通性。使用平台密钥，测试成功按实际 token 消耗扣 AT（失败不扣费）。',
     officialCostNote: '本次消耗 {n} AT',
@@ -154,6 +156,11 @@ export const results = {
   statusIncorrect: '错误',
   explanation: '解析',
   estimatedBand: '预估雅思分',
+  // Passage/section switching on the full results page: view one at a time, with the explanations and text following along
+  passageTab: 'Passage {n}',
+  sectionTab: 'Section {n}',
+  allParts: '全部',
+  partScore: '{correct}/{total} 正确',
 };
 
 export const billing = {

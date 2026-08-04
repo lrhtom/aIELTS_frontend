@@ -40,7 +40,7 @@ export default function Layout({ children, pageTitle, pageSubtitle, titleAction,
 
   return (
     <div className={`layout ${sidebarCollapsed ? 'collapsed-sidebar' : ''}`}>
-      {/* 遮罩层：点击关闭侧边栏 */}
+      {/* Overlay: click to close the sidebar */}
       {!sidebarCollapsed && (
         <div className="sidebar-overlay" onClick={() => setSidebar(true)} />
       )}
